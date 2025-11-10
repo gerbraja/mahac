@@ -1,0 +1,93 @@
+# categories_template.yml
+# Esta plantilla contiene ahora 21 categorías recomendadas.
+# Puedes editar `code`, `name` y `description` según prefieras.
+
+categories:
+  - code: ropa
+    name: Ropa y Accesorios
+    description: "Prendas de vestir y accesorios para hombre, mujer y niños"
+
+  - code: calzado
+    name: Calzado
+    description: "Zapatos, sandalias, botas y complementos"
+
+  - code: electronica
+    name: Electrónica
+    description: "Teléfonos, audio, televisores y gadgets" 
+
+  - code: informatica
+    name: Informática
+    description: "Computadoras, portátiles, tablets y componentes"
+
+  - code: telefonia
+    name: Telefonía y Accesorios
+    description: "Móviles, fundas, cargadores y auriculares"
+
+  - code: hogar
+    name: Hogar y Decoración
+    description: "Muebles, decoración, textiles y complementos para el hogar"
+
+  - code: cocina
+    name: Cocina y Electrodomésticos
+    description: "Pequeños y grandes electrodomésticos, utensilios y menaje"
+
+  - code: belleza
+    name: Belleza y Cuidado Personal
+    description: "Cosméticos, cuidado facial y capilar, perfumes"
+
+  - code: salud
+    name: Salud y Bienestar
+    description: "Vitaminas, suplementos y aparatos de cuidado personal"
+
+  - code: alimentos
+    name: Alimentos y Bebidas
+    description: "Productos alimenticios, bebidas y snacks" 
+
+  - code: bebes
+    name: Bebés y Maternidad
+    description: "Ropa de bebé, cochecitos, alimentación infantil y accesorios"
+
+  - code: juguetes
+    name: Juguetes y Juegos
+    description: "Juguetes, juegos de mesa y material educativo"
+
+  - code: deportes
+    name: Deportes y Aire Libre
+    description: "Equipamiento deportivo, ropa y artículos para actividades al aire libre"
+
+  - code: mascotas
+    name: Mascotas
+    description: "Alimentos, accesorios y cuidados para mascotas"
+
+  - code: automotriz
+    name: Automotriz y Motocicletas
+    description: "Repuestos, accesorios y productos para vehículos"
+
+  - code: oficina
+    name: Oficina y Papelería
+    description: "Mobiliario, papelería, material de oficina y hardware" 
+
+  - code: herramientas
+    name: Herramientas y Construcción
+    description: "Herramientas, material de construcción y seguridad" 
+
+  - code: joyeria
+    name: Joyería y Accesorios
+    description: "Joyería fina, bisutería y complementos" 
+
+  - code: libros
+    name: Libros y Papelería
+    description: "Libros, ebooks, material de lectura y papelería creativa"
+
+  - code: arte
+    name: Arte y Manualidades
+    description: "Material para arte, manualidades y hobbies creativos"
+
+  - code: servicios
+    name: Servicios y Suscripciones
+    description: "Servicios digitales, suscripciones y reservas" 
+
+# Si quieres, puedo:
+# - Generar un seeder `backend/scripts/seed_categories.py` que inserte estas 21 categorías en la BD.
+# - Crear endpoints CRUD en `backend/routers/categories.py` (si no existen) y vincularlos en `backend/main.py`.
+# - Convertir `products.category` en `category_id` con una migración (cambio mayor).

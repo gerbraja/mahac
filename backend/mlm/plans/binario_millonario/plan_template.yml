@@ -1,0 +1,53 @@
+# Millionaire Binary plan template
+plan_name: "Millionaire Binary"
+plan_key: "binario_millonario"
+description: "2x2 Binary plan with configurable millionaire bonuses and accelerated pairing rules. Edit thresholds and rewards to match your business rules."
+currency: "USD"
+settings:
+  preregistration:
+    enabled: true
+    hold_days: 90
+    auto_remove_if_not_activated: true
+  matrix:
+    type: "binary"
+    width: 2
+    depth: 27
+
+
+  # Optional millionaire-level bonuses (example thresholds). Customize as needed.
+  millionaire_bonus:
+    thresholds:
+      - pv: 10000
+        reward: "1000.00"
+      - pv: 50000
+        reward: "10000.00"
+
+sale_commission:
+  description: "Commission percentages on product/service sales — portion of the sale amount distributed by the plan."
+  initial_distribution_percent: "27.0"   # percent of sale value allocated to commission pool
+  breakdown:
+    - name: "pairing_bonus"
+      percent: "15.0"
+      description: "Portion distributed via pairing rules and immediate pairing bonuses."
+    - name: "level_commissions"
+      percent: "8.0"
+      description: "Portion distributed across levels according to level rules."
+    - name: "reserve_and_promotions"
+      percent: "4.0"
+      description: "Reserve for millionaire bonuses, promotions or retention incentives."
+
+
+notes: |
+  This is a cleaned YAML template for the "Millionaire Binary" plan. The original
+  file contained non-YAML content (React, Python, and docs) which has been moved to
+  a backup file named `plan_template_backup_raw.txt` in this directory. Edit numeric
+  values and thresholds here. Amounts should be stored as strings (e.g. "0.50") so
+  they validate cleanly as Decimal values in the backend.
+
+  This is a cleaned YAML template for the "Millionaire Binary" plan. The original
+  file contained non-YAML content (React, Python, and docs) which has been moved to
+  a backup file named `plan_template_backup_raw.txt` in this directory. Edit numeric
+  values and thresholds here. Amounts should be stored as strings (e.g. "0.50") so
+  they validate cleanly as Decimal values in the backend.
+
+

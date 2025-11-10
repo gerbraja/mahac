@@ -1,0 +1,98 @@
+```text
+# Millionaire Binary plan template
+# (Original mixed content backup)
+
+"""
+This file previously contained a mix of YAML, React/JSX, and Python code that
+was accidentally pasted into the plan template. The original content is
+preserved here for reference. If you need parts of it recovered, search this
+backup and extract the pieces you want.
+
+Below is the original blob that was replaced by a clean YAML template.
+
+-- ORIGINAL CONTENT START --
+```
+```yaml
+# Millionaire Binary plan template
+plan_name: "Millionaire Binary"
+plan_key: "binario_millonario"
+description: "Binary plan with millionaire-level bonuses and accelerated pairing"
+currency: "USD"
+settings:
+
+  This template includes an example millionaire bonus. Edit thresholds and rewards to match your plan.
+
+NetworkBinaryPanel
+
+import React from 'react'; import { Card, CardHeader, CardContent } from '@/components/ui/card'; import {
+... (content truncated for brevity) ...
+
+
+from app.models.order import Order
+from app.models.user import User
+from app.models.binary_commission import BinaryCommission
+from sqlalchemy.orm import Session
+
+USD_TO_COP = 4500.0
+
+def get_commission_percentage(level: int) -> float:
+    if level % 2 == 0:
+        return 0.0
+    if 1 <= level <= 9:
+        return 3.0
+    elif 12 <= level <= 17:
+        return 2.0
+    elif 19 <= level <= 23:
+        return 1.0
+    elif 25 <= level <= 27:
+        return 0.5
+    else:
+        return 0.0
+
+
+def calculate_commission_from_pv(db: Session, user_id: int):
+    """
+    Calcula comisiones para un usuario basado en los PV de su red.
+    """
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        return {"error": "Usuario no encontrado"}
+
+    # Supongamos que el sistema ya tiene los usuarios de la red binaria cargados
+    # y sus compras con PV registradas en 'orders'.
+    total_commissions = []
+    total_pv = 0
+
+    # Recorremos niveles 1 a 27
+    for level in range(1, 28):
+        percentage = get_commission_percentage(level)
+        if percentage == 0:
+            continue
+
+        # Simulación: cada nivel tiene un conjunto de usuarios afiliados
+        # En un sistema real, esto viene de la tabla de red binaria
+        level_users = db.query(User).filter(User.current_matrix == 27).all()
+
+        level_pv = sum(o.total_pv for u in level_users for o in u.orders)
+        total_pv += level_pv
+
+        amount_usd = level_pv * (percentage / 100)
+        amount_cop = amount_usd * USD_TO_COP
+
+        db.add(BinaryCommission(level=level, percentage=percentage, amount=amount_cop))
+
+        total_commissions.append({
+            "level": level,
+            "percentage": f"{percentage}%",
+            "points_value": level_pv,
+            "amount_usd": round(amount_usd, 2),
+            "amount_cop": round(amount_cop, 2),
+        })
+
+    db.commit()
+
+    return {
+        "user_id": user_id,
+        "total_pv": total_pv,
+        "commissions": total_commissions
+    }

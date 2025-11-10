@@ -1,0 +1,304 @@
+{
+  "name": "tei-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.22.2"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.2.0",
+    "vite": "^4.4.9"
+  }
+
+}We'll connect the React frontend to your FastAPI backend
+ so that login, registration, and shopping cart are
+  automatically synchronized using JWT.
+The system will retain the user and their cart 🛒 even if
+ they log out or reload the page.
+
+
+ 1. React Folder Structure
+
+In your frontend/ folder, create this structure within Visual Studio Code:
+
+frontend/
+│
+├── src/
+│   ├── api/
+│   │   ├── auth.js
+│   │   ├── cart.js
+│   │   └── products.js
+│   ├── components/
+│   │   ├── ProductList.jsx
+│   │   ├── Cart.jsx
+│   │   ├── Login.jsx
+│   │   └── Register.jsx
+│   ├── context/
+│   │   ├── AuthContext.jsx
+│   │   └── CartContext.jsx
+│   ├── App.jsx
+│   └── main.jsx
+│
+├── package.json
+└── vite.config.js
+
+2. Archivo package.json
+
+{
+  "name": "tei-virtual-store",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "axios": "^1.6.7",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.23.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.2.1",
+    "vite": "^5.2.0"
+  }
+}
+3. Archivo api/auth.js
+
+import axios from "axios";
+
+const API_URL = "http://127.0.0.1:8000/auth";
+
+export const registerUser = async (name, email, password) => {
+  return axios.post(`${API_URL}/register`, null, { params: { name, email, password } });
+};
+
+export const loginUser = async (email, password) => {
+  const res = await axios.post(`${API_URL}/login`, null, { params: { email, password } });
+  localStorage.setItem("token", res.data.access_token);
+  return res.data;
+};
+
+export const getToken = () => localStorage.getItem("token");
+
+export const logoutUser = () => {
+  localStorage.removeItem("token");
+};
+4. Archivo api/products.js
+
+import axios from "axios";
+const API_URL = "http://127.0.0.1:8000/products";
+
+export const fetchProducts = async () => {
+  const res = await axios.get(API_URL);
+  return res.data;
+};
+5. Archivo api/cart.js
+
+import axios from "axios";
+import { getToken } from "./auth";
+
+const API_URL = "http://127.0.0.1:8000/cart";
+
+export const getCart = async () => {
+  const token = getToken();
+  const res = await axios.get(API_URL, { params: { token } });
+  return res.data;
+};
+
+export const addToCart = async (productId, quantity = 1) => {
+  const token = getToken();
+  const res = await axios.post(API_URL, { product_id: productId, quantity }, { params: { token } });
+  return res.data;
+};
+
+export const updateCartItem = async (id, quantity) => {
+  const token = getToken();
+  const res = await axios.put(`${API_URL}/${id}`, { quantity }, { params: { token } });
+  return res.data;
+};
+
+export const deleteCartItem = async (id) => {
+  const token = getToken();
+  const res = await axios.delete(`${API_URL}/${id}`, { params: { token } });
+  return res.data;
+};
+6. Archivo context/AuthContext.jsx
+
+import { createContext, useState, useEffect } from "react";
+import { getToken, logoutUser } from "../api/auth";
+
+export const AuthContext = createContext();
+
+export const AuthProvider = ({ children }) => {
+  const [token, setToken] = useState(getToken());
+  const [isAuthenticated, setIsAuthenticated] = useState(!!token);
+
+  useEffect(() => {
+    setIsAuthenticated(!!token);
+  }, [token]);
+
+  const logout = () => {
+    logoutUser();
+    setToken(null);
+    setIsAuthenticated(false);
+  };
+
+  return (
+    <AuthContext.Provider value={{ token, setToken, isAuthenticated, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+7. Archivo context/CartContext.jsx
+
+import { createContext, useState, useEffect, useContext } from "react";
+import { AuthContext } from "./AuthContext";
+import { getCart, addToCart, deleteCartItem, updateCartItem } from "../api/cart";
+
+export const CartContext = createContext();
+
+export const CartProvider = ({ children }) => {
+  const { isAuthenticated } = useContext(AuthContext);
+  const [cart, setCart] = useState([]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      getCart().then(setCart).catch(console.error);
+    } else {
+      setCart([]);
+    }
+  }, [isAuthenticated]);
+
+  const addItem = async (productId, quantity = 1) => {
+    const item = await addToCart(productId, quantity);
+    setCart((prev) => {
+      const existing = prev.find((p) => p.id === item.id);
+      if (existing) {
+        return prev.map((p) => (p.id === item.id ? item : p));
+      }
+      return [...prev, item];
+    });
+  };
+
+  const removeItem = async (id) => {
+    await deleteCartItem(id);
+    setCart((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  const updateItem = async (id, quantity) => {
+    const item = await updateCartItem(id, quantity);
+    setCart((prev) => prev.map((p) => (p.id === id ? item : p)));
+  };
+
+  return (
+    <CartContext.Provider value={{ cart, addItem, removeItem, updateItem }}>
+      {children}
+    </CartContext.Provider>
+  );
+};
+
+8. Componentes principales
+🧍‍♂️ components/Login.jsx
+
+import { useState, useContext } from "react";
+import { loginUser } from "../api/auth";
+import { AuthContext } from "../context/AuthContext";
+
+export default function Login() {
+  const { setToken } = useContext(AuthContext);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const res = await loginUser(email, password);
+    setToken(res.access_token);
+    window.location.reload();
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="p-4">
+      <h2>Login</h2>
+      <input type="email" placeholder="Email" onChange={(e) => setEmail(e.target.value)} />
+      <input type="password" placeholder="Password" onChange={(e) => setPassword(e.target.value)} />
+      <button type="submit">Login</button>
+    </form>
+  );
+}
+
+
+components/Cart.jsx
+
+import { useContext } from "react";
+import { CartContext } from "../context/CartContext";
+
+export default function Cart() {
+  const { cart, removeItem, updateItem } = useContext(CartContext);
+
+  return (
+    <div className="p-4">
+      <h2>My Cart</h2>
+      {cart.length === 0 ? (
+        <p>No products yet</p>
+      ) : (
+        cart.map((item) => (
+          <div key={item.id} className="border p-2 m-2">
+            <p>{item.product.name}</p>
+            <p>Quantity: {item.quantity}</p>
+            <button onClick={() => updateItem(item.id, item.quantity + 1)}>+</button>
+            <button onClick={() => updateItem(item.id, item.quantity - 1)}>-</button>
+            <button onClick={() => removeItem(item.id)}>Remove</button>
+          </div>
+        ))
+      )}
+    </div>
+  );
+}
+
+9. Archivo App.jsx
+
+import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
+import { AuthProvider } from "./context/AuthContext";
+import { CartProvider } from "./context/CartContext";
+import Login from "./components/Login";
+import Cart from "./components/Cart";
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <CartProvider>
+        <BrowserRouter>
+          <nav>
+            <Link to="/">Cart</Link> | <Link to="/login">Login</Link>
+          </nav>
+          <Routes>
+            <Route path="/" element={<Cart />} />
+            <Route path="/login" element={<Login />} />
+          </Routes>
+        </BrowserRouter>
+      </CartProvider>
+    </AuthProvider>
+  );
+}
+
+10. Archivo main.jsx
+
+import React from "react";
+import ReactDOM from "react-dom/client";
+import App from "./App";
+
+ReactDOM.createRoot(document.getElementById("root")).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);

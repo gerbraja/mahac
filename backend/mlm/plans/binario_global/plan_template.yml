@@ -1,0 +1,50 @@
+plan_name: "Binary Global"
+plan_key: "binario_global"
+description: "Binary 2x2 plan for pre-registrations. Pre-registered users keep their positions for 90 days and accrue arrival bonuses according to level rules."
+currency: "USD"
+
+# Commission distributed when a user activates with an affiliation package.
+# This is a percentage of the activation/package value that will be distributed
+# according to the plan's distribution rules (arrival bonuses, pairing, etc.).
+# Represented as a percentage (7 means 7%).
+signup_package_commission_percent: 7.0
+
+# Required fields for pre-registration (these must be provided when pre-registering)
+registration_fields:
+	- first_name
+	- last_name
+	- email
+	- city
+	- country
+
+preregistration:
+	# number of days a pre-registered user keeps their position without activating
+	hold_period_days: 90
+	# if true, the user must buy an activation package to become active; otherwise they remain pre-registered
+	require_activation_package: true
+	# if not activated within hold_period_days the user is removed from the plan
+	remove_if_not_activated: true
+
+matrix:
+	type: "binary"
+	width: 2
+	# maximum depth considered for bonuses / reporting
+	max_depth: 21
+
+# Arrival bonus rules: list of rules mapping specific levels to an amount.
+# The loader will apply these rules to determine arrival bonuses for pre-registered users.
+arrival_bonus:
+	- levels: [3, 5, 7, 9, 11, 13]
+		amount: "0.50"
+	- levels: [15, 17, 19, 21]
+		amount: "1.00"
+
+notes: |
+	This YAML defines the Binary Global (2x2) plan. Rules:
+	- All users who pre-register (provide first_name, last_name, email, city and country) are placed into the binary 2x2 structure and keep their position for up to 90 days.
+	- If they do not purchase the activation package within 90 days they are removed from the network (remove_if_not_activated).
+	- When a user activates by buying the activation package, they are eligible to receive arrival bonuses for users who entered after them, regardless of whether those users have activated.
+	- Arrival bonus rules are defined under `arrival_bonus`. Amounts are strings and will be parsed to Decimal.
+
+	- Commission on activation packages: `signup_package_commission_percent` (above) defines the percent of the package value allocated to the plan's distribution. For Binary Global this is 7% by default.
+

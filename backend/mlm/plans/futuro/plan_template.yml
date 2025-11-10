@@ -1,0 +1,12 @@
+# Future plan template
+plan_name: "Future Plan"
+plan_key: "futuro"
+description: "Placeholder for experimental/future plans"
+currency: "USD"
+spec: 
+  # Define your custom plan structure here. Example fields:
+  rules: []
+  tiers: []
+  special_bonuses: []
+notes: |
+  Use this folder for drafts or new plan ideas.

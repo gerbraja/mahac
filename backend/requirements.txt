@@ -1,0 +1,14 @@
+fastapi>=0.95.0
+uvicorn[standard]>=0.22.0
+pydantic>=1.10.0
+python-dotenv>=1.0.0
+sqlalchemy>=1.4
+psycopg2-binary
+alembic
+passlib[bcrypt]
+python-jose[cryptography]
+pyyaml
+requests
+pytest
+python-jose[cryptography]
+
