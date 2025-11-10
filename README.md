@@ -9,3 +9,4 @@ Sección relevante: Backend
 - `scripts/run_postgres_and_tests.ps1` — script para levantar Postgres en Docker, aplicar migraciones y ejecutar la prueba de concurrencia.
 
 Siga las instrucciones dentro de `backend/README.md` o `backend/README-ES.md` para configurar el entorno y ejecutar migraciones.
+# mahac
