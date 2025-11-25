@@ -91,3 +91,9 @@ categories:
 # - Generar un seeder `backend/scripts/seed_categories.py` que inserte estas 21 categorías en la BD.
 # - Crear endpoints CRUD en `backend/routers/categories.py` (si no existen) y vincularlos en `backend/main.py`.
 # - Convertir `products.category` en `category_id` con una migración (cambio mayor).
+
+
+python -m venv .venv
+.\\.venv\\Scripts\\Activate.ps1
+pip install -r backend/requirements.txt 
+

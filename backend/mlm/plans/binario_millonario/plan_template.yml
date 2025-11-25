@@ -26,15 +26,20 @@ sale_commission:
   description: "Commission percentages on product/service sales — portion of the sale amount distributed by the plan."
   initial_distribution_percent: "27.0"   # percent of sale value allocated to commission pool
   breakdown:
-    - name: "pairing_bonus"
-      percent: "15.0"
-      description: "Portion distributed via pairing rules and immediate pairing bonuses."
     - name: "level_commissions"
-      percent: "8.0"
-      description: "Portion distributed across levels according to level rules."
-    - name: "reserve_and_promotions"
-      percent: "4.0"
-      description: "Reserve for millionaire bonuses, promotions or retention incentives."
+      percent: "27.0"
+      description: "Distributed across odd levels 1-27."
+
+# Specific rules for odd levels
+level_rules:
+  - levels: [1, 3, 5, 7, 9]
+    percent: "3.0"
+  - levels: [11, 13, 15, 17]
+    percent: "2.0"
+  - levels: [19, 21, 23]
+    percent: "1.0"
+  - levels: [25, 27]
+    percent: "0.5"
 
 
 notes: |

@@ -33,3 +33,4 @@ def simple_complete(matrix_type: int) -> Dict[str, Any]:
 
 if __name__ == "__main__":
     print(simple_complete(27))
+

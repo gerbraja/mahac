@@ -23,6 +23,8 @@ class User(Base):
     monthly_earnings = Column(Float, default=0.0)
     total_earnings = Column(Float, default=0.0)
     available_balance = Column(Float, default=0.0)
+    crypto_balance = Column(Float, default=0.0) # TEI Coin Balance
+    purchase_balance = Column(Float, default=0.0) # Credit for product purchases only
     # Membership numbering (assigned on activation)
     membership_number = Column(Integer, unique=True, nullable=True)
     membership_code = Column(String(32), unique=True, nullable=True)

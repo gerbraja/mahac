@@ -55,50 +55,27 @@ def calculate_unilevel_commissions(db: Session, seller_id: int, sale_amount: flo
             percent = UNILEVEL_PERCENTAGES.get(level, 0)
             commission_amount = sale_amount * percent
 
-            # create commission row
-            commission = UnilevelCommission(
-                user_id=sponsor.user_id,
-                sale_amount=sale_amount,
-                commission_amount=commission_amount,
-                level=level,
-                type="unilevel",
-            )
-            db.add(commission)
-            commissions.append(commission)
+            if commission_amount > 0:
+                # 1. Create Unilevel Commission for the Upline (Beneficiary)
+                commission = UnilevelCommission(
+                    user_id=sponsor.user_id,
+                    sale_amount=sale_amount,
+                    commission_amount=commission_amount,
+                    level=level,
+                    type="unilevel",
+                )
+                db.add(commission)
+                commissions.append(commission)
 
-            # update sponsor's user balances
-            sponsor_user = db.query(User).filter(User.id == sponsor.user_id).with_for_update().first()
-            if sponsor_user:
-                sponsor_user.available_balance = (sponsor_user.available_balance or 0.0) + commission_amount
-                sponsor_user.monthly_earnings = (sponsor_user.monthly_earnings or 0.0) + commission_amount
-                sponsor_user.total_earnings = (sponsor_user.total_earnings or 0.0) + commission_amount
+                # Update Beneficiary Balance
+                sponsor_user = db.query(User).filter(User.id == sponsor.user_id).with_for_update().first()
+                if sponsor_user:
+                    sponsor_user.available_balance = (sponsor_user.available_balance or 0.0) + commission_amount
+                    sponsor_user.monthly_earnings = (sponsor_user.monthly_earnings or 0.0) + commission_amount
+                    sponsor_user.total_earnings = (sponsor_user.total_earnings or 0.0) + commission_amount
 
             sponsor = sponsor.sponsor
             level += 1
-
-        # Matching (equalization) bonus: give direct sponsor a percentage of the
-        # total commissions generated for this sale by the downline (optional)
-        if current_member.sponsor:
-            sponsor_id = current_member.sponsor.user_id
-            total_earned_by_downlines = sum([float(getattr(c, 'commission_amount', 0.0)) for c in commissions])
-            matching_bonus = total_earned_by_downlines * EQUALIZATION_BONUS
-
-            if matching_bonus > 0:
-                matching_comm = UnilevelCommission(
-                    user_id=sponsor_id,
-                    sale_amount=sale_amount,
-                    commission_amount=matching_bonus,
-                    level=1,
-                    type="matching",
-                )
-                db.add(matching_comm)
-                commissions.append(matching_comm)
-
-                sponsor_user = db.query(User).filter(User.id == sponsor_id).with_for_update().first()
-                if sponsor_user:
-                    sponsor_user.available_balance = (sponsor_user.available_balance or 0.0) + matching_bonus
-                    sponsor_user.monthly_earnings = (sponsor_user.monthly_earnings or 0.0) + matching_bonus
-                    sponsor_user.total_earnings = (sponsor_user.total_earnings or 0.0) + matching_bonus
 
         # commit all changes atomically
         db.commit()

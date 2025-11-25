@@ -20,7 +20,8 @@ def create_order(db: Session, payload: OrderCreate, current_user):
             raise ValueError(f"Insufficient stock for {product.name}")
 
         subtotal_usd = item.quantity * product.price_usd
-        subtotal_cop = item.quantity * product.price_cop
+        # Assuming price_local is COP
+        subtotal_cop = item.quantity * (product.price_local or 0.0)
         subtotal_pv = item.quantity * product.pv
 
         total_usd += subtotal_usd

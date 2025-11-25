@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, text
 from backend.database.models.activation import ActivationLog
 from backend.database.connection import get_db
-from backend.mlm.services.binary_service import calculate_binary_global_commissions
+from backend.mlm.services.binary_service import register_in_binary_global, activate_binary_global, check_expirations
 from backend.mlm.services.arrival_service import apply_arrival_bonus_rules
 from backend.mlm.services.activation_service import process_activation
 from backend.database.models.user import User
@@ -19,34 +19,53 @@ class BinaryRequest(BaseModel):
     signup_percent: float | None = None
 
 
-@router.post("/calculate", response_model=List[dict])
-def calculate_binary(payload: BinaryRequest, db: Session = Depends(get_db)):
-    # Manage transaction here: call service then commit
+@router.post("/pre-register/{user_id}")
+def pre_register_user(user_id: int, db: Session = Depends(get_db)):
+    """Pre-register a user in the Binary Global 2x2 plan."""
     try:
-        percent = payload.signup_percent if payload.signup_percent is not None else None
-        commissions = calculate_binary_global_commissions(db, payload.seller_id, payload.package_amount, signup_percent=percent or None)
-        db.commit()
-    except ValueError as e:
-        db.rollback()
-        raise HTTPException(status_code=404, detail=str(e))
-    except Exception:
-        db.rollback()
-        raise
+        member = register_in_binary_global(db, user_id)
+        return {
+            "message": "User pre-registered successfully",
+            "global_position": member.global_position,
+            "activation_deadline": member.activation_deadline
+        }
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
-    result = []
-    for c in commissions:
-        created = getattr(c, 'created_at', None)
-        result.append({
-            'id': getattr(c, 'id', None),
-            'user_id': c.user_id,
-            'sale_amount': float(c.sale_amount) if c.sale_amount is not None else None,
-            'commission_amount': float(c.commission_amount) if c.commission_amount is not None else None,
-            'level': c.level,
-            'type': c.type,
-            'created_at': created.isoformat() if created is not None else None,
-        })
+@router.post("/activate-global/{user_id}")
+def activate_global_user(user_id: int, db: Session = Depends(get_db)):
+    """Activate a user in the Binary Global plan (confirm payment)."""
+    try:
+        activate_binary_global(db, user_id)
+        return {"message": "User activated in Binary Global"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
-    return result
+@router.post("/run-expirations")
+def run_expiration_check(db: Session = Depends(get_db)):
+    """Manually trigger expiration check for testing."""
+    try:
+        check_expirations(db)
+        return {"message": "Expiration check completed"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/global/{user_id}")
+def get_global_status(user_id: int, db: Session = Depends(get_db)):
+    """Get user status in Binary Global 2x2."""
+    from backend.database.models.binary_global import BinaryGlobalMember
+    member = db.query(BinaryGlobalMember).filter(BinaryGlobalMember.user_id == user_id).first()
+    if not member:
+        return {"status": "not_registered"}
+    
+    return {
+        "status": "active" if member.is_active else "pre_registered",
+        "global_position": member.global_position,
+        "activation_deadline": member.activation_deadline,
+        "activated_at": member.activated_at,
+        "position": member.position,
+        "upline_id": member.upline_id
+    }
 
 
 class ArrivalRequest(BaseModel):

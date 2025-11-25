@@ -1,14 +1,18 @@
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-import os
-from backend.database.connection import Base, engine
-from backend.database.models.user import User
 from sqlalchemy import text
+from backend.database.connection import Base, engine
+from backend.routers.payments import router as payments_router
+from backend.routers import wallet
+from backend.routers import admin
+from backend.routers import categories as categories_router
 
-# ========================================================
 # CREATE TABLES AUTOMATICALLY
 # ========================================================
+print("[MAIN] before Base.metadata.create_all()")
 Base.metadata.create_all(bind=engine)
+print("[MAIN] after Base.metadata.create_all()")
 
 # Ensure Postgres sequence for membership numbers exists (safe to run on startup)
 try:
@@ -28,6 +32,16 @@ app = FastAPI(
     description="TEI Shopping Center - Multi-Level Marketing System with Virtual Store",
     version="1.0.0",
 )
+
+
+@app.on_event("startup")
+def _log_startup():
+    print("[MAIN] FastAPI startup event fired")
+
+
+@app.on_event("shutdown")
+def _log_shutdown():
+    print("[MAIN] FastAPI shutdown event fired")
 
 # ========================================================
 # CORS - allow frontend development origins
@@ -57,6 +71,12 @@ env_next_public = os.getenv("NEXT_PUBLIC_API_BASE")
 if env_next_public:
     FRONTEND_ORIGINS.append(env_next_public)
 
+# Production: Allow comma-separated list of origins
+env_allowed_origins = os.getenv("ALLOWED_ORIGINS")
+if env_allowed_origins:
+    origins_list = [origin.strip() for origin in env_allowed_origins.split(",") if origin.strip()]
+    FRONTEND_ORIGINS.extend(origins_list)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=FRONTEND_ORIGINS,
@@ -66,35 +86,17 @@ app.add_middleware(
 )
 
 # ========================================================
-# IMPORT AND REGISTER ROUTERS
-# ========================================================
-from backend.routers import users, products, cart, orders, mlm
-from backend.routers import mlm_plans_router, unilevel_router, binary_router
-from backend.routers import ws_notifications, honor_router
-from backend.routers import categories as categories_router
-from backend.routers import payments as payments_router
-
-app.include_router(users.router, prefix="/api/users", tags=["Users"])
-app.include_router(products.router, prefix="/api/products", tags=["Products"])
-app.include_router(cart.router, prefix="/api/cart", tags=["Cart"])
-app.include_router(orders.router, prefix="/api/orders", tags=["Orders"])
-app.include_router(mlm.router, prefix="/api/mlm", tags=["MLM"])
-app.include_router(mlm_plans_router, prefix="/api/mlm/plans", tags=["MLM Plans"])
-# Register the unilevel router (it already has its internal prefix)
-app.include_router(unilevel_router)
-# Register the binary router (binary plan endpoints)
-app.include_router(binary_router)
-# Register websocket notifications router (contains websocket endpoint and test POST)
-app.include_router(ws_notifications)
-
-# Honor ranks endpoints (router already sets its internal prefix)
-app.include_router(honor_router)
-
 # Payments router (webhook + create/get endpoints)
 app.include_router(payments_router)
 
+# Wallet router
+app.include_router(wallet.router, prefix="/api")
+
+# Admin router (Manual Triggers)
+app.include_router(admin.router)
+
 # Categories router (mounted under /api/categories)
-app.include_router(categories_router.router, prefix="/api/categories", tags=["Categories"])
+app.include_router(categories_router.router, prefix="/api", tags=["Categories"])
 
 # ========================================================
 # TEST ENDPOINT

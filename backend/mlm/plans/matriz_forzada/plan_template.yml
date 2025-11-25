@@ -56,8 +56,7 @@ matrices:
             to: "Gold Distributor"
         one_time_bonus:
             amount: "500.00"
-            description: "Virtual store bonus"
-        period: "month"
+            description: "Virtual Store Bonus"
 
     - id: 3000
         amount: "9700.00"

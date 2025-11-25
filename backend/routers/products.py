@@ -17,6 +17,7 @@ def create_product(prod: ProductCreate, db: Session = Depends(get_db)):
         price_usd=prod.price_usd,
         price_eur=prod.price_eur,
         price_local=prod.price_local,
+        pv=prod.pv,
         stock=prod.stock,
     )
     db.add(new_product)

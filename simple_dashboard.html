@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TEI Simple Dashboard</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 20px;
+            background: #f0f2f5;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            color: #1a73e8;
+        }
+
+        .node {
+            border: 2px solid #1a73e8;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #1a73e8;
+            font-weight: bold;
+            margin: 0 auto;
+        }
+
+        .tree-container {
+            text-align: center;
+        }
+
+        .status {
+            color: green;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>TEI Dashboard (Demo)</h1>
+    <p>This is a static demo connecting to your running Backend API.</p>
+
+    <div class="card">
+        <h2>Backend Status</h2>
+        <div id="status">Checking...</div>
+    </div>
+
+    <div class="card">
+        <h2>Pre-Register New User</h2>
+        <form id="pre-reg-form" onsubmit="preRegister(event)">
+            <div style="margin-bottom: 10px;">
+                <label>Name:</label><br>
+                <input type="text" id="reg-name" required style="width: 100%; padding: 8px;">
+            </div>
+            <div style="margin-bottom: 10px;">
+                <label>Email:</label><br>
+                <input type="email" id="reg-email" required style="width: 100%; padding: 8px;">
+            </div>
+            <button type="submit"
+                style="background: #1a73e8; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer;">Pre-Register</button>
+        </form>
+        <div id="reg-result" style="margin-top: 10px;"></div>
+    </div>
+
+    <div class="card">
+        <h2>My Matrix (Level 27)</h2>
+        <div id="matrix-tree" class="tree-container">Loading...</div>
+    </div>
+
+    <script>
+        async function checkStatus() {
+            try {
+                const res = await fetch('http://127.0.0.1:8000/');
+                const data = await res.json();
+                document.getElementById('status').innerHTML = `<span class="status">Online</span>: ${data.message}`;
+            } catch (e) {
+                document.getElementById('status').innerHTML = `<span style="color:red">Offline (Is backend running?)</span>`;
+            }
+        }
+
+        async function preRegister(e) {
+            e.preventDefault();
+            const name = document.getElementById('reg-name').value;
+            const email = document.getElementById('reg-email').value;
+            const resultDiv = document.getElementById('reg-result');
+
+            resultDiv.innerHTML = "Processing...";
+
+            try {
+                // 1. Create User
+                const res1 = await fetch('http://127.0.0.1:8000/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email })
+                });
+
+                if (!res1.ok) {
+                    const err = await res1.json();
+                    throw new Error(err.detail || "Registration failed");
+                }
+
+                const data1 = await res1.json();
+                const userId = data1.id;
+
+                // 2. Pre-Register in Binary Global
+                const res2 = await fetch(`http://127.0.0.1:8000/api/binary/pre-register/${userId}`, {
+                    method: 'POST'
+                });
+
+                if (!res2.ok) {
+                    const err = await res2.json();
+                    throw new Error(err.detail || "Binary placement failed");
+                }
+
+                const data2 = await res2.json();
+
+                resultDiv.innerHTML = `<div style="color: green; background: #e6fffa; padding: 10px; border-radius: 4px;">
+                    <strong>Success!</strong><br>
+                    User ID: ${userId}<br>
+                    Global Position: ${data2.global_position}<br>
+                    Deadline: ${new Date(data2.activation_deadline).toLocaleDateString()}
+                </div>`;
+
+                // Clear form
+                document.getElementById('reg-name').value = '';
+                document.getElementById('reg-email').value = '';
+
+            } catch (err) {
+                resultDiv.innerHTML = `<div style="color: red;">Error: ${err.message}</div>`;
+            }
+        }
+
+        async function loadMatrix() {
+            // Assuming User ID 1 exists from our seed script
+            try {
+                const res = await fetch('http://127.0.0.1:8000/api/matrix/tree/1/27');
+                const data = await res.json();
+
+                if (data.error) {
+                    document.getElementById('matrix-tree').innerText = data.error;
+                    return;
+                }
+
+                document.getElementById('matrix-tree').innerHTML = `
+                    <div class="node">${data.user_id}</div>
+                    <p>Level: ${data.level}</p>
+                    <p>Position: ${data.position}</p>
+                `;
+            } catch (e) {
+                document.getElementById('matrix-tree').innerText = "Error loading matrix.";
+            }
+        }
+
+        checkStatus();
+        loadMatrix();
+    </script>
+</body>
+
+</html>

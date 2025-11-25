@@ -48,7 +48,7 @@ def create_payment(payload: CreatePaymentRequest, db: Session = Depends(get_db),
         amount=payload.amount,
         currency=payload.currency,
         idempotency_key=payload.idempotency_key,
-        metadata=payload.metadata,
+        metadata_json=payload.metadata,
         status="pending",
     )
     db.add(tx)
@@ -115,7 +115,7 @@ def get_payment(payment_id: int, db: Session = Depends(get_db), user=Depends(get
         "amount": tx.amount,
         "currency": tx.currency,
         "status": tx.status,
-        "metadata": tx.metadata,
+        "metadata": tx.metadata_json,
     }
 
 
@@ -158,7 +158,7 @@ async def payments_webhook(request: Request, db: Session = Depends(get_db)):
         # common providers include a reference we stored when creating the payment
         ref = payload.get("reference") or (payload.get("data") or {}).get("reference")
         if ref:
-            tx = db.query(PaymentTransaction).filter(PaymentTransaction.metadata["reference"].as_string() == str(ref)).first()
+            tx = db.query(PaymentTransaction).filter(PaymentTransaction.metadata_json["reference"].as_string() == str(ref)).first()
 
     # Parse a canonical status if possible
     canonical_status = None

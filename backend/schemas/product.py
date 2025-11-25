@@ -10,6 +10,7 @@ class ProductBase(BaseModel):
     price_usd: float
     price_eur: Optional[float] = None
     price_local: Optional[float] = None
+    pv: int = 0
     stock: int = 0
 
 

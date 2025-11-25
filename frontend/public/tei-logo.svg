@@ -1,0 +1,129 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" width="300" height="300">
+  <defs>
+    <linearGradient id="textGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1e40af;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#3b82f6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#60a5fa;stop-opacity:1" />
+    </linearGradient>
+    <clipPath id="globeClip">
+      <circle cx="150" cy="150" r="118"/>
+    </clipPath>
+    
+    <filter id="textShadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="2"/>
+      <feOffset dx="0" dy="2" result="offsetblur"/>
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.3"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Continentes SIMPLIFICADOS pero RECONOCIBLES en SVG directo -->
+  <g clip-path="url(#globeClip)" fill="#10b981" opacity="0.75">
+    
+    <!-- AMÉRICA DEL NORTE - Forma ancha arriba, estrecha abajo -->
+    <path d="M 50,75 L 55,70 L 65,68 L 75,70 L 85,75 L 92,85 L 95,95 L 93,105 L 88,115 L 82,120 L 75,118 L 68,112 L 62,105 L 58,95 L 55,85 Z"/>
+    <path d="M 60,80 L 70,78 L 80,82 L 88,92 L 90,102 L 85,110 L 78,112 L 70,108 L 65,98 Z"/>
+    
+    <!-- AMÉRICA CENTRAL (istmo) -->
+    <path d="M 72,118 L 75,122 L 73,128 L 70,130 L 68,128 L 69,122 Z"/>
+    
+    <!-- AMÉRICA DEL SUR - Forma de lágrima/triángulo -->
+    <path d="M 68,132 L 75,130 L 82,135 L 86,145 L 88,160 L 85,175 L 80,190 L 73,205 L 65,215 L 58,218 L 52,215 L 50,205 L 52,190 L 56,175 L 60,160 L 63,145 Z"/>
+    
+    <!-- EUROPA - Pequeña península -->
+    <path d="M 135,65 L 142,63 L 150,65 L 158,70 L 162,78 L 160,88 L 155,95 L 148,98 L 140,96 L 135,88 L 133,78 Z"/>
+    
+    <!-- ÁFRICA - Grande con bulto oeste -->
+    <path d="M 140,100 L 148,98 L 158,102 L 165,110 L 170,125 L 172,140 L 170,160 L 165,180 L 158,200 L 150,215 L 142,222 L 135,220 L 130,210 L 128,195 L 130,175 L 133,155 L 137,135 L 138,118 Z"/>
+    <!-- Bulto oeste de África -->
+    <path d="M 130,130 L 125,135 L 123,145 L 125,155 L 130,158 L 133,152 L 132,140 Z"/>
+    
+    <!-- ASIA - Masa grande -->
+    <path d="M 165,70 L 175,68 L 188,72 L 200,80 L 210,92 L 218,108 L 220,125 L 215,142 L 205,158 L 192,170 L 178,175 L 168,172 L 162,162 L 160,148 L 162,132 L 165,115 L 168,98 L 170,82 Z"/>
+    
+    <!-- Península de India -->
+    <path d="M 175,140 L 182,138 L 188,143 L 190,153 L 188,165 L 182,173 L 175,175 L 170,170 L 168,158 L 170,148 Z"/>
+    
+    <!-- Sudeste Asiático (islas) -->
+    <ellipse cx="195" cy="165" rx="8" ry="5" opacity="0.9"/>
+    <ellipse cx="205" cy="172" rx="6" ry="4" opacity="0.9"/>
+    
+    <!-- AUSTRALIA - Isla ovalada -->
+    <path d="M 200,185 L 210,183 L 220,188 L 225,198 L 225,210 L 220,220 L 210,223 L 200,220 L 192,212 L 190,200 L 193,190 Z"/>
+    
+    <!-- Islas adicionales -->
+    <ellipse cx="95" cy="175" rx="4" ry="6" opacity="0.8"/>
+    <ellipse cx="230" cy="155" rx="3" ry="4" opacity="0.8"/>
+    <circle cx="108" cy="95" r="2.5" opacity="0.8"/>
+    
+  </g>
+  
+  <!-- Líneas del globo terráqueo MUY SUTILES -->
+  <g stroke="#3b82f6" stroke-width="0.8" fill="none" opacity="0.12">
+    <ellipse cx="150" cy="150" rx="118" ry="118"/>
+    <ellipse cx="150" cy="150" rx="118" ry="83"/>
+    <ellipse cx="150" cy="150" rx="118" ry="48"/>
+    <line x1="32" y1="150" x2="268" y2="150"/>
+    <ellipse cx="150" cy="150" rx="39" ry="118"/>
+    <ellipse cx="150" cy="150" rx="73" ry="118"/>
+  </g>
+  
+  <!-- Círculo exterior decorativo -->
+  <circle cx="150" cy="150" r="123" fill="none" stroke="#3b82f6" stroke-width="3" opacity="0.6"/>
+  
+  <!-- Texto TEI central con fuente Impact -->
+  <text x="150" y="172" 
+        font-family="'Impact', 'Arial Black', sans-serif" 
+        font-size="95" 
+        font-weight="900" 
+        text-anchor="middle" 
+        fill="none"
+        stroke="white"
+        stroke-width="4"
+        letter-spacing="2"
+        opacity="0.9">
+    TEI
+  </text>
+  
+  <text x="150" y="172" 
+        font-family="'Impact', 'Arial Black', sans-serif" 
+        font-size="95" 
+        font-weight="900" 
+        text-anchor="middle" 
+        fill="url(#textGradient)" 
+        letter-spacing="2"
+        filter="url(#textShadow)">
+    TEI
+  </text>
+  
+  <!-- Texto "Tu Empresa Internacional" - SEPARADO DE LA LÍNEA -->
+  <defs>
+    <path id="topArc" d="M 42,150 A 108,108 0 0,1 258,150" fill="none"/>
+  </defs>
+  <text font-family="'Arial', sans-serif" font-size="15" font-weight="750" fill="#1e40af">
+    <textPath href="#topArc" startOffset="50%" text-anchor="middle">
+      TU EMPRESA INTERNACIONAL
+    </textPath>
+  </text>
+  
+  <!-- Texto "Transparencia e Integridad" - MISMO GROSOR -->
+  <defs>
+    <path id="bottomArc" d="M 32,150 A 118,118 0 0,0 268,150" fill="none"/>
+  </defs>
+  <text font-family="'Arial', sans-serif" font-size="14" font-weight="750" fill="#1e40af">
+    <textPath href="#bottomArc" startOffset="50%" text-anchor="middle">
+      TRANSPARENCIA E INTEGRIDAD
+    </textPath>
+  </text>
+  
+  <!-- Estrellas decorativas -->
+  <circle cx="43" cy="63" r="3" fill="#60a5fa" opacity="0.7"/>
+  <circle cx="257" cy="63" r="3" fill="#60a5fa" opacity="0.7"/>
+  <circle cx="43" cy="237" r="3" fill="#10b981" opacity="0.7"/>
+  <circle cx="257" cy="237" r="3" fill="#10b981" opacity="0.7"/>
+</svg>
