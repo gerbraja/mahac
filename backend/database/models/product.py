@@ -15,6 +15,7 @@ class Product(Base):
     price_local = Column(Float, nullable=True)
     pv = Column(Integer, default=0) # Points Volume for MLM commissions
     stock = Column(Integer, default=0)
+    is_activation = Column(Boolean, default=False)  # If True, purchasing this activates the user
     active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

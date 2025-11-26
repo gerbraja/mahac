@@ -1,9 +1,11 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../api/api";
+import TeiLogo from "../components/TeiLogo";
 
 export default function Home() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -11,6 +13,26 @@ export default function Home() {
   });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [referralCode, setReferralCode] = useState("");
+  const [referrerName, setReferrerName] = useState("");
+
+  // Capture referral code from URL on mount
+  useEffect(() => {
+    const refCode = searchParams.get("ref");
+    if (refCode) {
+      setReferralCode(refCode);
+      // Verify referral code and get referrer name
+      api.get(`/auth/verify-referral/${refCode}`)
+        .then(response => {
+          if (response.data.valid) {
+            setReferrerName(response.data.referrer_name);
+          }
+        })
+        .catch(() => {
+          // Invalid referral code, ignore
+        });
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -21,12 +43,18 @@ export default function Home() {
       const response = await api.post("/auth/register", {
         name: formData.name,
         email: formData.email,
+        referral_code: referralCode || undefined,
       });
 
       await api.post(`/api/binary/pre-register/${response.data.id}`);
 
-      setMessage("¡Registro exitoso! Revisa tu email para continuar.");
+      setMessage("¡Pre-Registro Completado Exitosamente! 🎉 Tu posición en la red ha sido asegurada.");
       setFormData({ name: "", email: "", phone: "" });
+
+      // Auto-dismiss success message after 5 seconds
+      setTimeout(() => {
+        setMessage("");
+      }, 5000);
     } catch (error) {
       setMessage(
         error.response?.data?.detail || "Error en el registro. Intenta de nuevo."
@@ -48,7 +76,7 @@ export default function Home() {
           <span>TEI</span>
         </div>
         <button
-          onClick={() => navigate("/dashboard")}
+          onClick={() => navigate("/login")}
           style={{
             background: "rgba(255, 255, 255, 0.2)",
             color: "white",
@@ -70,43 +98,9 @@ export default function Home() {
       {/* Main Content */}
       <div style={{ position: "relative", zIndex: 10, maxWidth: "1200px", margin: "0 auto", padding: "2rem 1rem" }}>
 
-        {/* LOGO PRIMERO - SVG CON FONDO TRANSPARENTE Y GLOBO */}
-        <div style={{ display: "flex", justifyContent: "center", marginBottom: "1.5rem" }}>
-          <img
-            src="/tei-logo.svg"
-            alt="TEI Global Logo"
-            style={{
-              width: "250px",
-              height: "250px",
-              objectFit: "contain"
-            }}
-          />
-        </div>
-
-        {/* TU EMPRESA INTERNACIONAL - Después del Logo */}
-        <div style={{ textAlign: "center", marginBottom: "2rem" }}>
-          <h1 style={{
-            fontSize: "clamp(2.5rem, 5vw, 4.5rem)",
-            fontWeight: "900",
-            background: "linear-gradient(135deg, #3b82f6 0%, #1e40af 50%, #6366f1 100%)",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-            letterSpacing: "3px",
-            marginBottom: "1rem",
-            filter: "drop-shadow(0 4px 12px rgba(59, 130, 246, 0.3))",
-            lineHeight: "1.1",
-            padding: "0 1rem"
-          }}>
-            TU EMPRESA INTERNACIONAL
-          </h1>
-          <div style={{
-            width: "200px",
-            height: "4px",
-            background: "linear-gradient(to right, transparent, #3b82f6, #1e40af, #6366f1, transparent)",
-            margin: "0 auto",
-            borderRadius: "2px",
-            boxShadow: "0 0 15px rgba(59, 130, 246, 0.4)"
-          }}></div>
+        {/* TEI Branding */}
+        <div style={{ marginBottom: "4rem" }}>
+          <TeiLogo size="large" showSubtitle={true} />
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "2rem", alignItems: "center" }}>
@@ -180,11 +174,26 @@ export default function Home() {
             <div style={{ background: "linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)", backdropFilter: "blur(20px)", borderRadius: "1rem", padding: "2rem", border: "2px solid rgba(59, 130, 246, 0.2)", boxShadow: "0 8px 32px rgba(59, 130, 246, 0.15)" }}>
               <div style={{ textAlign: "center", marginBottom: "1.5rem" }}>
                 <h3 style={{ color: "#1e3a8a", fontSize: "1.5rem", fontWeight: "bold", marginBottom: "0.5rem" }}>
-                  Regístrate Ahora
+                  Pre-Regístrate Ahora
                 </h3>
                 <p style={{ color: "#3b82f6", fontSize: "0.875rem" }}>
                   Asegura tu posición en la red global. Da el primer paso hoy.
                 </p>
+
+                {/* Show referrer if present */}
+                {referrerName && (
+                  <div style={{
+                    background: "rgba(34, 197, 94, 0.1)",
+                    padding: "0.75rem",
+                    borderRadius: "0.5rem",
+                    marginTop: "1rem",
+                    border: "1px solid rgba(34, 197, 94, 0.3)"
+                  }}>
+                    <p style={{ color: "#16a34a", fontSize: "0.875rem", margin: 0 }}>
+                      👥 Referido por: <strong>{referrerName}</strong>
+                    </p>
+                  </div>
+                )}
               </div>
 
               <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
@@ -273,9 +282,9 @@ export default function Home() {
                     padding: "1rem",
                     borderRadius: "0.75rem",
                     fontSize: "0.875rem",
-                    background: message.includes("exitoso") ? "rgba(34, 197, 94, 0.2)" : "rgba(239, 68, 68, 0.2)",
-                    color: message.includes("exitoso") ? "#16a34a" : "#dc2626",
-                    border: message.includes("exitoso") ? "1px solid rgba(34, 197, 94, 0.5)" : "1px solid rgba(239, 68, 68, 0.5)"
+                    background: message.includes("exitoso") || message.includes("Completado") ? "rgba(34, 197, 94, 0.2)" : "rgba(239, 68, 68, 0.2)",
+                    color: message.includes("exitoso") || message.includes("Completado") ? "#16a34a" : "#dc2626",
+                    border: message.includes("exitoso") || message.includes("Completado") ? "1px solid rgba(34, 197, 94, 0.5)" : "1px solid rgba(239, 68, 68, 0.5)"
                   }}>
                     {message}
                   </div>

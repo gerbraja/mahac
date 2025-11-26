@@ -1,0 +1,4 @@
+﻿User status: active
+User successfully activated!
+Marketing data: [{'name': 'Test User', 'country': 'Colombia', 'timestamp': '2025-11-26T19:04:01.283064'}]
+Marketing endpoint returned correct data!

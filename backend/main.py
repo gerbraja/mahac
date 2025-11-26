@@ -7,12 +7,15 @@ from backend.routers.payments import router as payments_router
 from backend.routers import wallet
 from backend.routers import admin
 from backend.routers import categories as categories_router
+from backend.routers import auth
+from backend.routers import binary
 
 # CREATE TABLES AUTOMATICALLY
 # ========================================================
-print("[MAIN] before Base.metadata.create_all()")
-Base.metadata.create_all(bind=engine)
-print("[MAIN] after Base.metadata.create_all()")
+if os.getenv("TESTING") != "true":
+    print("[MAIN] before Base.metadata.create_all()")
+    Base.metadata.create_all(bind=engine)
+    print("[MAIN] after Base.metadata.create_all()")
 
 # Ensure Postgres sequence for membership numbers exists (safe to run on startup)
 try:
@@ -97,6 +100,29 @@ app.include_router(admin.router)
 
 # Categories router (mounted under /api/categories)
 app.include_router(categories_router.router, prefix="/api", tags=["Categories"])
+
+# Products router
+from backend.routers import products
+app.include_router(products.router, prefix="/api")
+
+# Orders router
+from backend.routers import orders
+app.include_router(orders.router)
+
+# Auth router (registration and login)
+app.include_router(auth.router)
+
+# Binary router (pre-registration in binary plan)
+# Binary router (pre-registration in binary plan)
+app.include_router(binary.router, prefix="/api")
+
+# Marketing router (bubbles)
+from backend.routers import marketing
+app.include_router(marketing.router)
+
+# WebSocket notifications
+from backend.routers.ws_notifications import router as ws_notifications_router
+app.include_router(ws_notifications_router)
 
 # ========================================================
 # TEST ENDPOINT

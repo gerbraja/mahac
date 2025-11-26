@@ -12,6 +12,7 @@ class ProductBase(BaseModel):
     price_local: Optional[float] = None
     pv: int = 0
     stock: int = 0
+    is_activation: bool = False
 
 
 class ProductCreate(ProductBase):

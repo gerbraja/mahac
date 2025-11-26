@@ -10,7 +10,7 @@ from backend.mlm.services.arrival_service import apply_arrival_bonus_rules
 from backend.mlm.services.activation_service import process_activation
 from backend.database.models.user import User
 
-router = APIRouter(prefix="/api/binary", tags=["Binary"])
+router = APIRouter(prefix="/binary", tags=["Binary"])
 
 
 class BinaryRequest(BaseModel):
