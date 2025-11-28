@@ -12,6 +12,7 @@ class ProductBase(BaseModel):
     price_local: Optional[float] = None
     pv: int = 0
     stock: int = 0
+    weight_grams: int = 500  # Weight in grams
     is_activation: bool = False
 
 

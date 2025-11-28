@@ -8,6 +8,7 @@ export default function CompleteRegistration() {
     const email = location.state?.email || "";
 
     const [formData, setFormData] = useState({
+        name: "",
         email: email,
         username: "",
         password: "",
@@ -44,27 +45,38 @@ export default function CompleteRegistration() {
                 navigate("/dashboard");
             }, 3000);
         } catch (error) {
-            setMessage(error.response?.data?.detail || "Error al completar el registro");
+            console.error("Registration error:", error);
+
+            // Extract the most specific error message
+            let errorMessage = "Error al completar el registro. Por favor intenta de nuevo.";
+
+            if (error.response?.data?.detail) {
+                errorMessage = error.response.data.detail;
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+
+            setMessage(errorMessage);
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div style={{ minHeight: "100vh", background: "linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)", padding: "2rem" }}>
+        <div style={{ padding: "1rem" }}>
             <div style={{ maxWidth: "800px", margin: "0 auto" }}>
                 {/* Header */}
                 <div style={{ textAlign: "center", marginBottom: "2rem" }}>
-                    <h1 style={{ color: "#1e3a8a", fontSize: "2rem", fontWeight: "bold", marginBottom: "0.5rem" }}>
+                    <h1 style={{ color: "white", fontSize: "2rem", fontWeight: "bold", marginBottom: "0.5rem", textShadow: "0 2px 4px rgba(0,0,0,0.1)" }}>
                         Completa tu Registro
                     </h1>
-                    <p style={{ color: "#3b82f6", fontSize: "1rem" }}>
+                    <p style={{ color: "rgba(255,255,255,0.9)", fontSize: "1rem" }}>
                         Último paso para activar tu cuenta y obtener tu link de referido
                     </p>
                 </div>
 
                 {/* Form */}
-                <div style={{ background: "white", borderRadius: "1rem", padding: "2rem", boxShadow: "0 8px 32px rgba(59, 130, 246, 0.15)" }}>
+                <div style={{ background: "white", borderRadius: "1rem", padding: "2rem", boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1)" }}>
                     <form onSubmit={handleSubmit}>
                         {/* Account Information */}
                         <div style={{ marginBottom: "2rem" }}>
@@ -72,24 +84,46 @@ export default function CompleteRegistration() {
                                 Información de Cuenta
                             </h3>
 
-                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "1rem" }}>
                                 <div>
                                     <label style={{ display: "block", color: "#1e3a8a", fontWeight: "500", marginBottom: "0.5rem" }}>
-                                        Email
+                                        Nombre Completo *
+                                    </label>
+                                    <input
+                                        type="text"
+                                        name="name"
+                                        value={formData.name}
+                                        onChange={handleChange}
+                                        required
+                                        style={{
+                                            width: "100%",
+                                            padding: "0.75rem",
+                                            borderRadius: "0.5rem",
+                                            border: "2px solid rgba(59, 130, 246, 0.3)",
+                                            outline: "none"
+                                        }}
+                                        placeholder="Ej: Juan Pérez"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label style={{ display: "block", color: "#1e3a8a", fontWeight: "500", marginBottom: "0.5rem" }}>
+                                        Email *
                                     </label>
                                     <input
                                         type="email"
                                         name="email"
                                         value={formData.email}
-                                        readOnly
+                                        onChange={handleChange}
+                                        required
                                         style={{
                                             width: "100%",
                                             padding: "0.75rem",
                                             borderRadius: "0.5rem",
-                                            border: "2px solid #e5e7eb",
-                                            background: "#f9fafb",
-                                            color: "#6b7280"
+                                            border: "2px solid rgba(59, 130, 246, 0.3)",
+                                            outline: "none"
                                         }}
+                                        placeholder="tu@email.com"
                                     />
                                 </div>
 

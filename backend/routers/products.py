@@ -10,21 +10,26 @@ router = APIRouter(prefix="/products", tags=["Products"])
 
 @router.post("/", response_model=ProductSchema)
 def create_product(prod: ProductCreate, db: Session = Depends(get_db)):
-    new_product = ProductModel(
-        name=prod.name,
-        description=prod.description,
-        category=prod.category,
-        price_usd=prod.price_usd,
-        price_eur=prod.price_eur,
-        price_local=prod.price_local,
-        pv=prod.pv,
-        stock=prod.stock,
-        is_activation=prod.is_activation,
-    )
-    db.add(new_product)
-    db.commit()
-    db.refresh(new_product)
-    return new_product
+    try:
+        new_product = ProductModel(
+            name=prod.name,
+            description=prod.description,
+            category=prod.category,
+            price_usd=prod.price_usd,
+            price_eur=prod.price_eur,
+            price_local=prod.price_local,
+            pv=prod.pv,
+            stock=prod.stock,
+            is_activation=prod.is_activation,
+        )
+        db.add(new_product)
+        db.commit()
+        db.refresh(new_product)
+        return new_product
+    except Exception as e:
+        db.rollback()
+        print(f"Error creating product: {e}")
+        raise HTTPException(status_code=500, detail=f"Error creating product: {str(e)}")
 
 
 @router.get("/", response_model=List[ProductSchema])

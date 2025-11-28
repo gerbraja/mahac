@@ -76,7 +76,7 @@ export default function Home() {
           <span>TEI</span>
         </div>
         <button
-          onClick={() => navigate("/login")}
+          onClick={() => navigate("/personal")}
           style={{
             background: "rgba(255, 255, 255, 0.2)",
             color: "white",
@@ -91,7 +91,7 @@ export default function Home() {
           onMouseEnter={(e) => e.target.style.background = "rgba(255, 255, 255, 0.3)"}
           onMouseLeave={(e) => e.target.style.background = "rgba(255, 255, 255, 0.2)"}
         >
-          Iniciar Sesión
+          Personal
         </button>
       </header>
 

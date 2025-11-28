@@ -1,10 +1,13 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { api } from '../api/api';
 import TeiLogo from '../components/TeiLogo';
+import CompleteRegistration from './CompleteRegistration';
 
 export default function Login() {
     const navigate = useNavigate();
+    const location = useLocation();
+    const [view, setView] = useState(location.state?.view || 'complete-registration'); // Default view or from state
     const [formData, setFormData] = useState({
         username: '',
         password: ''
@@ -40,6 +43,40 @@ export default function Login() {
             setLoading(false);
         }
     };
+
+    if (view === 'complete-registration') {
+        return (
+            <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)', padding: '2rem' }}>
+                <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+                    <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
+                        <TeiLogo size="medium" showSubtitle={true} />
+                    </div>
+
+                    <CompleteRegistration />
+
+                    <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
+                        <p style={{ color: 'white', marginBottom: '0.5rem' }}>¿Ya eres un afiliado activo?</p>
+                        <button
+                            onClick={() => setView('login')}
+                            style={{
+                                background: 'white',
+                                border: 'none',
+                                color: '#1e3a8a',
+                                padding: '0.5rem 1rem',
+                                borderRadius: '0.5rem',
+                                fontWeight: 'bold',
+                                cursor: 'pointer',
+                                fontSize: '1rem',
+                                boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+                            }}
+                        >
+                            Iniciar Sesión Aquí
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
@@ -131,15 +168,28 @@ export default function Login() {
                         </button>
                     </form>
 
-                    <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
+                    <div style={{ marginTop: '1.5rem', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                         <button
-                            onClick={() => navigate('/')}
+                            onClick={() => setView('complete-registration')}
                             style={{
                                 background: 'transparent',
                                 border: 'none',
                                 color: '#3b82f6',
                                 cursor: 'pointer',
                                 textDecoration: 'underline',
+                                fontSize: '0.875rem'
+                            }}
+                        >
+                            ¿Eres pre-afiliado? Completa tu registro aquí
+                        </button>
+
+                        <button
+                            onClick={() => navigate('/')}
+                            style={{
+                                background: 'transparent',
+                                border: 'none',
+                                color: '#6b7280',
+                                cursor: 'pointer',
                                 fontSize: '0.875rem'
                             }}
                         >

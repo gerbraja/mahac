@@ -8,18 +8,18 @@ import MatrixView from "./pages/dashboard/MatrixView";
 import WalletView from "./pages/dashboard/WalletView";
 import BinaryGlobalView from './pages/dashboard/BinaryGlobalView';
 import StoreView from './pages/dashboard/StoreView';
+import DashboardHome from './pages/dashboard/DashboardHome';
+import AdminDashboard from './pages/dashboard/AdminDashboard';
+import SimpleAdmin from './pages/SimpleAdmin';
+import Login from './pages/Login';
+import Personal from './pages/Personal';
+import MarketingBubbles from "./components/MarketingBubbles";
 
 // Component to capture username from URL and redirect to home with ref parameter
 function ReferralRedirect() {
   const { username } = useParams();
   return <Navigate to={`/?ref=${username}`} replace />;
 }
-
-import MarketingBubbles from "./components/MarketingBubbles";
-
-import AdminDashboard from './pages/dashboard/AdminDashboard';
-import SimpleAdmin from './pages/SimpleAdmin';
-import Login from './pages/Login';
 
 export default function App() {
   return (
@@ -28,13 +28,14 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/personal" element={<Personal />} />
         <Route path="/admin" element={<SimpleAdmin />} />
         <Route path="/usuario/:username" element={<ReferralRedirect />} />
         <Route path="/complete-registration" element={<CompleteRegistration />} />
         <Route path="/cart" element={<CartPage />} />
 
         <Route path="/dashboard" element={<DashboardLayout />}>
-          <Route index element={<div><h2>Overview</h2><p>Welcome to your dashboard.</p></div>} />
+          <Route index element={<DashboardHome />} />
           <Route path="store" element={<StoreView />} />
           <Route path="admin" element={<AdminDashboard />} />
           <Route path="matrix" element={<MatrixView />} />

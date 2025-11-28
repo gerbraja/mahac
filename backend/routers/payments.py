@@ -206,47 +206,21 @@ async def payments_webhook(request: Request, db: Session = Depends(get_db)):
     # If this tx is linked to an order, update order status and trigger commissions/activations
     try:
         if tx.order_id:
-            order = db.query(Order).filter(Order.id == tx.order_id).with_for_update().first()
-            if order:
-                # Normalize status
-                lower_status = (canonical_status or "").lower()
-                success_statuses = {"success", "paid", "completed", "approved", "aprobado"}
-                if lower_status in success_statuses or lower_status == "unknown":
-                    order.status = "paid"
-                else:
-                    # keep or set to failed if clearly failed
-                    if lower_status in {"failed", "declined", "cancelled"}:
+            # Normalize status
+            lower_status = (canonical_status or "").lower()
+            success_statuses = {"success", "paid", "completed", "approved", "aprobado"}
+            
+            if lower_status in success_statuses or lower_status == "unknown":
+                from backend.mlm.services.payment_service import process_successful_payment
+                process_successful_payment(db, tx.order_id, tx.id)
+            else:
+                # keep or set to failed if clearly failed
+                if lower_status in {"failed", "declined", "cancelled"}:
+                    order = db.query(Order).filter(Order.id == tx.order_id).with_for_update().first()
+                    if order:
                         order.status = "failed"
-
-                db.add(order)
-                db.commit()
-
-                # Trigger unilevel commissions for sale orders
-                try:
-                    calculate_unilevel_commissions(db, order.user_id, float(order.total_cop or 0.0))
-                except Exception:
-                    # Non-fatal: log and continue
-                    pass
-
-                # If order looks like an activation (has pv or 'package' in product name), call activation
-                try:
-                    items = db.query(OrderItem).filter(OrderItem.order_id == order.id).all()
-                    activate = False
-                    for it in items:
-                        if (getattr(it, 'subtotal_pv', 0) or 0) > 0:
-                            activate = True
-                            break
-                        if 'package' in (it.product_name or '').lower() or 'membership' in (it.product_name or '').lower():
-                            activate = True
-                            break
-                    if activate:
-                        # call process_activation: idempotent via ActivationLog
-                        try:
-                            process_activation(db, order.user_id, float(order.total_cop or 0.0))
-                        except Exception:
-                            pass
-                except Exception:
-                    pass
+                        db.add(order)
+                        db.commit()
 
     except Exception:
         # swallow to avoid webhook failure; we already validated signature and stored payload

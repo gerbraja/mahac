@@ -12,7 +12,7 @@ const StoreView = () => {
         const fetchProducts = async () => {
             try {
                 // Assuming router is mounted at /api/products
-                const response = await api.get('/products/');
+                const response = await api.get('/api/products/');
                 setProducts(response.data);
             } catch (error) {
                 console.error("Error fetching products:", error);
@@ -96,8 +96,8 @@ const ProductCard = ({ product, addToCart, isSpecial }) => {
                 <button
                     onClick={() => addToCart(product)}
                     className={`w-full py-2 rounded-lg font-bold transition-colors ${isSpecial
-                            ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                            : 'bg-gray-900 hover:bg-gray-800 text-white'
+                        ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                        : 'bg-gray-900 hover:bg-gray-800 text-white'
                         }`}
                 >
                     Agregar al Carrito
