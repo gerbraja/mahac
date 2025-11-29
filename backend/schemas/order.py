@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from typing import List, Optional
+from datetime import datetime
 
 
 class OrderItemCreate(BaseModel):
@@ -33,6 +34,7 @@ class OrderOut(BaseModel):
     total_pv: float
     shipping_address: Optional[str]
     status: str
+    created_at: datetime
     items: List[OrderItemOut]
 
     class Config:

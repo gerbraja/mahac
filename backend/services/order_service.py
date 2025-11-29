@@ -41,7 +41,8 @@ def create_order(db: Session, payload: OrderCreate, current_user):
         total_usd=round(total_usd,2),
         total_cop=round(total_cop,2),
         total_pv=round(total_pv,2),
-        shipping_address=getattr(payload, "shipping_address", None),
+        total_pv=round(total_pv,2),
+        shipping_address=getattr(payload, "shipping_address", None) or f"{current_user.address}, {current_user.city}, {current_user.province}",
         status="pending"
     )
     db.add(order)

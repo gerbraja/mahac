@@ -1,6 +1,5 @@
 import { useCart } from "../context/CartContext";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { api } from "../api/api";
 
 export default function Cart() {
@@ -71,16 +70,7 @@ export default function Cart() {
     }
   };
 
-  const navigate = useNavigate();
-
   const handleCheckout = async () => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      setMessage("⚠️ Debes iniciar sesión para completar la compra.");
-      setTimeout(() => navigate('/login', { state: { view: 'login' } }), 2000);
-      return;
-    }
-
     if (shippingMethod === "delivery" && (!shippingAddress || !shippingCity)) {
       setMessage("❌ Por favor completa la dirección de envío");
       return;
@@ -100,20 +90,13 @@ export default function Cart() {
       };
 
       const res = await api.post("/api/orders/", payload);
-      // Success - Redirect to confirmation
+      setMessage(`✅ Orden #${res.data.id} creada exitosamente!`);
       clearCart();
       setDiscountApplied(null);
       setDiscountCode("");
-      navigate(`/order-confirmation/${res.data.id}`);
-
     } catch (error) {
       console.error("Checkout error:", error);
-      if (error.response && error.response.status === 401) {
-        setMessage("⚠️ Tu sesión ha expirado. Por favor inicia sesión nuevamente.");
-        setTimeout(() => navigate('/login', { state: { view: 'login' } }), 2000);
-      } else {
-        setMessage("❌ Error al crear la orden. Por favor intenta de nuevo.");
-      }
+      setMessage("❌ Error al crear la orden. Por favor intenta de nuevo.");
     } finally {
       setLoading(false);
     }

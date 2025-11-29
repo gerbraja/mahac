@@ -13,6 +13,7 @@ import AdminDashboard from './pages/dashboard/AdminDashboard';
 import SimpleAdmin from './pages/SimpleAdmin';
 import Login from './pages/Login';
 import Personal from './pages/Personal';
+import OrderConfirmation from './pages/OrderConfirmation';
 import MarketingBubbles from "./components/MarketingBubbles";
 
 // Component to capture username from URL and redirect to home with ref parameter
@@ -33,6 +34,7 @@ export default function App() {
         <Route path="/usuario/:username" element={<ReferralRedirect />} />
         <Route path="/complete-registration" element={<CompleteRegistration />} />
         <Route path="/cart" element={<CartPage />} />
+        <Route path="/order-confirmation/:orderId" element={<OrderConfirmation />} />
 
         <Route path="/dashboard" element={<DashboardLayout />}>
           <Route index element={<DashboardHome />} />
