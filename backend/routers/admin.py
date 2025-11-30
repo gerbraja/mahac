@@ -1,12 +1,25 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from backend.database.connection import get_db
 from backend.mlm.services.closing_service import process_monthly_closing, process_global_pool
+from backend.routers.auth import get_current_user_object
+from backend.database.models.user import User
 
 router = APIRouter(prefix="/api/admin", tags=["Admin"])
 
+def get_current_admin_user(current_user: User = Depends(get_current_user_object)):
+    if not current_user.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="The user doesn't have enough privileges"
+        )
+    return current_user
+
 @router.post("/trigger-monthly-closing")
-def trigger_monthly_closing(db: Session = Depends(get_db)):
+def trigger_monthly_closing(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user)
+):
     """
     Manually trigger the Monthly Closing process.
     - Calculates Unilevel Matching Bonus (50%)
@@ -19,7 +32,10 @@ def trigger_monthly_closing(db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/trigger-global-pool")
-def trigger_global_pool(db: Session = Depends(get_db)):
+def trigger_global_pool(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user)
+):
     """
     Manually trigger the Global Pool Distribution.
     - Calculates 10% of Global PV
@@ -33,12 +49,14 @@ def trigger_global_pool(db: Session = Depends(get_db)):
 
 # --- Payment Approval ---
 from backend.database.models.payment_transaction import PaymentTransaction
-from backend.database.models.user import User
 from backend.database.models.order import Order
 from backend.mlm.services.payment_service import process_successful_payment
 
 @router.get("/pending-payments")
-def get_pending_payments(db: Session = Depends(get_db)):
+def get_pending_payments(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user)
+):
     """
     List all pending payment transactions with user details.
     """
@@ -70,7 +88,11 @@ def get_pending_payments(db: Session = Depends(get_db)):
     return payments
 
 @router.post("/approve-payment/{payment_id}")
-def approve_payment(payment_id: int, db: Session = Depends(get_db)):
+def approve_payment(
+    payment_id: int, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user)
+):
     """
     Manually approve a pending payment.
     Requires user to have completed registration (document_id).
@@ -119,7 +141,11 @@ class UserUpdateData(BaseModel):
     status: Optional[str] = None
 
 @router.get("/users")
-def get_users(search: Optional[str] = None, db: Session = Depends(get_db)):
+def get_users(
+    search: Optional[str] = None, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user)
+):
     """
     List all users with optional search by name, email, or username.
     """
@@ -153,7 +179,12 @@ def get_users(search: Optional[str] = None, db: Session = Depends(get_db)):
     } for u in users]
 
 @router.put("/users/{user_id}")
-def update_user(user_id: int, data: UserUpdateData, db: Session = Depends(get_db)):
+def update_user(
+    user_id: int, 
+    data: UserUpdateData, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user)
+):
     """
     Update user information (for admin corrections).
     """
@@ -199,7 +230,11 @@ def update_user(user_id: int, data: UserUpdateData, db: Session = Depends(get_db
     }
 
 @router.delete("/users/{user_id}")
-def delete_user(user_id: int, db: Session = Depends(get_db)):
+def delete_user(
+    user_id: int, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user)
+):
     """
     Delete a user (for admin cleanup of test accounts).
     """

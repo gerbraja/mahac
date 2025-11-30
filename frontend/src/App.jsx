@@ -21,6 +21,7 @@ import AdminDashboardPage from './pages/admin/AdminDashboard';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminProducts from './pages/admin/AdminProducts';
 import AdminPayments from './pages/admin/AdminPayments';
+import RequireAdmin from './components/auth/RequireAdmin';
 
 // Component to capture username from URL and redirect to home with ref parameter
 function ReferralRedirect() {
@@ -42,7 +43,11 @@ export default function App() {
         <Route path="/order-confirmation/:orderId" element={<OrderConfirmation />} />
 
         {/* Admin Routes */}
-        <Route path="/admin" element={<AdminLayout />}>
+        <Route path="/admin" element={
+          <RequireAdmin>
+            <AdminLayout />
+          </RequireAdmin>
+        }>
           <Route index element={<AdminDashboardPage />} />
           <Route path="users" element={<AdminUsers />} />
           <Route path="products" element={<AdminProducts />} />

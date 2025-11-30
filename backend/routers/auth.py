@@ -155,6 +155,23 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     }
 
 
+def get_current_user_object(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> UserModel:
+    """Get current user object from JWT token. Returns User model instance for use in dependencies."""
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id: int = payload.get("user_id")
+        if user_id is None:
+            raise HTTPException(status_code=401, detail="Invalid authentication credentials")
+    except jwt.JWTError:
+        raise HTTPException(status_code=401, detail="Invalid authentication credentials")
+    
+    user = db.query(UserModel).filter(UserModel.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    return user
+
+
 @router.post("/login")
 def login(data: LoginData, db: Session = Depends(get_db)):
     # Find by username if provided, otherwise by email
