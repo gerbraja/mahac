@@ -10,11 +10,17 @@ import BinaryGlobalView from './pages/dashboard/BinaryGlobalView';
 import StoreView from './pages/dashboard/StoreView';
 import DashboardHome from './pages/dashboard/DashboardHome';
 import AdminDashboard from './pages/dashboard/AdminDashboard';
-import SimpleAdmin from './pages/SimpleAdmin';
 import Login from './pages/Login';
 import Personal from './pages/Personal';
 import OrderConfirmation from './pages/OrderConfirmation';
 import MarketingBubbles from "./components/MarketingBubbles";
+
+// Admin imports
+import AdminLayout from './components/layout/AdminLayout';
+import AdminDashboardPage from './pages/admin/AdminDashboard';
+import AdminUsers from './pages/admin/AdminUsers';
+import AdminProducts from './pages/admin/AdminProducts';
+import AdminPayments from './pages/admin/AdminPayments';
 
 // Component to capture username from URL and redirect to home with ref parameter
 function ReferralRedirect() {
@@ -30,12 +36,21 @@ export default function App() {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/personal" element={<Personal />} />
-        <Route path="/admin" element={<SimpleAdmin />} />
         <Route path="/usuario/:username" element={<ReferralRedirect />} />
         <Route path="/complete-registration" element={<CompleteRegistration />} />
         <Route path="/cart" element={<CartPage />} />
         <Route path="/order-confirmation/:orderId" element={<OrderConfirmation />} />
 
+        {/* Admin Routes */}
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<AdminDashboardPage />} />
+          <Route path="users" element={<AdminUsers />} />
+          <Route path="products" element={<AdminProducts />} />
+          <Route path="payments" element={<AdminPayments />} />
+          <Route path="reports" element={<div><h2>Reportes</h2><p>Próximamente...</p></div>} />
+        </Route>
+
+        {/* User Dashboard Routes */}
         <Route path="/dashboard" element={<DashboardLayout />}>
           <Route index element={<DashboardHome />} />
           <Route path="store" element={<StoreView />} />

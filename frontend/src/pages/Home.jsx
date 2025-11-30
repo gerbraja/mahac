@@ -9,7 +9,9 @@ export default function Home() {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
-    phone: "",
+    username: "",
+    password: "",
+    phone: "", // This is actually country in the form
   });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -43,18 +45,24 @@ export default function Home() {
       const response = await api.post("/auth/register", {
         name: formData.name,
         email: formData.email,
+        username: formData.username,
+        password: formData.password,
         referral_code: referralCode || undefined,
       });
 
-      await api.post(`/api/binary/pre-register/${response.data.id}`);
+      // Auto-login logic
+      if (response.data.access_token) {
+        localStorage.setItem("token", response.data.access_token);
+        // Redirect to dashboard or shop
+        setMessage("¡Registro Exitoso! Redirigiendo a tu oficina virtual...");
+        setTimeout(() => {
+          navigate("/dashboard");
+        }, 1500);
+      } else {
+        setMessage("¡Pre-Registro Completado! Por favor inicia sesión.");
+        setFormData({ name: "", email: "", username: "", password: "", phone: "" });
+      }
 
-      setMessage("¡Pre-Registro Completado Exitosamente! 🎉 Tu posición en la red ha sido asegurada.");
-      setFormData({ name: "", email: "", phone: "" });
-
-      // Auto-dismiss success message after 5 seconds
-      setTimeout(() => {
-        setMessage("");
-      }, 5000);
     } catch (error) {
       setMessage(
         error.response?.data?.detail || "Error en el registro. Intenta de nuevo."
@@ -75,24 +83,41 @@ export default function Home() {
         <div style={{ color: "white", fontSize: "1.875rem", fontWeight: "bold" }}>
           <span>TEI</span>
         </div>
-        <button
-          onClick={() => navigate("/personal")}
-          style={{
-            background: "rgba(255, 255, 255, 0.2)",
-            color: "white",
-            padding: "0.625rem 1.5rem",
-            borderRadius: "9999px",
-            backdropFilter: "blur(8px)",
-            border: "1px solid rgba(255, 255, 255, 0.3)",
-            fontWeight: "500",
-            cursor: "pointer",
-            transition: "all 0.3s"
-          }}
-          onMouseEnter={(e) => e.target.style.background = "rgba(255, 255, 255, 0.3)"}
-          onMouseLeave={(e) => e.target.style.background = "rgba(255, 255, 255, 0.2)"}
-        >
-          Personal
-        </button>
+        <div style={{ display: "flex", gap: "1rem" }}>
+          <button
+            onClick={() => navigate("/login")}
+            style={{
+              background: "transparent",
+              color: "white",
+              padding: "0.625rem 1.5rem",
+              borderRadius: "9999px",
+              border: "1px solid rgba(255, 255, 255, 0.5)",
+              fontWeight: "500",
+              cursor: "pointer",
+              transition: "all 0.3s"
+            }}
+          >
+            Iniciar Sesión
+          </button>
+          <button
+            onClick={() => navigate("/personal")}
+            style={{
+              background: "rgba(255, 255, 255, 0.2)",
+              color: "white",
+              padding: "0.625rem 1.5rem",
+              borderRadius: "9999px",
+              backdropFilter: "blur(8px)",
+              border: "1px solid rgba(255, 255, 255, 0.3)",
+              fontWeight: "500",
+              cursor: "pointer",
+              transition: "all 0.3s"
+            }}
+            onMouseEnter={(e) => e.target.style.background = "rgba(255, 255, 255, 0.3)"}
+            onMouseLeave={(e) => e.target.style.background = "rgba(255, 255, 255, 0.2)"}
+          >
+            Personal
+          </button>
+        </div>
       </header>
 
       {/* Main Content */}
@@ -177,7 +202,7 @@ export default function Home() {
                   Pre-Regístrate Ahora
                 </h3>
                 <p style={{ color: "#3b82f6", fontSize: "0.875rem" }}>
-                  Asegura tu posición en la red global. Da el primer paso hoy.
+                  Asegura tu posición en la red global. Crea tu cuenta y accede de inmediato.
                 </p>
 
                 {/* Show referrer if present */}
@@ -235,6 +260,46 @@ export default function Home() {
                     fontWeight: "500"
                   }}
                   placeholder="Correo Electrónico"
+                />
+
+                <input
+                  type="text"
+                  name="username"
+                  value={formData.username}
+                  onChange={handleChange}
+                  required
+                  style={{
+                    width: "100%",
+                    padding: "0.875rem 1rem",
+                    borderRadius: "0.75rem",
+                    background: "white",
+                    border: "2px solid rgba(59, 130, 246, 0.3)",
+                    color: "#1e3a8a",
+                    outline: "none",
+                    fontSize: "1rem",
+                    fontWeight: "500"
+                  }}
+                  placeholder="Usuario (para tu link de referido)"
+                />
+
+                <input
+                  type="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  required
+                  style={{
+                    width: "100%",
+                    padding: "0.875rem 1rem",
+                    borderRadius: "0.75rem",
+                    background: "white",
+                    border: "2px solid rgba(59, 130, 246, 0.3)",
+                    color: "#1e3a8a",
+                    outline: "none",
+                    fontSize: "1rem",
+                    fontWeight: "500"
+                  }}
+                  placeholder="Contraseña"
                 />
 
                 <input

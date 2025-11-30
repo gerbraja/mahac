@@ -20,9 +20,11 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 class RegisterData(BaseModel):
-    """Pre-registration data: only name and email."""
+    """Pre-registration data: name, email, username, password."""
     name: str
     email: str
+    username: str
+    password: str
     referral_code: Optional[str] = None  # Can be username or old code format
 
 
@@ -52,11 +54,16 @@ class CompleteRegistrationData(BaseModel):
 
 @router.post("/register")
 def register(data: RegisterData, db: Session = Depends(get_db)):
-    """Pre-register a user: store basic contact info (name + email)."""
+    """Pre-register a user: store contact info + credentials."""
     # Check email uniqueness
     existing_email = db.query(UserModel).filter(UserModel.email == data.email).first()
     if existing_email:
         raise HTTPException(status_code=400, detail="Email already registered")
+
+    # Check username uniqueness
+    existing_username = db.query(UserModel).filter(UserModel.username == data.username).first()
+    if existing_username:
+        raise HTTPException(status_code=400, detail="Username already taken")
 
     # If a referral_code is provided, try to resolve the referer user
     referer = None
@@ -66,8 +73,19 @@ def register(data: RegisterData, db: Session = Depends(get_db)):
             (UserModel.referral_code == data.referral_code)
         ).first()
 
-    # Create user record without password/username (pre-registration)
-    new_user = UserModel(name=data.name, email=data.email)
+    # Hash password
+    hashed_password = pwd_context.hash(data.password)
+
+    # Create user record
+    new_user = UserModel(
+        name=data.name, 
+        email=data.email,
+        username=data.username,
+        password=hashed_password,
+        referral_code=data.username, # Set referral code to username immediately
+        status="pre-affiliate"
+    )
+    
     if referer:
         new_user.referred_by_id = referer.id
         new_user.referred_by = referer.name
@@ -75,7 +93,17 @@ def register(data: RegisterData, db: Session = Depends(get_db)):
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
-    return {"message": "Pre-registration saved", "id": new_user.id}
+    
+    # Auto-login: Generate token
+    token = jwt.encode({"user_id": new_user.id}, SECRET_KEY, algorithm=ALGORITHM)
+    
+    return {
+        "message": "Pre-registration successful", 
+        "id": new_user.id,
+        "access_token": token,
+        "token_type": "bearer",
+        "username": new_user.username
+    }
 
 
 @router.get("/verify-referral/{username}")

@@ -102,3 +102,113 @@ def approve_payment(payment_id: int, db: Session = Depends(get_db)):
         return {"message": "Payment approved successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+# --- User Management ---
+from pydantic import BaseModel
+from typing import Optional
+
+class UserUpdateData(BaseModel):
+    name: Optional[str] = None
+    email: Optional[str] = None
+    document_id: Optional[str] = None
+    phone: Optional[str] = None
+    address: Optional[str] = None
+    city: Optional[str] = None
+    province: Optional[str] = None
+    postal_code: Optional[str] = None
+    status: Optional[str] = None
+
+@router.get("/users")
+def get_users(search: Optional[str] = None, db: Session = Depends(get_db)):
+    """
+    List all users with optional search by name, email, or username.
+    """
+    query = db.query(User)
+    
+    if search:
+        search_pattern = f"%{search}%"
+        query = query.filter(
+            (User.name.ilike(search_pattern)) |
+            (User.email.ilike(search_pattern)) |
+            (User.username.ilike(search_pattern))
+        )
+    
+    users = query.order_by(User.created_at.desc()).all()
+    
+    return [{
+        "id": u.id,
+        "name": u.name,
+        "email": u.email,
+        "username": u.username,
+        "status": u.status,
+        "document_id": u.document_id,
+        "phone": u.phone,
+        "address": u.address,
+        "city": u.city,
+        "province": u.province,
+        "postal_code": u.postal_code,
+        "country": u.country,
+        "created_at": u.created_at,
+        "is_admin": u.is_admin
+    } for u in users]
+
+@router.put("/users/{user_id}")
+def update_user(user_id: int, data: UserUpdateData, db: Session = Depends(get_db)):
+    """
+    Update user information (for admin corrections).
+    """
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Update only provided fields
+    if data.name is not None:
+        user.name = data.name
+    if data.email is not None:
+        # Check if email is already taken by another user
+        existing = db.query(User).filter(User.email == data.email, User.id != user_id).first()
+        if existing:
+            raise HTTPException(status_code=400, detail="Email already in use")
+        user.email = data.email
+    if data.document_id is not None:
+        user.document_id = data.document_id
+    if data.phone is not None:
+        user.phone = data.phone
+    if data.address is not None:
+        user.address = data.address
+    if data.city is not None:
+        user.city = data.city
+    if data.province is not None:
+        user.province = data.province
+    if data.postal_code is not None:
+        user.postal_code = data.postal_code
+    if data.status is not None:
+        user.status = data.status
+    
+    db.commit()
+    db.refresh(user)
+    
+    return {
+        "message": "User updated successfully",
+        "user": {
+            "id": user.id,
+            "name": user.name,
+            "email": user.email,
+            "document_id": user.document_id
+        }
+    }
+
+@router.delete("/users/{user_id}")
+def delete_user(user_id: int, db: Session = Depends(get_db)):
+    """
+    Delete a user (for admin cleanup of test accounts).
+    """
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Delete user
+    db.delete(user)
+    db.commit()
+    
+    return {"message": "User deleted successfully", "user_id": user_id}

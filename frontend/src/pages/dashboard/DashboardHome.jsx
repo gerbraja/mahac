@@ -50,12 +50,33 @@ const DashboardHome = () => {
                     </div>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                     <div className="bg-white p-6 rounded-xl shadow-md border-l-4 border-green-500">
                         <h3 className="text-gray-500 text-sm font-medium uppercase">Estado</h3>
                         <p className="text-2xl font-bold text-green-600 mt-1">Activo ✅</p>
                     </div>
-                    {/* Add more stats here later */}
+
+                    <div className="bg-white p-6 rounded-xl shadow-md border-l-4 border-blue-500">
+                        <h3 className="text-gray-500 text-sm font-medium uppercase">Tu Enlace de Referido</h3>
+                        <div className="mt-2 flex gap-2">
+                            <input
+                                type="text"
+                                readOnly
+                                value={`${window.location.origin}/usuario/${user.username}`}
+                                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+                            />
+                            <button
+                                onClick={() => {
+                                    navigator.clipboard.writeText(`${window.location.origin}/usuario/${user.username}`);
+                                    alert('¡Enlace copiado al portapapeles!');
+                                }}
+                                className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 focus:outline-none"
+                            >
+                                Copiar
+                            </button>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-2">Comparte este enlace para registrar nuevos socios en tu red.</p>
+                    </div>
                 </div>
             )}
 
