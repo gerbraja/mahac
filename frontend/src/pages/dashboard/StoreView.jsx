@@ -90,7 +90,7 @@ const ProductCard = ({ product, addToCart, isSpecial }) => {
             whileHover={{ y: -5 }}
             className={`bg-white rounded-xl shadow-md overflow-hidden border ${isSpecial ? 'border-blue-400 ring-2 ring-blue-100' : 'border-gray-100'}`}
         >
-            <div className={`h-48 ${isSpecial ? 'bg-gradient-to-br from-blue-600 to-blue-800' : 'bg-gray-200'} flex items-center justify-center overflow-hidden`}>
+            <div className={`h-12 ${isSpecial ? 'bg-gradient-to-br from-blue-600 to-blue-800' : 'bg-gray-200'} flex items-center justify-center overflow-hidden`}>
                 {product.image_url ? (
                     <img
                         src={product.image_url}

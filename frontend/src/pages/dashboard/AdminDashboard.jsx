@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../../api/api';
+import './AdminDashboard.css';
 
 import AdminPayments from './AdminPayments';
 
@@ -216,17 +217,18 @@ const AdminDashboard = () => {
                                 />
                                 <p className="text-xs text-gray-500 mt-1">Sube tu imagen a Imgur y pega la URL aquí</p>
                                 {formData.image_url && (
-                                    <div className="mt-3">
+                                    <div className="mt-3 admin-product-preview">
                                         <p className="text-sm font-medium text-gray-700 mb-2">Vista Previa:</p>
-                                        <img
-                                            src={formData.image_url}
-                                            alt="Preview"
-                                            className="w-48 h-48 object-cover rounded border border-gray-300"
-                                            onError={(e) => {
-                                                e.target.style.display = 'none';
-                                                e.target.nextSibling.style.display = 'block';
-                                            }}
-                                        />
+                                        <div className="admin-preview-container">
+                                            <img
+                                                src={formData.image_url}
+                                                alt="Preview"
+                                                onError={(e) => {
+                                                    e.target.style.display = 'none';
+                                                    e.target.parentElement.nextSibling.style.display = 'block';
+                                                }}
+                                            />
+                                        </div>
                                         <p className="text-xs text-red-500 mt-1" style={{ display: 'none' }}>No se pudo cargar la imagen. Verifica la URL.</p>
                                     </div>
                                 )}
@@ -303,16 +305,18 @@ const AdminDashboard = () => {
                                             <tr key={p.id} className="hover:bg-blue-50 transition">
                                                 <td className="p-4">
                                                     {p.image_url ? (
-                                                        <img
-                                                            src={p.image_url}
-                                                            alt={p.name}
-                                                            className="w-16 h-16 object-cover rounded border border-gray-200"
-                                                            onError={(e) => {
-                                                                e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="64" height="64"%3E%3Crect fill="%23ddd" width="64" height="64"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%23999" font-size="24"%3E📦%3C/text%3E%3C/svg%3E';
-                                                            }}
-                                                        />
+                                                        <div className="admin-image-container admin-product-table">
+                                                            <img
+                                                                src={p.image_url}
+                                                                alt={p.name}
+                                                                onError={(e) => {
+                                                                    e.target.style.display = 'none';
+                                                                    e.target.parentElement.innerHTML = '📦';
+                                                                }}
+                                                            />
+                                                        </div>
                                                     ) : (
-                                                        <div className="w-16 h-16 bg-gray-100 rounded flex items-center justify-center text-2xl">
+                                                        <div className="admin-image-container">
                                                             📦
                                                         </div>
                                                     )}
