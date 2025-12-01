@@ -153,8 +153,24 @@ export default function Cart() {
               <div className="space-y-4">
                 {cart.map((item) => (
                   <div key={item.id} className="flex items-center gap-4 p-4 border border-gray-200 rounded-lg">
-                    <div className="w-20 h-20 bg-gray-200 rounded flex items-center justify-center text-3xl">
-                      {item.is_activation ? '💎' : '📦'}
+                    <div className="w-20 h-20 bg-gray-200 rounded flex items-center justify-center overflow-hidden">
+                      {item.image_url ? (
+                        <img
+                          src={item.image_url}
+                          alt={item.name}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            e.target.nextSibling.style.display = 'flex';
+                          }}
+                        />
+                      ) : null}
+                      <span
+                        className="text-3xl"
+                        style={{ display: item.image_url ? 'none' : 'block' }}
+                      >
+                        {item.is_activation ? '💎' : '📦'}
+                      </span>
                     </div>
                     <div className="flex-1">
                       <h3 className="font-bold text-gray-800">{item.name}</h3>

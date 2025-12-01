@@ -90,9 +90,22 @@ const ProductCard = ({ product, addToCart, isSpecial }) => {
             whileHover={{ y: -5 }}
             className={`bg-white rounded-xl shadow-md overflow-hidden border ${isSpecial ? 'border-blue-400 ring-2 ring-blue-100' : 'border-gray-100'}`}
         >
-            <div className={`h-48 ${isSpecial ? 'bg-gradient-to-br from-blue-600 to-blue-800' : 'bg-gray-200'} flex items-center justify-center`}>
-                {/* Placeholder for image */}
-                <span className={`text-4xl ${isSpecial ? 'text-white' : 'text-gray-400'}`}>
+            <div className={`h-48 ${isSpecial ? 'bg-gradient-to-br from-blue-600 to-blue-800' : 'bg-gray-200'} flex items-center justify-center overflow-hidden`}>
+                {product.image_url ? (
+                    <img
+                        src={product.image_url}
+                        alt={product.name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                            e.target.style.display = 'none';
+                            e.target.nextSibling.style.display = 'flex';
+                        }}
+                    />
+                ) : null}
+                <span
+                    className={`text-4xl ${isSpecial ? 'text-white' : 'text-gray-400'}`}
+                    style={{ display: product.image_url ? 'none' : 'block' }}
+                >
                     {isSpecial ? '💎' : '📦'}
                 </span>
             </div>

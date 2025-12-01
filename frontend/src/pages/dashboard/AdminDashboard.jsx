@@ -15,7 +15,8 @@ const AdminDashboard = () => {
         pv: 0,
         stock: 0,
         weight_grams: 500,
-        is_activation: false
+        is_activation: false,
+        image_url: ''
     });
     const [editingId, setEditingId] = useState(null);
 
@@ -59,7 +60,7 @@ const AdminDashboard = () => {
                 await api.post('/api/products/', payload);
             }
             setFormData({
-                name: '', description: '', category: '', price_usd: 0, price_local: 0, pv: 0, stock: 0, weight_grams: 500, is_activation: false
+                name: '', description: '', category: '', price_usd: 0, price_local: 0, pv: 0, stock: 0, weight_grams: 500, is_activation: false, image_url: ''
             });
             setEditingId(null);
             fetchProducts();
@@ -203,6 +204,34 @@ const AdminDashboard = () => {
                                 />
                             </div>
 
+                            <div className="col-span-1 md:col-span-2 lg:col-span-3 flex flex-col">
+                                <label className="text-sm font-medium text-gray-700 mb-1">URL de Imagen</label>
+                                <input
+                                    type="url"
+                                    name="image_url"
+                                    value={formData.image_url}
+                                    onChange={handleChange}
+                                    placeholder="https://i.imgur.com/ejemplo.jpg"
+                                    className="border border-gray-300 p-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                                />
+                                <p className="text-xs text-gray-500 mt-1">Sube tu imagen a Imgur y pega la URL aquí</p>
+                                {formData.image_url && (
+                                    <div className="mt-3">
+                                        <p className="text-sm font-medium text-gray-700 mb-2">Vista Previa:</p>
+                                        <img
+                                            src={formData.image_url}
+                                            alt="Preview"
+                                            className="w-48 h-48 object-cover rounded border border-gray-300"
+                                            onError={(e) => {
+                                                e.target.style.display = 'none';
+                                                e.target.nextSibling.style.display = 'block';
+                                            }}
+                                        />
+                                        <p className="text-xs text-red-500 mt-1" style={{ display: 'none' }}>No se pudo cargar la imagen. Verifica la URL.</p>
+                                    </div>
+                                )}
+                            </div>
+
                             <div className="col-span-1 md:col-span-2 lg:col-span-3 flex items-center gap-3 p-4 bg-gray-50 rounded border border-gray-200">
                                 <input
                                     type="checkbox"
@@ -233,7 +262,7 @@ const AdminDashboard = () => {
                                         onClick={() => {
                                             setEditingId(null);
                                             setFormData({
-                                                name: '', description: '', category: '', price_usd: 0, price_local: 0, pv: 0, stock: 0, is_activation: false
+                                                name: '', description: '', category: '', price_usd: 0, price_local: 0, pv: 0, stock: 0, is_activation: false, image_url: '', weight_grams: 500
                                             });
                                         }}
                                         className="w-full mt-2 py-2 px-4 rounded-lg font-medium text-gray-600 bg-gray-200 hover:bg-gray-300 transition"
@@ -253,6 +282,7 @@ const AdminDashboard = () => {
                             <table className="w-full text-left border-collapse">
                                 <thead className="bg-gray-100 text-gray-600 uppercase text-xs font-bold">
                                     <tr>
+                                        <th className="p-4 border-b">Imagen</th>
                                         <th className="p-4 border-b">Nombre</th>
                                         <th className="p-4 border-b">Categoría</th>
                                         <th className="p-4 border-b">Precio USD</th>
@@ -264,13 +294,29 @@ const AdminDashboard = () => {
                                 <tbody className="divide-y divide-gray-200">
                                     {products.length === 0 ? (
                                         <tr>
-                                            <td colSpan="6" className="p-8 text-center text-gray-500">
+                                            <td colSpan="7" className="p-8 text-center text-gray-500">
                                                 No hay productos registrados aún.
                                             </td>
                                         </tr>
                                     ) : (
                                         products.map(p => (
                                             <tr key={p.id} className="hover:bg-blue-50 transition">
+                                                <td className="p-4">
+                                                    {p.image_url ? (
+                                                        <img
+                                                            src={p.image_url}
+                                                            alt={p.name}
+                                                            className="w-16 h-16 object-cover rounded border border-gray-200"
+                                                            onError={(e) => {
+                                                                e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="64" height="64"%3E%3Crect fill="%23ddd" width="64" height="64"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%23999" font-size="24"%3E📦%3C/text%3E%3C/svg%3E';
+                                                            }}
+                                                        />
+                                                    ) : (
+                                                        <div className="w-16 h-16 bg-gray-100 rounded flex items-center justify-center text-2xl">
+                                                            📦
+                                                        </div>
+                                                    )}
+                                                </td>
                                                 <td className="p-4 font-medium text-gray-800">{p.name}</td>
                                                 <td className="p-4 text-gray-600">
                                                     <span className="bg-gray-200 text-gray-700 py-1 px-2 rounded text-xs">

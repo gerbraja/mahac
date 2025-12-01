@@ -17,6 +17,7 @@ class Product(Base):
     stock = Column(Integer, default=0)
     weight_grams = Column(Integer, default=500)  # Weight in grams for shipping calculation
     is_activation = Column(Boolean, default=False)  # If True, purchasing this activates the user
+    image_url = Column(String, nullable=True)  # URL of product image
     active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

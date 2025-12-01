@@ -14,6 +14,7 @@ class ProductBase(BaseModel):
     stock: int = 0
     weight_grams: int = 500  # Weight in grams
     is_activation: bool = False
+    image_url: Optional[str] = None  # URL of product image
 
 
 class ProductCreate(ProductBase):
