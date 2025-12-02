@@ -3,6 +3,7 @@ import { api } from '../../api/api';
 import './AdminDashboard.css';
 
 import AdminPayments from './AdminPayments';
+import AdminUsers from './AdminUsers';
 
 const AdminDashboard = () => {
     const [activeTab, setActiveTab] = useState('products');
@@ -20,12 +21,62 @@ const AdminDashboard = () => {
         image_url: ''
     });
     const [editingId, setEditingId] = useState(null);
+    const [stats, setStats] = useState({
+        totalUsers: '-',
+        activeUsers: '-',
+        totalProducts: '-',
+        pendingPayments: '-'
+    });
+    const [loadingStats, setLoadingStats] = useState(true);
+    const [statsError, setStatsError] = useState(null);
 
     useEffect(() => {
+        fetchStats();
         if (activeTab === 'products') {
             fetchProducts();
         }
     }, [activeTab]);
+
+    const fetchStats = async () => {
+        setLoadingStats(true);
+        setStatsError(null);
+        try {
+            const [usersRes, productsRes, paymentsRes] = await Promise.allSettled([
+                api.get('/api/admin/users'),
+                api.get('/api/products/'),
+                api.get('/api/admin/pending-payments')
+            ]);
+
+            const newStats = { ...stats };
+
+            if (usersRes.status === 'fulfilled') {
+                const users = usersRes.value.data;
+                newStats.totalUsers = users.length;
+                newStats.activeUsers = users.filter(u => u.status === 'active').length;
+            } else {
+                console.error("Error fetching users for stats:", usersRes.reason);
+            }
+
+            if (productsRes.status === 'fulfilled') {
+                newStats.totalProducts = productsRes.value.data.length;
+            } else {
+                console.error("Error fetching products for stats:", productsRes.reason);
+            }
+
+            if (paymentsRes.status === 'fulfilled') {
+                newStats.pendingPayments = paymentsRes.value.data.length;
+            } else {
+                console.error("Error fetching payments for stats:", paymentsRes.reason);
+            }
+
+            setStats(newStats);
+        } catch (error) {
+            console.error("Error fetching stats:", error);
+            setStatsError("Error loading statistics");
+        } finally {
+            setLoadingStats(false);
+        }
+    };
 
     const fetchProducts = async () => {
         try {
@@ -65,6 +116,7 @@ const AdminDashboard = () => {
             });
             setEditingId(null);
             fetchProducts();
+            fetchStats(); // Update stats after product change
         } catch (error) {
             console.error("Error saving product", error);
             const errorMessage = error.response?.data?.detail || error.message || "Error saving product";
@@ -82,6 +134,7 @@ const AdminDashboard = () => {
             try {
                 await api.delete(`/api/products/${id}`);
                 fetchProducts();
+                fetchStats(); // Update stats after deletion
             } catch (error) {
                 console.error("Error deleting product", error);
             }
@@ -92,12 +145,61 @@ const AdminDashboard = () => {
         <div className="p-6">
             <h1 className="text-2xl font-bold mb-6">Admin Dashboard</h1>
 
+            {/* Statistics Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div className="bg-white p-6 rounded-xl shadow-md border-l-4 border-blue-500 flex items-center justify-between">
+                    <div>
+                        <p className="text-gray-500 text-sm font-medium uppercase">Total Usuarios</p>
+                        <p className="text-3xl font-bold text-gray-800">{stats.totalUsers}</p>
+                    </div>
+                    <div className="bg-blue-100 p-3 rounded-full text-blue-600 text-2xl">
+                        👥
+                    </div>
+                </div>
+
+                <div className="bg-white p-6 rounded-xl shadow-md border-l-4 border-purple-500 flex items-center justify-between">
+                    <div>
+                        <p className="text-gray-500 text-sm font-medium uppercase">Productos</p>
+                        <p className="text-3xl font-bold text-gray-800">{stats.totalProducts}</p>
+                    </div>
+                    <div className="bg-purple-100 p-3 rounded-full text-purple-600 text-2xl">
+                        📦
+                    </div>
+                </div>
+
+                <div className="bg-white p-6 rounded-xl shadow-md border-l-4 border-orange-500 flex items-center justify-between">
+                    <div>
+                        <p className="text-gray-500 text-sm font-medium uppercase">Pagos Pendientes</p>
+                        <p className="text-3xl font-bold text-gray-800">{stats.pendingPayments}</p>
+                    </div>
+                    <div className="bg-orange-100 p-3 rounded-full text-orange-600 text-2xl">
+                        💳
+                    </div>
+                </div>
+
+                <div className="bg-white p-6 rounded-xl shadow-md border-l-4 border-green-500 flex items-center justify-between">
+                    <div>
+                        <p className="text-gray-500 text-sm font-medium uppercase">Usuarios Activos</p>
+                        <p className="text-3xl font-bold text-gray-800">{stats.activeUsers}</p>
+                    </div>
+                    <div className="bg-green-100 p-3 rounded-full text-green-600 text-2xl">
+                        ✅
+                    </div>
+                </div>
+            </div>
+
             <div className="flex gap-4 mb-6 border-b">
                 <button
                     className={`pb-2 px-4 ${activeTab === 'products' ? 'border-b-2 border-blue-600 font-bold text-blue-600' : 'text-gray-500'}`}
                     onClick={() => setActiveTab('products')}
                 >
                     Products
+                </button>
+                <button
+                    className={`pb-2 px-4 ${activeTab === 'users' ? 'border-b-2 border-blue-600 font-bold text-blue-600' : 'text-gray-500'}`}
+                    onClick={() => setActiveTab('users')}
+                >
+                    Users
                 </button>
                 <button
                     className={`pb-2 px-4 ${activeTab === 'payments' ? 'border-b-2 border-blue-600 font-bold text-blue-600' : 'text-gray-500'}`}
@@ -107,9 +209,9 @@ const AdminDashboard = () => {
                 </button>
             </div>
 
-            {activeTab === 'payments' ? (
-                <AdminPayments />
-            ) : (
+            {activeTab === 'users' && <AdminUsers />}
+            {activeTab === 'payments' && <AdminPayments />}
+            {activeTab === 'products' && (
                 <>
                     <div className="bg-white p-6 rounded-lg shadow-md mb-8">
                         <h2 className="text-xl font-semibold mb-4 text-gray-800">{editingId ? 'Editar Producto' : 'Crear Nuevo Producto'}</h2>

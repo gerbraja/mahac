@@ -118,11 +118,10 @@ const ProductCard = ({ product, addToCart, isSpecial }) => {
 
                 <div className="flex justify-between items-end mb-4">
                     <div>
-                        <p className="text-2xl font-bold text-blue-900">${product.price_usd}</p>
-                        <p className="text-xs text-gray-500">PV: {product.pv}</p>
+                        <p className="text-2xl font-bold text-green-600">${product.price_local?.toLocaleString()} COP</p>
                     </div>
                     <div className="text-right">
-                        <p className="text-sm text-gray-600">COP ${product.price_local?.toLocaleString()}</p>
+                        <p className="text-sm font-bold text-blue-600">💎 {product.pv} PV</p>
                     </div>
                 </div>
 

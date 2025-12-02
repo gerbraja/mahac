@@ -18,15 +18,13 @@ export default function Cart() {
   const [discountApplied, setDiscountApplied] = useState(null);
 
   // Calculate totals
-  const subtotalUSD = cart.reduce((sum, p) => sum + (p.price_usd || 0) * p.quantity, 0);
   const totalPV = cart.reduce((sum, p) => sum + (p.pv || 0) * p.quantity, 0);
 
   // Calculate total weight in grams
   const totalWeightGrams = cart.reduce((sum, p) => sum + (p.weight_grams || 500) * p.quantity, 0);
 
-  // Convert to COP for shipping calculation
-  const exchangeRate = 4000;
-  const subtotalCOP = cart.reduce((sum, p) => sum + (p.price_local || (p.price_usd * exchangeRate)) * p.quantity, 0);
+  // Calculate subtotal in COP using fixed local prices
+  const subtotalCOP = cart.reduce((sum, p) => sum + (p.price_local || 0) * p.quantity, 0);
 
   // Calculate Shipping Cost (Weight Based)
   // Base cost: $15,000 COP for first 500g
@@ -48,14 +46,13 @@ export default function Cart() {
     }
   }
 
-  // Convert shipping cost to USD
-  const shippingCostUSD = shippingCostCOP / exchangeRate;
+  // Convert shipping cost to USD (removed as we only use COP)
+  // const shippingCostUSD = shippingCostCOP / 4000;
 
-  const discountAmount = discountApplied ? (subtotalUSD * discountApplied.percentage / 100) : 0;
+  const discountAmount = discountApplied ? (subtotalCOP * discountApplied.percentage / 100) : 0;
 
   // Final total
-  const totalUSD = subtotalUSD + shippingCostUSD - discountAmount;
-  const totalCOP = subtotalCOP + shippingCostCOP - (discountAmount * exchangeRate);
+  const totalCOP = subtotalCOP + shippingCostCOP - discountAmount;
 
   const handleApplyDiscount = () => {
     // Simulate discount validation
@@ -176,13 +173,13 @@ export default function Cart() {
                       <h3 className="font-bold text-gray-800">{item.name}</h3>
                       <p className="text-sm text-gray-600">{item.description?.substring(0, 60)}...</p>
                       <div className="flex gap-4 mt-2 text-sm">
-                        <span className="text-blue-600 font-bold">${item.price_usd} USD</span>
+                        <span className="text-green-600 font-bold text-base">${item.price_local?.toLocaleString()} COP</span>
                         <span className="text-gray-500">PV: {item.pv}</span>
                         <span className="text-gray-500">Cantidad: {item.quantity}</span>
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="font-bold text-lg text-gray-800">${(item.price_usd * item.quantity).toFixed(2)}</p>
+                      <p className="font-bold text-lg text-green-600">${(item.price_local * item.quantity).toLocaleString()} COP</p>
                       <button
                         onClick={() => removeFromCart(item.id)}
                         className="mt-2 text-red-600 hover:text-red-800 text-sm font-medium"
@@ -304,7 +301,9 @@ export default function Cart() {
               <div className="space-y-3 mb-4">
                 <div className="flex justify-between text-gray-700">
                   <span>Subtotal ({cart.length} productos)</span>
-                  <span>${subtotalUSD.toFixed(2)}</span>
+                  <div className="text-right">
+                    <div className="font-bold text-green-600">${subtotalCOP.toLocaleString()} COP</div>
+                  </div>
                 </div>
 
                 <div className="flex justify-between text-gray-700">
@@ -326,13 +325,9 @@ export default function Cart() {
               </div>
 
               <div className="border-t pt-4 mb-4">
-                <div className="flex justify-between text-xl font-bold text-gray-900 mb-2">
-                  <span>Total USD</span>
-                  <span>${totalUSD.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-gray-600">
-                  <span>Total COP</span>
-                  <span>${totalCOP.toLocaleString()}</span>
+                <div className="flex justify-between text-2xl font-bold text-green-600 mb-2">
+                  <span>Total a Pagar</span>
+                  <span>${totalCOP.toLocaleString()} COP</span>
                 </div>
               </div>
 

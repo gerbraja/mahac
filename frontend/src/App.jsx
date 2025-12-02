@@ -7,6 +7,9 @@ import DashboardLayout from "./components/layout/DashboardLayout";
 import MatrixView from "./pages/dashboard/MatrixView";
 import WalletView from "./pages/dashboard/WalletView";
 import BinaryGlobalView from './pages/dashboard/BinaryGlobalView';
+import BinaryMillionaireView from './pages/dashboard/BinaryMillionaireView';
+import EducationView from './pages/dashboard/EducationView';
+import PersonalView from './pages/dashboard/PersonalView';
 import StoreView from './pages/dashboard/StoreView';
 import DashboardHome from './pages/dashboard/DashboardHome';
 import AdminDashboard from './pages/dashboard/AdminDashboard';
@@ -14,6 +17,7 @@ import Login from './pages/Login';
 import Personal from './pages/Personal';
 import OrderConfirmation from './pages/OrderConfirmation';
 import MarketingBubbles from "./components/MarketingBubbles";
+
 
 // Admin imports
 import AdminLayout from './components/layout/AdminLayout';
@@ -59,10 +63,13 @@ export default function App() {
         <Route path="/dashboard" element={<DashboardLayout />}>
           <Route index element={<DashboardHome />} />
           <Route path="store" element={<StoreView />} />
-          <Route path="admin" element={<AdminDashboard />} />
-          <Route path="matrix" element={<MatrixView />} />
-          <Route path="binary-global" element={<BinaryGlobalView />} />
           <Route path="wallet" element={<WalletView />} />
+          <Route path="education" element={<EducationView />} />
+          <Route path="personal" element={<PersonalView />} />
+          <Route path="binary-global" element={<BinaryGlobalView />} />
+          <Route path="binary-millionaire" element={<BinaryMillionaireView />} />
+          <Route path="matrix" element={<MatrixView />} />
+          <Route path="admin" element={<AdminDashboard />} />
           <Route path="unilevel" element={<div><h2>Unilevel Network</h2><p>Coming soon...</p></div>} />
           <Route path="binary" element={<div><h2>Binary Tree</h2><p>Coming soon...</p></div>} />
         </Route>
