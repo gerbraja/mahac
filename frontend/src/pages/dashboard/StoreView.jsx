@@ -60,7 +60,7 @@ const StoreView = () => {
                     <h2 className="text-2xl font-bold text-blue-800 mb-4 flex items-center gap-2">
                         🚀 Paquetes de Inicio <span className="text-sm font-normal text-gray-500">(Requerido para activación)</span>
                     </h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 justify-items-start">
                         {starterPackages.map(product => (
                             <ProductCard key={product.id} product={product} addToCart={addToCart} isSpecial={true} />
                         ))}
@@ -74,7 +74,7 @@ const StoreView = () => {
                 {regularProducts.length === 0 ? (
                     <p className="text-gray-500">No hay productos disponibles por el momento.</p>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 justify-items-start">
                         {regularProducts.map(product => (
                             <ProductCard key={product.id} product={product} addToCart={addToCart} />
                         ))}
