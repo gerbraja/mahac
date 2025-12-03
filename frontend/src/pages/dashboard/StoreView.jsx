@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import './AdminDashboard.css';
 import { api } from '../../api/api';
 import { useCart } from '../../context/CartContext';
 import { motion } from 'framer-motion';
@@ -91,7 +92,7 @@ const ProductCard = ({ product, addToCart, isSpecial }) => {
             className={`bg-white rounded-xl shadow-md overflow-hidden border ${isSpecial ? 'border-blue-400 ring-2 ring-blue-100' : 'border-gray-100'}`}
         >
             {/* Image container: force a small fixed box so images don't dominate the card */}
-            <div className={`flex items-center justify-center overflow-hidden ${isSpecial ? 'bg-gradient-to-br from-blue-600 to-blue-800' : 'bg-gray-200'}`} style={{ width: 56, height: 56, margin: '12px auto 0' }}>
+            <div className={`${isSpecial ? 'bg-gradient-to-br from-blue-600 to-blue-800' : 'bg-gray-200'} admin-image-container`} style={{ margin: '12px auto 0' }}>
                 {product.image_url ? (
                     <img
                         src={product.image_url}
