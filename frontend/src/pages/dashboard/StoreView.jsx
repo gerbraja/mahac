@@ -92,7 +92,7 @@ const ProductCard = ({ product, addToCart, isSpecial }) => {
             className={`bg-white rounded-xl shadow-md overflow-hidden border ${isSpecial ? 'border-blue-400 ring-2 ring-blue-100' : 'border-gray-100'}`}
         >
             {/* Image container: force a small fixed box so images don't dominate the card */}
-            <div className={`${isSpecial ? 'bg-gradient-to-br from-blue-600 to-blue-800' : 'bg-gray-200'} admin-image-container`} style={{ margin: '12px auto 0' }}>
+            <div className={`${isSpecial ? 'bg-gradient-to-br from-blue-600 to-blue-800' : 'bg-gray-200'} store-image-container`} style={{ margin: '12px auto 0' }}>
                 {product.image_url ? (
                     <img
                         src={product.image_url}

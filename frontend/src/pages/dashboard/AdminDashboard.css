@@ -42,3 +42,16 @@
     border-radius: 0.375rem;
     background-color: #f9fafb;
 }
+
+/* Slightly larger container for store view product thumbnails (77x77) */
+.store-image-container {
+    width: 77px;
+    height: 77px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.375rem;
+    background-color: #f9fafb;
+}
