@@ -17,7 +17,7 @@ const StoreView = () => {
         const fetchProducts = async () => {
             try {
                 // Assuming router is mounted at /api/products
-                const response = await api.get('/api/products/');
+                const response = await api.get(`/api/products/?_t=${new Date().getTime()}`);
                 setProducts(response.data);
             } catch (error) {
                 console.error("Error fetching products:", error);
@@ -90,15 +90,18 @@ const ProductCard = ({ product, addToCart, isSpecial }) => {
             whileHover={{ y: -5 }}
             className={`bg-white rounded-xl shadow-md overflow-hidden border ${isSpecial ? 'border-blue-400 ring-2 ring-blue-100' : 'border-gray-100'}`}
         >
-            <div className={`h-12 ${isSpecial ? 'bg-gradient-to-br from-blue-600 to-blue-800' : 'bg-gray-200'} flex items-center justify-center overflow-hidden`}>
+            {/* Image container: force a small fixed box so images don't dominate the card */}
+            <div className={`flex items-center justify-center overflow-hidden ${isSpecial ? 'bg-gradient-to-br from-blue-600 to-blue-800' : 'bg-gray-200'}`} style={{ width: 56, height: 56, margin: '12px auto 0' }}>
                 {product.image_url ? (
                     <img
                         src={product.image_url}
                         alt={product.name}
-                        className="w-full h-full object-cover"
+                        // keep image contained within the small box
+                        className="object-contain"
+                        style={{ width: '100%', height: '100%', padding: 4 }}
                         onError={(e) => {
                             e.target.style.display = 'none';
-                            e.target.nextSibling.style.display = 'flex';
+                            if (e.target.nextSibling) e.target.nextSibling.style.display = 'block';
                         }}
                     />
                 ) : null}
