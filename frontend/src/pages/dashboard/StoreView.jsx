@@ -89,55 +89,55 @@ const ProductCard = ({ product, addToCart, isSpecial }) => {
     return (
         <motion.div
             whileHover={{ y: -5 }}
-            className={`bg-white rounded-xl shadow-md overflow-hidden border ${isSpecial ? 'border-blue-400 ring-2 ring-blue-100' : 'border-gray-100'}`}
+            className={`bg-white rounded-xl shadow-md border ${isSpecial ? 'border-blue-400 ring-2 ring-blue-100' : 'border-gray-100'}`}
         >
-            {/* Image container: force a small fixed box so images don't dominate the card */}
-            <div className={`${isSpecial ? 'bg-gradient-to-br from-blue-600 to-blue-800' : 'bg-gray-200'} store-image-container`} style={{ margin: '12px auto 0' }}>
-                {product.image_url ? (
-                    <img
-                        src={product.image_url}
-                        alt={product.name}
-                        // keep image contained within the small box
-                        className="object-contain"
-                        style={{ width: '100%', height: '100%', padding: 4 }}
-                        onError={(e) => {
-                            e.target.style.display = 'none';
-                            if (e.target.nextSibling) e.target.nextSibling.style.display = 'block';
-                        }}
-                    />
-                ) : null}
-                <span
-                    className={`text-4xl ${isSpecial ? 'text-white' : 'text-gray-400'}`}
-                    style={{ display: product.image_url ? 'none' : 'block' }}
-                >
-                    {isSpecial ? '💎' : '📦'}
-                </span>
-            </div>
-            <div className="p-5">
-                <div className="flex justify-between items-start mb-2">
-                    <h3 className="font-bold text-lg text-gray-800 line-clamp-1">{product.name}</h3>
-                    {isSpecial && <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full font-bold">Activación</span>}
-                </div>
-                <p className="text-gray-600 text-sm mb-4 line-clamp-2 h-10">{product.description}</p>
-
-                <div className="flex justify-between items-end mb-4">
-                    <div>
-                        <p className="text-2xl font-bold text-green-600">${product.price_local?.toLocaleString()} COP</p>
-                    </div>
-                    <div className="text-right">
-                        <p className="text-sm font-bold text-blue-600">💎 {product.pv} PV</p>
-                    </div>
+            <div className="flex items-start p-4 gap-4">
+                <div className={isSpecial ? 'bg-gradient-to-br from-blue-600 to-blue-800 store-image-container' : 'store-image-container'}>
+                    {product.image_url ? (
+                        <img
+                            src={product.image_url}
+                            alt={product.name}
+                            className="object-contain"
+                            style={{ width: '100%', height: '100%', padding: 6 }}
+                            onError={(e) => {
+                                e.target.style.display = 'none';
+                                if (e.target.nextSibling) e.target.nextSibling.style.display = 'block';
+                            }}
+                        />
+                    ) : (
+                        <span className={`text-4xl ${isSpecial ? 'text-white' : 'text-gray-400'}`}>{isSpecial ? '💎' : '📦'}</span>
+                    )}
                 </div>
 
-                <button
-                    onClick={() => addToCart(product)}
-                    className={`w-full py-2 rounded-lg font-bold transition-colors ${isSpecial
-                        ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                        : 'bg-gray-900 hover:bg-gray-800 text-white'
-                        }`}
-                >
-                    Agregar al Carrito
-                </button>
+                <div className="flex-1">
+                    <div className="flex justify-between items-start mb-1">
+                        <h3 className="font-bold text-lg text-gray-800 line-clamp-1">{product.name}</h3>
+                        {isSpecial && <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full font-bold">Activación</span>}
+                    </div>
+
+                    <p className="text-gray-600 text-sm mb-2 line-clamp-2">{product.description}</p>
+
+                    <div className="flex justify-between items-end mt-2">
+                        <div>
+                            <p className="text-xl font-bold text-green-600">${product.price_local?.toLocaleString()} COP</p>
+                        </div>
+                        <div className="text-right">
+                            <p className="text-sm font-bold text-blue-600">💎 {product.pv} PV</p>
+                        </div>
+                    </div>
+
+                    <div className="mt-3">
+                        <button
+                            onClick={() => addToCart(product)}
+                            className={`w-full py-2 rounded-lg font-bold transition-colors ${isSpecial
+                                ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                                : 'bg-gray-900 hover:bg-gray-800 text-white'
+                                }`}
+                        >
+                            Agregar al Carrito
+                        </button>
+                    </div>
+                </div>
             </div>
         </motion.div>
     );
