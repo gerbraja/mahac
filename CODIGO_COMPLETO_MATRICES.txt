@@ -1,0 +1,329 @@
+═══════════════════════════════════════════════════════════════════════════════
+                    CÓDIGO COMPLETO DE TODAS LAS MATRICES
+═══════════════════════════════════════════════════════════════════════════════
+
+📍 ARCHIVO: backend/mlm/plans/matriz_forzada/plan_template.yml
+
+===============================================================================
+
+plan_name: "Forced Matrix"
+plan_key: "matriz_forzada"
+description: "Matrix with fixed width and depth"
+currency: "USD"
+qualification:
+    minimum_personal_volume: "0.00"
+
+# Matrices / levels definition. Amounts are strings and should be parsed to Decimal in the loader.
+matrices:
+    # ═══════════════════════════════════════════════════════════════════════
+    # MATRIZ 1: CONSUMIDOR
+    # ═══════════════════════════════════════════════════════════════════════
+    - id: 27
+      amount: "77.00"
+      reentry_amount: "27.00"
+      next_matrix: 77
+      monthly_limit: 14
+      yearly_limit: null
+      rank_up:
+          from: "Consumer"
+          to: "Distributor"
+      one_time_bonus: null
+      period: "month"
+
+    # ═══════════════════════════════════════════════════════════════════════
+    # MATRIZ 2: BRONCE
+    # ═══════════════════════════════════════════════════════════════════════
+    - id: 77
+      amount: "277.00"
+      reentry_amount: "77.00"
+      next_matrix: 277
+      monthly_limit: 10
+      yearly_limit: null
+      rank_up:
+          from: "Distributor"
+          to: "Bronze Distributor"
+      one_time_bonus: null
+      period: "month"
+
+    # ═══════════════════════════════════════════════════════════════════════
+    # MATRIZ 3: PLATA
+    # ═══════════════════════════════════════════════════════════════════════
+    - id: 277
+      amount: "877.00"
+      reentry_amount: "277.00"
+      next_matrix: 877
+      monthly_limit: 8
+      yearly_limit: null
+      rank_up:
+          from: "Bronze Distributor"
+          to: "Silver Distributor"
+      one_time_bonus:
+          amount: "147.00"
+          description: "Virtual store bonus"
+      period: "month"
+
+    # ═══════════════════════════════════════════════════════════════════════
+    # MATRIZ 4: ORO (50% USD / 50% CRIPTO)
+    # ═══════════════════════════════════════════════════════════════════════
+    - id: 877
+      amount: "3000.00"
+      reentry_amount: "877.00"
+      next_matrix: 3000
+      monthly_limit: 7
+      yearly_limit: null
+      rank_up:
+          from: "Silver Distributor"
+          to: "Gold Distributor"
+      one_time_bonus:
+          amount: "500.00"
+          description: "Virtual Store Bonus"
+      period: "month"
+
+    # ═══════════════════════════════════════════════════════════════════════
+    # MATRIZ 5: PLATINO (50% USD / 50% CRIPTO)
+    # ═══════════════════════════════════════════════════════════════════════
+    - id: 3000
+      amount: "9700.00"
+      reentry_amount: "3000.00"
+      next_matrix: 9700
+      monthly_limit: 6
+      yearly_limit: null
+      rank_up:
+          from: "Gold Distributor"
+          to: "Platinum Business Owner"
+      one_time_bonus:
+          amount: "1700.00"
+          description: "Store bonus"
+      period: "month"
+
+    # ═══════════════════════════════════════════════════════════════════════
+    # MATRIZ 6: RUBÍ (50% USD / 50% CRIPTO)
+    # ═══════════════════════════════════════════════════════════════════════
+    - id: 9700
+      amount: "25000.00"
+      reentry_amount: "9700.00"
+      next_matrix: 25000
+      monthly_limit: 5
+      yearly_limit: null
+      rank_up:
+          from: "Platinum Business Owner"
+          to: "Ruby Executive"
+      one_time_bonus:
+          amount: "4300.00"
+          description: "Ruby bonus"
+      period: "month"
+
+    # ═══════════════════════════════════════════════════════════════════════
+    # MATRIZ 7: ESMERALDA (50% USD / 50% CRIPTO)
+    # ═══════════════════════════════════════════════════════════════════════
+    - id: 25000
+      amount: "50000.00"
+      reentry_amount: "25000.00"
+      next_matrix: 50000
+      monthly_limit: 4
+      yearly_limit: null
+      rank_up:
+          from: "Ruby Executive"
+          to: "Emerald Leader"
+      one_time_bonus:
+          amount: "9000.00"
+          description: "Emerald bonus"
+      period: "month"
+
+    # ═══════════════════════════════════════════════════════════════════════
+    # MATRIZ 8: DIAMANTE (50% USD / 50% CRIPTO)
+    # ⚠️ ERROR DETECTADO: from debería ser "Emerald Leader", no "Ruby Executive"
+    # ═══════════════════════════════════════════════════════════════════════
+    - id: 50000
+      amount: "100000.00"
+      reentry_amount: "50000.00"
+      next_matrix: 100000
+      monthly_limit: 3
+      yearly_limit: null
+      rank_up:
+          from: "Ruby Executive"        ⚠️ ERROR: Debería ser "Emerald Leader"
+          to: "Diamond Master"
+      one_time_bonus:
+          amount: "18000.00"
+          description: "Master bonus"
+      period: "month"
+
+    # ═══════════════════════════════════════════════════════════════════════
+    # MATRIZ 9: DIAMANTE AZUL (50% USD / 50% CRIPTO)
+    # ═══════════════════════════════════════════════════════════════════════
+    - id: 100000
+      amount: "200000.00"
+      reentry_amount: "100000.00"
+      next_matrix: null
+      monthly_limit: 2
+      yearly_limit: null
+      rank_up:
+          from: "Diamond Master"
+          to: "Blue Diamond Elite"
+      one_time_bonus:
+          amount: "36000.00"
+          description: "Elite bonus"
+      period: "month"
+
+# End of matrices
+
+notes: |
+    This YAML file defines the forced-matrix plan. Keep the plan as pure YAML.
+    Implementation code and examples are stored under `backend/mlm/examples/`.
+    Virtual balance column and other DB notes can go here.
+
+
+═══════════════════════════════════════════════════════════════════════════════
+📍 ARCHIVO: frontend/src/pages/dashboard/MatrixView.jsx
+═══════════════════════════════════════════════════════════════════════════════
+
+// Matrix configurations - Complete list from CONSUMIDOR to DIAMANTE AZUL
+// Based on backend/mlm/plans/matriz_forzada/plan_template.yml
+const MATRIX_LEVELS = {
+    1: { 
+        name: 'CONSUMIDOR', 
+        reward: 77, 
+        rewardUSD: 77, 
+        rewardCrypto: 0, 
+        color: '#10b981', 
+        icon: '🛍️' 
+    },
+    2: { 
+        name: 'BRONCE', 
+        reward: 277, 
+        rewardUSD: 277, 
+        rewardCrypto: 0, 
+        color: '#cd7f32', 
+        icon: '🥉' 
+    },
+    3: { 
+        name: 'PLATA', 
+        reward: 877, 
+        rewardUSD: 877, 
+        rewardCrypto: 0, 
+        color: '#c0c0c0', 
+        icon: '🥈' 
+    },
+    4: { 
+        name: 'ORO', 
+        reward: 3000, 
+        rewardUSD: 1500, 
+        rewardCrypto: 1500, 
+        color: '#ffd700', 
+        icon: '🥇' 
+    },
+    5: { 
+        name: 'PLATINO', 
+        reward: 9700, 
+        rewardUSD: 4850, 
+        rewardCrypto: 4850, 
+        color: '#e5e4e2', 
+        icon: '💍' 
+    },
+    6: { 
+        name: 'RUBÍ', 
+        reward: 25000, 
+        rewardUSD: 12500, 
+        rewardCrypto: 12500, 
+        color: '#e0115f', 
+        icon: '♦️' 
+    },
+    7: { 
+        name: 'ESMERALDA', 
+        reward: 50000, 
+        rewardUSD: 25000, 
+        rewardCrypto: 25000, 
+        color: '#50c878', 
+        icon: '💎' 
+    },
+    8: { 
+        name: 'DIAMANTE', 
+        reward: 100000, 
+        rewardUSD: 50000, 
+        rewardCrypto: 50000, 
+        color: '#b9f2ff', 
+        icon: '💠' 
+    },
+    9: { 
+        name: 'DIAMANTE AZUL', 
+        reward: 200000, 
+        rewardUSD: 100000, 
+        rewardCrypto: 100000, 
+        color: '#4169e1', 
+        icon: '🔷' 
+    }
+};
+
+
+═══════════════════════════════════════════════════════════════════════════════
+                            RESUMEN DE MATRICES
+═══════════════════════════════════════════════════════════════════════════════
+
+┌────┬──────────────────┬───────────────┬──────────────┬──────────────┬────────────┐
+│ #  │ NOMBRE           │ RECOMPENSA    │ USD          │ CRIPTO       │ BONUS      │
+├────┼──────────────────┼───────────────┼──────────────┼──────────────┼────────────┤
+│ 1  │ CONSUMIDOR       │ $77           │ $77          │ -            │ -          │
+│ 2  │ BRONCE           │ $277          │ $277         │ -            │ -          │
+│ 3  │ PLATA            │ $877          │ $877         │ -            │ $147       │
+│ 4  │ ORO              │ $3,000        │ $1,500       │ $1,500       │ $500       │
+│ 5  │ PLATINO          │ $9,700        │ $4,850       │ $4,850       │ $1,700     │
+│ 6  │ RUBÍ             │ $25,000       │ $12,500      │ $12,500      │ $4,300     │
+│ 7  │ ESMERALDA        │ $50,000       │ $25,000      │ $25,000      │ $9,000     │
+│ 8  │ DIAMANTE         │ $100,000      │ $50,000      │ $50,000      │ $18,000    │
+│ 9  │ DIAMANTE AZUL    │ $200,000      │ $100,000     │ $100,000     │ $36,000    │
+└────┴──────────────────┴───────────────┴──────────────┴──────────────┴────────────┘
+
+                    TOTAL ACUMULADO: $389,931 USD
+
+
+═══════════════════════════════════════════════════════════════════════════════
+                        PROBLEMAS DETECTADOS
+═══════════════════════════════════════════════════════════════════════════════
+
+❌ ERROR 1: plan_template.yml línea ~111
+   Matriz: DIAMANTE (id: 50000)
+   Campo: rank_up.from
+   Actual: "Ruby Executive"
+   Correcto: "Emerald Leader"
+
+⚠️ FALTANTE: Matrices 10-13 (CORONAS)
+   Según seed_qualified_ranks.py existen:
+   - Diamante Corona: $20,000,000
+   - Corona Azul: $70,000,000
+   - Corona Roja: $210,000,000
+   - Corona Negra: (Final)
+
+
+═══════════════════════════════════════════════════════════════════════════════
+                    SISTEMA DE CRIPTOMONEDAS CONGELADAS
+═══════════════════════════════════════════════════════════════════════════════
+
+📄 ARCHIVO: backend/database/models/frozen_crypto.py
+
+✅ Modelo creado con:
+   - Periodo de congelamiento: 210 días
+   - Valor por token: $100 USD
+   - Campos: user_id, matrix_id, matrix_name, crypto_amount, token_count
+   - Propiedades: days_remaining, hours_remaining
+   - Estados: frozen, available, converted, withdrawn
+
+✅ Tabla en base de datos: frozen_crypto
+
+📌 EJEMPLO DE MÚLTIPLES CICLOS:
+   Un usuario PLATINO que cicla 5 veces tendrá 5 registros separados:
+   
+   ID | MATRIX   | CRYPTO  | EARNED_DATE | FREEZE_UNTIL | DAYS_LEFT
+   1  | PLATINO  | $4,850  | 2025-12-01  | 2026-06-29   | 205 días
+   2  | PLATINO  | $4,850  | 2025-12-08  | 2026-07-06   | 212 días
+   3  | PLATINO  | $4,850  | 2025-12-15  | 2026-07-13   | 219 días
+   4  | PLATINO  | $4,850  | 2025-12-22  | 2026-07-20   | 226 días
+   5  | PLATINO  | $4,850  | 2025-12-29  | 2026-07-27   | 233 días
+
+   TOTAL: $24,250 en cripto (242.5 tokens) con diferentes fechas de desbloqueo
+
+
+═══════════════════════════════════════════════════════════════════════════════
+                            FIN DEL DOCUMENTO
+═══════════════════════════════════════════════════════════════════════════════
+Generado: 6 de diciembre de 2025
+Ubicación: CentroComercialTEI/CODIGO_COMPLETO_MATRICES.txt

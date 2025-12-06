@@ -193,6 +193,34 @@ export default function AdminDashboard() {
                     >
                         💳 Ver Pagos Pendientes
                     </button>
+                    <button
+                        onClick={() => window.location.href = '/admin/qualified-ranks'}
+                        style={{
+                            padding: '0.75rem 1.5rem',
+                            background: '#7c3aed',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '0.5rem',
+                            cursor: 'pointer',
+                            fontWeight: '500'
+                        }}
+                    >
+                        🏆 Rangos de Calificación
+                    </button>
+                    <button
+                        onClick={() => window.location.href = '/admin/honor-ranks'}
+                        style={{
+                            padding: '0.75rem 1.5rem',
+                            background: '#10b981',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '0.5rem',
+                            cursor: 'pointer',
+                            fontWeight: '500'
+                        }}
+                    >
+                        💎 Rangos de Honor
+                    </button>
                 </div>
             </div>
         </div>

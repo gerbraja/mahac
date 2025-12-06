@@ -1,0 +1,35 @@
+Status snapshot - saved by assistant (2025-12-04)
+
+What I changed:
+- Normalized and fixed indentation in `backend/mlm/plans/matriz_forzada/plan_template.yml`.
+- Validated the YAML with `yaml.safe_load` in Python.
+- Ran `backend/scripts/add_users_to_matrix.py` which successfully purchased matrix id 27 for users `gerbraja` (id=1) and `SembradoresdeEsperanza` (id=2).
+- Verified with `backend/scripts/check_user_networks.py` that `MatrixMember` entries exist for both users.
+
+Why I couldn't complete a git commit here:
+- The terminal environment does not have `git` available in PATH (commands failed with "git no se reconoce..."). The .git folder exists in the repository, but the `git` executable is missing from the environment running these tools.
+
+Files created by the assistant:
+- `backend/mlm/plans/matriz_forzada/plan_template.yml` (modified)
+- `backend/mlm/plans/matriz_forzada/plan_template.yml.saved_by_agent_20251204.yml` (backup copy)
+- `WORK_IN_PROGRESS_SAVE_20251204.txt` (this file)
+
+Suggested next steps you can run locally to commit the change:
+
+```powershell
+Set-Location -Path "C:\Users\mahac\multinivel\tiendavirtual\miweb\CentroComercialTEI"
+# Verify git is available
+git --version
+# Add and commit the YAML fix
+git add backend/mlm/plans/matriz_forzada/plan_template.yml
+git commit -m "Fix: normalize matriz_forzada plan_template.yml indentation to resolve YAML parsing errors"
+# (Optional) push if you want remote updated
+git push origin HEAD
+```
+
+If you'd like, when you come back in 7-8 hours I can:
+- Try to commit again (if `git` becomes available in the environment),
+- Continue with `MatrixService` / `plan_loader` inspection (todo item 5), or
+- Repeat these steps for `binario_millonario` if you want the same check there.
+
+Saved-by: assistant

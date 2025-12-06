@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional
-from passlib.context import CryptContext
+from argon2 import PasswordHasher
 from jose import jwt
 import os
 from datetime import datetime
@@ -16,7 +16,8 @@ router = APIRouter(prefix="/auth", tags=["Auth"])
 SECRET_KEY = os.getenv("SECRET_KEY", "secret123")
 ALGORITHM = os.getenv("ALGORITHM", "HS256")
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Use Argon2 instead of bcrypt (bcrypt has issues with Python 3.14)
+pwd_hasher = PasswordHasher()
 
 
 class RegisterData(BaseModel):
@@ -73,8 +74,9 @@ def register(data: RegisterData, db: Session = Depends(get_db)):
             (UserModel.referral_code == data.referral_code)
         ).first()
 
-    # Hash password
-    hashed_password = pwd_context.hash(data.password)
+    # Hash password (truncate to 72 bytes for compatibility)
+    password_to_hash = data.password[:72] if data.password else ''
+    hashed_password = pwd_hasher.hash(password_to_hash)
 
     # Create user record
     new_user = UserModel(
@@ -128,35 +130,12 @@ from fastapi.security import OAuth2PasswordBearer
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
-@router.get("/me")
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
-    """Get current user data from JWT token."""
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id: int = payload.get("user_id")
-        if user_id is None:
-            raise HTTPException(status_code=401, detail="Invalid authentication credentials")
-    except jwt.JWTError:
-        raise HTTPException(status_code=401, detail="Invalid authentication credentials")
-    
-    user = db.query(UserModel).filter(UserModel.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    return {
-        "id": user.id,
-        "name": user.name,
-        "email": user.email,
-        "username": user.username,
-        "referral_code": user.referral_code or user.username,
-        "status": user.status,
-        "document_id": user.document_id,
-        "is_admin": user.is_admin
-    }
-
 
 def get_current_user_object(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> UserModel:
-    """Get current user object from JWT token. Returns User model instance for use in dependencies."""
+    """Get current user object from JWT token. Returns User model instance for use in dependencies.
+    
+    This function must be defined early so it can be used as a dependency in other route handlers.
+    """
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id: int = payload.get("user_id")
@@ -172,20 +151,129 @@ def get_current_user_object(token: str = Depends(oauth2_scheme), db: Session = D
     return user
 
 
+@router.get("/me")
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    """Get current user data from JWT token."""
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id: int = payload.get("user_id")
+        if user_id is None:
+            raise HTTPException(status_code=401, detail="Invalid authentication credentials")
+    except jwt.JWTError:
+        raise HTTPException(status_code=401, detail="Invalid authentication credentials")
+    
+    user = db.query(UserModel).filter(UserModel.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Normalize gender for frontend: DB stores 'M'/'F' but frontend expects 'male'/'female'/'other'
+    def _gender_for_client(g):
+        if not g:
+            return None
+        g_lower = str(g).lower()
+        if g_lower in ("m", "male"):
+            return "male"
+        if g_lower in ("f", "female"):
+            return "female"
+        return "other"
+
+    return {
+        "id": user.id,
+        "name": user.name,
+        "email": user.email,
+        "username": user.username,
+        "referral_code": user.referral_code or user.username,
+        "status": user.status,
+        "document_id": user.document_id,
+        "is_admin": user.is_admin,
+        # Personal Info (normalize gender for UI)
+        "gender": _gender_for_client(user.gender),
+        "birth_date": user.birth_date,
+        "phone_number": user.phone,
+        "country": user.country,
+        # Address Info
+        "full_address": user.address,
+        "city": user.city,
+        "province": user.province,
+        "postal_code": user.postal_code,
+        "created_at": user.created_at
+    }
+
+
+class UpdateProfileData(BaseModel):
+    name: Optional[str] = None
+    phone_number: Optional[str] = None
+    gender: Optional[str] = None
+    full_address: Optional[str] = None
+    city: Optional[str] = None
+    province: Optional[str] = None
+
+
+@router.put("/profile")
+def update_profile(data: UpdateProfileData, current_user: UserModel = Depends(get_current_user_object), db: Session = Depends(get_db)):
+    """Update user profile information."""
+    
+    if data.name:
+        current_user.name = data.name
+    if data.phone_number:
+        current_user.phone = data.phone_number
+    if data.gender:
+        # Accept frontend values 'male'/'female'/'other' and normalize to DB format 'M'/'F' or store as-is for other
+        g = data.gender.lower()
+        if g in ("male", "m"):
+            current_user.gender = "M"
+        elif g in ("female", "f"):
+            current_user.gender = "F"
+        else:
+            current_user.gender = data.gender
+    if data.full_address:
+        current_user.address = data.full_address
+    if data.city:
+        current_user.city = data.city
+    if data.province:
+        current_user.province = data.province
+        
+    try:
+        db.commit()
+        db.refresh(current_user)
+        return {"message": "Profile updated successfully"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error updating profile: {str(e)}")
+
+
 @router.post("/login")
 def login(data: LoginData, db: Session = Depends(get_db)):
-    # Find by username if provided, otherwise by email
-    user = None
-    if data.username:
-        user = db.query(UserModel).filter(UserModel.username == data.username).first()
-    elif data.email:
-        user = db.query(UserModel).filter(UserModel.email == data.email).first()
+    try:
+        # Find by username if provided, otherwise by email
+        user = None
+        if data.username:
+            user = db.query(UserModel).filter(UserModel.username == data.username).first()
+        elif data.email:
+            user = db.query(UserModel).filter(UserModel.email == data.email).first()
 
-    if not user or not pwd_context.verify(data.password, getattr(user, 'password', '')):
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+        if not user:
+            raise HTTPException(status_code=401, detail="Invalid credentials")
 
-    token = jwt.encode({"user_id": user.id}, SECRET_KEY, algorithm=ALGORITHM)
-    return {"access_token": token, "token_type": "bearer"}
+        # Verify password (truncate to 72 bytes for compatibility)
+        password_to_verify = data.password[:72] if data.password else ''
+        stored_hash = getattr(user, 'password', '')
+        
+        try:
+            pwd_hasher.verify(stored_hash, password_to_verify)
+        except Exception:
+            # Any verification error (VerifyMismatchError, InvalidHash, etc.)
+            raise HTTPException(status_code=401, detail="Invalid credentials")
+        
+        token = jwt.encode({"user_id": user.id}, SECRET_KEY, algorithm=ALGORITHM)
+        return {"access_token": token, "token_type": "bearer"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"ERROR in login: {type(e).__name__}: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Internal server error")
 
 
 @router.post("/complete-registration")
@@ -230,12 +318,12 @@ def complete_registration(data: CompleteRegistrationData, db: Session = Depends(
             db.add(user)
             db.flush()  # Get the ID without committing
 
-        # Ensure password is within bcrypt limits (72 characters)
+        # Ensure password is within limits (72 bytes for compatibility)
         password_to_hash = data.password[:72]
         
-        # Hash password
+        # Hash password using Argon2
         try:
-            hashed = pwd_context.hash(password_to_hash)
+            hashed = pwd_hasher.hash(password_to_hash)
         except Exception as hash_error:
             print(f"Password hashing error: {hash_error}")
             print(f"Password: {password_to_hash}")

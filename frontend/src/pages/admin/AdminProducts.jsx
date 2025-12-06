@@ -1,9 +1,35 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { api } from '../../api/api';
 
 const SimpleAdmin = () => {
+    // Categorías predefinidas como fallback
+    const DEFAULT_CATEGORIES = [
+        'Ropa y Accesorios',
+        'Calzado',
+        'Electrónica',
+        'Informática',
+        'Telefonía y Accesorios',
+        'Hogar y Decoración',
+        'Cocina y Electrodomésticos',
+        'Belleza y Cuidado Personal',
+        'Salud y Bienestar',
+        'Alimentos y Bebidas',
+        'Bebés y Maternidad',
+        'Juguetes y Juegos',
+        'Deportes y Aire Libre',
+        'Mascotas y Animales',
+        'Libros y Educación',
+        'Música e Instrumentos',
+        'Arte y Manualidades',
+        'Automovilismo',
+        'Oficina y Papelería',
+        'Jardín y Plantas',
+        'Otros'
+    ];
+
     const [products, setProducts] = useState([]);
-    const [categories, setCategories] = useState([]);
+    const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
     const [formData, setFormData] = useState({
         name: '',
         description: '',
@@ -12,6 +38,8 @@ const SimpleAdmin = () => {
         price_local: 0,
         pv: 0,
         stock: 0,
+        weight_grams: 500,
+        image_url: '',
         is_activation: false
     });
     const [editingId, setEditingId] = useState(null);
@@ -24,16 +52,28 @@ const SimpleAdmin = () => {
 
     const fetchCategories = async () => {
         try {
-            const res = await axios.get('http://localhost:8000/api/categories/');
-            setCategories(res.data);
+            const res = await api.get('/api/categories/');
+            // El endpoint devuelve { value: [...], Count: 21 }
+            const categoriesArray = Array.isArray(res.data) ? res.data : (res.data.value || []);
+            if (categoriesArray && categoriesArray.length > 0) {
+                // Extraer solo los nombres de las categorías
+                const categoryNames = categoriesArray.map(cat => cat.name);
+                setCategories(categoryNames);
+                console.log('✅ Categorías cargadas desde la API:', categoryNames.length);
+            } else {
+                console.log("⚠️ No se encontraron categorías, usando predefinidas");
+                setCategories(DEFAULT_CATEGORIES);
+            }
         } catch (error) {
-            console.error("Error fetching categories", error);
+            console.log("Usando categorías predefinidas. Error al cargar desde API:", error.message);
+            // Usar las predefinidas si hay error
+            setCategories(DEFAULT_CATEGORIES);
         }
     };
 
     const fetchProducts = async () => {
         try {
-            const res = await axios.get('http://localhost:8000/api/products/');
+            const res = await api.get('/api/products/');
             setProducts(res.data);
         } catch (error) {
             console.error("Error fetching products", error);
@@ -49,22 +89,35 @@ const SimpleAdmin = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
+            // Sanitize form data: convert empty strings to null for optional numeric fields
+            const sanitizedData = {
+                ...formData,
+                price_local: formData.price_local === '' || formData.price_local === null ? null : Number(formData.price_local),
+                price_eur: formData.price_eur === '' || formData.price_eur === null ? null : Number(formData.price_eur),
+                weight_grams: formData.weight_grams === '' || formData.weight_grams === null ? 500 : Math.round(Number(formData.weight_grams)),
+                price_usd: Number(formData.price_usd),
+                pv: Math.round(Number(formData.pv)), // PV must be an integer
+                stock: Math.round(Number(formData.stock)) // Stock must be an integer
+            };
+
             if (editingId) {
-                await axios.put(`http://localhost:8000/api/products/${editingId}`, formData);
+                await api.put(`/api/products/${editingId}`, sanitizedData);
                 setMessage('Producto actualizado exitosamente');
             } else {
-                await axios.post('http://localhost:8000/api/products/', formData);
+                await api.post('/api/products/', sanitizedData);
                 setMessage('Producto creado exitosamente');
             }
             setFormData({
-                name: '', description: '', category: '', price_usd: 0, price_local: 0, pv: 0, stock: 0, is_activation: false
+                name: '', description: '', category: '', price_usd: 0, price_local: 0, pv: 0, stock: 0, weight_grams: 500, image_url: '', is_activation: false
             });
             setEditingId(null);
             fetchProducts();
             setTimeout(() => setMessage(''), 3000);
         } catch (error) {
             console.error("Error saving product", error);
-            setMessage('Error al guardar producto');
+            const errorDetail = error.response?.data?.detail || error.message || 'Error desconocido';
+            const errorMsg = typeof errorDetail === 'object' ? JSON.stringify(errorDetail) : errorDetail;
+            setMessage('Error al guardar producto: ' + errorMsg);
         }
     };
 
@@ -77,7 +130,7 @@ const SimpleAdmin = () => {
     const handleDelete = async (id) => {
         if (window.confirm("¿Estás seguro de eliminar este producto?")) {
             try {
-                await axios.delete(`http://localhost:8000/api/products/${id}`);
+                await api.delete(`/api/products/${id}`);
                 setMessage('Producto eliminado');
                 fetchProducts();
                 setTimeout(() => setMessage(''), 3000);
@@ -139,16 +192,16 @@ const SimpleAdmin = () => {
                     required
                 >
                     <option value="">Seleccionar Categoría</option>
-                    {categories.map(cat => (
-                        <option key={cat.id} value={cat.name}>{cat.name}</option>
+                    {categories.map((cat, index) => (
+                        <option key={index} value={cat}>{cat}</option>
                     ))}
                 </select>
                 <textarea
                     name="description"
                     value={formData.description}
                     onChange={handleChange}
-                    placeholder="Descripción"
-                    style={{ padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.25rem', gridColumn: 'span 2' }}
+                    placeholder="Descripción del producto"
+                    style={{ padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.25rem', gridColumn: 'span 2', fontFamily: 'Arial' }}
                     rows="3"
                 />
                 <input
@@ -157,6 +210,7 @@ const SimpleAdmin = () => {
                     value={formData.price_usd}
                     onChange={handleChange}
                     placeholder="Precio USD"
+                    step="0.01"
                     style={{ padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.25rem' }}
                     required
                 />
@@ -165,7 +219,8 @@ const SimpleAdmin = () => {
                     name="price_local"
                     value={formData.price_local}
                     onChange={handleChange}
-                    placeholder="Precio COP"
+                    placeholder="Precio COP (Pesos Colombianos)"
+                    step="100"
                     style={{ padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.25rem' }}
                 />
                 <input
@@ -174,6 +229,7 @@ const SimpleAdmin = () => {
                     value={formData.pv}
                     onChange={handleChange}
                     placeholder="Puntos de Volumen (PV)"
+                    step="0.01"
                     style={{ padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.25rem' }}
                 />
                 <input
@@ -181,7 +237,23 @@ const SimpleAdmin = () => {
                     name="stock"
                     value={formData.stock}
                     onChange={handleChange}
-                    placeholder="Stock"
+                    placeholder="Stock disponible"
+                    style={{ padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.25rem' }}
+                />
+                <input
+                    type="number"
+                    name="weight_grams"
+                    value={formData.weight_grams}
+                    onChange={handleChange}
+                    placeholder="Peso en gramos (ej: 500)"
+                    style={{ padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.25rem' }}
+                />
+                <input
+                    type="url"
+                    name="image_url"
+                    value={formData.image_url}
+                    onChange={handleChange}
+                    placeholder="URL de la imagen del producto"
                     style={{ padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.25rem' }}
                 />
                 <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', gridColumn: 'span 2' }}>
@@ -214,7 +286,7 @@ const SimpleAdmin = () => {
                         onClick={() => {
                             setEditingId(null);
                             setFormData({
-                                name: '', description: '', category: '', price_usd: 0, price_local: 0, pv: 0, stock: 0, is_activation: false
+                                name: '', description: '', category: '', price_usd: 0, price_local: 0, pv: 0, stock: 0, weight_grams: 500, image_url: '', is_activation: false
                             });
                         }}
                         style={{

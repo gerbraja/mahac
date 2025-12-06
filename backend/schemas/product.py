@@ -28,6 +28,6 @@ class Product(ProductBase):
     updated_at: Optional[datetime] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True  # Pydantic v2 syntax (was orm_mode in v1)
 
 

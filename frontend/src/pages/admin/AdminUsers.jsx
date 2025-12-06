@@ -226,17 +226,26 @@ export default function AdminUsers() {
                                         </button>
                                         <button
                                             onClick={() => handleDelete(user.id)}
+                                            disabled={user.status === 'active' || user.is_admin}
+                                            title={
+                                                user.is_admin 
+                                                    ? 'No se puede eliminar un administrador' 
+                                                    : user.status === 'active' 
+                                                    ? 'No se puede eliminar un usuario activo. Los usuarios activos están protegidos.' 
+                                                    : 'Eliminar usuario'
+                                            }
                                             style={{
                                                 padding: '0.5rem 1rem',
-                                                background: '#ef4444',
+                                                background: (user.status === 'active' || user.is_admin) ? '#d1d5db' : '#ef4444',
                                                 color: 'white',
                                                 border: 'none',
                                                 borderRadius: '0.375rem',
-                                                cursor: 'pointer',
-                                                fontWeight: '500'
+                                                cursor: (user.status === 'active' || user.is_admin) ? 'not-allowed' : 'pointer',
+                                                fontWeight: '500',
+                                                opacity: (user.status === 'active' || user.is_admin) ? 0.6 : 1
                                             }}
                                         >
-                                            🗑️ Eliminar
+                                            🗑️ {(user.status === 'active' || user.is_admin) ? '🔒 Protegido' : 'Eliminar'}
                                         </button>
                                     </td>
                                 </tr>

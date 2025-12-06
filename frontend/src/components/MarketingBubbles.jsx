@@ -82,13 +82,16 @@ const MarketingBubbles = () => {
                         transition={{ duration: 0.5 }}
                         className="bg-white/95 backdrop-blur-md border-l-4 border-blue-600 shadow-2xl rounded-lg px-6 py-4 flex items-center gap-4 min-w-[300px]"
                     >
-                        <div className="bg-gradient-to-br from-blue-500 to-blue-700 text-white rounded-full w-12 h-12 flex items-center justify-center text-lg font-bold shadow-md">
-                            {currentBubble.country ? currentBubble.country.substring(0, 2).toUpperCase() : 'GL'}
+                        <div className="text-5xl flex items-center justify-center">
+                            {currentBubble.flag_emoji || '🌍'}
                         </div>
                         <div className="flex flex-col">
                             <span className="text-base font-bold text-gray-800">{currentBubble.name}</span>
                             <span className="text-xs text-blue-600 font-semibold uppercase tracking-wide">
-                                ¡Nuevo Socio Activo! {currentBubble.country || 'Global'}
+                                ¡Nuevo Socio Activo!
+                            </span>
+                            <span className="text-xs text-gray-600 font-medium mt-0.5">
+                                {currentBubble.flag_emoji || '🌍'} {currentBubble.country || 'Global'}
                             </span>
                         </div>
                     </motion.div>

@@ -1,0 +1,268 @@
+═══════════════════════════════════════════════════════════════════════════════
+                    BACKUP CONFIGURACIÓN MATRICES - 6 DIC 2025
+═══════════════════════════════════════════════════════════════════════════════
+⚠️ ARCHIVO DE RESPALDO - NO ELIMINAR
+Este archivo contiene la configuración completa y correcta de todas las matrices.
+Fecha: 6 de diciembre de 2025
+═══════════════════════════════════════════════════════════════════════════════
+
+📄 FRONTEND: MatrixView.jsx
+Líneas 4-14 - CONFIGURACIÓN MATRIX_LEVELS (COPIAR TAL CUAL)
+═══════════════════════════════════════════════════════════════════════════════
+
+// Matrix configurations - Complete list from CONSUMIDOR to DIAMANTE AZUL
+// Based on backend/mlm/plans/matriz_forzada/plan_template.yml
+const MATRIX_LEVELS = {
+    1: { name: 'CONSUMIDOR', reward: 77, rewardUSD: 77, rewardCrypto: 0, color: '#10b981', icon: '🛍️', monthlyLimit: 14 },
+    2: { name: 'BRONCE', reward: 277, rewardUSD: 277, rewardCrypto: 0, color: '#cd7f32', icon: '🥉', monthlyLimit: 10 },
+    3: { name: 'PLATA', reward: 877, rewardUSD: 877, rewardCrypto: 0, color: '#c0c0c0', icon: '🥈', monthlyLimit: 8 },
+    4: { name: 'ORO', reward: 3000, rewardUSD: 1500, rewardCrypto: 1500, color: '#ffd700', icon: '🥇', monthlyLimit: 7 },
+    5: { name: 'PLATINO', reward: 9700, rewardUSD: 4850, rewardCrypto: 4850, color: '#e5e4e2', icon: '💍', monthlyLimit: 6 },
+    6: { name: 'RUBÍ', reward: 25000, rewardUSD: 12500, rewardCrypto: 12500, color: '#e0115f', icon: '♦️', monthlyLimit: 5 },
+    7: { name: 'ESMERALDA', reward: 77000, rewardUSD: 38500, rewardCrypto: 38500, color: '#50c878', icon: '💚', monthlyLimit: 4 },
+    8: { name: 'DIAMANTE', reward: 270000, rewardUSD: 135000, rewardCrypto: 135000, color: '#b9f2ff', icon: '💎', monthlyLimit: 2 },
+    9: { name: 'DIAMANTE AZUL', reward: 970000, rewardUSD: 485000, rewardCrypto: 485000, color: '#4169e1', icon: '💎', monthlyLimit: 1 }
+};
+
+═══════════════════════════════════════════════════════════════════════════════
+📄 BACKEND: plan_template.yml
+CONFIGURACIÓN COMPLETA YAML (COPIAR TAL CUAL)
+═══════════════════════════════════════════════════════════════════════════════
+
+plan_name: "Forced Matrix"
+plan_key: "matriz_forzada"
+description: "Matrix with fixed width and depth"
+currency: "USD"
+qualification:
+    minimum_personal_volume: "0.00"
+
+# Matrices / levels definition. Amounts are strings and should be parsed to Decimal in the loader.
+matrices:
+    - id: 27
+      amount: "77.00"
+      reentry_amount: "27.00"
+      next_matrix: 77
+      monthly_limit: 14
+      yearly_limit: null
+      rank_up:
+          from: "Consumer"
+          to: "Distributor"
+      one_time_bonus: null
+      period: "month"
+
+    - id: 77
+      amount: "277.00"
+      reentry_amount: "77.00"
+      next_matrix: 277
+      monthly_limit: 10
+      yearly_limit: null
+      rank_up:
+          from: "Distributor"
+          to: "Bronze Distributor"
+      one_time_bonus: null
+      period: "month"
+
+    - id: 277
+      amount: "877.00"
+      reentry_amount: "277.00"
+      next_matrix: 877
+      monthly_limit: 8
+      yearly_limit: null
+      rank_up:
+          from: "Bronze Distributor"
+          to: "Silver Distributor"
+      one_time_bonus:
+          amount: "147.00"
+          description: "Virtual store bonus"
+      period: "month"
+
+    - id: 877
+      amount: "3000.00"
+      reentry_amount: "877.00"
+      next_matrix: 3000
+      monthly_limit: 7
+      yearly_limit: null
+      rank_up:
+          from: "Silver Distributor"
+          to: "Gold Distributor"
+      one_time_bonus:
+          amount: "500.00"
+          description: "Virtual Store Bonus"
+      period: "month"
+
+    - id: 3000
+      amount: "9700.00"
+      reentry_amount: "3000.00"
+      next_matrix: 9700
+      monthly_limit: 6
+      yearly_limit: null
+      rank_up:
+          from: "Gold Distributor"
+          to: "Platinum Business Owner"
+      one_time_bonus:
+          amount: "1700.00"
+          description: "Store bonus"
+      period: "month"
+
+    - id: 9700
+      amount: "25000.00"
+      reentry_amount: "9700.00"
+      next_matrix: 25000
+      monthly_limit: 5
+      yearly_limit: null
+      rank_up:
+          from: "Platinum Business Owner"
+          to: "Ruby Executive"
+      one_time_bonus:
+          amount: "4000.00"
+          description: "Ruby bonus"
+      period: "month"
+
+    - id: 25000
+      amount: "77000.00"
+      reentry_amount: "25000.00"
+      next_matrix: 77000
+      monthly_limit: 4
+      yearly_limit: null
+      rank_up:
+          from: "Ruby Executive"
+          to: "Emerald Leader"
+      one_time_bonus:
+          amount: "7700.00"
+          description: "Emerald bonus"
+      period: "month"
+
+    - id: 77000
+      amount: "270000.00"
+      reentry_amount: "77000.00"
+      next_matrix: 270000
+      monthly_limit: 2
+      yearly_limit: null
+      rank_up:
+          from: "Emerald Leader"
+          to: "Diamond Master"
+      one_time_bonus:
+          amount: "47000.00"
+          description: "Master bonus"
+      period: "month"
+
+    - id: 270000
+      amount: "970000.00"
+      reentry_amount: "270000.00"
+      next_matrix: 970000
+      monthly_limit: 1
+      yearly_limit: null
+      rank_up:
+          from: "Diamond Master"
+          to: "Blue Diamond Elite"
+      one_time_bonus:
+          amount: "77000.00"
+          description: "Elite bonus"
+      period: "month"
+
+# End of matrices
+
+notes: |
+    This YAML file defines the forced-matrix plan. Keep the plan as pure YAML.
+    Implementation code and examples are stored under `backend/mlm/examples/`.
+    Virtual balance column and other DB notes can go here.
+
+
+═══════════════════════════════════════════════════════════════════════════════
+                            TABLA RESUMEN DEFINITIVA
+═══════════════════════════════════════════════════════════════════════════════
+
+┌────┬──────────────────┬────────────┬────────────┬────────────┬──────────┬──────────┐
+│ #  │ NOMBRE           │ RECOMPENSA │ USD        │ CRIPTO     │ ICONO    │ CICLOS/M │
+├────┼──────────────────┼────────────┼────────────┼────────────┼──────────┼──────────┤
+│ 1  │ CONSUMIDOR       │ $77        │ $77        │ -          │ 🛍️       │ 14       │
+│ 2  │ BRONCE           │ $277       │ $277       │ -          │ 🥉       │ 10       │
+│ 3  │ PLATA            │ $877       │ $877       │ -          │ 🥈       │ 8        │
+│ 4  │ ORO              │ $3,000     │ $1,500     │ $1,500     │ 🥇       │ 7        │
+│ 5  │ PLATINO          │ $9,700     │ $4,850     │ $4,850     │ 💍       │ 6        │
+│ 6  │ RUBÍ             │ $25,000    │ $12,500    │ $12,500    │ ♦️       │ 5        │
+│ 7  │ ESMERALDA        │ $77,000    │ $38,500    │ $38,500    │ 💚       │ 4        │
+│ 8  │ DIAMANTE         │ $270,000   │ $135,000   │ $135,000   │ 💎       │ 2        │
+│ 9  │ DIAMANTE AZUL    │ $970,000   │ $485,000   │ $485,000   │ 💎       │ 1        │
+└────┴──────────────────┴────────────┴────────────┴────────────┴──────────┴──────────┘
+
+TOTAL ACUMULADO: $1,354,931 USD
+
+═══════════════════════════════════════════════════════════════════════════════
+                            CAMBIOS IMPORTANTES
+═══════════════════════════════════════════════════════════════════════════════
+
+✅ CORRECCIONES APLICADAS:
+1. Orden corregido: PLATINO → RUBÍ → ESMERALDA (antes estaba al revés)
+2. Montos actualizados según valores reales del negocio
+3. rank_up corregido en matriz DIAMANTE: "Emerald Leader" → "Diamond Master"
+4. Límites mensuales agregados en frontend
+5. Columna "Ciclos Mes" agregada con contador X/Y y validación
+6. Iconos actualizados:
+   - ESMERALDA: 💚 (gema verde)
+   - DIAMANTE: 💎 (diamante blanco/azul claro)
+   - DIAMANTE AZUL: 💎 (mismo diamante)
+
+✅ SISTEMA CRIPTO CONGELADA:
+- Modelo: frozen_crypto.py
+- Periodo: 210 días
+- Valor token: $100 USD
+- Tabla: frozen_crypto
+- Estados: frozen, available, converted, withdrawn
+- Propiedades: days_remaining, hours_remaining
+
+✅ CARACTERÍSTICAS UI:
+- Contador ciclos mensuales visible
+- Indicador "Faltan X" o "Límite alcanzado"
+- Badge cripto con "🔒 210 días"
+- Sección informativa completa del sistema cripto
+- Tabla responsive con todas las matrices
+
+═══════════════════════════════════════════════════════════════════════════════
+                        INSTRUCCIONES DE RESTAURACIÓN
+═══════════════════════════════════════════════════════════════════════════════
+
+Si algo se borra o cambia incorrectamente:
+
+1. FRONTEND (MatrixView.jsx):
+   - Abrir: frontend/src/pages/dashboard/MatrixView.jsx
+   - Buscar líneas 4-14: const MATRIX_LEVELS = {
+   - Reemplazar TODO el objeto con el código de este archivo
+
+2. BACKEND (plan_template.yml):
+   - Abrir: backend/mlm/plans/matriz_forzada/plan_template.yml
+   - Reemplazar toda la sección "matrices:" con el YAML de este archivo
+   - ⚠️ RESPETAR INDENTACIÓN EXACTA (espacios, no tabs)
+
+3. VERIFICACIÓN:
+   - Matrices: 9 totales (1-9)
+   - Orden: CONSUMIDOR → BRONCE → PLATA → ORO → PLATINO → RUBÍ → ESMERALDA → DIAMANTE → DIAMANTE AZUL
+   - Total acumulado: $1,354,931 USD
+
+═══════════════════════════════════════════════════════════════════════════════
+                            ARCHIVOS RELACIONADOS
+═══════════════════════════════════════════════════════════════════════════════
+
+📁 BACKEND:
+- backend/mlm/plans/matriz_forzada/plan_template.yml (PRINCIPAL)
+- backend/database/models/frozen_crypto.py (Modelo cripto)
+- backend/mlm/services/activation_service.py (Activación + comisiones)
+- backend/routers/admin.py (Endpoints admin)
+
+📁 FRONTEND:
+- frontend/src/pages/dashboard/MatrixView.jsx (PRINCIPAL - Vista matrices)
+- frontend/src/pages/admin/AdminUsers.jsx (Protección usuarios)
+- frontend/src/pages/dashboard/StoreView.jsx (Productos 3 columnas)
+
+📁 BASE DE DATOS:
+- frozen_crypto (tabla)
+- sponsorship_commissions (tabla)
+- users, products, categories
+
+═══════════════════════════════════════════════════════════════════════════════
+                                FIN DEL BACKUP
+═══════════════════════════════════════════════════════════════════════════════
+Fecha creación: 6 de diciembre de 2025
+Última actualización: 6 de diciembre de 2025
+Estado: CONFIGURACIÓN FINAL APROBADA ✅
+⚠️ NO ELIMINAR ESTE ARCHIVO - ES EL RESPALDO MAESTRO

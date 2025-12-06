@@ -2,10 +2,14 @@ from sqlalchemy import func, text
 from sqlalchemy.orm import Session
 from backend.database.models.activation import ActivationLog
 from backend.database.models.user import User
+from backend.database.models.sponsorship import SponsorshipCommission
 from backend.mlm.services.binary_service import calculate_binary_global_commissions
-from backend.mlm.services.arrival_service import apply_arrival_bonus_rules
 import asyncio
 from backend.utils.websocket_manager import manager
+from backend.database.models.unilevel import UnilevelMember
+
+# Fixed sponsorship commission amount
+SPONSORSHIP_COMMISSION_USD = 9.7
 
 
 def process_activation(db: Session, user_id: int, package_amount: float, signup_percent: float | None = None, plan_file: str | None = None):
@@ -56,49 +60,70 @@ def process_activation(db: Session, user_id: int, package_amount: float, signup_
     activation_log = ActivationLog(user_id=user_id, package_amount=package_amount)
     db.add(activation_log)
 
+    # CREATE SPONSORSHIP COMMISSION ($9.7 USD to direct sponsor)
+    sponsorship_commission = None
+    if hasattr(user, 'referred_by_id') and user.referred_by_id:
+        sponsorship_commission = SponsorshipCommission(
+            sponsor_id=user.referred_by_id,
+            new_member_id=user_id,
+            package_amount=package_amount,
+            commission_amount=SPONSORSHIP_COMMISSION_USD,
+            status="pending"  # Can be marked as 'paid' when processed
+        )
+        db.add(sponsorship_commission)
+        db.flush()  # Get the commission ID
+
+    # Ensure Unilevel placement exists for the user (create if missing).
+    # We use the referred_by_id from User to link sponsor (if present).
+    try:
+        existing_unilevel = db.query(UnilevelMember).filter(UnilevelMember.user_id == user_id).first()
+        if not existing_unilevel:
+            sponsor_member = None
+            if getattr(user, 'referred_by_id', None):
+                sponsor_member = db.query(UnilevelMember).filter(UnilevelMember.user_id == user.referred_by_id).order_by(UnilevelMember.id.asc()).first()
+
+            new_unilevel = UnilevelMember(user_id=user_id, sponsor_id=(sponsor_member.id if sponsor_member else None), level=1)
+            db.add(new_unilevel)
+            db.flush()
+    except Exception:
+        # If anything goes wrong, continue; arrival bonuses will be skipped later if needed.
+        pass
+
     # 1) signup distribution (Binary Global Commission - 7% of package value)
     signup_comms = calculate_binary_global_commissions(db, user_id, package_amount, signup_percent=signup_percent or None)
 
-    # 2) arrival rules (Binary Global Arrival Bonuses)
+    # 2) TRIGGER: Activate in Binary Global 2x2 (Pre-register + Activate)
+    # This will automatically trigger arrival bonuses for upline
     plan_file = plan_file or "binario_global/plan_template.yml"
-    try:
-        arrival_comms = apply_arrival_bonus_rules(db, user_id, plan_file=plan_file)
-    except ValueError:
-        arrival_comms = []
-
-    # 3) TRIGGER: Activate in Binary Global 2x2 (Pre-register + Activate)
-    # Ensure user is in the tree
     from backend.mlm.services.binary_service import register_in_binary_global, activate_binary_global
     register_in_binary_global(db, user_id)
-    activate_binary_global(db, user_id)
+    activate_binary_global(db, user_id, plan_file=plan_file)
 
-    # 4) TRIGGER: Activate in Forced Matrix 3x3 (Buy Position)
+    # 3) TRIGGER: Activate in Forced Matrix 3x3 (Buy Position)
     # We assume Matrix ID 1 is the default matrix triggered by activation
     from backend.mlm.services.matrix_service import MatrixService
-    from backend.mlm.plans.matriz_forzada.plan_template import plan_template_path # We might need to load plan
-    # For simplicity, we'll instantiate MatrixService with a dummy plan or load it properly if needed.
-    # However, MatrixService needs a MatrixPlan object.
-    # Let's use the router's logic or a simplified call if possible.
-    # Better: Import the service function if refactored, or instantiate Service.
-    # Since MatrixService was refactored to use DB, we can use it.
-    # We need to load the plan first.
+    # For simplicity, load the forced-matrix plan and use its first matrix id as the activation level.
     from backend.mlm.schemas.plan import MatrixPlan
     import yaml
     import os
-    
+
     # Load Matrix Plan (Hardcoded path for now, ideally from config)
     matrix_plan_path = os.path.join(os.path.dirname(__file__), "..", "plans", "matriz_forzada", "plan_template.yml")
     if os.path.exists(matrix_plan_path):
-        with open(matrix_plan_path, 'r') as f:
-            plan_data = yaml.safe_load(f)
-            matrix_plan = MatrixPlan(**plan_data)
-            matrix_service = MatrixService(matrix_plan)
-            # Buy Matrix 1 (Standard)
-            try:
-                matrix_service.buy_matrix(db, user_id, matrix_id=1, amount=0) # Amount 0 because it's included in package? Or use package_amount?
-                # User didn't specify amount split. We assume package covers it.
-            except Exception as e:
-                print(f"Error activating matrix: {e}")
+        try:
+            with open(matrix_plan_path, 'r') as f:
+                plan_data = yaml.safe_load(f)
+                matrix_plan = MatrixPlan(**plan_data)
+                matrix_service = MatrixService(matrix_plan)
+                # Use the first matrix id defined in the plan (if available)
+                first_matrix_id = matrix_plan.matrices[0].id if getattr(matrix_plan, 'matrices', None) and len(matrix_plan.matrices) > 0 else None
+                if first_matrix_id:
+                    try:
+                        matrix_service.buy_matrix(db, user_id, matrix_id=first_matrix_id)
+                    except Exception as e:
+                        print(f"Error activating matrix: {e}")
+        except Exception as e:
+            print(f"Error loading matrix plan: {e}")
 
     # commit atomically
     db.commit()
@@ -121,7 +146,12 @@ def process_activation(db: Session, user_id: int, package_amount: float, signup_
 
     return {
         'signup_commissions': signup_comms,
-        'arrival_commissions': arrival_comms,
+        'arrival_commissions': [],  # Now handled internally by activate_binary_global
+        'sponsorship_commission': {
+            'sponsor_id': sponsorship_commission.sponsor_id,
+            'amount': sponsorship_commission.commission_amount,
+            'commission_id': sponsorship_commission.id
+        } if sponsorship_commission else None,
         'membership_number': user.membership_number,
         'membership_code': user.membership_code,
     }

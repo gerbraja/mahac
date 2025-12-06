@@ -11,30 +11,40 @@ from backend.database.models.product import Product
 
 db = SessionLocal()
 
-try:
+def check_products():
+    print("=" * 80)
+    print("📦 PRODUCTOS EN LA BASE DE DATOS")
+    print("=" * 80)
+    
     all_products = db.query(Product).all()
     
-    print(f"\n📦 Total de productos en la base de datos: {len(all_products)}\n")
-    
     if not all_products:
-        print("❌ No hay productos en la base de datos.")
-    else:
-        activation_products = [p for p in all_products if p.is_activation]
-        regular_products = [p for p in all_products if not p.is_activation]
-        
-        if activation_products:
-            print("🚀 PAQUETES DE ACTIVACIÓN:")
-            for p in activation_products:
-                print(f"   ID: {p.id} | {p.name} | ${p.price_usd} USD | PV: {p.pv} | Stock: {p.stock}")
-        
-        if regular_products:
-            print("\n📦 PRODUCTOS REGULARES:")
-            for p in regular_products:
-                print(f"   ID: {p.id} | {p.name} | ${p.price_usd} USD | PV: {p.pv} | Stock: {p.stock}")
+        print("\n❌ No hay productos en la base de datos.\n")
+        return
     
-except Exception as e:
-    print(f"❌ Error: {e}")
-    import traceback
-    traceback.print_exc()
-finally:
+    print(f"\n✅ Total de productos encontrados: {len(all_products)}\n")
+    
+    active_count = 0
+    inactive_count = 0
+    
+    for product in all_products:
+        status = "✅ ACTIVO" if product.active else "❌ INACTIVO"
+        if product.active:
+            active_count += 1
+        else:
+            inactive_count += 1
+            
+        print(f"{status} | ID: {product.id:3d} | {product.name[:50]:50s} | PV: {product.pv:3d} | Stock: {product.stock:4d}")
+        if product.image_url:
+            print(f"         | Imagen: {product.image_url[:70]}")
+    
+    print("\n" + "=" * 80)
+    print(f"📊 RESUMEN:")
+    print(f"   Productos activos:   {active_count}")
+    print(f"   Productos inactivos: {inactive_count}")
+    print("=" * 80)
+    
     db.close()
+
+if __name__ == "__main__":
+    check_products()

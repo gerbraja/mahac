@@ -1,0 +1,451 @@
+═══════════════════════════════════════════════════════════════════════════════
+                    RED BINARIA GLOBAL 2x2 - PLAN DE COMPENSACIÓN
+═══════════════════════════════════════════════════════════════════════════════
+Fecha: 6 de diciembre de 2025
+═══════════════════════════════════════════════════════════════════════════════
+
+📋 **ESTRUCTURA DE LA RED BINARIA GLOBAL**
+
+La Red Binaria Global es una estructura 2x2 donde cada persona puede tener máximo 2 referidos directos (uno en la pierna izquierda y uno en la pierna derecha).
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           ESTRUCTURA 2x2                                    │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│                              TÚ (Nivel 0)                                   │
+│                                  │                                          │
+│                    ┌─────────────┴─────────────┐                           │
+│                    │                           │                           │
+│               Izquierda                    Derecha                         │
+│                (Nivel 1)                  (Nivel 1)                        │
+│                    │                           │                           │
+│            ┌───────┴───────┐           ┌───────┴───────┐                  │
+│            │               │           │               │                   │
+│           L-L             L-R         R-L             R-R                  │
+│        (Nivel 2)       (Nivel 2)   (Nivel 2)       (Nivel 2)              │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════════════════
+📊 **CRECIMIENTO EXPONENCIAL 2x2**
+═══════════════════════════════════════════════════════════════════════════════
+
+Nivel  │ Personas │ Fórmula  │ Total Acumulado │ ¿Se Paga?
+───────┼──────────┼──────────┼─────────────────┼───────────
+  0    │    1     │   2^0    │        1        │   NO (Tú)
+  1    │    2     │   2^1    │        3        │   SÍ ✅ (Impar)
+  2    │    4     │   2^2    │        7        │   NO
+  3    │    8     │   2^3    │       15        │   SÍ ✅ (Impar)
+  4    │   16     │   2^4    │       31        │   NO
+  5    │   32     │   2^5    │       63        │   SÍ ✅ (Impar)
+  6    │   64     │   2^6    │      127        │   NO
+  7    │  128     │   2^7    │      255        │   SÍ ✅ (Impar)
+  8    │  256     │   2^8    │      511        │   NO
+  9    │  512     │   2^9    │    1,023        │   SÍ ✅ (Impar)
+ 10    │ 1,024    │   2^10   │    2,047        │   NO
+ 11    │ 2,048    │   2^11   │    4,095        │   SÍ ✅ (Impar)
+ 12    │ 4,096    │   2^12   │    8,191        │   NO
+ 13    │ 8,192    │   2^13   │   16,383        │   SÍ ✅ (Impar)
+ 14    │ 16,384   │   2^14   │   32,767        │   NO
+ 15    │ 32,768   │   2^15   │   65,535        │   SÍ ✅ (Impar)
+ 16    │ 65,536   │   2^16   │  131,071        │   NO
+ 17    │ 131,072  │   2^17   │  262,143        │   SÍ ✅ (Impar)
+ 18    │ 262,144  │   2^18   │  524,287        │   NO
+ 19    │ 524,288  │   2^19   │ 1,048,575       │   SÍ ✅ (Impar)
+ 20    │ 1,048,576│   2^20   │ 2,097,151       │   NO
+ 21    │ 2,097,152│   2^21   │ 4,194,303       │   SÍ ✅ (Impar)
+
+═══════════════════════════════════════════════════════════════════════════════
+💰 **REGLAS DE PAGO**
+═══════════════════════════════════════════════════════════════════════════════
+
+✅ **SE PAGAN SOLO LOS NIVELES IMPARES DEL 3 AL 21:**
+   - Nivel 3, 5, 7, 9, 11, 13, 15, 17, 19, 21
+
+❌ **NO SE PAGAN LOS NIVELES 1, 2 Y TODOS LOS PARES:**
+   - Nivel 1: NO se paga
+   - Nivel 2: NO se paga (par)
+   - Niveles pares: 4, 6, 8, 10, 12, 14, 16, 18, 20
+
+⚠️ **NO SE PAGA LA PIERNA MÁS CORTA:**
+   - Solo se cuentan las personas hasta donde llegue la pierna más corta
+
+🔄 **SE PAGA UNA VEZ AL AÑO POR USUARIO:**
+   - Cuando aparece un nuevo usuario en un nivel impar → se paga UNA sola vez
+   - NO se requiere que el nivel esté completo
+   - El pago es por cada persona nueva que aparezca en ese nivel impar
+
+📅 **PERIODO DE PAGO:**
+   - El usuario DEBE estar activo (haber comprado un paquete)
+   - Puede ganar por personas que YA están en el sistema al momento de activarse
+   - Puede ganar por personas nuevas que ingresen durante 367 días después de su pre-registro
+
+═══════════════════════════════════════════════════════════════════════════════
+📝 **PROCESO DE PRE-AFILIACIÓN Y ACTIVACIÓN**
+═══════════════════════════════════════════════════════════════════════════════
+
+🔵 **FASE 1: PRE-AFILIACIÓN**
+
+Cuando una persona se pre-registra:
+1. ✅ Toma su lugar en el árbol binario inmediatamente
+2. ✅ Queda ubicado bajo el usuario que escribió en el formulario de pre-inscripción
+3. ✅ Su posición se guarda en el sistema (pierna izquierda o derecha)
+4. ⏰ Tiene 120 días para activarse con un paquete
+5. ⚠️ Estado: INACTIVO (no puede ganar comisiones todavía)
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                      SISTEMA DE EXPIRACIÓN                                  │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  Día 0:   Pre-registro → Lugar reservado en el árbol                       │
+│  Día 1-119: Puede activarse en cualquier momento                           │
+│  Día 120:  Si NO se activó → ELIMINADO del árbol                           │
+│                                                                             │
+│  Al eliminar:                                                               │
+│  • La persona encima toma su lugar                                          │
+│  • El sistema se COMPRIME (sube todos los de abajo)                         │
+│  • Las posiciones se reajustan automáticamente                              │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+🟢 **FASE 2: ACTIVACIÓN**
+
+Cuando una persona se activa con CUALQUIER paquete:
+1. ✅ Cambia estado a ACTIVO
+2. ✅ Ya puede empezar a ganar comisiones
+3. ✅ Gana por personas que YA están debajo de él (retroactivo)
+4. ✅ Gana por personas nuevas que entren durante 367 días desde su PRE-REGISTRO
+5. ⏰ Ventana de ganancias: 367 días desde pre-registro (NO desde activación)
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    VENTANA DE GANANCIAS (367 DÍAS)                          │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  Día 0:    Pre-registro → INICIA el contador de 367 días                   │
+│  Día 30:   Se activa con paquete → Gana por todos los que ya están         │
+│  Día 367:  FIN de la ventana de ganancias                                   │
+│                                                                             │
+│  Ejemplo:                                                                   │
+│  - Pre-registro: 1 de enero                                                 │
+│  - Activación: 15 de febrero (día 45)                                       │
+│  - Fin ventana: 2 de enero del año siguiente (día 367)                     │
+│  - Ganó durante: 322 días (desde activación hasta fin de ventana)          │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════════════════
+📝 **EJEMPLO PRÁCTICO DE FUNCIONAMIENTO**
+═══════════════════════════════════════════════════════════════════════════════
+
+**SITUACIÓN INICIAL:**
+
+Usuario A (Activo)
+    ├─ Usuario B (Pre-afiliado día 1)
+    └─ Usuario C (Pre-afiliado día 1)
+
+**DÍA 30 - Usuario B se activa:**
+
+Usuario A (Activo)
+    ├─ Usuario B (ACTIVO ✅) ← Ahora puede ganar
+    │   ├─ Usuario D (Pre-afiliado)
+    │   └─ Usuario E (Pre-afiliado)
+    └─ Usuario C (Pre-afiliado)
+        ├─ Usuario F (Pre-afiliado)
+        └─ Usuario G (Pre-afiliado)
+
+→ Usuario B gana comisión por D y E (si están en nivel impar)
+→ Usuario A gana comisión por B, C, D, E, F, G (según nivel)
+
+**DÍA 121 - Usuario C NO se activó:**
+
+Usuario A (Activo)
+    ├─ Usuario B (ACTIVO)
+    │   ├─ Usuario D (Pre-afiliado)
+    │   └─ Usuario E (Pre-afiliado)
+    └─ Usuario F (Pre-afiliado) ← C fue eliminado, F subió de posición
+        └─ Usuario G (Pre-afiliado) ← G también subió
+
+→ C fue eliminado por no activarse en 120 días
+→ F tomó el lugar de C (compresión del árbol)
+→ G quedó bajo F
+
+**DÍA 367 - Fin de ventana de Usuario B:**
+
+Usuario B ya NO puede ganar por personas nuevas que entren después del día 367
+Pero sigue en el árbol y puede seguir construyendo su red
+
+═══════════════════════════════════════════════════════════════════════════════
+💰 **CÁLCULO DE COMISIONES**
+═══════════════════════════════════════════════════════════════════════════════
+
+**REGLA PRINCIPAL:**
+Se paga UNA VEZ al año por cada usuario nuevo que aparezca en un nivel impar
+
+**EJEMPLO CON MONTOS REALES:**
+
+Usuario ACTIVO con esta red:
+
+Nivel 1 (Impar):
+- ❌ NO SE PAGA
+→ Comisión: $0.00
+
+Nivel 2 (Par):
+- ❌ NO SE PAGA (nivel par)
+→ Comisión: $0.00
+
+Nivel 3 (Impar):
+- Pierna Izquierda: 6 personas
+- Pierna Derecha: 4 personas
+→ Pierna más corta: 4
+→ Paga por 4 personas (las primeras 4 que llegaron, respetando pierna más corta)
+→ Comisión: $0.50 x 4 = $2.00
+
+Nivel 5 (Impar):
+- Pierna Izquierda: 20 personas
+- Pierna Derecha: 15 personas
+→ Pierna más corta: 15
+→ Paga por 15 personas
+→ Comisión: $0.50 x 15 = $7.50
+
+Nivel 15 (Impar):
+- Pierna Izquierda: 18,000 personas
+- Pierna Derecha: 16,000 personas
+→ Pierna más corta: 16,000
+→ Paga por 16,000 personas
+→ Comisión: $1.00 x 16,000 = $16,000.00
+
+**IMPORTANTE:**
+- Solo se paga por personas que entraron durante los 367 días desde el pre-registro
+- Solo se paga si el usuario está ACTIVO (compró un paquete)
+- Cada persona paga UNA SOLA VEZ por año
+- Se respeta la pierna más corta en cada nivel
+
+═══════════════════════════════════════════════════════════════════════════════
+💰 **PLAN DE COMPENSACIÓN OFICIAL**
+═══════════════════════════════════════════════════════════════════════════════
+
+⚠️ **REGLAS DE PAGO:**
+- Se paga UNA VEZ al año por cada membresía activa
+- Solo niveles IMPARES del 3 al 21
+- Niveles 1 y 2 NO generan ningún ingreso
+- Solo se paga por miembros ACTIVOS durante sus 367 días
+- La red se renueva cada año con paquete de continuidad
+
+Nivel │ Personas │ Comisión/Usuario │ Máximo por Nivel │ Pierna Más Corta
+──────┼──────────┼──────────────────┼──────────────────┼───────────────────
+  1   │    2     │      $0.00       │       $0.00      │ ❌ NO SE PAGA
+  2   │    4     │      $0.00       │       $0.00      │ ❌ NO SE PAGA
+  3   │    8     │      $0.50       │       $4.00      │ min(izq, der) ≤ 4
+  4   │   16     │      $0.00       │       $0.00      │ ❌ NO SE PAGA
+  5   │   32     │      $0.50       │      $16.00      │ min(izq, der) ≤ 16
+  6   │   64     │      $0.00       │       $0.00      │ ❌ NO SE PAGA
+  7   │  128     │      $0.50       │      $64.00      │ min(izq, der) ≤ 64
+  8   │  256     │      $0.00       │       $0.00      │ ❌ NO SE PAGA
+  9   │  512     │      $0.50       │     $256.00      │ min(izq, der) ≤ 256
+ 10   │ 1,024    │      $0.00       │       $0.00      │ ❌ NO SE PAGA
+ 11   │ 2,048    │      $0.50       │   $1,024.00      │ min(izq, der) ≤ 1,024
+ 12   │ 4,096    │      $0.00       │       $0.00      │ ❌ NO SE PAGA
+ 13   │ 8,192    │      $0.50       │   $4,096.00      │ min(izq, der) ≤ 4,096
+ 14   │ 16,384   │      $0.00       │       $0.00      │ ❌ NO SE PAGA
+ 15   │ 32,768   │      $1.00       │  $32,768.00      │ min(izq, der) ≤ 16,384
+ 16   │ 65,536   │      $0.00       │       $0.00      │ ❌ NO SE PAGA
+ 17   │ 131,072  │      $1.00       │ $131,072.00      │ min(izq, der) ≤ 65,536
+ 18   │ 262,144  │      $0.00       │       $0.00      │ ❌ NO SE PAGA
+ 19   │ 524,288  │      $1.00       │ $524,288.00      │ min(izq, der) ≤ 262,144
+ 20   │ 1,048,576│      $0.00       │       $0.00      │ ❌ NO SE PAGA
+ 21   │ 2,097,152│      $1.00       │$2,097,152.00     │ min(izq, der) ≤ 1,048,576
+
+📊 **TOTALES:**
+- Niveles 3-13 (impar): $5,460.00
+- Niveles 15-21 (impar): $2,785,280.00
+- TOTAL MÁXIMO TEÓRICO: $2,790,740.00
+
+🔄 **RENOVACIÓN ANUAL:**
+La red se renueva cada año. Los usuarios deben adquirir un paquete de continuidad
+para seguir activos y seguir generando comisiones el siguiente año.
+
+═══════════════════════════════════════════════════════════════════════════════
+🔧 **IMPLEMENTACIÓN TÉCNICA**
+═══════════════════════════════════════════════════════════════════════════════
+
+📁 **Modelo de Base de Datos:** binary_global_members
+
+Campos clave:
+- user_id: ID del usuario
+- upline_id: ID del padre en el árbol binario
+- position: 'left' o 'right' (pierna)
+- global_position: Orden de llegada global
+- is_active: False = Pre-registrado, True = Activo (pagó paquete)
+- registered_at: Fecha de pre-registro
+- activation_deadline: registered_at + 120 días
+- activated_at: Fecha de activación
+- earning_deadline: registered_at + 367 días
+
+📊 **Lógica de Comisiones:**
+
+1. Usuario debe estar ACTIVO (is_active = True)
+2. Solo personas dentro de ventana de 367 días desde pre-registro del upline
+3. Solo niveles impares (1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21)
+4. Paga UNA VEZ por año por cada usuario en nivel impar
+5. Respeta pierna más corta: min(left_count, right_count)
+
+📝 **Algoritmo Actualizado:**
+
+```python
+def calculate_binary_commissions(user_id):
+    user = get_user(user_id)
+    
+    # Verificar que el usuario esté activo
+    if not user.is_active:
+        return "Usuario no activo - no puede ganar comisiones"
+    
+    # Verificar ventana de ganancias (367 días desde pre-registro)
+    days_since_registration = (today - user.registered_at).days
+    if days_since_registration > 367:
+        return "Ventana de ganancias expirada (367 días)"
+    
+    commissions = []
+    
+    # Para cada nivel impar
+    for level in [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21]:
+        # Contar personas activas en cada pierna
+        left_count = count_active_members(user_id, 'left', level, user.registered_at)
+        right_count = count_active_members(user_id, 'right', level, user.registered_at)
+        
+        # Pierna más corta
+        min_count = min(left_count, right_count)
+        
+        # Obtener personas que aún NO han sido pagadas este año
+        unpaid_members = get_unpaid_members_at_level(user_id, level, min_count)
+        
+        # Calcular comisión
+        commission_per_user = get_commission_for_level(level)
+        total_commission = len(unpaid_members) * commission_per_user
+        
+        if total_commission > 0:
+            # Crear registro de comisión
+            create_commission_record(
+                user_id=user_id,
+                level=level,
+                member_count=len(unpaid_members),
+                total_commission=total_commission,
+                member_ids=unpaid_members
+            )
+            
+            # Marcar miembros como pagados
+            mark_members_as_paid(unpaid_members, user_id, level)
+            
+            commissions.append({
+                'level': level,
+                'count': len(unpaid_members),
+                'amount': total_commission
+            })
+    
+    return commissions
+
+def count_active_members(user_id, position, level, upline_registered_at):
+    """
+    Cuenta miembros activos en una pierna y nivel específico.
+    Solo cuenta miembros que:
+    1. Estén activos (is_active = True)
+    2. Se hayan registrado dentro de los 367 días del upline
+    3. NO hayan sido eliminados por expiración (120 días sin activar)
+    """
+    members = get_members_at_level(user_id, position, level)
+    
+    active_members = []
+    for member in members:
+        # Verificar que esté dentro de la ventana de 367 días
+        if (member.registered_at - upline_registered_at).days <= 367:
+            # Verificar que esté activo o no haya expirado
+            if member.is_active:
+                active_members.append(member)
+            elif (today - member.registered_at).days < 120:
+                # Pre-afiliado aún válido (no han pasado 120 días)
+                active_members.append(member)
+    
+    return len(active_members)
+
+def clean_expired_members():
+    """
+    Tarea CRON que se ejecuta diariamente.
+    Elimina miembros pre-afiliados que no se activaron en 120 días.
+    Comprime el árbol automáticamente.
+    """
+    expired_members = get_members_where(
+        is_active=False,
+        days_since_registration__gt=120
+    )
+    
+    for member in expired_members:
+        # Obtener hijos del miembro expirado
+        children = get_downlines(member.id)
+        
+        # Reasignar hijos al upline del miembro expirado
+        for child in children:
+            child.upline_id = member.upline_id
+            save(child)
+        
+        # Eliminar miembro expirado
+        delete(member)
+        
+        log(f"Eliminado miembro {member.user_id} por expiración")
+```
+
+═══════════════════════════════════════════════════════════════════════════════
+✅ **PRÓXIMOS PASOS**
+═══════════════════════════════════════════════════════════════════════════════
+
+1. ✅ Modelo binary_global_members ya existe
+2. 🔴 Agregar campo earning_deadline al modelo (registered_at + 367 días)
+3. 🔴 Crear tabla binary_commissions_paid (tracking de pagos anuales)
+4. 🔴 Crear servicio de cálculo de comisiones binarias
+5. 🔴 Crear tarea CRON para limpiar miembros expirados (120 días)
+6. 🔴 Crear endpoint API para pre-registro
+7. 🔴 Crear endpoint API para activación con paquete
+8. 🔴 Crear endpoint API para obtener estado de la red
+9. 🔴 Crear componente React para visualizar el árbol binario
+10. 🔴 Dashboard con estadísticas de red binaria
+11. 🔴 Configurar montos de comisión por nivel en YAML
+
+═══════════════════════════════════════════════════════════════════════════════
+📌 **CAMPOS ADICIONALES NECESARIOS EN EL MODELO**
+═══════════════════════════════════════════════════════════════════════════════
+
+```python
+class BinaryGlobalMember(Base):
+    __tablename__ = "binary_global_members"
+    
+    # ... campos existentes ...
+    
+    # NUEVOS CAMPOS REQUERIDOS:
+    earning_deadline = Column(DateTime, nullable=True)  # registered_at + 367 días
+    
+    def set_earning_deadline(self):
+        if self.registered_at:
+            self.earning_deadline = self.registered_at + timedelta(days=367)
+```
+
+📋 **NUEVA TABLA: binary_commissions_paid**
+
+```python
+class BinaryCommissionPaid(Base):
+    __tablename__ = "binary_commissions_paid"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    member_id = Column(Integer, ForeignKey("binary_global_members.id"), nullable=False)
+    level = Column(Integer, nullable=False)  # Nivel impar (1, 3, 5, etc.)
+    commission_amount = Column(Float, nullable=False)
+    paid_at = Column(DateTime, default=datetime.utcnow)
+    year = Column(Integer, nullable=False)  # Año del pago (para control anual)
+    
+    # Para evitar pagar dos veces el mismo miembro en el mismo año
+    __table_args__ = (
+        UniqueConstraint('user_id', 'member_id', 'level', 'year', name='uix_commission_year'),
+    )
+```
+
+═══════════════════════════════════════════════════════════════════════════════
+                                FIN DEL DOCUMENTO
+═══════════════════════════════════════════════════════════════════════════════

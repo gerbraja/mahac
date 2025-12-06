@@ -11,6 +11,7 @@ export default function AdminLayout() {
         { path: '/admin/users', label: 'Usuarios', icon: '👥' },
         { path: '/admin/products', label: 'Productos', icon: '📦' },
         { path: '/admin/payments', label: 'Pagos Pendientes', icon: '💳' },
+        { path: '/admin/sponsorship-commissions', label: 'Comisiones Patrocinio', icon: '💰' },
         { path: '/admin/reports', label: 'Reportes', icon: '📈' },
     ];
 

@@ -1,0 +1,457 @@
+# 💾 BACKUP COMPLETO - CONFIGURACIÓN BINARY GLOBAL 2x2
+
+**Fecha de creación:** 6 de diciembre de 2025  
+**Versión:** 1.0  
+**Propósito:** Backup completo de toda la configuración del sistema Binary Global
+
+---
+
+## 📋 ÍNDICE DE CONTENIDOS
+
+1. [Configuración YAML](#configuración-yaml)
+2. [Modelos de Base de Datos](#modelos-de-base-de-datos)
+3. [Servicios de Negocio](#servicios-de-negocio)
+4. [Tabla de Compensación](#tabla-de-compensación)
+5. [Scripts de Migración](#scripts-de-migración)
+6. [Instrucciones de Restauración](#instrucciones-de-restauración)
+
+---
+
+## 🔧 CONFIGURACIÓN YAML
+
+### Archivo: `backend/mlm/plans/binario_global/plan_template.yml`
+
+```yaml
+plan_name: "Binary Global"
+plan_key: "binario_global"
+description: "Binary 2x2 plan for pre-registrations. Pre-registered users keep their positions for 90 days and accrue arrival bonuses according to level rules."
+currency: "USD"
+
+# Commission distributed when a user activates with an affiliation package.
+# This is a percentage of the activation/package value that will be distributed
+# according to the plan's distribution rules (arrival bonuses, pairing, etc.).
+# Represented as a percentage (7 means 7%).
+signup_package_commission_percent: 7.0
+
+# Required fields for pre-registration (these must be provided when pre-registering)
+registration_fields:
+	- first_name
+	- last_name
+	- email
+	- city
+	- country
+
+preregistration:
+	# number of days a pre-registered user keeps their position without activating
+	hold_period_days: 90
+	# if true, the user must buy an activation package to become active; otherwise they remain pre-registered
+	require_activation_package: true
+	# if not activated within hold_period_days the user is removed from the plan
+	remove_if_not_activated: true
+
+matrix:
+	type: "binary"
+	width: 2
+	# maximum depth considered for bonuses / reporting
+	max_depth: 21
+
+# Binary Global Commission Rules:
+# - Paid ONCE per year per active member
+# - Only odd levels from 3 to 21 are paid (3, 5, 7, 9, 11, 13, 15, 17, 19, 21)
+# - Levels 1 and 2 generate NO income
+# - Levels 3-13: $0.50 USD per active membership during the year
+# - Levels 15-21: $1.00 USD per active membership during 367 days
+# - Payment is for active members only (those who purchased a package)
+# - This network renews annually with a continuity purchase package
+arrival_bonus:
+	- levels: [3, 5, 7, 9, 11, 13]
+		amount: "0.50"
+	- levels: [15, 17, 19, 21]
+		amount: "1.00"
+
+notes: |
+	This YAML defines the Binary Global (2x2) plan. Rules:
+	- All users who pre-register (provide first_name, last_name, email, city and country) are placed into the binary 2x2 structure and keep their position for up to 90 days.
+	- If they do not purchase the activation package within 90 days they are removed from the network (remove_if_not_activated).
+	- When a user activates by buying the activation package, they are eligible to receive arrival bonuses for users who entered after them, regardless of whether those users have activated.
+	- Arrival bonus rules are defined under `arrival_bonus`. Amounts are strings and will be parsed to Decimal.
+
+	- Commission on activation packages: `signup_package_commission_percent` (above) defines the percent of the package value allocated to the plan's distribution. For Binary Global this is 7% by default.
+```
+
+---
+
+## 🗄️ MODELOS DE BASE DE DATOS
+
+### Archivo: `backend/database/models/binary_global.py`
+
+```python
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Float, UniqueConstraint, func
+from sqlalchemy.orm import relationship
+from datetime import datetime, timedelta
+from backend.database.connection import Base
+
+class BinaryGlobalMember(Base):
+    __tablename__ = "binary_global_members"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, nullable=False, index=True)
+    
+    # Tree structure
+    upline_id = Column(Integer, ForeignKey("binary_global_members.id"), nullable=True)
+    position = Column(String(10), nullable=True) # 'left' or 'right'
+    
+    # Global order of arrival (auto-increment logic handled by service or sequence)
+    global_position = Column(Integer, index=True, unique=True, nullable=True)
+    
+    # Status
+    is_active = Column(Boolean, default=False) # False = Pre-registered, True = Active (Paid)
+    
+    # Dates
+    registered_at = Column(DateTime, default=datetime.utcnow)
+    activation_deadline = Column(DateTime, nullable=True) # registered_at + 120 days
+    activated_at = Column(DateTime, nullable=True)
+    earning_deadline = Column(DateTime, nullable=True) # registered_at + 367 days
+
+    # Relationships
+    upline = relationship("BinaryGlobalMember", remote_side=[id], backref="downlines")
+
+    def set_expiration(self):
+        if self.registered_at:
+            self.activation_deadline = self.registered_at + timedelta(days=120)
+    
+    def set_earning_deadline(self):
+        if self.registered_at:
+            self.earning_deadline = self.registered_at + timedelta(days=367)
+
+
+class BinaryGlobalCommission(Base):
+    """
+    Tabla para rastrear comisiones pagadas en el plan Binary Global 2x2.
+    Cada registro representa una comisión pagada a un usuario por un nuevo miembro
+    en un nivel impar de su red binaria global.
+    
+    Reglas de negocio:
+    - Se paga UNA VEZ AL AÑO por cada nuevo usuario en niveles impares (1,3,5,7,9,11,13,15,17,19,21)
+    - No se requiere completar el nivel
+    - Solo se paga si el miembro está dentro de su ventana de ganancias (367 días desde registro)
+    """
+    __tablename__ = "binary_global_commissions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, nullable=False, index=True)  # Usuario que recibe la comisión
+    member_id = Column(Integer, ForeignKey("binary_global_members.id"), nullable=False)  # Miembro que generó la comisión
+    level = Column(Integer, nullable=False)  # Nivel impar (1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21)
+    commission_amount = Column(Float, nullable=False)  # Monto de la comisión
+    paid_at = Column(DateTime, default=datetime.utcnow)
+    year = Column(Integer, nullable=False)  # Año del pago (para control "una vez al año")
+
+    # Evitar pagar dos veces el mismo miembro en el mismo año al mismo usuario
+    __table_args__ = (
+        UniqueConstraint('user_id', 'member_id', 'level', 'year', name='uix_binary_global_commission_year'),
+    )
+```
+
+---
+
+## ⚙️ SERVICIOS DE NEGOCIO
+
+### Función: `get_arrival_bonus_rules()`
+
+```python
+def get_arrival_bonus_rules(plan_file: str = "binario_global/plan_template.yml") -> dict:
+    """Load arrival bonus rules from plan YAML file.
+    
+    Returns dict like {3: 0.50, 5: 0.50, 7: 0.50, ..., 21: 1.00}
+    """
+    plan_path = PLANS_DIR / plan_file
+    ok, res = load_plan_from_file(plan_path)
+    if not ok:
+        # Fallback to hardcoded rules if YAML fails
+        return {
+            3: 0.50, 5: 0.50, 7: 0.50, 9: 0.50, 11: 0.50, 13: 0.50,
+            15: 1.00, 17: 1.00, 19: 1.00, 21: 1.00
+        }
+    
+    arrival = getattr(res, "arrival_bonus", None)
+    if not arrival:
+        return {}
+    
+    # Convert arrival bonus rules to dict
+    rules = {}
+    for rule in arrival:
+        for level in rule.levels:
+            rules[level] = float(rule.amount)
+    
+    return rules
+```
+
+### Función: `register_in_binary_global()`
+
+```python
+def register_in_binary_global(db: Session, user_id: int) -> BinaryGlobalMember:
+    """Register a user in the Binary Global 2x2 plan (Pre-registration)."""
+    # Check if already exists
+    exists = db.query(BinaryGlobalMember).filter(BinaryGlobalMember.user_id == user_id).first()
+    if exists:
+        return exists
+
+    # Find placement
+    upline_node = find_global_placement(db)
+    
+    position = 'left'
+    if upline_node:
+        # Check if left is taken
+        left_child = db.query(BinaryGlobalMember).filter(
+            BinaryGlobalMember.upline_id == upline_node.id,
+            BinaryGlobalMember.position == 'left'
+        ).first()
+        if left_child:
+            position = 'right'
+
+    # Calculate global position (simple count + 1)
+    count = db.query(BinaryGlobalMember).count()
+    
+    new_member = BinaryGlobalMember(
+        user_id=user_id,
+        upline_id=upline_node.id if upline_node else None,
+        position=position,
+        global_position=count + 1,
+        is_active=False, # Pre-registered
+        registered_at=datetime.utcnow()
+    )
+    new_member.set_expiration() # Set 120 days deadline
+    new_member.set_earning_deadline() # Set 367 days earning window
+    db.add(new_member)
+    db.commit()
+    db.refresh(new_member)
+    
+    return new_member
+```
+
+### Función: `activate_binary_global()`
+
+```python
+def activate_binary_global(db: Session, user_id: int, plan_file: str = "binario_global/plan_template.yml"):
+    """Activate a pre-registered user and set earning deadline.
+    
+    Args:
+        db: Database session
+        user_id: User ID to activate
+        plan_file: Path to plan YAML file for arrival bonus rules
+    """
+    member = db.query(BinaryGlobalMember).filter(BinaryGlobalMember.user_id == user_id).first()
+    if not member:
+        return
+    
+    if member.is_active:
+        return # Already active
+        
+    member.is_active = True
+    member.activated_at = datetime.utcnow()
+    
+    # Set earning deadline (367 days from registration, NOT activation)
+    if not member.earning_deadline:
+        member.set_earning_deadline()
+    
+    db.commit()
+    
+    # Trigger Arrival Bonuses for Upline (Now that user paid/activated)
+    process_arrival_bonuses(db, member, plan_file=plan_file)
+```
+
+---
+
+## 💰 TABLA DE COMPENSACIÓN OFICIAL
+
+| Nivel | Personas Máx | Comisión/Usuario | Máximo por Nivel | Estado |
+|-------|--------------|------------------|------------------|--------|
+| 1     | 2            | $0.00            | $0.00            | ❌ NO SE PAGA |
+| 2     | 4            | $0.00            | $0.00            | ❌ NO SE PAGA |
+| 3     | 8            | $0.50            | $4.00            | ✅ SE PAGA |
+| 4     | 16           | $0.00            | $0.00            | ❌ NO SE PAGA |
+| 5     | 32           | $0.50            | $16.00           | ✅ SE PAGA |
+| 6     | 64           | $0.00            | $0.00            | ❌ NO SE PAGA |
+| 7     | 128          | $0.50            | $64.00           | ✅ SE PAGA |
+| 8     | 256          | $0.00            | $0.00            | ❌ NO SE PAGA |
+| 9     | 512          | $0.50            | $256.00          | ✅ SE PAGA |
+| 10    | 1,024        | $0.00            | $0.00            | ❌ NO SE PAGA |
+| 11    | 2,048        | $0.50            | $1,024.00        | ✅ SE PAGA |
+| 12    | 4,096        | $0.00            | $0.00            | ❌ NO SE PAGA |
+| 13    | 8,192        | $0.50            | $4,096.00        | ✅ SE PAGA |
+| 14    | 16,384       | $0.00            | $0.00            | ❌ NO SE PAGA |
+| 15    | 32,768       | $1.00            | $32,768.00       | ✅ SE PAGA |
+| 16    | 65,536       | $0.00            | $0.00            | ❌ NO SE PAGA |
+| 17    | 131,072      | $1.00            | $131,072.00      | ✅ SE PAGA |
+| 18    | 262,144      | $0.00            | $0.00            | ❌ NO SE PAGA |
+| 19    | 524,288      | $1.00            | $524,288.00      | ✅ SE PAGA |
+| 20    | 1,048,576    | $0.00            | $0.00            | ❌ NO SE PAGA |
+| 21    | 2,097,152    | $1.00            | $2,097,152.00    | ✅ SE PAGA |
+
+**TOTALES:**
+- Niveles 3-13 (impares): $5,460.00
+- Niveles 15-21 (impares): $2,785,280.00
+- **TOTAL MÁXIMO TEÓRICO:** $2,790,740.00
+
+---
+
+## 📝 SCRIPTS DE MIGRACIÓN
+
+### Archivo: `update_binary_global_tables.py`
+
+```python
+"""
+Script para actualizar las tablas binary_global_members y crear binary_global_commissions.
+"""
+
+from backend.database.connection import engine, Base
+from backend.database.models.binary_global import BinaryGlobalMember, BinaryGlobalCommission
+from sqlalchemy import inspect
+
+def main():
+    print("🔧 Actualizando estructura de Binary Global...")
+    
+    # Crear/actualizar todas las tablas
+    Base.metadata.create_all(bind=engine)
+    
+    # Actualizar earning_deadline para registros existentes
+    from backend.database.connection import SessionLocal
+    db = SessionLocal()
+    try:
+        members_without_deadline = db.query(BinaryGlobalMember).filter(
+            BinaryGlobalMember.earning_deadline == None
+        ).all()
+        
+        if members_without_deadline:
+            print(f"📅 Actualizando earning_deadline para {len(members_without_deadline)} miembros...")
+            for member in members_without_deadline:
+                if member.registered_at:
+                    member.set_earning_deadline()
+            db.commit()
+            print("✅ Earning deadlines actualizados")
+            
+    except Exception as e:
+        print(f"⚠️ Error: {e}")
+        db.rollback()
+    finally:
+        db.close()
+    
+    print("✅ Migración completada!")
+
+if __name__ == "__main__":
+    main()
+```
+
+---
+
+## 🔄 INSTRUCCIONES DE RESTAURACIÓN
+
+### Paso 1: Restaurar Archivo YAML
+
+```bash
+# Copiar contenido del backup a:
+backend/mlm/plans/binario_global/plan_template.yml
+```
+
+### Paso 2: Restaurar Modelos
+
+```bash
+# Copiar código de modelos a:
+backend/database/models/binary_global.py
+```
+
+### Paso 3: Aplicar Migración
+
+```bash
+python update_binary_global_tables.py
+```
+
+### Paso 4: Verificar Servicios
+
+```bash
+# Verificar que binary_service.py contiene:
+# - get_arrival_bonus_rules()
+# - register_in_binary_global()
+# - activate_binary_global()
+# - process_arrival_bonuses()
+# - check_expirations()
+```
+
+### Paso 5: Probar Sistema
+
+```python
+from backend.database.connection import SessionLocal
+from backend.mlm.services.binary_service import register_in_binary_global, activate_binary_global
+
+db = SessionLocal()
+
+# Test pre-registro
+member = register_in_binary_global(db, user_id=999)
+print(f"✅ Pre-registro: Posición {member.global_position}")
+
+# Test activación
+activate_binary_global(db, user_id=999)
+print("✅ Activación completada")
+
+db.close()
+```
+
+---
+
+## 📊 REGLAS DE NEGOCIO DOCUMENTADAS
+
+### Pre-afiliación
+- ✅ Gratuita
+- ✅ 120 días para activar
+- ✅ Posición automática (BFS)
+- ✅ Ventana de 367 días inicia en pre-registro
+
+### Activación
+- ✅ Requiere compra de paquete
+- ✅ Dispara comisiones retroactivas
+- ✅ Cambia `is_active` a True
+- ✅ Mantiene `earning_deadline` original
+
+### Comisiones
+- ✅ Solo niveles impares 3-21
+- ✅ $0.50 niveles 3-13
+- ✅ $1.00 niveles 15-21
+- ✅ Una vez al año por usuario
+- ✅ Solo dentro de ventana de 367 días
+
+### Expiración
+- ✅ CRON diario elimina usuarios 120+ días inactivos
+- ✅ Compresión automática del árbol
+- ✅ Hijos se reasignan al abuelo
+
+---
+
+## ✅ CHECKLIST DE VALIDACIÓN
+
+Marcar cuando se restaure:
+
+- [ ] YAML configurado con montos correctos
+- [ ] Modelos tienen todos los campos
+- [ ] Migración ejecutada exitosamente
+- [ ] Servicios funcionan correctamente
+- [ ] Tests pasan sin errores
+- [ ] Documentación actualizada
+- [ ] Backup de DB creado
+
+---
+
+## 📁 ARCHIVOS DE REFERENCIA
+
+1. `BINARY_GLOBAL_ADMIN_GUIDE.md` - Guía completa de administración
+2. `BINARY_GLOBAL_QUICK_START.md` - Inicio rápido
+3. `PLAN_BINARIO_GLOBAL_2x2.txt` - Plan técnico detallado
+4. `update_binary_global_tables.py` - Script de migración
+
+---
+
+**Fecha de backup:** 6 de diciembre de 2025  
+**Versión:** 1.0  
+**Sistema:** Centro Comercial TEI  
+**Plan:** Binary Global 2x2
+
+**⚠️ IMPORTANTE:** Guardar este archivo en un lugar seguro. Contiene toda la configuración necesaria para restaurar el sistema Binary Global.

@@ -36,7 +36,7 @@ const StoreView = () => {
     const regularProducts = products.filter(p => !p.is_activation);
 
     return (
-        <div className="p-6 relative">
+        <div className="p-6 relative" style={{ maxWidth: '100%', width: '100%' }}>
             <h1 className="text-3xl font-bold text-blue-900 mb-8">Centro Comercial TEI</h1>
 
             {/* Floating Cart Button */}
@@ -60,7 +60,12 @@ const StoreView = () => {
                     <h2 className="text-2xl font-bold text-blue-800 mb-4 flex items-center gap-2">
                         🚀 Paquetes de Inicio <span className="text-sm font-normal text-gray-500">(Requerido para activación)</span>
                     </h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 justify-items-start">
+                    <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(3, 1fr)',
+                        gap: '1.5rem',
+                        width: '100%'
+                    }}>
                         {starterPackages.map(product => (
                             <ProductCard key={product.id} product={product} addToCart={addToCart} isSpecial={true} />
                         ))}
@@ -74,7 +79,12 @@ const StoreView = () => {
                 {regularProducts.length === 0 ? (
                     <p className="text-gray-500">No hay productos disponibles por el momento.</p>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 justify-items-start">
+                    <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(3, 1fr)',
+                        gap: '1.5rem',
+                        width: '100%'
+                    }}>
                         {regularProducts.map(product => (
                             <ProductCard key={product.id} product={product} addToCart={addToCart} />
                         ))}
@@ -88,56 +98,51 @@ const StoreView = () => {
 const ProductCard = ({ product, addToCart, isSpecial }) => {
     return (
         <motion.div
-            whileHover={{ y: -5 }}
-            className={`bg-white rounded-xl shadow-md border ${isSpecial ? 'border-blue-400 ring-2 ring-blue-100' : 'border-gray-100'}`}
+            whileHover={{ y: -5, scale: 1.02 }}
+            className={`bg-white rounded-xl shadow-md border ${isSpecial ? 'border-blue-400 ring-2 ring-blue-100' : 'border-gray-100'} overflow-hidden h-full flex flex-col`}
         >
-            <div className="flex items-start p-4 gap-4">
-                <div className={isSpecial ? 'bg-gradient-to-br from-blue-600 to-blue-800 store-image-container' : 'store-image-container'}>
-                    {product.image_url ? (
-                        <img
-                            src={product.image_url}
-                            alt={product.name}
-                            className="object-contain"
-                            style={{ width: '100%', height: '100%', padding: 6 }}
-                            onError={(e) => {
-                                e.target.style.display = 'none';
-                                if (e.target.nextSibling) e.target.nextSibling.style.display = 'block';
-                            }}
-                        />
-                    ) : (
-                        <span className={`text-4xl ${isSpecial ? 'text-white' : 'text-gray-400'}`}>{isSpecial ? '💎' : '📦'}</span>
-                    )}
+            {/* Product Image */}
+            <div className={`relative ${isSpecial ? 'bg-gradient-to-br from-blue-600 to-blue-800' : 'bg-gray-50'} flex items-center justify-center overflow-hidden`} style={{ height: '200px', minHeight: '200px', maxHeight: '200px' }}>
+                {product.image_url ? (
+                    <img
+                        src={product.image_url}
+                        alt={product.name}
+                        className="object-contain p-4"
+                        style={{ maxWidth: '100%', maxHeight: '100%', width: 'auto', height: 'auto' }}
+                        onError={(e) => {
+                            e.target.style.display = 'none';
+                            if (e.target.nextSibling) e.target.nextSibling.style.display = 'flex';
+                        }}
+                    />
+                ) : (
+                    <span className={`text-6xl ${isSpecial ? 'text-white' : 'text-gray-400'}`}>{isSpecial ? '💎' : '📦'}</span>
+                )}
+                {isSpecial && (
+                    <span className="absolute top-2 right-2 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full font-bold">Activación</span>
+                )}
+            </div>
+
+            {/* Product Info */}
+            <div className="p-4 flex-1 flex flex-col">
+                <h3 className="font-bold text-lg text-gray-800 mb-2 line-clamp-2">{product.name}</h3>
+                <p className="text-gray-600 text-sm mb-3 line-clamp-3 flex-1">{product.description}</p>
+
+                {/* Price and PV */}
+                <div className="flex justify-between items-center mb-3">
+                    <p className="text-xl font-bold text-green-600">${product.price_local?.toLocaleString()} COP</p>
+                    <p className="text-sm font-bold text-blue-600">💎 {product.pv} PV</p>
                 </div>
 
-                <div className="flex-1">
-                    <div className="flex justify-between items-start mb-1">
-                        <h3 className="font-bold text-lg text-gray-800 line-clamp-1">{product.name}</h3>
-                        {isSpecial && <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full font-bold">Activación</span>}
-                    </div>
-
-                    <p className="text-gray-600 text-sm mb-2 line-clamp-2">{product.description}</p>
-
-                    <div className="flex justify-between items-end mt-2">
-                        <div>
-                            <p className="text-xl font-bold text-green-600">${product.price_local?.toLocaleString()} COP</p>
-                        </div>
-                        <div className="text-right">
-                            <p className="text-sm font-bold text-blue-600">💎 {product.pv} PV</p>
-                        </div>
-                    </div>
-
-                    <div className="mt-3">
-                        <button
-                            onClick={() => addToCart(product)}
-                            className={`w-full py-2 rounded-lg font-bold transition-colors ${isSpecial
-                                ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                                : 'bg-gray-900 hover:bg-gray-800 text-white'
-                                }`}
-                        >
-                            Agregar al Carrito
-                        </button>
-                    </div>
-                </div>
+                {/* Add to Cart Button */}
+                <button
+                    onClick={() => addToCart(product)}
+                    className={`w-full py-2 rounded-lg font-bold transition-colors ${isSpecial
+                        ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                        : 'bg-gray-900 hover:bg-gray-800 text-white'
+                        }`}
+                >
+                    Agregar al Carrito
+                </button>
             </div>
         </motion.div>
     );

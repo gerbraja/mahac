@@ -7,7 +7,7 @@ import CompleteRegistration from './CompleteRegistration';
 export default function Login() {
     const navigate = useNavigate();
     const location = useLocation();
-    const [view, setView] = useState(location.state?.view || 'complete-registration'); // Default view or from state
+    const [view, setView] = useState(location.state?.view || 'login'); // Default view or from state
     const [formData, setFormData] = useState({
         username: '',
         password: ''

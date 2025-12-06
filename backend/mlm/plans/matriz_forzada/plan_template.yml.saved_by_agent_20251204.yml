@@ -1,0 +1,81 @@
+plan_name: "Forced Matrix"
+plan_key: "matriz_forzada"
+description: "Matrix with fixed width and depth"
+currency: "USD"
+qualification:
+    minimum_personal_volume: "0.00"
+
+# Matrices / levels definition. Amounts are strings and should be parsed to Decimal in the loader.
+matrices:
+    - id: 27
+      amount: "77.00"
+      reentry_amount: "27.00"
+      next_matrix: 77
+      monthly_limit: 14
+      yearly_limit: null
+      rank_up:
+          from: "Consumer"
+          to: "Distributor"
+      one_time_bonus: null
+      period: "month"
+
+    - id: 77
+      amount: "277.00"
+      reentry_amount: "77.00"
+      next_matrix: 277
+      monthly_limit: 10
+      yearly_limit: null
+      rank_up:
+          from: "Distributor"
+          to: "Bronze Distributor"
+      one_time_bonus: null
+      period: "month"
+
+    - id: 277
+      amount: "877.00"
+      reentry_amount: "277.00"
+      next_matrix: 877
+      monthly_limit: 8
+      yearly_limit: null
+      rank_up:
+          from: "Bronze Distributor"
+          to: "Silver Distributor"
+      one_time_bonus:
+          amount: "147.00"
+          description: "Virtual store bonus"
+      period: "month"
+
+    - id: 877
+      amount: "3000.00"
+      reentry_amount: "877.00"
+      next_matrix: 3000
+      monthly_limit: 7
+      yearly_limit: null
+      rank_up:
+          from: "Silver Distributor"
+          to: "Gold Distributor"
+      one_time_bonus:
+          amount: "500.00"
+          description: "Virtual Store Bonus"
+      period: "month"
+
+    - id: 3000
+      amount: "9700.00"
+      reentry_amount: "3000.00"
+      next_matrix: 9700
+      monthly_limit: 6
+      yearly_limit: null
+      rank_up:
+          from: "Gold Distributor"
+          to: "Platinum Business Owner"
+      one_time_bonus:
+          amount: "1700.00"
+          description: "Store bonus"
+      period: "month"
+
+# End of matrices
+
+notes: |
+    This YAML file defines the forced-matrix plan. Keep the plan as pure YAML.
+    Implementation code and examples are stored under `backend/mlm/examples/`.
+    Virtual balance column and other DB notes can go here.

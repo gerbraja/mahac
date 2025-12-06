@@ -199,6 +199,20 @@ const DashboardHome = () => {
                         desc="Visualiza tu estructura de equipo"
                         gradient="from-teal-500 to-teal-600"
                     />
+                    <QuickLink
+                        to="/dashboard/qualified-ranks"
+                        icon="🏆"
+                        title="Rangos de Calificación"
+                        desc="Consulta los rangos por Matrix ID"
+                        gradient="from-purple-500 to-purple-600"
+                    />
+                    <QuickLink
+                        to="/dashboard/honor-ranks"
+                        icon="💎"
+                        title="Rangos de Honor"
+                        desc="Consulta los rangos por comisiones"
+                        gradient="from-emerald-500 to-emerald-600"
+                    />
                 </div>
             </div>
         </div>

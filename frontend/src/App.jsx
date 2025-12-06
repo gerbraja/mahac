@@ -16,6 +16,8 @@ import AdminDashboard from './pages/dashboard/AdminDashboard';
 import Login from './pages/Login';
 import Personal from './pages/Personal';
 import OrderConfirmation from './pages/OrderConfirmation';
+import QualifiedRanksView from './pages/dashboard/QualifiedRanksView';
+import HonorRanksView from './pages/dashboard/HonorRanksView';
 import MarketingBubbles from "./components/MarketingBubbles";
 
 
@@ -25,6 +27,9 @@ import AdminDashboardPage from './pages/admin/AdminDashboard';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminProducts from './pages/admin/AdminProducts';
 import AdminPayments from './pages/admin/AdminPayments';
+import AdminSponsorshipCommissions from './pages/admin/AdminSponsorshipCommissions';
+import AdminQualifiedRanks from './pages/admin/AdminQualifiedRanks';
+import AdminHonorRanks from './pages/admin/AdminHonorRanks';
 import RequireAdmin from './components/auth/RequireAdmin';
 
 // Component to capture username from URL and redirect to home with ref parameter
@@ -56,6 +61,9 @@ export default function App() {
           <Route path="users" element={<AdminUsers />} />
           <Route path="products" element={<AdminProducts />} />
           <Route path="payments" element={<AdminPayments />} />
+          <Route path="sponsorship-commissions" element={<AdminSponsorshipCommissions />} />
+          <Route path="qualified-ranks" element={<AdminQualifiedRanks />} />
+          <Route path="honor-ranks" element={<AdminHonorRanks />} />
           <Route path="reports" element={<div><h2>Reportes</h2><p>Próximamente...</p></div>} />
         </Route>
 
@@ -69,6 +77,8 @@ export default function App() {
           <Route path="binary-global" element={<BinaryGlobalView />} />
           <Route path="binary-millionaire" element={<BinaryMillionaireView />} />
           <Route path="matrix" element={<MatrixView />} />
+          <Route path="qualified-ranks" element={<QualifiedRanksView />} />
+          <Route path="honor-ranks" element={<HonorRanksView />} />
           <Route path="admin" element={<AdminDashboard />} />
           <Route path="unilevel" element={<div><h2>Unilevel Network</h2><p>Coming soon...</p></div>} />
           <Route path="binary" element={<div><h2>Binary Tree</h2><p>Coming soon...</p></div>} />

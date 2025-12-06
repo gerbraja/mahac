@@ -18,7 +18,7 @@ Esto mostrará:
 - Email
 - Fecha de registro
 - Posición global en la red
-- Deadline de activación (7 días desde el pre-registro)
+- Deadline de activación (120 días desde el pre-registro)
 
 ---
 
@@ -101,12 +101,12 @@ for row in result: print(row)"
 ## ⚠️ Notas Importantes
 
 ### Deadline de Activación
-- Los pre-registros tienen **7 días** para activarse
-- Después de 7 días sin activación, pierden su posición
+- Los pre-registros tienen **120 días** para activarse
+- Después de 120 días sin activación, pierden su posición
 - El sistema ejecuta un proceso automático de expiración
 
 ### Montos de Paquetes Comunes
-- **Paquete Básico**: $100
+- **Paquete Básico**: $130
 - **Paquete Intermedio**: $300
 - **Paquete Avanzado**: $500
 - **Paquete Premium**: $1000

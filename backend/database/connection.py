@@ -2,6 +2,10 @@ import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 from typing import Generator
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Local development DB (SQLite) by default. Production can override via
 # the DATABASE_URL environment variable (e.g. a Postgres DSN).
@@ -9,6 +13,11 @@ DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./dev.db")
 
 # For SQLite we need a specific connect arg
 connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
+
+print(f"ðŸ”Œ DATABASE URL: {DATABASE_URL}")
+if "sqlite" in DATABASE_URL and "///" in DATABASE_URL:
+    db_path = DATABASE_URL.split("///")[1]
+    print(f"ðŸ”Œ RESOLVED DB PATH: {os.path.abspath(db_path)}")
 
 # Create engine and session factory
 engine = create_engine(DATABASE_URL, connect_args=connect_args)

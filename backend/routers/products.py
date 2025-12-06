@@ -33,6 +33,8 @@ def create_product(
             price_local=prod.price_local,
             pv=prod.pv,
             stock=prod.stock,
+            weight_grams=prod.weight_grams,
+            image_url=prod.image_url,
             is_activation=prod.is_activation,
         )
         db.add(new_product)
