@@ -122,6 +122,10 @@ app.include_router(binary.router, prefix="/api")
 from backend.routers import millionaire
 app.include_router(millionaire.router)
 
+# Forced Matrix router (9-level matrix system)
+from backend.routers import forced_matrix
+app.include_router(forced_matrix.router)
+
 # Marketing router (bubbles)
 from backend.routers import marketing
 app.include_router(marketing.router)

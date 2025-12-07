@@ -234,7 +234,9 @@ const MatrixVisual = ({ matrixConfig, activeMembers = 0, showTitle = true }) => 
 
 const MatrixView = () => {
     const [userMatrices, setUserMatrices] = useState({});
+    const [matrixStats, setMatrixStats] = useState({});
     const [loading, setLoading] = useState(true);
+    const userId = parseInt(localStorage.getItem('userId') || '1', 10);
 
     useEffect(() => {
         fetchUserMatrices();
@@ -243,15 +245,36 @@ const MatrixView = () => {
     const fetchUserMatrices = async () => {
         setLoading(true);
         try {
-            // This would fetch actual user matrix data from API
-            // For now, we'll use placeholder data
-            // TODO: Replace with actual API call
-            const response = await api.get('/api/matrix/my-matrices');
-            setUserMatrices(response.data || {});
+            // Fetch status and stats from backend
+            const [statusRes, statsRes] = await Promise.all([
+                api.get(`/api/forced-matrix/status/${userId}`),
+                api.get(`/api/forced-matrix/stats/${userId}`)
+            ]);
+
+            console.log('Matrix Status:', statusRes.data);
+            console.log('Matrix Stats:', statsRes.data);
+
+            // Transform status data for display
+            const matrixData = {};
+            if (statusRes.data.matrices) {
+                statusRes.data.matrices.forEach(matrix => {
+                    matrixData[matrix.matrix_level] = {
+                        is_active: matrix.is_active,
+                        cycles_completed: matrix.cycles_completed,
+                        global_position: matrix.global_position,
+                        position: matrix.position,
+                        created_at: matrix.created_at,
+                        last_cycle_at: matrix.last_cycle_at
+                    };
+                });
+            }
+
+            setUserMatrices(matrixData);
+            setMatrixStats(statsRes.data || {});
         } catch (error) {
             console.error('Error fetching matrices:', error);
-            // Set empty state if error
             setUserMatrices({});
+            setMatrixStats({});
         } finally {
             setLoading(false);
         }
@@ -316,7 +339,8 @@ const MatrixView = () => {
             }}>
                 {[1, 2, 3, 4].map(matrixId => {
                     const config = MATRIX_LEVELS[matrixId];
-                    const activeMembers = userMatrices[matrixId]?.active_members || 0;
+                    const statsData = matrixStats.matrices?.[matrixId] || {};
+                    const activeMembers = statsData.active_members || 0;
                     
                     return (
                         <MatrixVisual
@@ -364,10 +388,15 @@ const MatrixView = () => {
                             {Object.keys(MATRIX_LEVELS).map((matrixId, index) => {
                                 const config = MATRIX_LEVELS[matrixId];
                                 const data = userMatrices[matrixId] || {};
-                                const reentries = data.reentries || 0;
-                                const completed = data.completed || 0;
-                                const monthlyCycles = data.monthly_cycles || 0; // Ciclos completados en el mes actual
-                                const totalEarned = completed * config.reward;
+                                const statsData = matrixStats.matrices?.[matrixId] || {};
+                                
+                                const isActive = data.is_active || false;
+                                const cyclesCompleted = data.cycles_completed || 0;
+                                const totalEarned = (statsData.total_earned_usd || 0) + (statsData.total_earned_crypto || 0);
+                                const activeMembers = statsData.active_members || 0;
+                                
+                                // Placeholder for monthly cycles (backend doesn't track this yet)
+                                const monthlyCycles = 0;
                                 const remainingCycles = Math.max(0, config.monthlyLimit - monthlyCycles);
 
                                 return (
@@ -382,8 +411,8 @@ const MatrixView = () => {
                                                     <div style={{ fontWeight: '700', fontSize: '1rem', color: config.color }}>
                                                         {config.name}
                                                     </div>
-                                                    <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>
-                                                        Matrix Nivel {matrixId}
+                                                    <div style={{ fontSize: '0.75rem', color: isActive ? '#10b981' : '#ef4444' }}>
+                                                        {isActive ? '✓ Activa' : '✗ No Registrado'}
                                                     </div>
                                                 </div>
                                             </div>
@@ -438,18 +467,18 @@ const MatrixView = () => {
                                             </div>
                                         </td>
                                         <td style={{ padding: '1rem', textAlign: 'center', fontWeight: '600', color: '#3b82f6', fontSize: '1.125rem' }}>
-                                            {reentries}
+                                            {activeMembers}
                                         </td>
                                         <td style={{ padding: '1rem', textAlign: 'center' }}>
                                             <span style={{
                                                 padding: '0.5rem 1rem',
                                                 borderRadius: '9999px',
-                                                background: completed > 0 ? '#d1fae5' : '#f3f4f6',
-                                                color: completed > 0 ? '#065f46' : '#6b7280',
+                                                background: cyclesCompleted > 0 ? '#d1fae5' : '#f3f4f6',
+                                                color: cyclesCompleted > 0 ? '#065f46' : '#6b7280',
                                                 fontWeight: '700',
                                                 fontSize: '1rem'
                                             }}>
-                                                {completed}
+                                                {cyclesCompleted}
                                             </span>
                                         </td>
                                         <td style={{ padding: '1rem', textAlign: 'center', fontWeight: 'bold', fontSize: '1.125rem' }}>
@@ -470,10 +499,7 @@ const MatrixView = () => {
                                     💰 TOTAL ACUMULADO DE TODAS LAS MATRICES:
                                 </td>
                                 <td style={{ padding: '1.5rem', textAlign: 'center', fontSize: '1.75rem' }}>
-                                    ${Object.keys(MATRIX_LEVELS).reduce((sum, id) => {
-                                        const data = userMatrices[id] || {};
-                                        return sum + ((data.completed || 0) * MATRIX_LEVELS[id].reward);
-                                    }, 0).toLocaleString()} USD
+                                    ${(matrixStats.total_earned_usd || 0).toLocaleString()} USD
                                 </td>
                             </tr>
                         </tbody>

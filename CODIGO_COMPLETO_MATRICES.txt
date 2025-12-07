@@ -109,7 +109,7 @@ matrices:
           from: "Platinum Business Owner"
           to: "Ruby Executive"
       one_time_bonus:
-          amount: "4300.00"
+          amount: "4000.00"
           description: "Ruby bonus"
       period: "month"
 
@@ -117,51 +117,51 @@ matrices:
     # MATRIZ 7: ESMERALDA (50% USD / 50% CRIPTO)
     # ═══════════════════════════════════════════════════════════════════════
     - id: 25000
-      amount: "50000.00"
+      amount: "77000.00"
       reentry_amount: "25000.00"
-      next_matrix: 50000
+      next_matrix: 77000
       monthly_limit: 4
       yearly_limit: null
       rank_up:
           from: "Ruby Executive"
           to: "Emerald Leader"
       one_time_bonus:
-          amount: "9000.00"
+          amount: "7700.00"
           description: "Emerald bonus"
       period: "month"
 
     # ═══════════════════════════════════════════════════════════════════════
     # MATRIZ 8: DIAMANTE (50% USD / 50% CRIPTO)
-    # ⚠️ ERROR DETECTADO: from debería ser "Emerald Leader", no "Ruby Executive"
+
     # ═══════════════════════════════════════════════════════════════════════
-    - id: 50000
-      amount: "100000.00"
-      reentry_amount: "50000.00"
-      next_matrix: 100000
-      monthly_limit: 3
+    - id: 80000
+      amount: "270000.00"
+      reentry_amount: "80000.00"
+      next_matrix: 270000
+      monthly_limit: 2
       yearly_limit: null
       rank_up:
-          from: "Ruby Executive"        ⚠️ ERROR: Debería ser "Emerald Leader"
+          from: "ESMERALDA Executive"        
           to: "Diamond Master"
       one_time_bonus:
-          amount: "18000.00"
+          amount: "47000.00"
           description: "Master bonus"
       period: "month"
 
     # ═══════════════════════════════════════════════════════════════════════
     # MATRIZ 9: DIAMANTE AZUL (50% USD / 50% CRIPTO)
     # ═══════════════════════════════════════════════════════════════════════
-    - id: 100000
-      amount: "200000.00"
-      reentry_amount: "100000.00"
-      next_matrix: null
-      monthly_limit: 2
+    - id: 270000
+      amount: "970000.00"
+      reentry_amount: "270000.00"
+      next_matrix: 970000
+      monthly_limit: 1
       yearly_limit: null
       rank_up:
           from: "Diamond Master"
           to: "Blue Diamond Elite"
       one_time_bonus:
-          amount: "36000.00"
+          amount: "77000.00"
           description: "Elite bonus"
       period: "month"
 
