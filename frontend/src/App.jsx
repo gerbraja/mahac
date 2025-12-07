@@ -8,6 +8,7 @@ import MatrixView from "./pages/dashboard/MatrixView";
 import WalletView from "./pages/dashboard/WalletView";
 import BinaryGlobalView from './pages/dashboard/BinaryGlobalView';
 import BinaryMillionaireView from './pages/dashboard/BinaryMillionaireView';
+import UnilevelView from './pages/dashboard/UnilevelView';
 import EducationView from './pages/dashboard/EducationView';
 import PersonalView from './pages/dashboard/PersonalView';
 import StoreView from './pages/dashboard/StoreView';
@@ -80,7 +81,7 @@ export default function App() {
           <Route path="qualified-ranks" element={<QualifiedRanksView />} />
           <Route path="honor-ranks" element={<HonorRanksView />} />
           <Route path="admin" element={<AdminDashboard />} />
-          <Route path="unilevel" element={<div><h2>Unilevel Network</h2><p>Coming soon...</p></div>} />
+          <Route path="unilevel" element={<UnilevelView />} />
           <Route path="binary" element={<div><h2>Binary Tree</h2><p>Coming soon...</p></div>} />
         </Route>
       </Routes>
