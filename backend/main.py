@@ -126,6 +126,10 @@ app.include_router(millionaire.router)
 from backend.routers import forced_matrix
 app.include_router(forced_matrix.router)
 
+# Unilevel router (7-level unilevel system)
+from backend.routers import unilevel
+app.include_router(unilevel.router)
+
 # Marketing router (bubbles)
 from backend.routers import marketing
 app.include_router(marketing.router)

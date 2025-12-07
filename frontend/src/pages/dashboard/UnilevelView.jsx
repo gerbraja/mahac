@@ -185,6 +185,77 @@ const UnilevelView = () => {
                                 {activeDownline}
                             </div>
                         </div>
+
+                        {/* Matching Bonus Earned */}
+                        <div style={{
+                            background: 'white',
+                            padding: '1.5rem',
+                            borderRadius: '1rem',
+                            boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+                            border: '3px solid #ec4899'
+                        }}>
+                            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🎁</div>
+                            <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>
+                                Bono de Igualación
+                            </div>
+                            <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#ec4899' }}>
+                                ${(stats?.matching_bonus || 0).toLocaleString()}
+                            </div>
+                            <div style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: '0.5rem' }}>
+                                50% de comisiones de directos
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Matching Bonus Explanation */}
+                    <div style={{
+                        background: 'linear-gradient(135deg, #ec4899 0%, #db2777 100%)',
+                        color: 'white',
+                        padding: '2rem',
+                        borderRadius: '1rem',
+                        marginBottom: '2rem',
+                        boxShadow: '0 10px 15px rgba(236,72,153,0.3)'
+                    }}>
+                        <h3 style={{ fontSize: '1.75rem', fontWeight: 'bold', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            🎁 Bono de Igualación (Matching Bonus)
+                        </h3>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
+                            <div>
+                                <h4 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '0.75rem' }}>
+                                    ¿Qué es?
+                                </h4>
+                                <p style={{ opacity: 0.95, lineHeight: '1.6', fontSize: '1rem' }}>
+                                    Es un <strong>bono adicional del 50%</strong> de todas las comisiones que generan tus patrocinados directos (Nivel 1). 
+                                    Esto te recompensa por construir y apoyar a líderes fuertes en tu equipo.
+                                </p>
+                            </div>
+                            <div>
+                                <h4 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '0.75rem' }}>
+                                    ¿Cómo funciona?
+                                </h4>
+                                <p style={{ opacity: 0.95, lineHeight: '1.6', fontSize: '1rem' }}>
+                                    Cuando un patrocinado directo tuyo gana comisiones Unilevel de su red, 
+                                    tú recibes el <strong>50% de esas comisiones como bono adicional</strong>. 
+                                    Es decir, ganas dos veces: tu comisión normal + el matching bonus.
+                                </p>
+                            </div>
+                            <div>
+                                <h4 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '0.75rem' }}>
+                                    Ejemplo Práctico
+                                </h4>
+                                <div style={{ background: 'rgba(255,255,255,0.2)', padding: '1rem', borderRadius: '0.5rem', fontSize: '0.95rem' }}>
+                                    <p style={{ marginBottom: '0.5rem' }}>
+                                        • Tu directo Pedro gana <strong>$100</strong> en comisiones Unilevel
+                                    </p>
+                                    <p style={{ marginBottom: '0.5rem' }}>
+                                        • Tú recibes <strong>$50</strong> de matching bonus (50% de $100)
+                                    </p>
+                                    <p style={{ marginBottom: 0, fontWeight: 'bold', fontSize: '1.1rem' }}>
+                                        💰 Total extra: $50 por cada directo exitoso
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     {/* Levels Breakdown */}
@@ -216,6 +287,7 @@ const UnilevelView = () => {
                                         <th style={{ padding: '1rem', textAlign: 'center', color: 'white', borderBottom: '2px solid #5a67d8' }}>Personas</th>
                                         <th style={{ padding: '1rem', textAlign: 'center', color: 'white', borderBottom: '2px solid #5a67d8' }}>Activos</th>
                                         <th style={{ padding: '1rem', textAlign: 'center', color: 'white', borderBottom: '2px solid #5a67d8' }}>Comisiones Ganadas</th>
+                                        <th style={{ padding: '1rem', textAlign: 'center', color: 'white', borderBottom: '2px solid #5a67d8' }}>Matching Bonus</th>
                                         <th style={{ padding: '1rem', textAlign: 'center', color: 'white', borderBottom: '2px solid #5a67d8' }}>Volumen del Nivel</th>
                                     </tr>
                                 </thead>
@@ -289,6 +361,9 @@ const UnilevelView = () => {
                                                 <td style={{ padding: '1rem', textAlign: 'center', fontWeight: 'bold', fontSize: '1.125rem', color: '#10b981' }}>
                                                     ${earnings.toLocaleString()}
                                                 </td>
+                                                <td style={{ padding: '1rem', textAlign: 'center', fontWeight: 'bold', fontSize: '1.125rem', color: '#ec4899' }}>
+                                                    {level === 1 ? `$${(levelStats.matching_bonus || 0).toLocaleString()}` : 'N/A'}
+                                                </td>
                                                 <td style={{ padding: '1rem', textAlign: 'center', fontWeight: '600', color: '#6b7280' }}>
                                                     ${volume.toLocaleString()}
                                                 </td>
@@ -306,6 +381,9 @@ const UnilevelView = () => {
                                         </td>
                                         <td style={{ padding: '1.5rem', textAlign: 'center', fontSize: '1.75rem' }}>
                                             ${totalEarnings.toLocaleString()}
+                                        </td>
+                                        <td style={{ padding: '1.5rem', textAlign: 'center', fontSize: '1.75rem', color: '#fce7f3' }}>
+                                            ${(stats?.matching_bonus || 0).toLocaleString()}
                                         </td>
                                         <td style={{ padding: '1.5rem', textAlign: 'center' }}>
                                             ${(stats?.total_volume || 0).toLocaleString()}
