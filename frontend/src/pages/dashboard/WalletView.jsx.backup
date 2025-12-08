@@ -45,7 +45,7 @@ const WalletView = () => {
         return ((current - previous) / previous * 100).toFixed(1);
     };
 
-    const renderMiniChart = (data, colorClass) => {
+    const renderMiniChart = (data, color) => {
         const max = Math.max(...data);
         const normalized = data.map(val => (val / max) * 100);
         
@@ -54,12 +54,8 @@ const WalletView = () => {
                 {normalized.map((height, idx) => (
                     <div
                         key={idx}
-                        className={`flex-1 rounded-t transition-all ${colorClass}`}
-                        style={{ 
-                            height: `${height}%`, 
-                            minHeight: '4px',
-                            opacity: 0.7 + (idx * 0.05) 
-                        }}
+                        className={`flex-1 rounded-t transition-all ${color}`}
+                        style={{ height: `${height}%`, opacity: 0.7 + (idx * 0.05) }}
                     />
                 ))}
             </div>
@@ -70,134 +66,7 @@ const WalletView = () => {
         <div className="space-y-6">
             <h1 className="text-3xl font-bold text-gray-800">💰 Mi Billetera</h1>
 
-            {/* Section Navigation Cards with Charts - ARRIBA */}
-            <div className="flex flex-col lg:flex-row gap-8 mb-8">
-                {/* Resumen Card */}
-                <button
-                    onClick={() => setActiveTab('summary')}
-                    className={`flex-1 relative overflow-hidden rounded-2xl shadow-2xl transition-all duration-300 transform hover:scale-105 hover:-translate-y-2 ${
-                        activeTab === 'summary' 
-                            ? 'ring-4 ring-blue-400 shadow-blue-500/50' 
-                            : 'hover:shadow-blue-500/30'
-                    }`}
-                >
-                    <div className="bg-gradient-to-br from-blue-700 via-blue-800 to-blue-900 p-8 text-white min-h-[240px] flex flex-col">
-                        <div className="flex items-start justify-between mb-4">
-                            <div className="text-6xl">📊</div>
-                            <div className="text-right">
-                                <div className="text-4xl font-bold tracking-tight">${walletData.total_earnings?.toFixed(0) || '0'}</div>
-                                <div className="text-sm opacity-80 mt-1">Total</div>
-                            </div>
-                        </div>
-                        <h3 className="text-lg font-bold mb-3">Resumen General</h3>
-                        <div className="flex items-center gap-2 text-sm mb-3">
-                            <span className="text-green-300 font-bold">↗ +{getGrowthPercentage(monthlyGrowth.overview)}%</span>
-                            <span className="opacity-80">vs mes anterior</span>
-                        </div>
-                        <div className="mt-auto">
-                            {renderMiniChart(monthlyGrowth.overview, 'bg-blue-300')}
-                        </div>
-                    </div>
-                </button>
-
-                {/* Bonos Especiales Card */}
-                <button
-                    onClick={() => setActiveTab('special')}
-                    className={`flex-1 relative overflow-hidden rounded-2xl shadow-2xl transition-all duration-300 transform hover:scale-105 hover:-translate-y-2 ${
-                        activeTab === 'special' 
-                            ? 'ring-4 ring-green-400 shadow-green-500/50' 
-                            : 'hover:shadow-green-500/30'
-                    }`}
-                >
-                    <div className="bg-gradient-to-br from-green-700 via-green-800 to-green-900 p-8 text-white min-h-[240px] flex flex-col">
-                        <div className="flex items-start justify-between mb-4">
-                            <div className="text-6xl">🎁</div>
-                            <div className="text-right">
-                                <div className="text-4xl font-bold tracking-tight">
-                                    {(walletData.special_bonuses?.product_purchase?.count || 0) +
-                                     (walletData.special_bonuses?.car_purchase?.count || 0) +
-                                     (walletData.special_bonuses?.apartment_purchase?.count || 0) +
-                                     (walletData.special_bonuses?.travel?.count || 0)}
-                                </div>
-                                <div className="text-sm opacity-80 mt-1">Bonos</div>
-                            </div>
-                        </div>
-                        <h3 className="text-lg font-bold mb-3">Bonos Especiales</h3>
-                        <div className="flex items-center gap-2 text-sm mb-3">
-                            <span className="text-green-300 font-bold">↗ +{getGrowthPercentage(monthlyGrowth.special)}%</span>
-                            <span className="opacity-80">crecimiento</span>
-                        </div>
-                        <div className="mt-auto">
-                            {renderMiniChart(monthlyGrowth.special, 'bg-green-300')}
-                        </div>
-                    </div>
-                </button>
-
-                {/* Transacciones Card */}
-                <button
-                    onClick={() => setActiveTab('transactions')}
-                    className={`flex-1 relative overflow-hidden rounded-2xl shadow-2xl transition-all duration-300 transform hover:scale-105 hover:-translate-y-2 ${
-                        activeTab === 'transactions' 
-                            ? 'ring-4 ring-teal-400 shadow-teal-500/50' 
-                            : 'hover:shadow-teal-500/30'
-                    }`}
-                >
-                    <div className="bg-gradient-to-br from-teal-700 via-cyan-800 to-cyan-900 p-8 text-white min-h-[240px] flex flex-col">
-                        <div className="flex items-start justify-between mb-4">
-                            <div className="text-6xl">📜</div>
-                            <div className="text-right">
-                                <div className="text-4xl font-bold tracking-tight">
-                                    {(earnings.unilevel?.count || 0) +
-                                     (earnings.matching_bonus?.count || 0) +
-                                     (earnings.global_pool?.count || 0)}
-                                </div>
-                                <div className="text-sm opacity-80 mt-1">Total</div>
-                            </div>
-                        </div>
-                        <h3 className="text-lg font-bold mb-3">Transacciones</h3>
-                        <div className="flex items-center gap-2 text-sm mb-3">
-                            <span className="text-green-300 font-bold">↗ +{getGrowthPercentage(monthlyGrowth.transactions)}%</span>
-                            <span className="opacity-80">actividad</span>
-                        </div>
-                        <div className="mt-auto">
-                            {renderMiniChart(monthlyGrowth.transactions, 'bg-teal-300')}
-                        </div>
-                    </div>
-                </button>
-
-                {/* Rangos Card */}
-                <button
-                    onClick={() => setActiveTab('bonuses')}
-                    className={`flex-1 relative overflow-hidden rounded-2xl shadow-2xl transition-all duration-300 transform hover:scale-105 hover:-translate-y-2 ${
-                        activeTab === 'bonuses' 
-                            ? 'ring-4 ring-indigo-400 shadow-indigo-500/50' 
-                            : 'hover:shadow-indigo-500/30'
-                    }`}
-                >
-                    <div className="bg-gradient-to-br from-indigo-700 via-indigo-800 to-indigo-900 p-8 text-white min-h-[240px] flex flex-col">
-                        <div className="flex items-start justify-between mb-4">
-                            <div className="text-6xl">🏆</div>
-                            <div className="text-right">
-                                <div className="text-4xl font-bold tracking-tight">
-                                    {(earnings.qualified_ranks?.count || 0) +
-                                     (earnings.honor_ranks?.count || 0)}
-                                </div>
-                                <div className="text-sm opacity-80 mt-1">Logros</div>
-                            </div>
-                        </div>
-                        <h3 className="text-lg font-bold mb-3">Rangos y Logros</h3>
-                        <div className="flex items-center gap-2 text-sm mb-3">
-                            <span className="text-green-300 font-bold">↗ +{getGrowthPercentage(monthlyGrowth.bonuses)}%</span>
-                            <span className="opacity-80">progreso</span>
-                        </div>
-                        <div className="mt-auto">
-                            {renderMiniChart(monthlyGrowth.bonuses, 'bg-indigo-300')}
-                        </div>
-                    </div>
-                </button>
-            </div>
-
-            {/* Balance Cards - ABAJO de los cuadros de navegación */}
+            {/* Balance Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div className="bg-gradient-to-br from-green-500 to-green-600 p-6 rounded-xl shadow-lg text-white">
                     <h3 className="text-sm font-medium opacity-90 uppercase">Saldo Disponible</h3>
@@ -222,6 +91,117 @@ const WalletView = () => {
                     <p className="text-4xl font-bold mt-2">${walletData.crypto_balance?.toFixed(2) || '0.00'}</p>
                     <p className="text-xs mt-2 opacity-75">Saldo en criptomonedas</p>
                 </div>
+            </div>
+
+            {/* Section Navigation Cards with Charts */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                {/* Resumen Card */}
+                <button
+                    onClick={() => setActiveTab('overview')}
+                    className={`relative overflow-hidden rounded-xl shadow-lg transition-all duration-300 transform hover:scale-105 ${
+                        activeTab === 'overview' 
+                            ? 'ring-4 ring-indigo-400 shadow-2xl' 
+                            : 'hover:shadow-xl'
+                    }`}
+                >
+                    <div className="bg-gradient-to-br from-indigo-500 to-indigo-700 p-6 text-white">
+                        <div className="text-5xl mb-2">📊</div>
+                        <h3 className="text-xl font-bold mb-1">Resumen</h3>
+                        <div className="flex items-baseline gap-2 mb-1">
+                            <span className="text-3xl font-bold">${walletData.total_earnings?.toFixed(0) || '0'}</span>
+                            <span className="text-sm opacity-75">Total</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-xs mb-2">
+                            <span className="text-green-300">↗ +{getGrowthPercentage(monthlyGrowth.overview)}%</span>
+                            <span className="opacity-75">vs mes anterior</span>
+                        </div>
+                        {renderMiniChart(monthlyGrowth.overview, 'bg-white')}
+                    </div>
+                </button>
+
+                {/* Bonos Especiales Card */}
+                <button
+                    onClick={() => setActiveTab('special')}
+                    className={`relative overflow-hidden rounded-xl shadow-lg transition-all duration-300 transform hover:scale-105 ${
+                        activeTab === 'special' 
+                            ? 'ring-4 ring-pink-400 shadow-2xl' 
+                            : 'hover:shadow-xl'
+                    }`}
+                >
+                    <div className="bg-gradient-to-br from-pink-500 to-pink-700 p-6 text-white">
+                        <div className="text-5xl mb-2">🎁</div>
+                        <h3 className="text-xl font-bold mb-1">Bonos Especiales</h3>
+                        <div className="flex items-baseline gap-2 mb-1">
+                            <span className="text-3xl font-bold">
+                                {(walletData.special_bonuses?.product_purchase?.count || 0) +
+                                 (walletData.special_bonuses?.car_purchase?.count || 0) +
+                                 (walletData.special_bonuses?.apartment_purchase?.count || 0) +
+                                 (walletData.special_bonuses?.travel?.count || 0)}
+                            </span>
+                            <span className="text-sm opacity-75">Bonos</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-xs mb-2">
+                            <span className="text-green-300">↗ +{getGrowthPercentage(monthlyGrowth.special)}%</span>
+                            <span className="opacity-75">crecimiento</span>
+                        </div>
+                        {renderMiniChart(monthlyGrowth.special, 'bg-white')}
+                    </div>
+                </button>
+
+                {/* Transacciones Card */}
+                <button
+                    onClick={() => setActiveTab('transactions')}
+                    className={`relative overflow-hidden rounded-xl shadow-lg transition-all duration-300 transform hover:scale-105 ${
+                        activeTab === 'transactions' 
+                            ? 'ring-4 ring-emerald-400 shadow-2xl' 
+                            : 'hover:shadow-xl'
+                    }`}
+                >
+                    <div className="bg-gradient-to-br from-emerald-500 to-emerald-700 p-6 text-white">
+                        <div className="text-5xl mb-2">📜</div>
+                        <h3 className="text-xl font-bold mb-1">Transacciones</h3>
+                        <div className="flex items-baseline gap-2 mb-1">
+                            <span className="text-3xl font-bold">
+                                {(earnings.unilevel?.count || 0) +
+                                 (earnings.matching_bonus?.count || 0) +
+                                 (earnings.global_pool?.count || 0)}
+                            </span>
+                            <span className="text-sm opacity-75">Total</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-xs mb-2">
+                            <span className="text-green-300">↗ +{getGrowthPercentage(monthlyGrowth.transactions)}%</span>
+                            <span className="opacity-75">actividad</span>
+                        </div>
+                        {renderMiniChart(monthlyGrowth.transactions, 'bg-white')}
+                    </div>
+                </button>
+
+                {/* Rangos Card */}
+                <button
+                    onClick={() => setActiveTab('bonuses')}
+                    className={`relative overflow-hidden rounded-xl shadow-lg transition-all duration-300 transform hover:scale-105 ${
+                        activeTab === 'bonuses' 
+                            ? 'ring-4 ring-amber-400 shadow-2xl' 
+                            : 'hover:shadow-xl'
+                    }`}
+                >
+                    <div className="bg-gradient-to-br from-amber-500 to-amber-700 p-6 text-white">
+                        <div className="text-5xl mb-2">🏆</div>
+                        <h3 className="text-xl font-bold mb-1">Rangos</h3>
+                        <div className="flex items-baseline gap-2 mb-1">
+                            <span className="text-3xl font-bold">
+                                {(earnings.qualified_ranks?.count || 0) +
+                                 (earnings.honor_ranks?.count || 0)}
+                            </span>
+                            <span className="text-sm opacity-75">Logros</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-xs mb-2">
+                            <span className="text-green-300">↗ +{getGrowthPercentage(monthlyGrowth.bonuses)}%</span>
+                            <span className="opacity-75">progreso</span>
+                        </div>
+                        {renderMiniChart(monthlyGrowth.bonuses, 'bg-white')}
+                    </div>
+                </button>
             </div>
 
             {/* Content Area */}
@@ -338,7 +318,7 @@ const WalletView = () => {
                                     <p className="text-2xl font-bold text-gray-900">
                                         ${earnings.global_pool?.total?.toFixed(2) || '0.00'}
                                     </p>
-                                    <p className="text-xs text-gray-600 mt-1">7% distribuido</p>
+                                    <p className="text-xs text-gray-600 mt-1">10% distribuido</p>
                                 </div>
                             </div>
                         </div>
@@ -671,6 +651,7 @@ const WalletView = () => {
                         </div>
                     )}
                 </div>
+            </div>
         </div>
     );
 };

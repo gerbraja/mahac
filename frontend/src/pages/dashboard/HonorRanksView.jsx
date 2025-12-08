@@ -6,42 +6,200 @@ export default function HonorRanksView() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
+    // Datos reales de los rangos de honor del sistema
+    const defaultRanks = [
+        { 
+            id: 1, 
+            name: 'Silver', 
+            emoji: '🥈', 
+            color: 'from-gray-400 to-gray-600', 
+            commission: 1000, 
+            reward: 'Reward $97 worth of products',
+            reward_value: 97
+        },
+        { 
+            id: 2, 
+            name: 'Gold', 
+            emoji: '🥇', 
+            color: 'from-yellow-400 to-yellow-600', 
+            commission: 3700, 
+            reward: 'Reward $277 worth of products',
+            reward_value: 277
+        },
+        { 
+            id: 3, 
+            name: 'Platinum', 
+            emoji: '💎', 
+            color: 'from-blue-300 to-blue-500', 
+            commission: 5700, 
+            reward: 'Gift for $1000 USD',
+            reward_value: 1000
+        },
+        { 
+            id: 4, 
+            name: 'Rubí', 
+            emoji: '💍', 
+            color: 'from-red-600 to-red-800', 
+            commission: 9700, 
+            reward: 'Domestic Trip x3',
+            reward_value: null
+        },
+        { 
+            id: 5, 
+            name: 'Esmeralda', 
+            emoji: '💚', 
+            color: 'from-green-600 to-green-800', 
+            commission: 19700, 
+            reward: 'Cruise x4',
+            reward_value: null
+        },
+        { 
+            id: 6, 
+            name: 'Diamond', 
+            emoji: '✨', 
+            color: 'from-cyan-400 to-cyan-600', 
+            commission: 37700, 
+            reward: 'International Cruise x5 + Pool 7%',
+            reward_value: null
+        },
+        { 
+            id: 7, 
+            name: 'Blue Diamond', 
+            emoji: '🔷', 
+            color: 'from-indigo-600 to-indigo-800', 
+            commission: 77700, 
+            reward: 'Luxury trip x5 + Pool 7%',
+            reward_value: null
+        },
+    ];
+
     useEffect(() => {
         fetchRanks();
     }, []);
 
     const fetchRanks = async () => {
-        setLoading(true);
-        setError(null);
-        try {
-            const response = await api.get('/api/admin/honor-ranks');
-            setRanks(response.data);
-        } catch (err) {
-            console.error('Error fetching honor ranks:', err);
-            setError('Error al cargar los rangos de honor');
-        } finally {
-            setLoading(false);
-        }
+        setLoading(false);
+        // Usar datos predeterminados en lugar de llamar a la API
+        setRanks(defaultRanks);
     };
 
     const formatCurrency = (amount) => {
         if (!amount) return '-';
         return new Intl.NumberFormat('es-CO', {
             style: 'currency',
-            currency: 'USD'
+            currency: 'USD',
+            minimumFractionDigits: 0
         }).format(amount);
     };
 
     return (
-        <div className="p-6 space-y-6">
+        <div className="p-6 space-y-8">
+            {/* Encabezado */}
             <div>
-                <h2 className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-emerald-800 bg-clip-text text-transparent mb-2">
-                    💎 Rangos de Honor
-                </h2>
-                <p className="text-gray-600">
+                <h2 className="text-4xl font-bold text-gray-800 mb-2">💎 Rangos de Honor</h2>
+                <p className="text-gray-600 text-lg">
                     Rangos basados en comisiones acumuladas. Alcanza estos niveles para obtener premios exclusivos.
                 </p>
             </div>
+
+            {/* Barra de Progreso */}
+            <div className="bg-gradient-to-r from-gray-100 to-blue-100 p-8 rounded-2xl shadow-lg border-2 border-indigo-200">
+                <div className="mb-6">
+                    <div className="flex justify-between items-center mb-6">
+                        <span className="text-lg font-bold text-gray-800">Tu Progreso en los Rangos</span>
+                        <span className="text-2xl font-bold text-gray-600">Sin Rango Aún (0%)</span>
+                    </div>
+                    
+                    {/* Barra Visual Principal */}
+                    <div className="relative w-full h-12 bg-gray-400 rounded-full overflow-hidden shadow-md mb-4">
+                        {/* Relleno de progreso */}
+                        <div 
+                            className="absolute h-full bg-gradient-to-r from-amber-500 via-yellow-400 to-green-400 transition-all duration-500 flex items-center"
+                            style={{width: '5%'}}
+                        >
+                            <div className="absolute right-2 top-1/2 transform -translate-y-1/2 w-6 h-6 bg-white rounded-full shadow-lg border-2 border-green-500"></div>
+                        </div>
+                        
+                        {/* Indicador de progreso */}
+                        <div className="absolute inset-0 flex items-center pl-4 text-white font-bold drop-shadow-lg">
+                            <span className="text-sm">0% - Sin Rango</span>
+                        </div>
+                    </div>
+
+                    {/* Etiquetas de Rangos Debajo */}
+                    <div className="grid grid-cols-7 gap-2 text-center text-xs font-semibold mt-4">
+                        {defaultRanks.map((rank, idx) => (
+                            <div key={idx} className="flex flex-col items-center">
+                                <div className="text-xl mb-1">{rank.emoji}</div>
+                                <span className="text-gray-800">{rank.name}</span>
+                                <span className="text-gray-600 text-xs">${rank.commission.toLocaleString()}</span>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Descripción del progreso */}
+                    <div className="mt-6 p-4 bg-indigo-50 rounded-lg border-2 border-indigo-300">
+                        <p className="text-sm text-gray-800">
+                            <span className="font-bold">Rango Actual: Sin Rango</span><br/>
+                            Comisión Acumulada: $0.00 / $1000.00<br/>
+                            <span className="text-indigo-600 font-semibold">¡Falta $1000.00 para alcanzar Silver!</span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            {/* Grid de Tarjetas de Rangos */}
+            {!loading && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {defaultRanks.map((rank, index) => (
+                        <div
+                            key={rank.id}
+                            className={`bg-gradient-to-br ${rank.color} rounded-2xl shadow-xl p-6 text-white transform transition-all duration-300 hover:scale-105 hover:shadow-2xl`}
+                        >
+                            {/* Emoji e Índice */}
+                            <div className="flex justify-between items-start mb-4">
+                                <div className="text-5xl">{rank.emoji}</div>
+                                <div className="text-sm bg-white/30 px-3 py-1 rounded-full">
+                                    Nivel {index + 1}/7
+                                </div>
+                            </div>
+
+                            {/* Nombre del Rango */}
+                            <h3 className="text-2xl font-bold mb-1">{rank.name}</h3>
+                            <p className="text-xs opacity-90 mb-4 capitalize">
+                                {index === 0 ? 'Rango de entrada' : index < 6 ? 'Rango intermedio' : 'Rango máximo'}
+                            </p>
+
+                            {/* Divisor */}
+                            <div className="w-full h-1 bg-white/20 rounded-full mb-4"></div>
+
+                            {/* Requisitos */}
+                            <div className="mb-4 space-y-3">
+                                <div>
+                                    <p className="text-xs opacity-90 mb-1">💰 Comisión Requerida</p>
+                                    <p className="text-xl font-bold">{formatCurrency(rank.commission)}</p>
+                                </div>
+                                <div>
+                                    <p className="text-xs opacity-90 mb-1">🎁 Recompensa</p>
+                                    <p className="text-sm font-semibold">{rank.reward}</p>
+                                    {rank.reward_value && (
+                                        <p className="text-lg font-bold mt-1">{formatCurrency(rank.reward_value)}</p>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Badge de estado */}
+                            <div className="mt-4 pt-4 border-t border-white/30 text-center">
+                                {index === 0 ? (
+                                    <span className="inline-block bg-yellow-300 text-gray-800 px-4 py-2 rounded-full text-sm font-bold">✓ Rango Actual</span>
+                                ) : (
+                                    <span className="inline-block bg-white/30 px-4 py-2 rounded-full text-sm font-semibold">Por Alcanzar</span>
+                                )}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
 
             {loading && (
                 <div className="text-center py-12">
@@ -56,53 +214,27 @@ export default function HonorRanksView() {
                 </div>
             )}
 
-            {!loading && !error && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {ranks.map((rank, index) => (
-                        <div
-                            key={rank.id}
-                            className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 transform hover:-translate-y-1"
-                        >
-                            <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 p-4">
-                                <h3 className="text-xl font-bold text-white">{rank.name}</h3>
-                            </div>
-                            <div className="p-6 space-y-4">
-                                <div>
-                                    <p className="text-sm text-gray-500 uppercase tracking-wide mb-1">Comisión Requerida</p>
-                                    <p className="text-2xl font-bold text-emerald-600">
-                                        {formatCurrency(rank.commission_required)}
-                                    </p>
-                                </div>
-                                <div>
-                                    <p className="text-sm text-gray-500 uppercase tracking-wide mb-1">Recompensa</p>
-                                    <p className="text-sm text-gray-700 leading-relaxed">
-                                        {rank.reward_description}
-                                    </p>
-                                    {rank.reward_value_usd && (
-                                        <p className="text-lg font-bold text-green-600 mt-2">
-                                            {formatCurrency(rank.reward_value_usd)}
-                                        </p>
-                                    )}
-                                </div>
-                                <div className="pt-4 border-t border-gray-200">
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-sm text-gray-500">Usuarios que lo alcanzaron</span>
-                                        <span className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-sm font-semibold">
-                                            {rank.users_achieved}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
+            {/* Información Adicional */}
+            <div className="bg-gradient-to-r from-indigo-50 to-blue-50 border border-indigo-200 rounded-2xl p-6">
+                <h3 className="text-lg font-bold text-gray-800 mb-3">📊 Cómo Alcanzar Rangos Superiores</h3>
+                <div className="space-y-4 text-gray-700 text-sm">
+                    <div>
+                        <p className="font-semibold text-indigo-700 mb-2">Requisito Principal:</p>
+                        <p>✓ Acumula ganancias en comisiones de equipo, bonos de matching y ganancias de matrix</p>
+                        <p className="text-xs opacity-75 mt-1">Nota: No incluye bonos especiales de compra o cambio de productos</p>
+                    </div>
+                    <div>
+                        <p className="font-semibold text-indigo-700 mb-2">Ejemplo:</p>
+                        <p>Si has ganado $600 en comisiones de equipo + $250 en matching bonus + $150 en matrix = $1,000 total → Calificas para Rango Silver</p>
+                    </div>
+                    <div>
+                        <p className="font-semibold text-indigo-700 mb-2">Beneficios:</p>
+                        <p>✓ Los rangos son permanentes una vez alcanzados</p>
+                        <p>✓ Recibe premios exclusivos (productos, dinero, viajes)</p>
+                        <p>✓ Aumenta tu estatus en la comunidad</p>
+                    </div>
                 </div>
-            )}
-
-            {!loading && ranks.length === 0 && (
-                <div className="text-center py-12 bg-gray-50 rounded-xl">
-                    <p className="text-gray-500 text-lg">No hay rangos de honor configurados.</p>
-                </div>
-            )}
+            </div>
         </div>
     );
 }

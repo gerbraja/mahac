@@ -14,6 +14,7 @@ const DashboardLayout = () => {
     { to: '/dashboard/education', icon: '📚', label: 'Educación', gradient: 'from-purple-500 to-purple-600' },
     { to: '/dashboard/personal', icon: '👤', label: 'Personal', gradient: 'from-orange-500 to-orange-600' },
     { to: '/dashboard/unilevel', icon: '🌳', label: 'Red Unilevel', gradient: 'from-indigo-500 to-indigo-600' },
+    { to: '/dashboard/directs', icon: '👥', label: 'Mis Afiliados', gradient: 'from-emerald-500 to-emerald-600' },
     { to: '/dashboard/binary-global', icon: '🌐', label: 'Red Binaria Global', gradient: 'from-cyan-500 to-cyan-600' },
     { to: '/dashboard/binary-millionaire', icon: '💎', label: 'Red Binaria Millonaria', gradient: 'from-pink-500 to-pink-600' },
     { to: '/dashboard/matrix', icon: '🔷', label: 'Matrices Forzadas', gradient: 'from-teal-500 to-teal-600' },

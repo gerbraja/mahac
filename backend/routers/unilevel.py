@@ -177,3 +177,56 @@ def get_unilevel_stats(user_id: int, db: Session = Depends(get_db)):
         "total_volume": float(total_volume),
         "levels": levels_stats
     }
+
+
+@router.get("/directs/{user_id}")
+def get_directs(user_id: int, db: Session = Depends(get_db)):
+    """
+    Get all direct sponsored members (Nivel 1) for a user
+    """
+    member = db.query(UnilevelMember).filter(
+        UnilevelMember.user_id == user_id
+    ).first()
+    
+    if not member:
+        return {
+            "user_id": user_id,
+            "total_directs": 0,
+            "directs": []
+        }
+    
+    # Get all downlines (directs) of this member
+    directs = db.query(UnilevelMember).filter(
+        UnilevelMember.sponsor_id == member.id
+    ).all()
+    
+    # Get user information for each direct
+    directs_list = []
+    for direct_member in directs:
+        direct_user = db.query(User).filter(User.id == direct_member.user_id).first()
+        directs_list.append({
+            "member_id": direct_member.id,
+            "user_id": direct_member.user_id,
+            "name": direct_user.name if direct_user else "Unknown",
+            "email": direct_user.email if direct_user else None,
+            "status": "active"  # You can add more status logic if needed
+        })
+    
+    # Get total network count (all downlines through all levels)
+    def count_all_downlines(member_id):
+        count = 0
+        directs_of_member = db.query(UnilevelMember).filter(
+            UnilevelMember.sponsor_id == member_id
+        ).all()
+        for direct in directs_of_member:
+            count += 1 + count_all_downlines(direct.id)
+        return count
+    
+    total_network = count_all_downlines(member.id)
+    
+    return {
+        "user_id": user_id,
+        "total_directs": len(directs_list),
+        "total_network": total_network,
+        "directs": directs_list
+    }
