@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, Outlet, useLocation } from 'react-router-dom';
+import { Link, Outlet, useLocation, Navigate } from 'react-router-dom';
 import TeiLogo from '../TeiLogo';
 import './DashboardLayout.css';
 
@@ -8,11 +8,18 @@ const DashboardLayout = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const location = useLocation();
 
+  // Check authentication
+  const token = localStorage.getItem('access_token');
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
+
   const navItems = [
     { to: '/dashboard/store', icon: '🛍️', label: 'Tienda', gradient: 'from-blue-500 to-blue-600' },
     { to: '/dashboard/wallet', icon: '💰', label: 'Billetera', gradient: 'from-green-500 to-green-600' },
     { to: '/dashboard/education', icon: '📚', label: 'Educación', gradient: 'from-purple-500 to-purple-600' },
     { to: '/dashboard/personal', icon: '👤', label: 'Personal', gradient: 'from-orange-500 to-orange-600' },
+    { to: '/dashboard/security', icon: '🔒', label: 'Seguridad', gradient: 'from-red-500 to-red-600' },
     { to: '/dashboard/unilevel', icon: '🌳', label: 'Red Unilevel', gradient: 'from-indigo-500 to-indigo-600' },
     { to: '/dashboard/directs', icon: '👥', label: 'Mis Afiliados', gradient: 'from-emerald-500 to-emerald-600' },
     { to: '/dashboard/binary-global', icon: '🌐', label: 'Red Binaria Global', gradient: 'from-cyan-500 to-cyan-600' },

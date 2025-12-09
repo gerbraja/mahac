@@ -1,8 +1,41 @@
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { api } from '../api/api';
 import TeiLogo from '../components/TeiLogo';
+import CompleteRegistration from './CompleteRegistration';
 
 export default function Personal() {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const [showRegistrationForm, setShowRegistrationForm] = useState(false);
+    const [referralCode, setReferralCode] = useState("");
+    const [referrerName, setReferrerName] = useState("");
+
+    useEffect(() => {
+        const refCode = searchParams.get("ref");
+        if (refCode) {
+            setReferralCode(refCode);
+            api.get(`/auth/verify-referral/${refCode}`)
+                .then(response => {
+                    if (response.data && response.data.valid) {
+                        setReferrerName(response.data.referrer_name || "");
+                    }
+                })
+                .catch(error => {
+                    // Invalid referral code or network error - continue anyway
+                    console.log("Referral code verification failed:", error.message);
+                });
+        }
+    }, [searchParams]);
+
+    if (showRegistrationForm) {
+        return (
+            <CompleteRegistration 
+                referralCode={referralCode} 
+                onBack={() => setShowRegistrationForm(false)}
+            />
+        );
+    }
 
     return (
         <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
@@ -20,9 +53,8 @@ export default function Personal() {
                     </p>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                        {/* Button 1: Registro Nuevo Distribuidor */}
                         <button
-                            onClick={() => navigate('/login')}
+                            onClick={() => setShowRegistrationForm(true)}
                             style={{
                                 width: '100%',
                                 padding: '1.25rem',
@@ -53,7 +85,6 @@ export default function Personal() {
                             Registro Nuevo Distribuidor
                         </button>
 
-                        {/* Button 2: Acceso del Distribuidor */}
                         <button
                             onClick={() => navigate('/login', { state: { view: 'login' } })}
                             style={{
@@ -86,7 +117,6 @@ export default function Personal() {
                             Acceso del Distribuidor
                         </button>
 
-                        {/* Button 3: Descargar APP */}
                         <button
                             onClick={() => alert('La aplicación móvil estará disponible próximamente.')}
                             style={{
@@ -120,21 +150,32 @@ export default function Personal() {
                         </button>
                     </div>
 
-                    <div style={{ marginTop: '2rem', textAlign: 'center' }}>
-                        <button
-                            onClick={() => navigate('/')}
-                            style={{
-                                background: 'transparent',
-                                border: 'none',
-                                color: '#64748b',
-                                cursor: 'pointer',
-                                fontSize: '0.875rem',
-                                textDecoration: 'underline'
-                            }}
-                        >
-                            ← Volver al inicio
-                        </button>
-                    </div>
+                    <button
+                        onClick={() => navigate('/')}
+                        style={{
+                            width: '100%',
+                            padding: '1rem',
+                            marginTop: '2rem',
+                            borderRadius: '0.75rem',
+                            background: 'transparent',
+                            color: '#64748b',
+                            border: '2px solid #e2e8f0',
+                            fontSize: '0.95rem',
+                            fontWeight: '500',
+                            cursor: 'pointer',
+                            transition: 'all 0.3s'
+                        }}
+                        onMouseEnter={(e) => {
+                            e.target.style.background = '#f1f5f9';
+                            e.target.style.color = '#1e3a8a';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.target.style.background = 'transparent';
+                            e.target.style.color = '#64748b';
+                        }}
+                    >
+                        ← Volver al inicio
+                    </button>
                 </div>
             </div>
         </div>

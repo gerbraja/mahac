@@ -22,6 +22,9 @@ class User(Base):
     
     password = Column(String(255), nullable=True)
 
+    # Security
+    transaction_pin = Column(String(255), nullable=True)  # Hashed transaction PIN
+
     # Additional personal information (from complete registration)
     document_id = Column(String(50), nullable=True)  # Documento de identidad
     gender = Column(String(1), nullable=True)  # M/F
@@ -33,7 +36,7 @@ class User(Base):
     city = Column(String(100), nullable=True)  # Ciudad
     province = Column(String(100), nullable=True)  # Provincia/Estado
     postal_code = Column(String(20), nullable=True)  # Código postal
-    country = Column(String(100), nullable=True)  # País (del pre-registro)
+    country = Column(String(100), nullable=True)  # País (del registro)
 
     # Earnings fields for commission payouts
     monthly_earnings = Column(Float, default=0.0)

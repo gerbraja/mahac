@@ -29,19 +29,19 @@ const BinaryGlobalView = () => {
         console.log('🔍 Fetching Binary Global status for user:', activeUserId);
         console.log('🌐 API Base URL:', api.defaults.baseURL);
         console.log('🔗 Full URL:', `${api.defaults.baseURL}/api/binary/global/${activeUserId}`);
-        
+
         if (!activeUserId) {
             setError('No se pudo obtener el ID de usuario. Por favor, inicia sesión nuevamente.');
             setLoading(false);
             return;
         }
-        
+
         try {
             const response = await api.get(`/api/binary/global/${activeUserId}`);
             console.log('✅ Response received:', response);
             console.log('📦 Response data:', response.data);
             setStatus(response.data);
-            
+
             // Fetch statistics if user is registered
             if (response.data.status !== 'not_registered') {
                 try {
@@ -53,7 +53,7 @@ const BinaryGlobalView = () => {
                     // Don't fail the whole component if stats fail
                 }
             }
-            
+
             setError(null);
         } catch (err) {
             console.error('❌ Error fetching Binary Global status:', err);
@@ -94,17 +94,17 @@ const BinaryGlobalView = () => {
     if (error) {
         return (
             <div style={{ padding: '2rem' }}>
-                <div style={{ 
-                    background: '#fee2e2', 
-                    border: '1px solid #ef4444', 
-                    borderRadius: '0.5rem', 
-                    padding: '1.5rem' 
+                <div style={{
+                    background: '#fee2e2',
+                    border: '1px solid #ef4444',
+                    borderRadius: '0.5rem',
+                    padding: '1.5rem'
                 }}>
                     <h3 style={{ color: '#dc2626', fontWeight: 'bold', marginBottom: '0.5rem' }}>
                         ⚠️ Error al Cargar
                     </h3>
                     <p style={{ color: '#991b1b' }}>{error}</p>
-                    <button 
+                    <button
                         onClick={fetchStatus}
                         style={{
                             marginTop: '1rem',
@@ -129,11 +129,11 @@ const BinaryGlobalView = () => {
                 <h2 style={{ fontSize: '1.875rem', fontWeight: 'bold', marginBottom: '1.5rem' }}>
                     🌐 Binary Global 2x2
                 </h2>
-                <div style={{ 
-                    background: '#fef3c7', 
-                    border: '1px solid #f59e0b', 
-                    borderRadius: '0.5rem', 
-                    padding: '1.5rem' 
+                <div style={{
+                    background: '#fef3c7',
+                    border: '1px solid #f59e0b',
+                    borderRadius: '0.5rem',
+                    padding: '1.5rem'
                 }}>
                     <h3 style={{ color: '#92400e', fontWeight: 'bold', marginBottom: '1rem' }}>
                         📢 No Registrado
@@ -161,7 +161,7 @@ const BinaryGlobalView = () => {
     const thisYearEarnings = stats?.total_earnings_this_year || 0;
     const leftLineCount = stats?.left_line_count || 0;
     const rightLineCount = stats?.right_line_count || 0;
-    
+
     return (
         <div style={{ padding: '1.5rem', maxWidth: '1400px', margin: '0 auto' }}>
             <h2 style={{ fontSize: '2.25rem', fontWeight: 'bold', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -195,12 +195,12 @@ const BinaryGlobalView = () => {
                 {/* Visualización simplificada del árbol */}
                 <div style={{ background: 'rgba(255,255,255,0.1)', borderRadius: '0.75rem', padding: '1.5rem', backdropFilter: 'blur(10px)' }}>
                     <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-                        <div style={{ 
-                            display: 'inline-block', 
-                            background: 'rgba(255,255,255,0.2)', 
-                            borderRadius: '50%', 
-                            width: '60px', 
-                            height: '60px', 
+                        <div style={{
+                            display: 'inline-block',
+                            background: 'rgba(255,255,255,0.2)',
+                            borderRadius: '50%',
+                            width: '60px',
+                            height: '60px',
                             lineHeight: '60px',
                             fontSize: '1.5rem',
                             fontWeight: 'bold'
@@ -259,8 +259,8 @@ const BinaryGlobalView = () => {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <span style={{ color: '#6b7280' }}>Estado:</span>
-                            <span style={{ 
-                                fontWeight: 'bold', 
+                            <span style={{
+                                fontWeight: 'bold',
                                 color: status.status === 'active' ? '#059669' : '#f59e0b',
                                 padding: '0.25rem 0.75rem',
                                 borderRadius: '9999px',
@@ -282,25 +282,25 @@ const BinaryGlobalView = () => {
                                 {status.position === 'left' ? '⬅️ Izquierda' : status.position === 'right' ? '➡️ Derecha' : '🌟 RAÍZ'}
                             </span>
                         </div>
-                        
+
                         {status.status === 'pre_registered' && deadline && (
-                            <div style={{ 
-                                marginTop: '1rem', 
-                                padding: '1rem', 
-                                background: daysLeft <= 10 ? '#fee2e2' : '#fef3c7', 
-                                border: `1px solid ${daysLeft <= 10 ? '#ef4444' : '#f59e0b'}`, 
-                                borderRadius: '0.5rem' 
+                            <div style={{
+                                marginTop: '1rem',
+                                padding: '1rem',
+                                background: daysLeft <= 10 ? '#fee2e2' : '#fef3c7',
+                                border: `1px solid ${daysLeft <= 10 ? '#ef4444' : '#f59e0b'}`,
+                                borderRadius: '0.5rem'
                             }}>
-                                <p style={{ 
-                                    color: daysLeft <= 10 ? '#991b1b' : '#92400e', 
+                                <p style={{
+                                    color: daysLeft <= 10 ? '#991b1b' : '#92400e',
                                     fontWeight: '600',
                                     marginBottom: '0.5rem'
                                 }}>
                                     ⚠️ Activación Requerida
                                 </p>
-                                <p style={{ 
-                                    fontSize: '0.875rem', 
-                                    color: daysLeft <= 10 ? '#7f1d1d' : '#78350f', 
+                                <p style={{
+                                    fontSize: '0.875rem',
+                                    color: daysLeft <= 10 ? '#7f1d1d' : '#78350f',
                                     marginBottom: '0.5rem'
                                 }}>
                                     Tienes <span style={{ fontWeight: 'bold', fontSize: '1rem' }}>{daysLeft} días</span> para activar tu cuenta antes de ser eliminado.
@@ -330,15 +330,15 @@ const BinaryGlobalView = () => {
                         )}
 
                         {status.status === 'active' && earningDeadline && (
-                            <div style={{ 
-                                marginTop: '1rem', 
-                                padding: '1rem', 
-                                background: earningDaysLeft > 30 ? '#d1fae5' : '#fef3c7', 
-                                border: `1px solid ${earningDaysLeft > 30 ? '#10b981' : '#f59e0b'}`, 
-                                borderRadius: '0.5rem' 
+                            <div style={{
+                                marginTop: '1rem',
+                                padding: '1rem',
+                                background: earningDaysLeft > 30 ? '#d1fae5' : '#fef3c7',
+                                border: `1px solid ${earningDaysLeft > 30 ? '#10b981' : '#f59e0b'}`,
+                                borderRadius: '0.5rem'
                             }}>
-                                <p style={{ 
-                                    color: earningDaysLeft > 30 ? '#065f46' : '#92400e', 
+                                <p style={{
+                                    color: earningDaysLeft > 30 ? '#065f46' : '#92400e',
                                     fontWeight: '600',
                                     marginBottom: '0.5rem'
                                 }}>
@@ -395,7 +395,7 @@ const BinaryGlobalView = () => {
                             <div>
                                 <strong>367 Días de Ganancias</strong>
                                 <p style={{ fontSize: '0.875rem', color: '#6b7280', margin: '0.25rem 0 0 0' }}>
-                                    Ventana desde el pre-registro para ganar comisiones
+                                    Ventana desde el registro para ganar comisiones
                                 </p>
                             </div>
                         </div>
@@ -452,7 +452,7 @@ const BinaryGlobalView = () => {
                     </div>
                     <div style={{ marginTop: '1rem', padding: '1rem', background: '#f3f4f6', borderRadius: '0.375rem' }}>
                         <p style={{ fontSize: '0.875rem', color: '#6b7280', margin: 0 }}>
-                            💡 <strong>Nota:</strong> Las comisiones se pagan UNA VEZ al año por cada miembro activo en niveles impares. 
+                            💡 <strong>Nota:</strong> Las comisiones se pagan UNA VEZ al año por cada miembro activo en niveles impares.
                             Total máximo teórico: <span style={{ fontWeight: 'bold', color: '#059669' }}>$2,790,740.00</span>
                         </p>
                     </div>
@@ -494,9 +494,9 @@ const BinaryGlobalView = () => {
                                     const active = levelStat?.active_members || 0;
                                     const earned = levelStat?.earned_this_year || 0;
                                     const potential = row.pays ? (row.possible * row.commission) : 0;
-                                    
+
                                     return (
-                                        <tr key={idx} style={{ 
+                                        <tr key={idx} style={{
                                             borderBottom: '1px solid #e5e7eb',
                                             background: '#fefce8'
                                         }}>
@@ -505,10 +505,10 @@ const BinaryGlobalView = () => {
                                                 Nivel {row.level}
                                             </td>
                                             <td style={{ padding: '1rem', textAlign: 'center' }}>
-                                                <span style={{ 
-                                                    background: '#dcfce7', 
-                                                    color: '#166534', 
-                                                    padding: '0.25rem 0.75rem', 
+                                                <span style={{
+                                                    background: '#dcfce7',
+                                                    color: '#166534',
+                                                    padding: '0.25rem 0.75rem',
                                                     borderRadius: '9999px',
                                                     fontWeight: '600',
                                                     fontSize: '0.75rem'

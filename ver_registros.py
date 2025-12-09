@@ -1,6 +1,6 @@
 """
-Script para ver los pre-registros y activar usuarios manualmente
-ACTUALIZADO: Genera código de referido al activar (no en pre-registro)
+Script para ver los registros y activar usuarios manualmente
+ACTUALIZADO: Genera código de referido al activar (no en registro)
 """
 from backend.database.connection import get_db
 from backend.database.models.user import User
@@ -8,18 +8,16 @@ from backend.database.models.binary_global import BinaryGlobalMember
 from sqlalchemy import desc
 import uuid
 
-def ver_pre_registros():
-    """Ver todos los pre-registros recientes"""
+def registros():
+    """Ver todos los registros recientes"""
     db = next(get_db())
     
-    print("\n" + "="*80)
-    print("PRE-REGISTROS RECIENTES")
-    print("="*80)
+    
     
     users = db.query(User).order_by(desc(User.created_at)).limit(20).all()
     
     if not users:
-        print("No hay pre-registros aún.")
+        print("No hay registros aún.")
         return
     
     for user in users:
@@ -28,7 +26,7 @@ def ver_pre_registros():
             BinaryGlobalMember.user_id == user.id
         ).first()
         
-        status = "✅ ACTIVO" if (member and member.is_active) else "⏳ PRE-REGISTRO"
+        status = "✅ ACTIVO" if (member and member.is_active) else "⏳ REGISTRO"
         
         print(f"\n{status}")
         print(f"  ID: {user.id}")
@@ -112,4 +110,4 @@ if __name__ == "__main__":
             print("Uso: python ver_registros.py activar USER_ID MONTO")
     else:
         # Modo ver registros
-        ver_pre_registros()
+        ver_registros

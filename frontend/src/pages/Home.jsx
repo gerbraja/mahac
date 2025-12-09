@@ -6,15 +6,6 @@ import TeiLogo from "../components/TeiLogo";
 export default function Home() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    username: "",
-    password: "",
-    phone: "", // This is actually country in the form
-  });
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
   const [referralCode, setReferralCode] = useState("");
   const [referrerName, setReferrerName] = useState("");
 
@@ -36,44 +27,9 @@ export default function Home() {
     }
   }, [searchParams]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setMessage("");
-
-    try {
-      const response = await api.post("/auth/register", {
-        name: formData.name,
-        email: formData.email,
-        username: formData.username,
-        password: formData.password,
-        referral_code: referralCode || undefined,
-      });
-
-      // Auto-login logic
-      if (response.data.access_token) {
-        localStorage.setItem("token", response.data.access_token);
-        // Redirect to dashboard or shop
-        setMessage("¡Registro Exitoso! Redirigiendo a tu oficina virtual...");
-        setTimeout(() => {
-          navigate("/dashboard");
-        }, 1500);
-      } else {
-        setMessage("¡Pre-Registro Completado! Por favor inicia sesión.");
-        setFormData({ name: "", email: "", username: "", password: "", phone: "" });
-      }
-
-    } catch (error) {
-      setMessage(
-        error.response?.data?.detail || "Error en el registro. Intenta de nuevo."
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const handleRegister = () => {
+    // Navigate to complete registration with referral code if present
+    navigate("/complete-registration", { state: { referral_code: referralCode } });
   };
 
   return (
@@ -194,15 +150,15 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Registration Form */}
+          {/* Registration CTA */}
           <div style={{ maxWidth: "500px", margin: "0 auto", width: "100%" }}>
             <div style={{ background: "linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)", backdropFilter: "blur(20px)", borderRadius: "1rem", padding: "2rem", border: "2px solid rgba(59, 130, 246, 0.2)", boxShadow: "0 8px 32px rgba(59, 130, 246, 0.15)" }}>
-              <div style={{ textAlign: "center", marginBottom: "1.5rem" }}>
+              <div style={{ textAlign: "center", marginBottom: "2rem" }}>
                 <h3 style={{ color: "#1e3a8a", fontSize: "1.5rem", fontWeight: "bold", marginBottom: "0.5rem" }}>
-                  Pre-Regístrate Ahora
+                  Regístrate Ahora
                 </h3>
-                <p style={{ color: "#3b82f6", fontSize: "0.875rem" }}>
-                  Asegura tu posición en la red global. Crea tu cuenta y accede de inmediato.
+                <p style={{ color: "#3b82f6", fontSize: "0.875rem", marginBottom: "1rem" }}>
+                  Completa tu registro en una sola vez con todos tus datos. Crea tu cuenta y obtén tu link de referido de inmediato.
                 </p>
 
                 {/* Show referrer if present */}
@@ -211,7 +167,6 @@ export default function Home() {
                     background: "rgba(34, 197, 94, 0.1)",
                     padding: "0.75rem",
                     borderRadius: "0.5rem",
-                    marginTop: "1rem",
                     border: "1px solid rgba(34, 197, 94, 0.3)"
                   }}>
                     <p style={{ color: "#16a34a", fontSize: "0.875rem", margin: 0 }}>
@@ -221,140 +176,26 @@ export default function Home() {
                 )}
               </div>
 
-              <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  required
-                  style={{
-                    width: "100%",
-                    padding: "0.875rem 1rem",
-                    borderRadius: "0.75rem",
-                    background: "white",
-                    border: "2px solid rgba(59, 130, 246, 0.3)",
-                    color: "#1e3a8a",
-                    outline: "none",
-                    fontSize: "1rem",
-                    fontWeight: "500"
-                  }}
-                  placeholder="Nombre Completo"
-                />
-
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  required
-                  style={{
-                    width: "100%",
-                    padding: "0.875rem 1rem",
-                    borderRadius: "0.75rem",
-                    background: "white",
-                    border: "2px solid rgba(59, 130, 246, 0.3)",
-                    color: "#1e3a8a",
-                    outline: "none",
-                    fontSize: "1rem",
-                    fontWeight: "500"
-                  }}
-                  placeholder="Correo Electrónico"
-                />
-
-                <input
-                  type="text"
-                  name="username"
-                  value={formData.username}
-                  onChange={handleChange}
-                  required
-                  style={{
-                    width: "100%",
-                    padding: "0.875rem 1rem",
-                    borderRadius: "0.75rem",
-                    background: "white",
-                    border: "2px solid rgba(59, 130, 246, 0.3)",
-                    color: "#1e3a8a",
-                    outline: "none",
-                    fontSize: "1rem",
-                    fontWeight: "500"
-                  }}
-                  placeholder="Usuario (para tu link de referido)"
-                />
-
-                <input
-                  type="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  required
-                  style={{
-                    width: "100%",
-                    padding: "0.875rem 1rem",
-                    borderRadius: "0.75rem",
-                    background: "white",
-                    border: "2px solid rgba(59, 130, 246, 0.3)",
-                    color: "#1e3a8a",
-                    outline: "none",
-                    fontSize: "1rem",
-                    fontWeight: "500"
-                  }}
-                  placeholder="Contraseña"
-                />
-
-                <input
-                  type="text"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  required
-                  style={{
-                    width: "100%",
-                    padding: "0.875rem 1rem",
-                    borderRadius: "0.75rem",
-                    background: "white",
-                    border: "2px solid rgba(59, 130, 246, 0.3)",
-                    color: "#1e3a8a",
-                    outline: "none",
-                    fontSize: "1rem",
-                    fontWeight: "500"
-                  }}
-                  placeholder="País"
-                />
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  style={{
-                    width: "100%",
-                    background: "linear-gradient(to right, #3b82f6, #1e40af)",
-                    color: "white",
-                    fontWeight: "bold",
-                    padding: "1rem",
-                    borderRadius: "0.75rem",
-                    border: "none",
-                    cursor: loading ? "not-allowed" : "pointer",
-                    opacity: loading ? 0.5 : 1,
-                    transition: "all 0.3s",
-                    fontSize: "1rem"
-                  }}
-                >
-                  {loading ? "Registrando..." : "Comenzar Ahora →"}
-                </button>
-
-                {message && (
-                  <div style={{
-                    padding: "1rem",
-                    borderRadius: "0.75rem",
-                    fontSize: "0.875rem",
-                    background: message.includes("exitoso") || message.includes("Completado") ? "rgba(34, 197, 94, 0.2)" : "rgba(239, 68, 68, 0.2)",
-                    color: message.includes("exitoso") || message.includes("Completado") ? "#16a34a" : "#dc2626",
-                    border: message.includes("exitoso") || message.includes("Completado") ? "1px solid rgba(34, 197, 94, 0.5)" : "1px solid rgba(239, 68, 68, 0.5)"
-                  }}>
-                    {message}
-                  </div>
-                )}
-              </form>
+              <button
+                onClick={handleRegister}
+                style={{
+                  width: "100%",
+                  background: "linear-gradient(to right, #3b82f6, #1e40af)",
+                  color: "white",
+                  fontWeight: "bold",
+                  padding: "1rem",
+                  borderRadius: "0.75rem",
+                  border: "none",
+                  cursor: "pointer",
+                  fontSize: "1rem",
+                  transition: "all 0.3s",
+                  boxShadow: "0 4px 12px rgba(30, 58, 138, 0.3)"
+                }}
+                onMouseEnter={(e) => e.target.style.transform = "translateY(-2px)"}
+                onMouseLeave={(e) => e.target.style.transform = "translateY(0)"}
+              >
+                Crear Cuenta Completa →
+              </button>
 
               <p style={{ color: "#64748b", fontSize: "0.75rem", textAlign: "center", marginTop: "1.5rem" }}>
                 Al registrarte, aceptas nuestros{" "}

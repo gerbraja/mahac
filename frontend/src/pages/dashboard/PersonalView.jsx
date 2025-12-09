@@ -42,6 +42,13 @@ const PersonalView = () => {
         return <div className="p-8 text-center text-red-500">Error al cargar perfil</div>;
     }
 
+    const referralLink = `${window.location.origin}/?ref=${user.referral_code || user.username}`;
+
+    const handleCopyReferralLink = () => {
+        navigator.clipboard.writeText(referralLink);
+        alert('¡Link de afiliado copiado al portapapeles!');
+    };
+
     return (
         <div className="p-6 space-y-6">
             <div className="flex justify-between items-center">
@@ -77,6 +84,25 @@ const PersonalView = () => {
                         </button>
                     </div>
                 )}
+            </div>
+
+            {/* Referral Link Card */}
+            <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-2xl p-6 border-2 border-orange-200 shadow-lg">
+                <div className="flex items-center justify-between gap-4">
+                    <div className="flex-1">
+                        <h2 className="text-xl font-bold text-gray-800 mb-2">🔗 Tu Link de Afiliado</h2>
+                        <p className="text-sm text-gray-600 mb-3">Comparte este link con tus posibles afiliados</p>
+                        <div className="bg-white rounded-lg p-3 border border-orange-300 break-all">
+                            <p className="text-gray-800 font-mono text-sm">{referralLink}</p>
+                        </div>
+                    </div>
+                    <button
+                        onClick={handleCopyReferralLink}
+                        className="bg-gradient-to-r from-orange-600 to-red-600 text-white px-6 py-3 rounded-lg hover:from-orange-700 hover:to-red-700 transition-all duration-300 whitespace-nowrap h-fit"
+                    >
+                        📋 Copiar
+                    </button>
+                </div>
             </div>
 
             {/* Profile Card */}
@@ -164,7 +190,17 @@ const PersonalView = () => {
                     {/* Country */}
                     <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-2">País</label>
-                        <p className="text-gray-900 text-lg font-medium">{user.country || 'No especificado'}</p>
+                        {editing ? (
+                            <input
+                                type="text"
+                                value={formData.country || ''}
+                                onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+                                placeholder="Ej: Colombia, España, México"
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                        ) : (
+                            <p className="text-gray-900 text-lg font-medium">{user.country || 'No especificado'}</p>
+                        )}
                     </div>
 
                     {/* Full Address */}

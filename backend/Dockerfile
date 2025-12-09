@@ -12,8 +12,11 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
-COPY . .
+# Copy application code into /app/backend to preserve package structure
+COPY . ./backend
+
+# Set PYTHONPATH to /app so "backend" is treated as a top-level package
+ENV PYTHONPATH=/app
 
 # Expose port
 EXPOSE 8000

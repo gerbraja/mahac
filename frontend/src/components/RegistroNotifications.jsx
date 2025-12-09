@@ -38,11 +38,11 @@ export default function RegistroNotifications() {
             style={{ background: 'white', border: '1px solid #e5e7eb', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', borderRadius: 12, padding: 12, display: 'flex', gap: 12, alignItems: 'center', minWidth: 260 }}
           >
             {n.user && (
-              <img src={`https://flagcdn.com/24x18/${(n.user.country || '').toLowerCase().slice(0,2)}.png`} alt="flag" style={{ width: 24, height: 18 }} onError={(e)=>{e.target.style.display='none'}} />
+              <img src={`https://flagcdn.com/24x18/${(n.user.country || '').toLowerCase().slice(0, 2)}.png`} alt="flag" style={{ width: 24, height: 18 }} onError={(e) => { e.target.style.display = 'none' }} />
             )}
             <div>
               <div style={{ fontWeight: 600 }}>{n.user?.name || 'Nuevo usuario'}</div>
-              <div style={{ fontSize: 12, color: '#6b7280' }}>{n.user?.city || ''}{n.user?.country ? `, ${n.user.country}` : ''} — {n.event === 'activacion' ? 'Activación' : 'Pre-registro'}</div>
+              <div style={{ fontSize: 12, color: '#6b7280' }}>{n.user?.city || ''}{n.user?.country ? `, ${n.user.country}` : ''} — {n.event === 'activacion' ? 'Activación' : 'Registro'}</div>
             </div>
           </motion.div>
         ))}

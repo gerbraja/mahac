@@ -9,6 +9,8 @@ from datetime import datetime
 
 from ..database.connection import get_db
 from ..database.models.user import User as UserModel
+from ..database.models.binary_global import BinaryGlobalMember
+from ..utils.websocket_manager import manager
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -21,21 +23,7 @@ pwd_hasher = PasswordHasher()
 
 
 class RegisterData(BaseModel):
-    """Pre-registration data: name, email, username, password."""
-    name: str
-    email: str
-    username: str
-    password: str
-    referral_code: Optional[str] = None  # Can be username or old code format
-
-
-class LoginData(BaseModel):
-    username: Optional[str] = None
-    email: Optional[str] = None
-    password: str
-
-
-class CompleteRegistrationData(BaseModel):
+    """Complete registration data: all fields at once."""
     name: str
     email: str
     username: str
@@ -51,61 +39,153 @@ class CompleteRegistrationData(BaseModel):
     city: str
     province: str
     postal_code: str
+    # Country information
+    country: Optional[str] = None
+    referral_code: Optional[str] = None  # Can be username or old code format
+
+
+class LoginData(BaseModel):
+    username: Optional[str] = None
+    email: Optional[str] = None
+    password: str
 
 
 @router.post("/register")
 def register(data: RegisterData, db: Session = Depends(get_db)):
-    """Pre-register a user: store contact info + credentials."""
-    # Check email uniqueness
-    existing_email = db.query(UserModel).filter(UserModel.email == data.email).first()
-    if existing_email:
-        raise HTTPException(status_code=400, detail="Email already registered")
+    """Register a user with all information at once."""
+    try:
+        # Validations
+        if data.password != data.confirm_password:
+            raise HTTPException(status_code=400, detail="Las contraseñas no coinciden")
+        if len(data.password) < 6:
+            raise HTTPException(status_code=400, detail="La contraseña debe tener al menos 6 caracteres")
+        if len(data.password) > 72:
+            raise HTTPException(status_code=400, detail="La contraseña es demasiado larga. Máximo 72 caracteres.")
+        if data.gender not in ["M", "F"]:
+            raise HTTPException(status_code=400, detail="El género debe ser M o F")
 
-    # Check username uniqueness
-    existing_username = db.query(UserModel).filter(UserModel.username == data.username).first()
-    if existing_username:
-        raise HTTPException(status_code=400, detail="Username already taken")
+        # Check email uniqueness
+        existing_email = db.query(UserModel).filter(UserModel.email == data.email).first()
+        if existing_email:
+            raise HTTPException(status_code=400, detail="El correo ya está registrado")
 
-    # If a referral_code is provided, try to resolve the referer user
-    referer = None
-    if data.referral_code:
-        referer = db.query(UserModel).filter(
-            (UserModel.username == data.referral_code) |
-            (UserModel.referral_code == data.referral_code)
-        ).first()
+        # Check username uniqueness
+        existing_username = db.query(UserModel).filter(UserModel.username == data.username).first()
+        if existing_username:
+            raise HTTPException(status_code=400, detail="Este nombre de usuario ya está en uso")
 
-    # Hash password (truncate to 72 bytes for compatibility)
-    password_to_hash = data.password[:72] if data.password else ''
-    hashed_password = pwd_hasher.hash(password_to_hash)
+        # If a referral_code is provided, try to resolve the referer user
+        referer = None
+        if data.referral_code:
+            referer = db.query(UserModel).filter(
+                (UserModel.username == data.referral_code) |
+                (UserModel.referral_code == data.referral_code)
+            ).first()
 
-    # Create user record
-    new_user = UserModel(
-        name=data.name, 
-        email=data.email,
-        username=data.username,
-        password=hashed_password,
-        referral_code=data.username, # Set referral code to username immediately
-        status="pre-affiliate"
-    )
+        # Hash password (truncate to 72 bytes for compatibility)
+        password_to_hash = data.password[:72] if data.password else ''
+        
+        try:
+            hashed_password = pwd_hasher.hash(password_to_hash)
+        except Exception as hash_error:
+            print(f"Password hashing error: {hash_error}")
+            raise HTTPException(
+                status_code=400, 
+                detail="Error al procesar la contraseña. Por favor intenta con una contraseña diferente."
+            )
+
+        # Create user record with all information
+        new_user = UserModel(
+            name=data.name, 
+            email=data.email,
+            username=data.username,
+            password=hashed_password,
+            referral_code=data.username,  # Set referral code to username
+            status="pre-affiliate",  # Initially pre-affiliate until payment
+            # Personal information
+            document_id=data.document_id,
+            gender=data.gender,
+            birth_date=datetime.strptime(data.birth_date, "%Y-%m-%d").date(),
+            phone=data.phone,
+            # Address information
+            address=data.address,
+            city=data.city,
+            province=data.province,
+            postal_code=data.postal_code,
+            country=data.country
+        )
+        
+        if referer:
+            new_user.referred_by_id = referer.id
+            new_user.referred_by = referer.name
+        
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+        
+        # AUTO-REGISTER EN BINARY GLOBAL: Crear BinaryGlobalMember automáticamente
+        # (para reservar su posición en Binary Global)
+        try:
+            binary_global_member = BinaryGlobalMember(
+                user_id=new_user.id,
+                position=None  # Se asignará cuando se complete el pago
+            )
+            db.add(binary_global_member)
+            db.commit()
+            db.refresh(binary_global_member)
+        except Exception as e:
+            print(f"Error creating BinaryGlobalMember: {e}")
+            db.rollback()
+        
+        # Send WebSocket notification for marketing bubbles
+        try:
+            import asyncio
+            from ..utils.marketing import format_display_name, COUNTRY_FLAGS
+            
+            # Prepare notification data
+            full_name = new_user.name if new_user.name else "Usuario TEI"
+            country = new_user.country if new_user.country else "Global"
+            
+            notification_data = {
+                "type": "new_pre_affiliate",
+                "data": {
+                    "name": format_display_name(full_name),
+                    "country": country,
+                    "flag_emoji": COUNTRY_FLAGS.get(country, "🌍"),
+                    "timestamp": new_user.created_at.isoformat() if new_user.created_at else datetime.utcnow().isoformat()
+                }
+            }
+            
+            # Broadcast to connected clients (fire and forget)
+            asyncio.create_task(manager.broadcast(notification_data))
+        except Exception as e:
+            print(f"Error sending WebSocket notification: {e}")
+        
+        # Generate token for auto-login
+        token = jwt.encode({"user_id": new_user.id}, SECRET_KEY, algorithm=ALGORITHM)
+        
+        return {
+            "message": "¡Registro exitoso!", 
+            "id": new_user.id,
+            "access_token": token,
+            "token_type": "bearer",
+            "username": new_user.username,
+            "referral_link": f"/usuario/{new_user.username}"
+        }
     
-    if referer:
-        new_user.referred_by_id = referer.id
-        new_user.referred_by = referer.name
-    
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-    
-    # Auto-login: Generate token
-    token = jwt.encode({"user_id": new_user.id}, SECRET_KEY, algorithm=ALGORITHM)
-    
-    return {
-        "message": "Pre-registration successful", 
-        "id": new_user.id,
-        "access_token": token,
-        "token_type": "bearer",
-        "username": new_user.username
-    }
+    except HTTPException:
+        # Re-raise HTTP exceptions as-is
+        raise
+    except Exception as e:
+        # Log the error and rollback
+        db.rollback()
+        print(f"ERROR in register: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=500, 
+            detail="Error al registrar. Por favor intenta de nuevo. Si el problema persiste, contacta soporte."
+        )
 
 
 @router.get("/verify-referral/{username}")
@@ -207,6 +287,7 @@ class UpdateProfileData(BaseModel):
     full_address: Optional[str] = None
     city: Optional[str] = None
     province: Optional[str] = None
+    country: Optional[str] = None
 
 
 @router.put("/profile")
@@ -232,6 +313,8 @@ def update_profile(data: UpdateProfileData, current_user: UserModel = Depends(ge
         current_user.city = data.city
     if data.province:
         current_user.province = data.province
+    if data.country:
+        current_user.country = data.country
         
     try:
         db.commit()
@@ -276,99 +359,94 @@ def login(data: LoginData, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=f"Internal server error")
 
 
-@router.post("/complete-registration")
-def complete_registration(data: CompleteRegistrationData, db: Session = Depends(get_db)):
-    """Complete the registration with all personal information.
+# ==================== SECURITY ENDPOINTS ====================
+
+class ChangePasswordData(BaseModel):
+    current_password: str
+    new_password: str
+
+
+class SetTransactionPinData(BaseModel):
+    current_password: str
+    transaction_pin: str
+
+
+@router.put("/change-password")
+def change_password(data: ChangePasswordData, current_user: UserModel = Depends(get_current_user_object), db: Session = Depends(get_db)):
+    """Change user's access password."""
     
-    The username will also be used as the referral code for sharing.
-    """
-    try:
-        # Validations
-        if data.password != data.confirm_password:
-            raise HTTPException(status_code=400, detail="Las contraseñas no coinciden")
-        if len(data.password) < 6:
-            raise HTTPException(status_code=400, detail="La contraseña debe tener al menos 6 caracteres")
-        if len(data.password) > 72:
-            raise HTTPException(status_code=400, detail="La contraseña es demasiado larga. Máximo 72 caracteres.")
-        if data.gender not in ["M", "F"]:
-            raise HTTPException(status_code=400, detail="El género debe ser M o F")
-
-        # Check if email already has a completed registration
-        existing_email = db.query(UserModel).filter(
-            UserModel.email == data.email,
-            UserModel.username != None
-        ).first()
-        if existing_email:
-            raise HTTPException(status_code=400, detail="Este email ya tiene un registro completo. Por favor inicia sesión.")
-
-        # Ensure username is unique
-        existing_username = db.query(UserModel).filter(UserModel.username == data.username).first()
-        if existing_username:
-            raise HTTPException(status_code=400, detail="Este nombre de usuario ya está en uso. Por favor elige otro.")
-
-        # Check if user exists by email (from pre-registration)
-        user = db.query(UserModel).filter(UserModel.email == data.email).first()
-        
-        # If user doesn't exist, create a new one (for direct registration)
-        if not user:
-            user = UserModel(
-                name=data.name,
-                email=data.email
-            )
-            db.add(user)
-            db.flush()  # Get the ID without committing
-
-        # Ensure password is within limits (72 bytes for compatibility)
-        password_to_hash = data.password[:72]
-        
-        # Hash password using Argon2
-        try:
-            hashed = pwd_hasher.hash(password_to_hash)
-        except Exception as hash_error:
-            print(f"Password hashing error: {hash_error}")
-            print(f"Password: {password_to_hash}")
-            raise HTTPException(
-                status_code=400, 
-                detail="Error al procesar la contraseña. Por favor intenta con una contraseña diferente."
-            )
-        
-        user.name = data.name  # Update name in case it changed
-        user.username = data.username
-        user.password = hashed
-        user.referral_code = data.username  # Username is the referral code
-        
-        # Personal information
-        user.document_id = data.document_id
-        user.gender = data.gender
-        user.birth_date = datetime.strptime(data.birth_date, "%Y-%m-%d").date()
-        user.phone = data.phone
-        
-        # Address information
-        user.address = data.address
-        user.city = data.city
-        user.province = data.province
-        user.postal_code = data.postal_code
-        
-        db.add(user)
-        db.commit()
-        db.refresh(user)
-        
-        return {
-            "message": "Registration completed successfully",
-            "id": user.id,
-            "referral_link": f"/usuario/{user.username}"
-        }
-    
-    except HTTPException:
-        # Re-raise HTTP exceptions as-is
-        raise
-    except Exception as e:
-        # Log the error and rollback
-        db.rollback()
-        print(f"ERROR in complete_registration: {str(e)}")
-        import traceback
-        traceback.print_exc()
+    # Verify current password
+    if not pwd_hasher.verify(data.current_password, current_user.password):
         raise HTTPException(
-            status_code=500, 
-            detail=f"Error al completar el registro. Por favor intenta de nuevo. Si el problema persiste, contacta soporte."
+            status_code=401,
+            detail="Contraseña actual incorrecta"
+        )
+    
+    # Hash new password
+    try:
+        hashed = pwd_hasher.hash(data.new_password)
+    except Exception as hash_error:
+        print(f"Password hashing error: {hash_error}")
+        raise HTTPException(
+            status_code=400,
+            detail="Error al procesar la nueva contraseña. Por favor intenta con una contraseña diferente."
+        )
+    
+    # Update password
+    current_user.password = hashed
+    
+    try:
+        db.commit()
+        db.refresh(current_user)
+        return {"message": "Contraseña actualizada exitosamente"}
+    except Exception as e:
+        db.rollback()
+        print(f"Error updating password: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail="Error al actualizar la contraseña. Por favor intenta de nuevo."
+        )
+
+
+@router.put("/set-transaction-pin")
+def set_transaction_pin(data: SetTransactionPinData, current_user: UserModel = Depends(get_current_user_object), db: Session = Depends(get_db)):
+    """Set or update user's transaction PIN."""
+    
+    # Verify current password
+    if not pwd_hasher.verify(data.current_password, current_user.password):
+        raise HTTPException(
+            status_code=401,
+            detail="Contraseña actual incorrecta"
+        )
+    
+    # Validate PIN format
+    if not data.transaction_pin.isdigit() or len(data.transaction_pin) != 6:
+        raise HTTPException(
+            status_code=400,
+            detail="La clave de transacción debe contener exactamente 6 dígitos numéricos"
+        )
+    
+    # Hash transaction PIN
+    try:
+        hashed_pin = pwd_hasher.hash(data.transaction_pin)
+    except Exception as hash_error:
+        print(f"PIN hashing error: {hash_error}")
+        raise HTTPException(
+            status_code=400,
+            detail="Error al procesar la clave de transacción. Por favor intenta de nuevo."
+        )
+    
+    # Update transaction PIN
+    current_user.transaction_pin = hashed_pin
+    
+    try:
+        db.commit()
+        db.refresh(current_user)
+        return {"message": "Clave de transacción configurada exitosamente"}
+    except Exception as e:
+        db.rollback()
+        print(f"Error setting transaction PIN: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail="Error al configurar la clave de transacción. Por favor intenta de nuevo."
         )

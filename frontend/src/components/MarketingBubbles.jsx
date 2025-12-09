@@ -33,7 +33,7 @@ const MarketingBubbles = () => {
         socket.onmessage = (event) => {
             try {
                 const message = JSON.parse(event.data);
-                if (message.type === 'new_active_member') {
+                if (message.type === 'new_pre_affiliate' || message.type === 'new_active_member') {
                     // Add to front of queue for immediate attention
                     queueRef.current = [message.data, ...queueRef.current];
                 }
@@ -82,16 +82,16 @@ const MarketingBubbles = () => {
                         transition={{ duration: 0.5 }}
                         className="bg-white/95 backdrop-blur-md border-l-4 border-blue-600 shadow-2xl rounded-lg px-6 py-4 flex items-center gap-4 min-w-[300px]"
                     >
-                        <div className="text-5xl flex items-center justify-center">
+                        <div className="text-4xl flex items-center justify-center">
                             {currentBubble.flag_emoji || '🌍'}
                         </div>
                         <div className="flex flex-col">
-                            <span className="text-base font-bold text-gray-800">{currentBubble.name}</span>
-                            <span className="text-xs text-blue-600 font-semibold uppercase tracking-wide">
-                                ¡Nuevo Socio Activo!
+                            <span className="text-sm font-bold text-gray-800">{currentBubble.name}</span>
+                            <span className="text-xs text-green-600 font-semibold uppercase tracking-wide">
+                                ¡Nuevo Pre-Afiliado!
                             </span>
-                            <span className="text-xs text-gray-600 font-medium mt-0.5">
-                                {currentBubble.flag_emoji || '🌍'} {currentBubble.country || 'Global'}
+                            <span className="text-xs text-gray-600 font-medium mt-1">
+                                📍 {currentBubble.country || 'Global'}
                             </span>
                         </div>
                     </motion.div>

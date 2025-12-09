@@ -77,7 +77,7 @@ def main():
     print("   - Niveles 3, 5, 7, 9, 11, 13: $0.50 USD")
     print("   - Niveles 15, 17, 19, 21: $1.00 USD")
     print("   - Pago UNA VEZ al año por miembro activo")
-    print("   - Ventana de ganancias: 367 días desde pre-registro")
+    print("   - Ventana de ganancias: 367 días desde registro")
 
 if __name__ == "__main__":
     main()

@@ -1,6 +1,8 @@
 import os
+import sys
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
 from sqlalchemy import text
 from backend.database.connection import Base, engine
 from backend.routers.payments import router as payments_router
@@ -10,12 +12,12 @@ from backend.routers import categories as categories_router
 from backend.routers import auth
 from backend.routers import binary
 
-# CREATE TABLES AUTOMATICALLY
+# CREATE TABLES AUTOMATICALLY - DISABLED FOR DEBUG
 # ========================================================
-if os.getenv("TESTING") != "true":
-    print("[MAIN] before Base.metadata.create_all()")
-    Base.metadata.create_all(bind=engine)
-    print("[MAIN] after Base.metadata.create_all()")
+# if os.getenv("TESTING") != "true":
+#     print("[MAIN] before Base.metadata.create_all()")
+#     Base.metadata.create_all(bind=engine)
+#     print("[MAIN] after Base.metadata.create_all()")
 
 # Ensure Postgres sequence for membership numbers exists (safe to run on startup)
 try:
@@ -40,11 +42,6 @@ app = FastAPI(
 @app.on_event("startup")
 def _log_startup():
     print("[MAIN] FastAPI startup event fired")
-
-
-@app.on_event("shutdown")
-def _log_shutdown():
-    print("[MAIN] FastAPI shutdown event fired")
 
 # ========================================================
 # CORS - allow frontend development origins
@@ -84,7 +81,7 @@ if env_allowed_origins:
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=FRONTEND_ORIGINS,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
