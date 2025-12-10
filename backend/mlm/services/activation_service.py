@@ -55,6 +55,9 @@ def process_activation(db: Session, user_id: int, package_amount: float, signup_
 
     user.membership_number = int(next_num)
     user.membership_code = f"{int(next_num):07d}"
+    
+    # Change user status to 'active'
+    user.status = 'active'
 
     # write activation log
     activation_log = ActivationLog(user_id=user_id, package_amount=package_amount)

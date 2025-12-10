@@ -34,6 +34,14 @@ export default function Login() {
             // Store token
             localStorage.setItem('access_token', response.data.access_token);
 
+            // Fetch user data to get userId
+            try {
+                const userResponse = await api.get('/auth/me');
+                localStorage.setItem('userId', userResponse.data.id);
+            } catch (userErr) {
+                console.error('Error fetching user data:', userErr);
+            }
+
             // Redirect to dashboard
             navigate('/dashboard');
         } catch (err) {

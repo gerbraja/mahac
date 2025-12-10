@@ -29,6 +29,10 @@ const AdminDashboard = () => {
     });
     const [loadingStats, setLoadingStats] = useState(true);
     const [statsError, setStatsError] = useState(null);
+    const [showActivationModal, setShowActivationModal] = useState(false);
+    const [activationData, setActivationData] = useState({ userId: '', packageAmount: '100' });
+    const [activating, setActivating] = useState(false);
+    const [activationResult, setActivationResult] = useState(null);
 
     useEffect(() => {
         fetchStats();
@@ -36,6 +40,39 @@ const AdminDashboard = () => {
             fetchProducts();
         }
     }, [activeTab]);
+
+    const handleActivateUser = async () => {
+        if (!activationData.userId) {
+            alert('Por favor ingresa el ID del usuario');
+            return;
+        }
+
+        setActivating(true);
+        setActivationResult(null);
+
+        try {
+            const response = await api.post('/api/admin/activate-user', {
+                user_id: parseInt(activationData.userId),
+                package_amount: parseFloat(activationData.packageAmount)
+            });
+
+            setActivationResult({
+                success: true,
+                message: response.data.message,
+                data: response.data
+            });
+
+            // Refresh stats
+            fetchStats();
+        } catch (error) {
+            setActivationResult({
+                success: false,
+                message: error.response?.data?.detail || 'Error al activar usuario'
+            });
+        } finally {
+            setActivating(false);
+        }
+    };
 
     const fetchStats = async () => {
         setLoadingStats(true);
@@ -185,6 +222,19 @@ const AdminDashboard = () => {
                     <div className="bg-green-100 p-3 rounded-full text-green-600 text-2xl">
                         ✅
                     </div>
+                </div>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="bg-white p-6 rounded-lg shadow-md mb-6">
+                <h3 className="text-lg font-semibold text-gray-700 mb-4">Acciones Rápidas</h3>
+                <div className="flex gap-4 flex-wrap">
+                    <button
+                        onClick={() => setShowActivationModal(true)}
+                        className="px-6 py-3 bg-green-500 text-white font-bold rounded-lg hover:bg-green-600 transition shadow-md"
+                    >
+                        ✅ Activar Usuario
+                    </button>
                 </div>
             </div>
 
@@ -462,6 +512,129 @@ const AdminDashboard = () => {
                         </div>
                     </div>
                 </>
+            )}
+
+            {/* Activation Modal */}
+            {showActivationModal && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: 'rgba(0,0,0,0.5)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 1000
+                }}>
+                    <div style={{
+                        background: 'white',
+                        borderRadius: '1rem',
+                        padding: '2rem',
+                        maxWidth: '500px',
+                        width: '90%',
+                        maxHeight: '90vh',
+                        overflow: 'auto'
+                    }}>
+                        <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#1e3a8a', marginBottom: '1.5rem' }}>
+                            Activar Usuario Manualmente
+                        </h3>
+
+                        <div style={{ marginBottom: '1rem' }}>
+                            <label style={{ display: 'block', color: '#374151', fontWeight: '500', marginBottom: '0.5rem' }}>
+                                ID del Usuario
+                            </label>
+                            <input
+                                type="number"
+                                value={activationData.userId}
+                                onChange={(e) => setActivationData({ ...activationData, userId: e.target.value })}
+                                placeholder="Ej: 2"
+                                style={{
+                                    width: '100%',
+                                    padding: '0.75rem',
+                                    border: '1px solid #d1d5db',
+                                    borderRadius: '0.5rem',
+                                    fontSize: '1rem'
+                                }}
+                            />
+                        </div>
+
+                        <div style={{ marginBottom: '1.5rem' }}>
+                            <label style={{ display: 'block', color: '#374151', fontWeight: '500', marginBottom: '0.5rem' }}>
+                                Monto del Paquete (USD)
+                            </label>
+                            <input
+                                type="number"
+                                value={activationData.packageAmount}
+                                onChange={(e) => setActivationData({ ...activationData, packageAmount: e.target.value })}
+                                placeholder="100"
+                                style={{
+                                    width: '100%',
+                                    padding: '0.75rem',
+                                    border: '1px solid #d1d5db',
+                                    borderRadius: '0.5rem',
+                                    fontSize: '1rem'
+                                }}
+                            />
+                        </div>
+
+                        {activationResult && (
+                            <div style={{
+                                padding: '1rem',
+                                borderRadius: '0.5rem',
+                                marginBottom: '1rem',
+                                background: activationResult.success ? '#d1fae5' : '#fee2e2',
+                                border: `1px solid ${activationResult.success ? '#10b981' : '#ef4444'}`,
+                                color: activationResult.success ? '#065f46' : '#991b1b'
+                            }}>
+                                <p style={{ fontWeight: '600', marginBottom: '0.5rem' }}>{activationResult.message}</p>
+                                {activationResult.success && activationResult.data && (
+                                    <div style={{ fontSize: '0.875rem' }}>
+                                        <p>Membresía: {activationResult.data.membership_code}</p>
+                                        <p>Comisiones generadas: {activationResult.data.total_commissions_generated}</p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+                            <button
+                                onClick={() => {
+                                    setShowActivationModal(false);
+                                    setActivationResult(null);
+                                    setActivationData({ userId: '', packageAmount: '100' });
+                                }}
+                                style={{
+                                    padding: '0.75rem 1.5rem',
+                                    background: '#6b7280',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '0.5rem',
+                                    cursor: 'pointer',
+                                    fontWeight: '500'
+                                }}
+                            >
+                                Cerrar
+                            </button>
+                            <button
+                                onClick={handleActivateUser}
+                                disabled={activating}
+                                style={{
+                                    padding: '0.75rem 1.5rem',
+                                    background: activating ? '#9ca3af' : '#10b981',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '0.5rem',
+                                    cursor: activating ? 'not-allowed' : 'pointer',
+                                    fontWeight: '600'
+                                }}
+                            >
+                                {activating ? 'Activando...' : 'Activar Usuario'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );

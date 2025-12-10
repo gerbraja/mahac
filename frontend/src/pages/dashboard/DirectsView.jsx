@@ -4,16 +4,29 @@ import { api } from '../../api/api';
 const DirectsView = () => {
     const [directs, setDirects] = useState(null);
     const [loading, setLoading] = useState(true);
-    const userId = parseInt(localStorage.getItem('userId') || '1', 10);
+    const [userId, setUserId] = useState(null);
 
     useEffect(() => {
-        fetchDirects();
+        fetchUserIdAndDirects();
     }, []);
 
-    const fetchDirects = async () => {
+    const fetchUserIdAndDirects = async () => {
         setLoading(true);
         try {
-            const res = await api.get(`/api/unilevel/directs/${userId}`);
+            // Get userId from localStorage or fetch from API
+            let currentUserId = localStorage.getItem('userId');
+
+            if (!currentUserId) {
+                // Fetch from /auth/me if not in localStorage
+                const userResponse = await api.get('/auth/me');
+                currentUserId = userResponse.data.id;
+                localStorage.setItem('userId', currentUserId);
+            }
+
+            setUserId(parseInt(currentUserId));
+
+            // Now fetch directs with the correct userId
+            const res = await api.get(`/api/unilevel/directs/${currentUserId}`);
             console.log('Directs:', res.data);
             setDirects(res.data);
         } catch (error) {
@@ -129,37 +142,37 @@ const DirectsView = () => {
                         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                             <thead style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)' }}>
                                 <tr>
-                                    <th style={{ 
-                                        padding: '1rem', 
-                                        textAlign: 'left', 
-                                        color: 'white', 
+                                    <th style={{
+                                        padding: '1rem',
+                                        textAlign: 'left',
+                                        color: 'white',
                                         borderBottom: '2px solid #10b981',
                                         fontWeight: 'bold'
                                     }}>
                                         #
                                     </th>
-                                    <th style={{ 
-                                        padding: '1rem', 
-                                        textAlign: 'left', 
-                                        color: 'white', 
+                                    <th style={{
+                                        padding: '1rem',
+                                        textAlign: 'left',
+                                        color: 'white',
                                         borderBottom: '2px solid #10b981',
                                         fontWeight: 'bold'
                                     }}>
                                         Nombre
                                     </th>
-                                    <th style={{ 
-                                        padding: '1rem', 
-                                        textAlign: 'left', 
-                                        color: 'white', 
+                                    <th style={{
+                                        padding: '1rem',
+                                        textAlign: 'left',
+                                        color: 'white',
                                         borderBottom: '2px solid #10b981',
                                         fontWeight: 'bold'
                                     }}>
                                         Email
                                     </th>
-                                    <th style={{ 
-                                        padding: '1rem', 
-                                        textAlign: 'center', 
-                                        color: 'white', 
+                                    <th style={{
+                                        padding: '1rem',
+                                        textAlign: 'center',
+                                        color: 'white',
                                         borderBottom: '2px solid #10b981',
                                         fontWeight: 'bold'
                                     }}>
@@ -174,9 +187,9 @@ const DirectsView = () => {
                                         background: index % 2 === 0 ? '#f9fafb' : 'white',
                                         transition: 'background 0.2s hover'
                                     }}>
-                                        <td style={{ 
-                                            padding: '1rem', 
-                                            fontWeight: '600', 
+                                        <td style={{
+                                            padding: '1rem',
+                                            fontWeight: '600',
                                             color: '#6b7280',
                                             fontSize: '0.95rem'
                                         }}>
@@ -209,8 +222,8 @@ const DirectsView = () => {
                                                 </div>
                                             </div>
                                         </td>
-                                        <td style={{ 
-                                            padding: '1rem', 
+                                        <td style={{
+                                            padding: '1rem',
                                             color: '#6b7280',
                                             fontSize: '0.9rem',
                                             wordBreak: 'break-word'

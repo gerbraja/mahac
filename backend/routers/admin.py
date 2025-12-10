@@ -672,3 +672,69 @@ def update_sponsorship_commission_status(
         "commission_id": commission_id,
         "new_status": status
     }
+
+
+# --- Manual User Activation ---
+from backend.mlm.services.activation_service import process_activation
+
+class ManualActivationData(BaseModel):
+    user_id: int
+    package_amount: float = 100.0
+
+@router.post("/activate-user")
+def activate_user_manually(
+    data: ManualActivationData,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user)
+):
+    """
+    Manually activate a user after confirming bank transfer payment.
+    This will:
+    - Generate membership number and code
+    - Create sponsorship commission ($9.7 to direct sponsor)
+    - Calculate and distribute Binary Global commissions (7%)
+    - Activate user in all MLM plans (Binary Global, Forced Matrix)
+    - Trigger arrival bonuses for upline
+    """
+    try:
+        # Validate user exists
+        user = db.query(User).filter(User.id == data.user_id).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # Process activation with commission generation
+        result = process_activation(
+            db=db,
+            user_id=data.user_id,
+            package_amount=data.package_amount,
+            signup_percent=None,  # Use default from plan
+            plan_file=None  # Use default plan
+        )
+        
+        # Check if already activated
+        if result.get('already_activated'):
+            return {
+                "message": "User was already activated",
+                "membership_number": result.get('membership_number'),
+                "membership_code": result.get('membership_code'),
+                "already_activated": True
+            }
+        
+        # Return success with commission details
+        return {
+            "message": "User activated successfully with commissions generated",
+            "user_id": data.user_id,
+            "user_name": user.name,
+            "membership_number": result.get('membership_number'),
+            "membership_code": result.get('membership_code'),
+            "package_amount": data.package_amount,
+            "sponsorship_commission": result.get('sponsorship_commission'),
+            "signup_commissions_count": len(result.get('signup_commissions', [])),
+            "total_commissions_generated": len(result.get('signup_commissions', [])) + (1 if result.get('sponsorship_commission') else 0)
+        }
+        
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error activating user: {str(e)}")
