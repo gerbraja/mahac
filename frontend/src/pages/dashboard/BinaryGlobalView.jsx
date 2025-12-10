@@ -11,7 +11,14 @@ const BinaryGlobalView = () => {
 
     // Helper to get current user ID
     const getCurrentUserId = () => {
-        const token = localStorage.getItem('token');
+        // First check if userId is in localStorage
+        let userId = localStorage.getItem('userId');
+        if (userId) {
+            return parseInt(userId);
+        }
+
+        // Try to get from token
+        const token = localStorage.getItem('access_token');
         if (token) {
             try {
                 const payload = JSON.parse(atob(token.split('.')[1]));
@@ -20,7 +27,7 @@ const BinaryGlobalView = () => {
                 console.error('Error decoding token:', e);
             }
         }
-        return localStorage.getItem('user_id') || null;
+        return null;
     };
 
     const activeUserId = userId || getCurrentUserId();

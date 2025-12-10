@@ -11,7 +11,14 @@ const BinaryMillionaireView = () => {
 
     // Helper to get current user ID
     const getCurrentUserId = () => {
-        const token = localStorage.getItem('token');
+        // First check if userId is in localStorage
+        let userId = localStorage.getItem('userId');
+        if (userId) {
+            return parseInt(userId);
+        }
+
+        // Try to get from token
+        const token = localStorage.getItem('access_token');
         if (token) {
             try {
                 const payload = JSON.parse(atob(token.split('.')[1]));
@@ -20,7 +27,7 @@ const BinaryMillionaireView = () => {
                 console.error('Error decoding token:', e);
             }
         }
-        return localStorage.getItem('user_id') || null;
+        return null;
     };
 
     const activeUserId = userId || getCurrentUserId();
@@ -93,10 +100,10 @@ const BinaryMillionaireView = () => {
                 <h2 style={{ fontSize: '2.25rem', fontWeight: 'bold', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     💎 Red Binaria Millonaria
                 </h2>
-                <div style={{ 
-                    background: '#fef3c7', 
-                    border: '1px solid #f59e0b', 
-                    borderRadius: '0.5rem', 
+                <div style={{
+                    background: '#fef3c7',
+                    border: '1px solid #f59e0b',
+                    borderRadius: '0.5rem',
                     padding: '1.5rem',
                     marginTop: '2rem'
                 }}>
@@ -147,14 +154,14 @@ const BinaryMillionaireView = () => {
                 {/* Visualización simplificada del árbol */}
                 <div style={{ background: 'rgba(255,255,255,0.1)', borderRadius: '0.75rem', padding: '1.5rem', backdropFilter: 'blur(10px)' }}>
                     <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-                        <div style={{ 
-                            display: 'inline-block', 
-                            background: 'rgba(255,255,255,0.2)', 
-                            borderRadius: '50%', 
-                            width: '60px', 
-                            height: '60px', 
-                            display: 'flex', 
-                            alignItems: 'center', 
+                        <div style={{
+                            display: 'inline-block',
+                            background: 'rgba(255,255,255,0.2)',
+                            borderRadius: '50%',
+                            width: '60px',
+                            height: '60px',
+                            display: 'flex',
+                            alignItems: 'center',
                             justifyContent: 'center',
                             fontSize: '2rem'
                         }}>
@@ -292,7 +299,7 @@ const BinaryMillionaireView = () => {
                                 });
 
                                 return (
-                                    <tr key={idx} style={{ 
+                                    <tr key={idx} style={{
                                         borderBottom: '1px solid #e5e7eb',
                                         background: idx % 2 === 0 ? '#fef3c7' : '#d1fae5'
                                     }}>
@@ -373,7 +380,7 @@ const BinaryMillionaireView = () => {
                                 const earned = levelStat?.earned_amount || 0;
 
                                 return (
-                                    <tr key={idx} style={{ 
+                                    <tr key={idx} style={{
                                         borderBottom: '1px solid #e5e7eb',
                                         background: '#fef3c7'
                                     }}>
