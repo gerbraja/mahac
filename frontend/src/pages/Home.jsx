@@ -8,6 +8,22 @@ export default function Home() {
   const [searchParams] = useSearchParams();
   const [referralCode, setReferralCode] = useState("");
   const [referrerName, setReferrerName] = useState("");
+  const [stats, setStats] = useState({
+    total_members: 0,
+    total_commissions: 0,
+    total_countries: 0
+  });
+
+  // Fetch public stats
+  useEffect(() => {
+    api.get('/api/public/stats')
+      .then(response => {
+        setStats(response.data);
+      })
+      .catch(error => {
+        console.error('Error fetching stats:', error);
+      });
+  }, []);
 
   // Capture referral code from URL on mount
   useEffect(() => {
@@ -136,15 +152,15 @@ export default function Home() {
             {/* Stats */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "2rem", maxWidth: "600px", margin: "0 auto" }}>
               <div style={{ textAlign: "center" }}>
-                <div style={{ fontSize: "2.5rem", fontWeight: "bold", background: "linear-gradient(to right, #3b82f6, #1e40af)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>0</div>
+                <div style={{ fontSize: "2.5rem", fontWeight: "bold", background: "linear-gradient(to right, #3b82f6, #1e40af)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>{stats.total_members}</div>
                 <div style={{ fontSize: "0.875rem", color: "#3b82f6", marginTop: "0.25rem" }}>Miembros</div>
               </div>
               <div style={{ textAlign: "center" }}>
-                <div style={{ fontSize: "2.5rem", fontWeight: "bold", background: "linear-gradient(to right, #10b981, #059669)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>$0</div>
+                <div style={{ fontSize: "2.5rem", fontWeight: "bold", background: "linear-gradient(to right, #10b981, #059669)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>${stats.total_commissions.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</div>
                 <div style={{ fontSize: "0.875rem", color: "#10b981", marginTop: "0.25rem" }}>Comisiones</div>
               </div>
               <div style={{ textAlign: "center" }}>
-                <div style={{ fontSize: "2.5rem", fontWeight: "bold", background: "linear-gradient(to right, #8b5cf6, #7c3aed)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>0</div>
+                <div style={{ fontSize: "2.5rem", fontWeight: "bold", background: "linear-gradient(to right, #8b5cf6, #7c3aed)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>{stats.total_countries}</div>
                 <div style={{ fontSize: "0.875rem", color: "#8b5cf6", marginTop: "0.25rem" }}>Países</div>
               </div>
             </div>

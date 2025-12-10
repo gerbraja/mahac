@@ -135,6 +135,10 @@ app.include_router(marketing.router)
 from backend.routers.ws_notifications import router as ws_notifications_router
 app.include_router(ws_notifications_router)
 
+# Public stats (for homepage)
+from backend.routers import public_stats
+app.include_router(public_stats.router)
+
 # ========================================================
 # TEST ENDPOINT
 # ========================================================

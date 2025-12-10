@@ -182,47 +182,36 @@ def get_unilevel_stats(user_id: int, db: Session = Depends(get_db)):
 @router.get("/directs/{user_id}")
 def get_directs(user_id: int, db: Session = Depends(get_db)):
     """
-    Get all direct sponsored members (Nivel 1) for a user
+    Get all direct referred users (based on User.referred_by_id)
     """
-    member = db.query(UnilevelMember).filter(
-        UnilevelMember.user_id == user_id
-    ).first()
-    
-    if not member:
-        return {
-            "user_id": user_id,
-            "total_directs": 0,
-            "directs": []
-        }
-    
-    # Get all downlines (directs) of this member
-    directs = db.query(UnilevelMember).filter(
-        UnilevelMember.sponsor_id == member.id
+    # Get all users directly referred by this user
+    direct_referrals = db.query(User).filter(
+        User.referred_by_id == user_id
     ).all()
     
-    # Get user information for each direct
+    # Build directs list with user information
     directs_list = []
-    for direct_member in directs:
-        direct_user = db.query(User).filter(User.id == direct_member.user_id).first()
+    for direct_user in direct_referrals:
         directs_list.append({
-            "member_id": direct_member.id,
-            "user_id": direct_member.user_id,
-            "name": direct_user.name if direct_user else "Unknown",
-            "email": direct_user.email if direct_user else None,
-            "status": "active"  # You can add more status logic if needed
+            "user_id": direct_user.id,
+            "name": direct_user.name or "Unknown",
+            "email": direct_user.email or None,
+            "status": direct_user.status or "inactive",
+            "username": direct_user.username or None,
+            "membership_code": direct_user.membership_code or None
         })
     
-    # Get total network count (all downlines through all levels)
-    def count_all_downlines(member_id):
+    # Count total network (all downlines recursively)
+    def count_all_referrals(user_id_to_count):
         count = 0
-        directs_of_member = db.query(UnilevelMember).filter(
-            UnilevelMember.sponsor_id == member_id
+        referrals = db.query(User).filter(
+            User.referred_by_id == user_id_to_count
         ).all()
-        for direct in directs_of_member:
-            count += 1 + count_all_downlines(direct.id)
+        for referral in referrals:
+            count += 1 + count_all_referrals(referral.id)
         return count
     
-    total_network = count_all_downlines(member.id)
+    total_network = count_all_referrals(user_id)
     
     return {
         "user_id": user_id,
