@@ -1,0 +1,135 @@
+
+============================================================
+LOGIN ATTEMPT
+============================================================
+Username: superadmin
+Email: None
+Password length: 6
+Searching by username 'superadmin': NOT FOUND
+User not found - returning 401
+
+============================================================
+LOGIN ATTEMPT
+============================================================
+Username: admin
+Email: None
+Password length: 8
+Searching by username 'admin': FOUND
+User found: Administrador Gerverson Bravo (ID: 1)
+   is_admin: True
+   Password hash exists: True
+   Password to verify: 'admin123'
+   Stored hash (first 50 chars): $argon2id$v=19$m=65536,t=3,p=4$1Fq+dUG3KIjd/X4jIve
+Password verification SUCCESS
+Login successful - Token generated
+============================================================
+
+============================================================
+LOGIN ATTEMPT
+============================================================
+Username: admin
+Email: None
+Password length: 8
+Searching by username 'admin': FOUND
+User found: Administrador Gerverson Bravo (ID: 1)
+   is_admin: True
+   Password hash exists: True
+   Password to verify: 'admin123'
+   Stored hash (first 50 chars): $argon2id$v=19$m=65536,t=3,p=4$1Fq+dUG3KIjd/X4jIve
+Password verification SUCCESS
+Login successful - Token generated
+============================================================
+
+============================================================
+LOGIN ATTEMPT
+============================================================
+Username: Sembradoresdeesperanza
+Email: None
+Password length: 8
+Searching by username 'Sembradoresdeesperanza': FOUND
+User found: Sembradores de Esperanza (ID: 2)
+   is_admin: False
+   Password hash exists: True
+   Password to verify: '71419131'
+   Stored hash (first 50 chars): $argon2id$v=19$m=65536,t=3,p=4$+/xrkilGjbOL3XGhAtt
+Password verification SUCCESS
+Login successful - Token generated
+============================================================
+
+============================================================
+LOGIN ATTEMPT
+============================================================
+Username: admin
+Email: None
+Password length: 8
+Searching by username 'admin': FOUND
+User found: Administrador Gerverson Bravo (ID: 1)
+   is_admin: True
+   Password hash exists: True
+   Password to verify: 'admin123'
+   Stored hash (first 50 chars): $argon2id$v=19$m=65536,t=3,p=4$1Fq+dUG3KIjd/X4jIve
+Password verification SUCCESS
+Login successful - Token generated
+============================================================
+
+============================================================
+LOGIN ATTEMPT
+============================================================
+Username: Sembradoresdeesperanza
+Email: None
+Password length: 7
+Searching by username 'Sembradoresdeesperanza': FOUND
+User found: Sembradores de Esperanza (ID: 2)
+   is_admin: False
+   Password hash exists: True
+   Password to verify: '7141913'
+   Stored hash (first 50 chars): $argon2id$v=19$m=65536,t=3,p=4$+/xrkilGjbOL3XGhAtt
+Password verification FAILED: VerifyMismatchError: The password does not match the supplied hash
+
+============================================================
+LOGIN ATTEMPT
+============================================================
+Username: Sembradoresdeesperanza
+Email: None
+Password length: 8
+Searching by username 'Sembradoresdeesperanza': FOUND
+User found: Sembradores de Esperanza (ID: 2)
+   is_admin: False
+   Password hash exists: True
+   Password to verify: '71419131'
+   Stored hash (first 50 chars): $argon2id$v=19$m=65536,t=3,p=4$+/xrkilGjbOL3XGhAtt
+Password verification SUCCESS
+Login successful - Token generated
+============================================================
+
+============================================================
+LOGIN ATTEMPT
+============================================================
+Username: Sembradoresdeesperanza
+Email: None
+Password length: 8
+Searching by username 'Sembradoresdeesperanza': FOUND
+User found: Sembradores de Esperanza (ID: 2)
+   is_admin: False
+   Password hash exists: True
+   Password to verify: '71419131'
+   Stored hash (first 50 chars): $argon2id$v=19$m=65536,t=3,p=4$+/xrkilGjbOL3XGhAtt
+Password verification SUCCESS
+Login successful - Token generated
+============================================================
+
+============================================================
+LOGIN ATTEMPT
+============================================================
+Username: Sembradoresdeesperanza
+Email: None
+Password length: 8
+Searching by username 'Sembradoresdeesperanza': FOUND
+User found: Sembradores de Esperanza (ID: 2)
+   is_admin: False
+   Password hash exists: True
+   Password to verify: '71419131'
+   Stored hash (first 50 chars): $argon2id$v=19$m=65536,t=3,p=4$+/xrkilGjbOL3XGhAtt
+Password verification SUCCESS
+Login successful - Token generated
+============================================================

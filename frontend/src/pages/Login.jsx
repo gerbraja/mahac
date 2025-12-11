@@ -34,16 +34,29 @@ export default function Login() {
             // Store token
             localStorage.setItem('access_token', response.data.access_token);
 
-            // Fetch user data to get userId
+            // Fetch user data to get userId and check if admin
             try {
                 const userResponse = await api.get('/auth/me');
                 localStorage.setItem('userId', userResponse.data.id);
+
+                // Check if there's a return path saved (e.g., from admin panel)
+                const returnTo = localStorage.getItem('returnTo');
+                if (returnTo) {
+                    localStorage.removeItem('returnTo'); // Clean up
+                    navigate(returnTo);
+                } else {
+                    // Redirect based on user role
+                    if (userResponse.data.is_admin) {
+                        navigate('/admin'); // Admin users go to admin panel
+                    } else {
+                        navigate('/dashboard'); // Regular users go to dashboard
+                    }
+                }
             } catch (userErr) {
                 console.error('Error fetching user data:', userErr);
+                // Default redirect to dashboard if user fetch fails
+                navigate('/dashboard');
             }
-
-            // Redirect to dashboard
-            navigate('/dashboard');
         } catch (err) {
             console.error('Login error:', err);
             setError(err.response?.data?.detail || 'Error al iniciar sesión. Verifica tus credenciales.');

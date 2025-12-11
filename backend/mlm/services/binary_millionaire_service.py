@@ -14,13 +14,43 @@ LEVEL_RULES = {
     25: 0.005, 27: 0.005
 }
 
-def find_millionaire_placement(db: Session) -> Optional[BinaryMillionaireMember]:
-    """Find the first available spot in the global binary tree (BFS - Order of Arrival)."""
-    root = db.query(BinaryMillionaireMember).order_by(BinaryMillionaireMember.id.asc()).first()
-    if not root:
-        return None
+def find_millionaire_placement(db: Session, sponor_user_id: Optional[int] = None) -> Optional[BinaryMillionaireMember]:
+    """Find the first available spot. 
+    If sponsor_user_id is provided, look in sponsor's subtree (Spillover).
+    Otherwise, global BFS from root.
+    """
+    root_node = None
+    
+    # 1. Try to find start node based on sponsor
+    if sponor_user_id:
+        # Find sponsor in this tree
+        sponsor_node = db.query(BinaryMillionaireMember).filter(BinaryMillionaireMember.user_id == sponor_user_id).first()
+        if sponsor_node:
+            root_node = sponsor_node
+        else:
+            # Sponsor not in tree? Walk up the referral chain to find first ancestor in tree
+            current_sponsor_id = sponor_user_id
+            while current_sponsor_id:
+                # Get user's sponsor from User table
+                user_sponsor = db.query(User).filter(User.id == current_sponsor_id).first()
+                if not user_sponsor or not user_sponsor.referred_by_id:
+                    break
+                
+                current_sponsor_id = user_sponsor.referred_by_id
+                ancestor_node = db.query(BinaryMillionaireMember).filter(BinaryMillionaireMember.user_id == current_sponsor_id).first()
+                if ancestor_node:
+                    root_node = ancestor_node
+                    break
+    
+    # 2. Fallback to global root if no sponsor found/provided
+    if not root_node:
+        root_node = db.query(BinaryMillionaireMember).order_by(BinaryMillionaireMember.id.asc()).first()
 
-    queue = [root]
+    if not root_node:
+        return None  # First user in system creates the tree
+
+    # 3. BFS to find empty spot under root_node
+    queue = [root_node]
     while queue:
         current = queue.pop(0)
         children = db.query(BinaryMillionaireMember).filter(
@@ -40,7 +70,11 @@ def register_in_millionaire(db: Session, user_id: int) -> BinaryMillionaireMembe
     if exists:
         return exists
 
-    upline_node = find_millionaire_placement(db)
+    # Get user's sponsor
+    user = db.query(User).filter(User.id == user_id).first()
+    sponsor_id = user.referred_by_id if user else None
+
+    upline_node = find_millionaire_placement(db, sponsor_id)
     
     position = 'left'
     if upline_node:

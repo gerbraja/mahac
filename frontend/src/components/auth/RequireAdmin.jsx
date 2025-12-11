@@ -10,7 +10,7 @@ export default function RequireAdmin({ children }) {
     useEffect(() => {
         const checkAdminStatus = async () => {
             try {
-                const token = localStorage.getItem('token');
+                const token = localStorage.getItem('access_token');
                 if (!token) {
                     setIsAdmin(false);
                     setLoading(false);
@@ -84,7 +84,10 @@ export default function RequireAdmin({ children }) {
                         Volver al Dashboard
                     </button>
                     <button
-                        onClick={() => window.location.href = '/login'}
+                        onClick={() => {
+                            localStorage.setItem('returnTo', location.pathname);
+                            window.location.href = '/login';
+                        }}
                         style={{
                             padding: '0.75rem 1.5rem',
                             background: 'white',

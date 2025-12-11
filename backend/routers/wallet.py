@@ -9,6 +9,7 @@ from backend.database.models.frozen_balance import FrozenBalance
 from backend.database.models.qualified_rank import UserQualifiedRank
 from backend.database.models.honor_rank import UserHonor
 from backend.database.models.global_pool import GlobalPoolCommission
+from backend.database.models.sponsorship import SponsorshipCommission
 # from backend.database.models.binary import BinaryCommission
 # from backend.database.models.binary_millionaire import MillionaireCommission
 from backend.database.models.unilevel import UnilevelCommission
@@ -124,7 +125,23 @@ def get_wallet_summary(db: Session = Depends(get_db), user: User = Depends(get_c
         "date": pc.created_at
     } for pc in pool_commissions]
 
-    # 10. Calculate Total Earnings from all sources
+    # 10. Sponsorship Commissions ($9.7 per direct referral)
+    sponsorship_commissions = db.query(SponsorshipCommission).filter(
+        SponsorshipCommission.sponsor_id == user.id
+    ).all()
+    sponsorship_total = sum(sc.commission_amount for sc in sponsorship_commissions if sc.status == 'paid')
+    sponsorship_data = []
+    for sc in sponsorship_commissions:
+        new_member = db.query(User).filter(User.id == sc.new_member_id).first()
+        sponsorship_data.append({
+            "amount": sc.commission_amount,
+            "new_member_name": new_member.name if new_member else "Unknown",
+            "package_amount": sc.package_amount,
+            "date": sc.created_at,
+            "status": sc.status
+        })
+
+    # 11. Calculate Total Earnings from all sources
     total_earnings = (
         binary_total +
         millionaire_total +
@@ -132,7 +149,8 @@ def get_wallet_summary(db: Session = Depends(get_db), user: User = Depends(get_c
         matching_total +
         matrix_total +
         qualified_total +
-        pool_total
+        pool_total +
+        sponsorship_total
     )
 
     # 11. Special Bonuses (Productos, Auto, Apartamento, Viajes)
@@ -263,6 +281,11 @@ def get_wallet_summary(db: Session = Depends(get_db), user: User = Depends(get_c
                 "total": float(pool_total),
                 "transactions": pool_data,
                 "count": len(pool_commissions)
+            },
+            "sponsorship": {
+                "total": float(sponsorship_total),
+                "transactions": sponsorship_data,
+                "count": len(sponsorship_commissions)
             }
         },
         

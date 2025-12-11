@@ -1,68 +1,45 @@
 """
-Script para restablecer la contraseña del administrador.
-Establece la contraseña a 'admin123' para el usuario 'admin'.
+Resetear contraseña del admin existente
 """
 import sys
-import os
+sys.path.insert(0, '.')
 
-# Add parent directory to path
-current_dir = os.path.dirname(os.path.abspath(__file__))
-parent_dir = os.path.dirname(current_dir)
-sys.path.insert(0, os.path.dirname(parent_dir))
-
-from backend.database.connection import SessionLocal
+from backend.database.connection import get_db
 from backend.database.models.user import User
-from passlib.context import CryptContext
+from argon2 import PasswordHasher
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+db = next(get_db())
+ph = PasswordHasher()
 
-def reset_admin():
-    db = SessionLocal()
-    try:
-        print("="*80)
-        print("🔑 RESTABLECIENDO CREDENCIALES DE ADMINISTRADOR")
-        print("="*80)
-        
-        username = "admin"
-        new_password = "admin123"
-        hashed_password = pwd_context.hash(new_password)
-        
-        # Check if admin exists
-        admin = db.query(User).filter(User.username == username).first()
-        
-        if admin:
-            print(f"✅ Usuario '{username}' encontrado. Actualizando contraseña...")
-            admin.password = hashed_password
-            admin.is_admin = True  # Ensure is_admin is True
-            admin.status = "active" # Ensure status is active
-            db.commit()
-            print(f"✅ Contraseña actualizada exitosamente.")
-        else:
-            print(f"⚠️ Usuario '{username}' no encontrado. Creando nuevo administrador...")
-            new_admin = User(
-                name="Administrador Principal",
-                email="admin@tei.com",
-                username=username,
-                password=hashed_password,
-                is_admin=True,
-                status="active",
-                referral_code="ADMIN001"
-            )
-            db.add(new_admin)
-            db.commit()
-            print(f"✅ Usuario administrador creado exitosamente.")
-            
-        print("-" * 80)
-        print(f"👉 CREDENCIALES ACTUALES:")
-        print(f"   Usuario: {username}")
-        print(f"   Contraseña: {new_password}")
-        print("-" * 80)
-        
-    except Exception as e:
-        print(f"❌ Error: {e}")
-        db.rollback()
-    finally:
-        db.close()
+print("=" * 60)
+print("RESETEAR CONTRASEÑA DE ADMIN")
+print("=" * 60)
 
-if __name__ == "__main__":
-    reset_admin()
+# Get admin user
+admin = db.query(User).filter(User.email == 'admin@tei.com').first()
+
+if not admin:
+    print("❌ Usuario admin@tei.com no encontrado")
+    db.close()
+    sys.exit(1)
+
+print(f"\n👤 Usuario: {admin.name}")
+print(f"   Email: {admin.email}")
+print(f"   is_admin: {admin.is_admin}")
+
+# Set new password
+new_password = "admin2025!TEI"
+admin.password = ph.hash(new_password)
+
+db.commit()
+
+print(f"\n✅ Contraseña actualizada exitosamente")
+print("\n" + "=" * 60)
+print("NUEVAS CREDENCIALES:")
+print("=" * 60)
+print(f"  Email: {admin.email}")
+print(f"  Password: {new_password}")
+print(f"  URL: http://localhost:5173/admin")
+print("=" * 60)
+
+db.close()

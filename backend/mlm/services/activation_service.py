@@ -12,7 +12,7 @@ from backend.database.models.unilevel import UnilevelMember
 SPONSORSHIP_COMMISSION_USD = 9.7
 
 
-def process_activation(db: Session, user_id: int, package_amount: float, signup_percent: float | None = None, plan_file: str | None = None):
+def process_activation(db: Session, user_id: int, package_amount: float, pv: int = 3, signup_percent: float | None = None, plan_file: str | None = None):
     """Process user activation atomically.
 
     - Locks the user row
@@ -20,6 +20,14 @@ def process_activation(db: Session, user_id: int, package_amount: float, signup_
     - Allocates membership_number via Postgres sequence when possible
     - Calls binary signup distribution and arrival rules processors
     - Commits altogether
+    
+    Args:
+        db: Database session
+        user_id: User ID to activate
+        package_amount: Monetary value of activation package
+        pv: Points Volume (default 3) - used for commission calculations
+        signup_percent: Optional signup percentage override
+        plan_file: Optional plan file override
 
     Returns a dict with signup_commissions, arrival_commissions, membership_number, membership_code
     If already activated returns {'already_activated': True, 'membership_number': ..., 'membership_code': ...}
@@ -92,6 +100,18 @@ def process_activation(db: Session, user_id: int, package_amount: float, signup_
         # If anything goes wrong, continue; arrival bonuses will be skipped later if needed.
         pass
 
+    # GENERATE UNILEVEL COMMISSIONS based on PV
+    # When a user activates with 3 PV, their upline should receive Unilevel commissions
+    try:
+        from backend.mlm.services.unilevel_service import calculate_unilevel_commissions
+        # Use PV value for Unilevel commissions (3 PV by default)
+        unilevel_comms = calculate_unilevel_commissions(db, user_id, pv, max_levels=7)
+        db.flush()  # Ensure commissions are saved
+    except Exception as e:
+        # Log error but don't fail activation
+        print(f"Warning: Failed to calculate Unilevel commissions: {e}")
+        pass
+
     # 1) signup distribution (Binary Global Commission - 7% of package value)
     signup_comms = calculate_binary_global_commissions(db, user_id, package_amount, signup_percent=signup_percent or None)
 
@@ -101,6 +121,15 @@ def process_activation(db: Session, user_id: int, package_amount: float, signup_
     from backend.mlm.services.binary_service import register_in_binary_global, activate_binary_global
     register_in_binary_global(db, user_id)
     activate_binary_global(db, user_id, plan_file=plan_file)
+
+    # 2.5) TRIGGER: Activate in Binary Millionaire (Automatic Global Placement)
+    from backend.mlm.services.binary_millionaire_service import register_in_millionaire
+    try:
+        register_in_millionaire(db, user_id)
+        # Commissions are generated separately when specific millionaire packages are bought,
+        # but enrollment happens here to ensure position.
+    except Exception as e:
+        print(f"Error registering in millionaire plan: {e}")
 
     # 3) TRIGGER: Activate in Forced Matrix 3x3 (Buy Position)
     # We assume Matrix ID 1 is the default matrix triggered by activation

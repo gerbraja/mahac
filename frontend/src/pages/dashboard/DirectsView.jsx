@@ -13,17 +13,11 @@ const DirectsView = () => {
     const fetchUserIdAndDirects = async () => {
         setLoading(true);
         try {
-            // Get userId from localStorage or fetch from API
-            let currentUserId = localStorage.getItem('userId');
+            // Always fetch fresh userId from API to ensure correct data
+            const userResponse = await api.get('/auth/me');
+            const currentUserId = userResponse.data.id;
 
-            if (!currentUserId) {
-                // Fetch from /auth/me if not in localStorage
-                const userResponse = await api.get('/auth/me');
-                currentUserId = userResponse.data.id;
-                localStorage.setItem('userId', currentUserId);
-            }
-
-            setUserId(parseInt(currentUserId));
+            setUserId(currentUserId);
 
             // Now fetch directs with the correct userId
             const res = await api.get(`/api/unilevel/directs/${currentUserId}`);

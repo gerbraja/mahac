@@ -46,7 +46,7 @@ const DashboardHome = () => {
     const isPreAffiliate = user.status === 'pre-affiliate';
 
     // Calculate statistics
-    const totalEarnings = walletData?.cash_balance || 0;
+    const totalEarnings = walletData?.total_earnings || 0;
     const cryptoAssets = walletData?.crypto_balance || 0;
     const leadershipBonuses = walletData?.leadership_bonuses || 0;
     const currentRank = user.rank || 'Nuevo';
@@ -212,6 +212,13 @@ const DashboardHome = () => {
                         title="Rangos de Honor"
                         desc="Consulta los rangos por comisiones"
                         gradient="from-emerald-500 to-emerald-600"
+                    />
+                    <QuickLink
+                        to="/dashboard/orders"
+                        icon="📦"
+                        title="Mis Pedidos"
+                        desc="Rastrea el estado de tus pedidos"
+                        gradient="from-pink-500 to-pink-600"
                     />
                 </div>
             </div>

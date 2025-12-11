@@ -116,10 +116,10 @@ def get_global_stats(user_id: int, db: Session = Depends(get_db)):
         earned_this_year = 0.0
         
         if pays:
-            earnings = db.query(func.sum(BinaryGlobalCommission.amount)).filter(
-                BinaryGlobalCommission.receiver_id == user_id,
+            earnings = db.query(func.sum(BinaryGlobalCommission.commission_amount)).filter(
+                BinaryGlobalCommission.user_id == user_id,
                 BinaryGlobalCommission.level == level,
-                BinaryGlobalCommission.created_at >= year_start
+                BinaryGlobalCommission.paid_at >= year_start
             ).scalar()
             earned_this_year = float(earnings) if earnings else 0.0
         
@@ -134,13 +134,13 @@ def get_global_stats(user_id: int, db: Session = Depends(get_db)):
         })
     
     # Calculate total earnings
-    total_this_year = db.query(func.sum(BinaryGlobalCommission.amount)).filter(
-        BinaryGlobalCommission.receiver_id == user_id,
-        BinaryGlobalCommission.created_at >= year_start
+    total_this_year = db.query(func.sum(BinaryGlobalCommission.commission_amount)).filter(
+        BinaryGlobalCommission.user_id == user_id,
+        BinaryGlobalCommission.paid_at >= year_start
     ).scalar()
     
-    total_all_time = db.query(func.sum(BinaryGlobalCommission.amount)).filter(
-        BinaryGlobalCommission.receiver_id == user_id
+    total_all_time = db.query(func.sum(BinaryGlobalCommission.commission_amount)).filter(
+        BinaryGlobalCommission.user_id == user_id
     ).scalar()
     
     # Count left and right direct children

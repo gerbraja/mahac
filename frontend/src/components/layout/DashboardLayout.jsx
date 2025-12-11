@@ -27,6 +27,7 @@ const DashboardLayout = () => {
     { to: '/dashboard/matrix', icon: '🔷', label: 'Matrices Forzadas', gradient: 'from-teal-500 to-teal-600' },
     { to: '/dashboard/qualified-ranks', icon: '🏆', label: 'Rangos Calificación', gradient: 'from-purple-500 to-purple-600' },
     { to: '/dashboard/honor-ranks', icon: '🎖️', label: 'Rangos Honor', gradient: 'from-emerald-500 to-emerald-600' },
+    { to: '/dashboard/orders', icon: '📦', label: 'Mis Pedidos', gradient: 'from-orange-500 to-orange-600' },
   ];
 
   const isActive = (path) => location.pathname === path;

@@ -328,27 +328,65 @@ def update_profile(data: UpdateProfileData, current_user: UserModel = Depends(ge
 @router.post("/login")
 def login(data: LoginData, db: Session = Depends(get_db)):
     try:
+        # Write to log file
+        with open("login_debug.log", "a", encoding="utf-8") as f:
+            f.write(f"\n{'='*60}\n")
+            f.write(f"LOGIN ATTEMPT\n")
+            f.write(f"{'='*60}\n")
+            f.write(f"Username: {data.username}\n")
+            f.write(f"Email: {data.email}\n")
+            f.write(f"Password length: {len(data.password) if data.password else 0}\n")
+        
         # Find by username if provided, otherwise by email
         user = None
         if data.username:
             user = db.query(UserModel).filter(UserModel.username == data.username).first()
+            with open("login_debug.log", "a", encoding="utf-8") as f:
+                f.write(f"Searching by username '{data.username}': {'FOUND' if user else 'NOT FOUND'}\n")
         elif data.email:
             user = db.query(UserModel).filter(UserModel.email == data.email).first()
+            with open("login_debug.log", "a", encoding="utf-8") as f:
+                f.write(f"Searching by email '{data.email}': {'FOUND' if user else 'NOT FOUND'}\n")
 
         if not user:
+            with open("login_debug.log", "a", encoding="utf-8") as f:
+                f.write("User not found - returning 401\n")
             raise HTTPException(status_code=401, detail="Invalid credentials")
 
+        with open("login_debug.log", "a", encoding="utf-8") as f:
+            f.write(f"User found: {user.name} (ID: {user.id})\n")
+            f.write(f"   is_admin: {user.is_admin}\n")
+            f.write(f"   Password hash exists: {bool(user.password)}\n")
+        
         # Verify password (truncate to 72 bytes for compatibility)
         password_to_verify = data.password[:72] if data.password else ''
         stored_hash = getattr(user, 'password', '')
         
+        with open("login_debug.log", "a", encoding="utf-8") as f:
+            f.write(f"   Password to verify: '{password_to_verify}'\n")
+            f.write(f"   Stored hash (first 50 chars): {stored_hash[:50] if stored_hash else 'NONE'}\n")
+        
         try:
             pwd_hasher.verify(stored_hash, password_to_verify)
-        except Exception:
+            with open("login_debug.log", "a", encoding="utf-8") as f:
+                f.write("Password verification SUCCESS\n")
+        except Exception as verify_error:
             # Any verification error (VerifyMismatchError, InvalidHash, etc.)
+            with open("login_debug.log", "a", encoding="utf-8") as f:
+                f.write(f"Password verification FAILED: {type(verify_error).__name__}: {verify_error}\n")
             raise HTTPException(status_code=401, detail="Invalid credentials")
         
-        token = jwt.encode({"user_id": user.id}, SECRET_KEY, algorithm=ALGORITHM)
+        
+        # Include is_admin in token for admin panel access
+        token = jwt.encode({
+            "user_id": user.id,
+            "is_admin": user.is_admin
+        }, SECRET_KEY, algorithm=ALGORITHM)
+        
+        with open("login_debug.log", "a", encoding="utf-8") as f:
+            f.write(f"Login successful - Token generated\n")
+            f.write(f"{'='*60}\n")
+        
         return {"access_token": token, "token_type": "bearer"}
     except HTTPException:
         raise

@@ -1,26 +1,57 @@
-#!/usr/bin/env python
+"""
+Probar login directamente
+"""
+import requests
+import json
+
+url = "http://localhost:8000/auth/login"
+
+# Test 1: Con username
+print("=" * 60)
+print("TEST 1: Login con username")
+print("=" * 60)
+data1 = {
+    "username": "admin",
+    "password": "admin2025!TEI"
+}
+try:
+    response1 = requests.post(url, json=data1)
+    print(f"Status: {response1.status_code}")
+    print(f"Response: {response1.json()}")
+except Exception as e:
+    print(f"Error: {e}")
+
+# Test 2: Con email
+print("\n" + "=" * 60)
+print("TEST 2: Login con email")
+print("=" * 60)
+data2 = {
+    "email": "admin@tei.com",
+    "password": "admin2025!TEI"
+}
+try:
+    response2 = requests.post(url, json=data2)
+    print(f"Status: {response2.status_code}")
+    print(f"Response: {response2.json()}")
+except Exception as e:
+    print(f"Error: {e}")
+
+# Test 3: Verificar usuario en BD
+print("\n" + "=" * 60)
+print("TEST 3: Verificar usuario en BD")
+print("=" * 60)
 import sys
 sys.path.insert(0, '.')
-
 from backend.database.connection import get_db
-from backend.database.models.user import User as UserModel
-from passlib.context import CryptContext
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+from backend.database.models.user import User
 
 db = next(get_db())
-admin = db.query(UserModel).filter(UserModel.username == 'admin').first()
-
+admin = db.query(User).filter(User.email == 'admin@tei.com').first()
 if admin:
-    print(f"✅ Admin found: {admin.username}")
-    print(f"Password hash: {admin.password[:50]}...")
-    
-    # Test verification
-    password_to_verify = 'admin123'[:72]
-    try:
-        result = pwd_context.verify(password_to_verify, admin.password)
-        print(f"✅ Password verification result: {result}")
-    except Exception as e:
-        print(f"❌ Verification error: {type(e).__name__}: {e}")
+    print(f"✅ Usuario existe")
+    print(f"   Username: {admin.username}")
+    print(f"   Email: {admin.email}")
+    print(f"   is_admin: {admin.is_admin}")
 else:
-    print("❌ Admin not found")
+    print("❌ Usuario NO existe")
+db.close()

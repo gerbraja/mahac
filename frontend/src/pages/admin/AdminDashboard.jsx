@@ -274,6 +274,20 @@ export default function AdminDashboard() {
                     >
                         💎 Rangos de Honor
                     </button>
+                    <button
+                        onClick={() => window.location.href = '/admin/orders'}
+                        style={{
+                            padding: '0.75rem 1.5rem',
+                            background: '#ec4899',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '0.5rem',
+                            cursor: 'pointer',
+                            fontWeight: '500'
+                        }}
+                    >
+                        📋 Gestión de Pedidos
+                    </button>
                 </div>
             </div>
 

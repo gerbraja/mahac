@@ -124,9 +124,45 @@ def get_unilevel_stats(user_id: int, db: Session = Depends(get_db)):
         func.extract('year', UnilevelCommission.created_at) == current_year
     ).scalar() or 0
     
-    # Get downline count (simplified - count unique members from commissions)
-    total_downline = 0
-    active_downline = 0
+    
+    # Get downline count - count actual Unilevel members in the network
+    def count_downline_recursive(sponsor_id, max_depth=7, current_depth=1):
+        """Recursively count all downline members"""
+        if current_depth > max_depth:
+            return 0
+        
+        direct_members = db.query(UnilevelMember).filter(
+            UnilevelMember.sponsor_id == sponsor_id
+        ).all()
+        
+        count = len(direct_members)
+        for member in direct_members:
+            count += count_downline_recursive(member.user_id, max_depth, current_depth + 1)
+        
+        return count
+    
+    total_downline = count_downline_recursive(user_id)
+    
+    # Count active downline (users with status='active')
+    def count_active_downline_recursive(sponsor_id, max_depth=7, current_depth=1):
+        """Recursively count active downline members"""
+        if current_depth > max_depth:
+            return 0
+        
+        direct_members = db.query(UnilevelMember).filter(
+            UnilevelMember.sponsor_id == sponsor_id
+        ).all()
+        
+        count = 0
+        for member in direct_members:
+            user = db.query(User).filter(User.id == member.user_id).first()
+            if user and user.status == 'active':
+                count += 1
+            count += count_active_downline_recursive(member.user_id, max_depth, current_depth + 1)
+        
+        return count
+    
+    active_downline = count_active_downline_recursive(user_id)
     
     # Get total volume (sum of all unilevel commissions' sale_amount)
     total_volume = db.query(func.sum(UnilevelCommission.sale_amount)).filter(
@@ -137,7 +173,20 @@ def get_unilevel_stats(user_id: int, db: Session = Depends(get_db)):
     # Get stats by level
     levels_stats = {}
     for level_num in range(1, 8):
-        # Count members at this level
+        # Count actual members at this level
+        members_at_level = db.query(UnilevelMember).filter(
+            UnilevelMember.sponsor_id == user_id,
+            UnilevelMember.level == level_num
+        ).all()
+        
+        # Count active members at this level
+        active_at_level = 0
+        for member in members_at_level:
+            user_obj = db.query(User).filter(User.id == member.user_id).first()
+            if user_obj and user_obj.status == 'active':
+                active_at_level += 1
+        
+        # Get commissions at this level
         level_commissions = db.query(UnilevelCommission).filter(
             UnilevelCommission.user_id == user_id,
             UnilevelCommission.level == level_num,
@@ -156,12 +205,9 @@ def get_unilevel_stats(user_id: int, db: Session = Depends(get_db)):
                 UnilevelCommission.type == 'matching'
             ).scalar() or 0
         
-        # Count commissions at this level
-        commission_count = len(level_commissions)
-        
         levels_stats[level_num] = {
-            "total_members": commission_count if commission_count > 0 else (total_downline // 7 if total_downline > 0 else 0),
-            "active_members": commission_count if commission_count > 0 else (active_downline // 7 if active_downline > 0 else 0),
+            "total_members": len(members_at_level),
+            "active_members": active_at_level,
             "total_earnings": float(level_earnings),
             "total_volume": float(level_volume),
             "matching_bonus": float(level_matching)

@@ -34,25 +34,49 @@ def get_arrival_bonus_rules(plan_file: str = "binario_global/plan_template.yml")
     
     return rules
 
-def find_global_placement(db: Session) -> Optional[BinaryGlobalMember]:
-    """Find the first available spot in the global binary tree (BFS - Order of Arrival)."""
-    # 1. Get root
-    root = db.query(BinaryGlobalMember).order_by(BinaryGlobalMember.id.asc()).first()
-    if not root:
-        return None # Tree is empty, caller becomes root
+def find_global_placement(db: Session, sponsor_user_id: Optional[int] = None) -> Optional[BinaryGlobalMember]:
+    """Find the first available spot.
+    If sponsor_user_id is provided, look in sponsor's subtree (Spillover).
+    Otherwise, global BFS from root.
+    """
+    root_node = None
 
-    # 2. BFS
-    queue = [root]
+    # 1. Try to find start node based on sponsor
+    if sponsor_user_id:
+        sponsor_node = db.query(BinaryGlobalMember).filter(BinaryGlobalMember.user_id == sponsor_user_id).first()
+        if sponsor_node:
+            root_node = sponsor_node
+        else:
+            # Sponsor not in tree? Walk up active chain
+            current = sponsor_user_id
+            while current:
+                user_s = db.query(User).filter(User.id == current).first()
+                if not user_s or not user_s.referred_by_id:
+                    break
+                current = user_s.referred_by_id
+                anc = db.query(BinaryGlobalMember).filter(BinaryGlobalMember.user_id == current).first()
+                if anc:
+                    root_node = anc
+                    break
+    
+    # 2. Fallback to global root
+    if not root_node:
+        root_node = db.query(BinaryGlobalMember).order_by(BinaryGlobalMember.id.asc()).first()
+    
+    if not root_node:
+        return None
+
+    # 3. BFS
+    queue = [root_node]
     while queue:
         current = queue.pop(0)
         
-        # Check children
         children = db.query(BinaryGlobalMember).filter(
             BinaryGlobalMember.upline_id == current.id
-        ).order_by(BinaryGlobalMember.position.asc()).all() # Left then Right
+        ).order_by(BinaryGlobalMember.position.asc()).all()
 
         if len(children) < 2:
-            return current # Found a parent with space
+            return current 
         
         queue.extend(children)
     
@@ -65,8 +89,12 @@ def register_in_binary_global(db: Session, user_id: int) -> BinaryGlobalMember:
     if exists:
         return exists
 
+    # Get sponsor
+    user = db.query(User).filter(User.id == user_id).first()
+    sponsor_id = user.referred_by_id if user else None
+
     # Find placement
-    upline_node = find_global_placement(db)
+    upline_node = find_global_placement(db, sponsor_id)
     
     position = 'left'
     if upline_node:

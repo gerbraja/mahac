@@ -43,19 +43,55 @@ def get_order(order_id: int, db: Session = Depends(get_db), current_user=Depends
 
 from backend.database.models.user import User
 from datetime import datetime
+from backend.schemas.order import OrderStatusUpdate
 
 @router.put("/{order_id}/status")
-async def update_order_status(order_id: int, status: str, db: Session = Depends(get_db)):
+async def update_order_status(
+    order_id: int, 
+    payload: OrderStatusUpdate, 
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    # Verificar que el usuario es admin
+    if not getattr(current_user, "is_admin", False):
+        raise HTTPException(status_code=403, detail="Solo administradores pueden actualizar estados de pedidos")
+    
     order = db.query(Order).filter(Order.id == order_id).first()
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
-    order.status = status
+    
+    # Validar estados permitidos
+    valid_statuses = ["reservado", "pendiente_envio", "enviado", "completado"]
+    if payload.status not in valid_statuses:
+        raise HTTPException(status_code=400, detail=f"Estado inválido. Debe ser uno de: {', '.join(valid_statuses)}")
+    
+    # Validar que el número de guía sea requerido para estado "enviado"
+    if payload.status == "enviado" and not payload.tracking_number:
+        raise HTTPException(status_code=400, detail="El número de guía es requerido para el estado 'enviado'")
+    
+    # Actualizar estado
+    old_status = order.status
+    order.status = payload.status
+    
+    # Actualizar número de guía si se proporciona
+    if payload.tracking_number:
+        order.tracking_number = payload.tracking_number
+    
+    # Actualizar timestamps según el estado
+    now = datetime.utcnow()
+    if payload.status == "pendiente_envio" and not order.payment_confirmed_at:
+        order.payment_confirmed_at = now
+    elif payload.status == "enviado" and not order.shipped_at:
+        order.shipped_at = now
+    elif payload.status == "completado" and not order.completed_at:
+        order.completed_at = now
+    
     db.add(order)
     db.commit()
     db.refresh(order)
 
     # TRIGGER: Distribute commissions if order is paid/completed
-    if status in ["paid", "completed"]:
+    if payload.status in ["pendiente_envio", "enviado", "completado"] and old_status == "reservado":
         # Check for activation products
         is_activation_order = False
         for item in order.items:
@@ -93,31 +129,15 @@ async def update_order_status(order_id: int, status: str, db: Session = Depends(
                 from backend.database.models.binary_millionaire import BinaryMillionaireMember
                 from backend.mlm.services.binary_millionaire_service import distribute_millionaire_commissions, register_in_millionaire
                 
-                # Ensure user is in Millionaire tree (Auto-join if not? Or must have bought starter pack?)
-                # User said "Cuando alguien hace compras regulares... genera comisiones".
-                # If they are buying, they are likely already a member. But let's check.
                 member = db.query(BinaryMillionaireMember).filter(BinaryMillionaireMember.user_id == order.user_id).first()
                 if member:
                     distribute_millionaire_commissions(db, member, int(order.total_pv))
                 
                 # 2. Unilevel Commissions
-                # User said "Para el Binario Millonario Y la Red Uninivel"
                 from backend.mlm.services.unilevel_service import distribute_unilevel_commissions
-                # We need to ensure unilevel service supports PV or Amount.
-                # Assuming unilevel uses sale amount or PV. Let's pass PV if supported, or total_usd.
-                # User emphasized PV for Millionaire. Unilevel usually follows similar logic.
-                # Let's assume Unilevel also needs PV.
-                # Checking unilevel_service signature might be needed, but for now let's try passing amount.
-                # If unilevel_service.distribute_commissions takes (db, user_id, amount), we use total_pv * 4500?
-                # Or just pass the order object?
-                # Let's look at unilevel_service.py signature quickly if possible, or just try standard call.
-                # I'll use a safe try-except block.
-                distribute_unilevel_commissions(db, order.user_id, float(order.total_pv) * 4500) # Convert PV to COP for Unilevel?
+                distribute_unilevel_commissions(db, order.user_id, float(order.total_pv) * 4500)
                 
             except Exception as e:
                 print(f"Error distributing commissions for order {order.id}: {e}")
-                
-        # If we identified an activation, we should probably broadcast it.
-        # Since we can't easily await here without changing the signature, let's change the signature to async.
     
-    return {"ok": True, "order_id": order.id, "status": order.status}
+    return {"ok": True, "order_id": order.id, "status": order.status, "tracking_number": order.tracking_number}

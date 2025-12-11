@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 from backend.database.models.order import Order
 from backend.database.models.order_item import OrderItem
 from backend.database.models.payment_transaction import PaymentTransaction
+from backend.database.models.product import Product
 from backend.mlm.services.unilevel_service import calculate_unilevel_commissions
 from backend.mlm.services.activation_service import process_activation
 
@@ -41,16 +42,29 @@ def process_successful_payment(db: Session, order_id: int, transaction_id: int =
     try:
         items = db.query(OrderItem).filter(OrderItem.order_id == order.id).all()
         activate = False
-        for it in items:
-            if (getattr(it, 'subtotal_pv', 0) or 0) > 0:
-                activate = True
-                break
-            if 'package' in (it.product_name or '').lower() or 'membership' in (it.product_name or '').lower():
-                activate = True
-                break
+        total_pv = 0
         
-        if activate:
-            process_activation(db, order.user_id, float(order.total_cop or 0.0))
+        # Calculate total PV and check if activation is needed
+        for item in items:
+            # Get product to check PV and activation flag
+            product = db.query(Product).filter(Product.id == item.product_id).first()
+            if product:
+                # Add PV from this item (quantity * product PV)
+                total_pv += (product.pv or 0) * item.quantity
+                
+                # Check if this product triggers activation
+                if product.is_activation:
+                    activate = True
+        
+        # If order contains activation product and has PV, activate user
+        if activate and total_pv > 0:
+            print(f"Activating user {order.user_id} with {total_pv} PV and ${order.total_cop} COP")
+            process_activation(
+                db, 
+                order.user_id, 
+                float(order.total_cop or 0.0),
+                pv=total_pv  # Pass PV to activation service
+            )
     except Exception as e:
         print(f"Error processing activation: {e}")
         # Non-fatal
