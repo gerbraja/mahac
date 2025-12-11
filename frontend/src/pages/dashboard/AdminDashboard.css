@@ -1,0 +1,57 @@
+/* Limitar tamaño máximo de imágenes de productos en admin */
+
+/* Vista previa en formulario */
+.admin-product-preview img {
+    max-width: 96px !important;
+    max-height: 96px !important;
+    width: auto !important;
+    height: auto !important;
+    object-fit: contain !important;
+}
+
+/* Imágenes en tabla de productos */
+.admin-product-table img {
+    max-width: 96px !important;
+    max-height: 96px !important;
+    width: auto !important;
+    height: auto !important;
+    object-fit: contain !important;
+}
+
+/* Contenedores de imágenes */
+.admin-image-container {
+    width: 96px;
+    height: 96px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.375rem;
+    background-color: #f9fafb;
+}
+
+.admin-preview-container {
+    width: 96px;
+    height: 96px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    background-color: #f9fafb;
+}
+
+/* Slightly larger container for store view product thumbnails (77x77) */
+.store-image-container {
+    width: 96px;
+    height: 96px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.375rem;
+    background-color: #f9fafb;
+}

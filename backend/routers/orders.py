@@ -41,13 +41,103 @@ def get_order(order_id: int, db: Session = Depends(get_db), current_user=Depends
     return order
 
 
+from backend.database.models.user import User
+from datetime import datetime
+from backend.schemas.order import OrderStatusUpdate
+
 @router.put("/{order_id}/status")
-def update_order_status(order_id: int, status: str, db: Session = Depends(get_db)):
+async def update_order_status(
+    order_id: int, 
+    payload: OrderStatusUpdate, 
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    # Verificar que el usuario es admin
+    if not getattr(current_user, "is_admin", False):
+        raise HTTPException(status_code=403, detail="Solo administradores pueden actualizar estados de pedidos")
+    
     order = db.query(Order).filter(Order.id == order_id).first()
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
-    order.status = status
+    
+    # Validar estados permitidos
+    valid_statuses = ["reservado", "pendiente_envio", "enviado", "completado"]
+    if payload.status not in valid_statuses:
+        raise HTTPException(status_code=400, detail=f"Estado inválido. Debe ser uno de: {', '.join(valid_statuses)}")
+    
+    # Validar que el número de guía sea requerido para estado "enviado"
+    if payload.status == "enviado" and not payload.tracking_number:
+        raise HTTPException(status_code=400, detail="El número de guía es requerido para el estado 'enviado'")
+    
+    # Actualizar estado
+    old_status = order.status
+    order.status = payload.status
+    
+    # Actualizar número de guía si se proporciona
+    if payload.tracking_number:
+        order.tracking_number = payload.tracking_number
+    
+    # Actualizar timestamps según el estado
+    now = datetime.utcnow()
+    if payload.status == "pendiente_envio" and not order.payment_confirmed_at:
+        order.payment_confirmed_at = now
+    elif payload.status == "enviado" and not order.shipped_at:
+        order.shipped_at = now
+    elif payload.status == "completado" and not order.completed_at:
+        order.completed_at = now
+    
     db.add(order)
     db.commit()
     db.refresh(order)
-    return {"ok": True, "order_id": order.id, "status": order.status}
+
+    # TRIGGER: Distribute commissions if order is paid/completed
+    if payload.status in ["pendiente_envio", "enviado", "completado"] and old_status == "reservado":
+        # Check for activation products
+        is_activation_order = False
+        for item in order.items:
+            if item.product.is_activation:
+                is_activation_order = True
+                break
+        
+        if is_activation_order:
+            user = db.query(User).filter(User.id == order.user_id).first()
+            if user and user.status == "pre-affiliate":
+                user.status = "active"
+                db.add(user)
+                db.commit()
+                
+                # Broadcast new active member
+                from backend.utils.websocket_manager import manager
+                
+                notification_payload = {
+                    "type": "new_active_member",
+                    "data": {
+                        "name": user.name,
+                        "country": user.country,
+                        "timestamp": datetime.utcnow().isoformat()
+                    }
+                }
+                await manager.broadcast(notification_payload)
+                
+        if order.total_pv > 0:
+            try:
+                # 0. Activate in Global Binary (if applicable)
+                from backend.mlm.services.binary_service import activate_binary_global
+                activate_binary_global(db, order.user_id)
+    
+                # 1. Binary Millionaire Commissions
+                from backend.database.models.binary_millionaire import BinaryMillionaireMember
+                from backend.mlm.services.binary_millionaire_service import distribute_millionaire_commissions, register_in_millionaire
+                
+                member = db.query(BinaryMillionaireMember).filter(BinaryMillionaireMember.user_id == order.user_id).first()
+                if member:
+                    distribute_millionaire_commissions(db, member, int(order.total_pv))
+                
+                # 2. Unilevel Commissions
+                from backend.mlm.services.unilevel_service import distribute_unilevel_commissions
+                distribute_unilevel_commissions(db, order.user_id, float(order.total_pv) * 4500)
+                
+            except Exception as e:
+                print(f"Error distributing commissions for order {order.id}: {e}")
+    
+    return {"ok": True, "order_id": order.id, "status": order.status, "tracking_number": order.tracking_number}

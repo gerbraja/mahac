@@ -18,11 +18,26 @@ def check_user_honor(db: Session = Depends(get_db), user: User = Depends(get_cur
     ranks = db.query(HonorRank).order_by(HonorRank.commission_required.asc()).all()
     # NOTE: the User model is expected to have a numeric `total_earnings` or
     # similar field that represents cumulative commissions.
-    user_total_commission = getattr(user, "total_earnings", 0) or 0
+    # Calculate total earnings EXCLUDING Matrix Commissions
+    # We can do this by subtracting MatrixCommission sum from user.total_earnings
+    # or by summing Unilevel + Binary + GlobalPool + etc.
+    # Subtracting is easier if total_earnings is accurate.
+    
+    from backend.database.models.matrix import MatrixCommission
+    
+    matrix_earnings = db.query(func.sum(MatrixCommission.amount)).filter(MatrixCommission.user_id == user.id).scalar() or 0.0
+    
+    # Total valid earnings for Honor Ranks
+    # Assuming user.total_earnings includes everything.
+    # If total_earnings is not reliable, we should sum specific tables.
+    # For now, let's trust total_earnings - matrix_earnings.
+    
+    valid_earnings = (getattr(user, "total_earnings", 0) or 0) - matrix_earnings
+    
     achieved = []
 
     for rank in ranks:
-        if user_total_commission >= rank.commission_required:
+        if valid_earnings >= rank.commission_required:
             existing = db.query(UserHonor).filter_by(user_id=user.id, rank_id=rank.id).first()
             if not existing:
                 new_honor = UserHonor(user_id=user.id, rank_id=rank.id, achieved_at=datetime.utcnow(), reward_granted=True)

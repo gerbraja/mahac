@@ -20,7 +20,8 @@ def create_order(db: Session, payload: OrderCreate, current_user):
             raise ValueError(f"Insufficient stock for {product.name}")
 
         subtotal_usd = item.quantity * product.price_usd
-        subtotal_cop = item.quantity * product.price_cop
+        # Assuming price_local is COP
+        subtotal_cop = item.quantity * (product.price_local or 0.0)
         subtotal_pv = item.quantity * product.pv
 
         total_usd += subtotal_usd
@@ -40,7 +41,7 @@ def create_order(db: Session, payload: OrderCreate, current_user):
         total_usd=round(total_usd,2),
         total_cop=round(total_cop,2),
         total_pv=round(total_pv,2),
-        shipping_address=getattr(payload, "shipping_address", None),
+        shipping_address=getattr(payload, "shipping_address", None) or f"{current_user.address}, {current_user.city}, {current_user.province}",
         status="pending"
     )
     db.add(order)

@@ -13,7 +13,14 @@ export default function ProductCard({ product }) {
       }}
     >
       <h3>{product.name}</h3>
-      <p>${product.price.toFixed(2)}</p>
+      <div style={{ margin: "0.5rem 0" }}>
+        <p style={{ fontWeight: "bold", fontSize: "1.3rem", color: "#16a34a" }}>
+          ${product.price_local?.toLocaleString()} COP
+        </p>
+        <p style={{ color: "#2563eb", fontWeight: "bold", marginTop: "0.25rem" }}>
+          💎 {product.pv} PV
+        </p>
+      </div>
       <button onClick={() => addToCart(product)}>Agregar al carrito</button>
     </div>
   );

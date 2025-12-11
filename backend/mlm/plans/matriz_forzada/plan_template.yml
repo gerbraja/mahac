@@ -1,3 +1,4 @@
+
 plan_name: "Forced Matrix"
 plan_key: "matriz_forzada"
 description: "Matrix with fixed width and depth"
@@ -8,215 +9,131 @@ qualification:
 # Matrices / levels definition. Amounts are strings and should be parsed to Decimal in the loader.
 matrices:
     - id: 27
-        amount: "77.00"
-        reentry_amount: "27.00"
-        next_matrix: 77
-        monthly_limit: 14
-        yearly_limit: null
-        rank_up:
-            from: "Consumer"
-            to: "Distributor"
-        one_time_bonus: null
-        period: "month"
+      amount: "77.00"
+      reentry_amount: "27.00"
+      next_matrix: 77
+      monthly_limit: 14
+      yearly_limit: null
+      rank_up:
+          from: "Consumer"
+          to: "Distributor"
+      one_time_bonus: null
+      period: "month"
 
     - id: 77
-        amount: "277.00"
-        reentry_amount: "77.00"
-        next_matrix: 277
-        monthly_limit: 10
-        yearly_limit: null
-        rank_up:
-            from: "Distributor"
-            to: "Bronze Distributor"
-        one_time_bonus: null
-        period: "month"
+      amount: "277.00"
+      reentry_amount: "77.00"
+      next_matrix: 277
+      monthly_limit: 10
+      yearly_limit: null
+      rank_up:
+          from: "Distributor"
+          to: "Bronze Distributor"
+      one_time_bonus: null
+      period: "month"
 
     - id: 277
-        amount: "877.00"
-        reentry_amount: "277.00"
-        next_matrix: 877
-        monthly_limit: 8
-        yearly_limit: null
-        rank_up:
-            from: "Bronze Distributor"
-            to: "Silver Distributor"
-        one_time_bonus:
-            amount: "147.00"
-            description: "Virtual store bonus"
-        period: "month"
+      amount: "877.00"
+      reentry_amount: "277.00"
+      next_matrix: 877
+      monthly_limit: 8
+      yearly_limit: null
+      rank_up:
+          from: "Bronze Distributor"
+          to: "Silver Distributor"
+      one_time_bonus:
+          amount: "147.00"
+          description: "Virtual store bonus"
+      period: "month"
 
     - id: 877
-        amount: "3000.00"
-        reentry_amount: "877.00"
-        next_matrix: 3000
-        monthly_limit: 7
-        yearly_limit: null
-        rank_up:
-            from: "Silver Distributor"
-            to: "Gold Distributor"
-        one_time_bonus:
-            amount: "500.00"
-            description: "Virtual store bonus"
-        period: "month"
+      amount: "3000.00"
+      reentry_amount: "877.00"
+      next_matrix: 3000
+      monthly_limit: 7
+      yearly_limit: null
+      rank_up:
+          from: "Silver Distributor"
+          to: "Gold Distributor"
+      one_time_bonus:
+          amount: "500.00"
+          description: "Virtual Store Bonus"
+      period: "month"
 
     - id: 3000
-        amount: "9700.00"
-        reentry_amount: "3000.00"
-        next_matrix: 9700
-        monthly_limit: 6
-        yearly_limit: null
-        rank_up:
-            from: "Gold Distributor"
-            to: "Platinum Business Owner"
-        one_time_bonus:
-            amount: "1700.00"
-            description: "Store bonus"
-        period: "month"
+      amount: "9700.00"
+      reentry_amount: "3000.00"
+      next_matrix: 9700
+      monthly_limit: 6
+      yearly_limit: null
+      rank_up:
+          from: "Gold Distributor"
+          to: "Platinum Business Owner"
+      one_time_bonus:
+          amount: "1700.00"
+          description: "Store bonus"
+      period: "month"
 
     - id: 9700
-        amount: "30000.00"
-        reentry_amount: "9700.00"
-        next_matrix: 30000
-        monthly_limit: 5
-        yearly_limit: null
-        rank_up:
-            from: "Platinum Business Owner"
-            to: "Ruby Business Owner"
-        one_time_bonus:
-            amount: "4000.00"
-            description: "Store bonus"
-        period: "month"
+      amount: "25000.00"
+      reentry_amount: "9700.00"
+      next_matrix: 25000
+      monthly_limit: 5
+      yearly_limit: null
+      rank_up:
+          from: "Platinum Business Owner"
+          to: "Ruby Executive"
+      one_time_bonus:
+          amount: "4000.00"
+          description: "Ruby bonus"
+      period: "month"
 
-    - id: 30000
-        amount: "100000.00"
-        reentry_amount: "30000.00"
-        next_matrix: 100000
-        monthly_limit: 4
-        yearly_limit: null
-        rank_up:
-            from: "Ruby Business Owner"
-            to: "Emerald Business Owner"
-        one_time_bonus:
-            amount: "7700.00"
-            description: "Store bonus"
-        period: "month"
+    - id: 25000
+      amount: "77000.00"
+      reentry_amount: "25000.00"
+      next_matrix: 77000
+      monthly_limit: 4
+      yearly_limit: null
+      rank_up:
+          from: "Ruby Executive"
+          to: "Emerald Leader"
+      one_time_bonus:
+          amount: "7700.00"
+          description: "Emerald bonus"
+      period: "month"
 
-    - id: 100000
-        amount: "300000.00"
-        reentry_amount: "100000.00"
-        next_matrix: 300000
-        monthly_limit: 3
-        yearly_limit: null
-        rank_up:
-            from: "Emerald Business Owner"
-            to: "Diamond"
-        one_time_bonus:
-            amount: "47000.00"
-            description: "Vehicle bonus"
-        period: "month"
+    - id: 77000
+      amount: "270000.00"
+      reentry_amount: "77000.00"
+      next_matrix: 270000
+      monthly_limit: 2
+      yearly_limit: null
+      rank_up:
+          from: "Emerald Leader"
+          to: "Diamond Master"
+      one_time_bonus:
+          amount: "47000.00"
+          description: "Master bonus"
+      period: "month"
 
-    - id: 300000
-        amount: "1000000.00"
-        reentry_amount: "300000.00"
-        next_matrix: 1000000
-        monthly_limit: 2
-        yearly_limit: null
-        rank_up:
-            from: "Diamond"
-            to: "Blue Diamond"
-        one_time_bonus:
-            amount: "177000.00"
-            description: "Home bonus"
-        period: "month"
+    - id: 270000
+      amount: "970000.00"
+      reentry_amount: "270000.00"
+      next_matrix: 970000
+      monthly_limit: 1
+      yearly_limit: null
+      rank_up:
+          from: "Diamond Master"
+          to: "Blue Diamond Elite"
+      one_time_bonus:
+          amount: "77000.00"
+          description: "Elite bonus"
+      period: "month"
 
-    - id: 1000000
-        amount: "3000000.00"
-        reentry_amount: "1000000.00"
-        next_matrix: 3000000
-        monthly_limit: null
-        yearly_limit: 7
-        rank_up:
-            from: "Blue Diamond"
-            to: "Red Diamond"
-        one_time_bonus:
-            amount: "477000.00"
-            description: "Bonus"
-        period: "year"
-
-    - id: 3000000
-        amount: "7000000.00"
-        reentry_amount: "3000000.00"
-        next_matrix: 7000000
-        monthly_limit: null
-        yearly_limit: 5
-        rank_up:
-            from: "Red Diamond"
-            to: "Black Diamond"
-        one_time_bonus:
-            amount: "3777000.00"
-            description: "Bonus"
-        period: "year"
-
-    - id: 7000000
-        amount: "20000000.00"
-        reentry_amount: "7000000.00"
-        next_matrix: 20000000
-        monthly_limit: null
-        yearly_limit: 4
-        rank_up:
-            from: "Black Diamond"
-            to: "Crown Diamond"
-        one_time_bonus:
-            amount: "5777000.00"
-            description: "Bonus"
-        period: "year"
-
-    - id: 20000000
-        amount: "70000000.00"
-        reentry_amount: "20000000.00"
-        next_matrix: 70000000
-        monthly_limit: null
-        yearly_limit: 3
-        rank_up:
-            from: "Crown Diamond"
-            to: "Blue Crown"
-        one_time_bonus:
-            amount: "9777000.00"
-            description: "Bonus"
-        period: "year"
-
-    - id: 70000000
-        amount: "210000000.00"
-        reentry_amount: "70000000.00"
-        next_matrix: 210000000
-        monthly_limit: null
-        yearly_limit: 1
-        rank_up:
-            from: "Blue Crown"
-            to: "Red Crown"
-        one_time_bonus:
-            amount: "27777000.00"
-            description: "Bonus"
-        period: "year"
-
-    - id: 210000000
-        amount: "0.00"
-        reentry_amount: "210000000.00"
-        next_matrix: null
-        monthly_limit: null
-        yearly_limit: 1
-        rank_up:
-            from: "Red Crown"
-            to: "Black Crown"
-        one_time_bonus:
-            amount: "47777000.00"
-            description: "Bonus"
-        period: "year"
+# End of matrices
 
 notes: |
     This YAML file defines the forced-matrix plan. Keep the plan as pure YAML.
     Implementation code and examples are stored under `backend/mlm/examples/`.
-    # virtual balance for bonuses, etc.
-
-    virtual_balance = Column(Numeric(18, 2), default=0)
+    Virtual balance column and other DB notes can go here.
 

@@ -22,4 +22,13 @@ try:
 except Exception:
     pass
 
+try:
+    from . import sponsorship
+except Exception:
+    pass
+
+try:
+    from . import frozen_crypto
+except Exception:
+    pass
 

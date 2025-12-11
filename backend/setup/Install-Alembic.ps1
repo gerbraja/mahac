@@ -1,13 +1,13 @@
 <#
 .SYNOPSIS
-  Script de instalación para el backend: crea un virtualenv, instala dependencias (incluye alembic)
+  Script installation for the backend: create a virtualenv, install dependencies (including alembic)
 
 .DESCRIPTION
-  Ejecuta los pasos mínimos para dejar el backend listo para ejecutar Alembic y las migraciones.
-  Diseñado para PowerShell en Windows.
+  Execute the minimum steps to get the backend ready to run Alembic and migrations.
+Designed for PowerShell on Windows.
 
 USAGE
-  Desde la carpeta `backend` ejecutar:
+From the `backend` folder, run:
     .\setup\Install-Alembic.ps1
 
 #>
@@ -22,23 +22,23 @@ function ExitWithError($msg){
     exit 1
 }
 
-Write-Host "== Install-Alembic: Preparando entorno en carpeta backend =="
+Write-Host "== Install-Alembic: Preparing environment in backend folder =="
 
 # Ensure Python is available
 try {
     python --version > $null 2>&1
 } catch {
-    ExitWithError "Python no está disponible en PATH. Instala Python 3.9+ y vuelve a intentarlo."
+    ExitWithError "Python is not available in PATH. Install Python 3.9+ and try again."
 }
 
 if (-not (Test-Path $VenvPath)) {
-    Write-Host "Creando virtualenv en $VenvPath..."
+    Write-Host "Creating virtualenv in $VenvPath..."
     python -m venv $VenvPath
 } else {
-    Write-Host "Virtualenv ya existe en $VenvPath; se reutilizará."
+    Write-Host "Virtualenv already exists in $VenvPath; reusing."
 }
 
-Write-Host "Activando virtualenv..."
+Write-Host "Activating virtualenv..."
 try {
     # Allow script execution temporarily for activation
     Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force

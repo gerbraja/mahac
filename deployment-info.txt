@@ -1,0 +1,6 @@
+﻿Deployment completed: 12/09/2025 20:51:27
+Project ID: tei-mlm-prod
+Region: southamerica-east1
+Backend URL: 
+Frontend URL: https://storage.googleapis.com/tuempresainternacional-frontend/index.html
+Database Connection: tei-mlm-prod:southamerica-east1:mlm-db

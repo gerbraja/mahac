@@ -8,7 +8,7 @@ class OrderItem(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     order_id = Column(Integer, ForeignKey("orders.id"), nullable=False, index=True)
-    product_id = Column(Integer, nullable=False)
+    product_id = Column(Integer, ForeignKey("products.id"), nullable=False)
     product_name = Column(String(255), nullable=False)
     quantity = Column(Integer, nullable=False, default=1)
     subtotal_usd = Column(Float, nullable=False, default=0.0)
@@ -16,3 +16,4 @@ class OrderItem(Base):
     subtotal_pv = Column(Float, nullable=False, default=0.0)
 
     order = relationship("Order", back_populates="items")
+    product = relationship("backend.database.models.product.Product")

@@ -1,0 +1,84 @@
+categories:
+  - code: ropa
+    name: Ropa y Accesorios
+    description: "Prendas de vestir y accesorios para hombre, mujer y niños"
+
+  - code: calzado
+    name: Calzado
+    description: "Zapatos, sandalias, botas y complementos"
+
+  - code: electronica
+    name: Electrónica
+    description: "Teléfonos, audio, televisores y gadgets"
+
+  - code: informatica
+    name: Informática
+    description: "Computadoras, portátiles, tablets y componentes"
+
+  - code: telefonia
+    name: Telefonía y Accesorios
+    description: "Móviles, fundas, cargadores y auriculares"
+
+  - code: hogar
+    name: Hogar y Decoración
+    description: "Muebles, decoración, textiles y complementos para el hogar"
+
+  - code: cocina
+    name: Cocina y Electrodomésticos
+    description: "Pequeños y grandes electrodomésticos, utensilios y menaje"
+
+  - code: belleza
+    name: Belleza y Cuidado Personal
+    description: "Cosméticos, cuidado facial y capilar, perfumes"
+
+  - code: salud
+    name: Salud y Bienestar
+    description: "Vitaminas, suplementos y aparatos de cuidado personal"
+
+  - code: alimentos
+    name: Alimentos y Bebidas
+    description: "Productos alimenticios, bebidas y snacks"
+
+  - code: bebes
+    name: Bebés y Maternidad
+    description: "Ropa de bebé, cochecitos, alimentación infantil y accesorios"
+
+  - code: juguetes
+    name: Juguetes y Juegos
+    description: "Juguetes educativos, juegos de mesa, figuras y complementos"
+
+  - code: deportes
+    name: Deportes y Aire Libre
+    description: "Equipo deportivo, artículos de camping y accesorios de actividades"
+
+  - code: mascota
+    name: Mascotas y Animales
+    description: "Comida, accesorios y productos para mascotas"
+
+  - code: libros
+    name: Libros y Educación
+    description: "Libros, ebooks, material educativo y de referencia"
+
+  - code: musica
+    name: Música e Instrumentos
+    description: "Instrumentos musicales, equipos de audio y accesorios"
+
+  - code: arte
+    name: Arte y Manualidades
+    description: "Suministros de arte, manualidades y materiales creativos"
+
+  - code: automovil
+    name: Automovilismo
+    description: "Accesorios para vehículos, herramientas y equipos"
+
+  - code: oficina
+    name: Oficina y Papelería
+    description: "Artículos de oficina, papelería y equipo de trabajo"
+
+  - code: jardin
+    name: Jardín y Plantas
+    description: "Plantas, semillas, herramientas de jardín y abonos"
+
+  - code: otros
+    name: Otros
+    description: "Productos varios y artículos diversos"

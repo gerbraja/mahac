@@ -1,0 +1,37 @@
+/* Force sidebar layout */
+aside {
+    background-color: white !important;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
+    border-right: 1px solid #e5e7eb !important;
+    position: relative !important;
+    display: block !important;
+    transition: width 0.3s ease !important;
+}
+
+/* Expanded sidebar (default) */
+aside:not([data-collapsed="true"]) {
+    width: 288px !important;
+    min-width: 288px !important;
+    max-width: 288px !important;
+}
+
+/* Collapsed sidebar */
+aside[data-collapsed="true"] {
+    width: 80px !important;
+    min-width: 80px !important;
+    max-width: 80px !important;
+}
+
+/* Ensure flex layout */
+.dashboard-container {
+    display: flex !important;
+    flex-direction: row !important;
+    min-height: 100vh !important;
+}
+
+/* Main content area */
+.main-content {
+    flex: 1 !important;
+    overflow: auto !important;
+    padding: 1.5rem !important;
+}

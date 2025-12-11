@@ -1,0 +1,643 @@
+import React, { useState, useEffect } from 'react';
+import { api } from '../../api/api';
+import './AdminDashboard.css';
+
+import AdminPayments from './AdminPayments';
+import AdminUsers from './AdminUsers';
+
+const AdminDashboard = () => {
+    const [activeTab, setActiveTab] = useState('products');
+    const [products, setProducts] = useState([]);
+    const [formData, setFormData] = useState({
+        name: '',
+        description: '',
+        category: '',
+        price_usd: 0,
+        price_local: 0,
+        pv: 0,
+        stock: 0,
+        weight_grams: 500,
+        is_activation: false,
+        image_url: ''
+    });
+    const [editingId, setEditingId] = useState(null);
+    const [stats, setStats] = useState({
+        totalUsers: '-',
+        activeUsers: '-',
+        totalProducts: '-',
+        pendingPayments: '-'
+    });
+    const [loadingStats, setLoadingStats] = useState(true);
+    const [statsError, setStatsError] = useState(null);
+    const [showActivationModal, setShowActivationModal] = useState(false);
+    const [activationData, setActivationData] = useState({ userId: '', packageAmount: '100' });
+    const [activating, setActivating] = useState(false);
+    const [activationResult, setActivationResult] = useState(null);
+
+    useEffect(() => {
+        fetchStats();
+        if (activeTab === 'products') {
+            fetchProducts();
+        }
+    }, [activeTab]);
+
+    const handleActivateUser = async () => {
+        if (!activationData.userId) {
+            alert('Por favor ingresa el ID del usuario');
+            return;
+        }
+
+        setActivating(true);
+        setActivationResult(null);
+
+        try {
+            const response = await api.post('/api/admin/activate-user', {
+                user_id: parseInt(activationData.userId),
+                package_amount: parseFloat(activationData.packageAmount)
+            });
+
+            setActivationResult({
+                success: true,
+                message: response.data.message,
+                data: response.data
+            });
+
+            // Refresh stats
+            fetchStats();
+        } catch (error) {
+            setActivationResult({
+                success: false,
+                message: error.response?.data?.detail || 'Error al activar usuario'
+            });
+        } finally {
+            setActivating(false);
+        }
+    };
+
+    const fetchStats = async () => {
+        setLoadingStats(true);
+        setStatsError(null);
+        try {
+            const [usersRes, productsRes, paymentsRes] = await Promise.allSettled([
+                api.get('/api/admin/users'),
+                api.get('/api/products/'),
+                api.get('/api/admin/pending-payments')
+            ]);
+
+            const newStats = { ...stats };
+
+            if (usersRes.status === 'fulfilled') {
+                const users = usersRes.value.data;
+                newStats.totalUsers = users.length;
+                newStats.activeUsers = users.filter(u => u.status === 'active').length;
+            } else {
+                console.error("Error fetching users for stats:", usersRes.reason);
+            }
+
+            if (productsRes.status === 'fulfilled') {
+                newStats.totalProducts = productsRes.value.data.length;
+            } else {
+                console.error("Error fetching products for stats:", productsRes.reason);
+            }
+
+            if (paymentsRes.status === 'fulfilled') {
+                newStats.pendingPayments = paymentsRes.value.data.length;
+            } else {
+                console.error("Error fetching payments for stats:", paymentsRes.reason);
+            }
+
+            setStats(newStats);
+        } catch (error) {
+            console.error("Error fetching stats:", error);
+            setStatsError("Error loading statistics");
+        } finally {
+            setLoadingStats(false);
+        }
+    };
+
+    const fetchProducts = async () => {
+        try {
+            const res = await api.get('/api/products/');
+            setProducts(res.data);
+        } catch (error) {
+            console.error("Error fetching products", error);
+        }
+    };
+
+    const handleChange = (e) => {
+        const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
+        setFormData({ ...formData, [e.target.name]: value });
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+
+        // Ensure numeric values are numbers
+        const payload = {
+            ...formData,
+            price_usd: parseFloat(formData.price_usd),
+            price_local: parseFloat(formData.price_local || 0),
+            pv: parseInt(formData.pv || 0),
+            stock: parseInt(formData.stock || 0),
+            weight_grams: parseInt(formData.weight_grams || 500)
+        };
+
+        try {
+            if (editingId) {
+                await api.put(`/api/products/${editingId}`, payload);
+            } else {
+                await api.post('/api/products/', payload);
+            }
+            setFormData({
+                name: '', description: '', category: '', price_usd: 0, price_local: 0, pv: 0, stock: 0, weight_grams: 500, is_activation: false, image_url: ''
+            });
+            setEditingId(null);
+            fetchProducts();
+            fetchStats(); // Update stats after product change
+        } catch (error) {
+            console.error("Error saving product", error);
+            const errorMessage = error.response?.data?.detail || error.message || "Error saving product";
+            alert(`Error: ${errorMessage}`);
+        }
+    };
+
+    const handleEdit = (product) => {
+        setFormData(product);
+        setEditingId(product.id);
+    };
+
+    const handleDelete = async (id) => {
+        if (window.confirm("Are you sure?")) {
+            try {
+                await api.delete(`/api/products/${id}`);
+                fetchProducts();
+                fetchStats(); // Update stats after deletion
+            } catch (error) {
+                console.error("Error deleting product", error);
+            }
+        }
+    };
+
+    return (
+        <div className="p-6">
+            <h1 className="text-2xl font-bold mb-6">Admin Dashboard</h1>
+
+            {/* Statistics Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div className="bg-white p-6 rounded-xl shadow-md border-l-4 border-blue-500 flex items-center justify-between">
+                    <div>
+                        <p className="text-gray-500 text-sm font-medium uppercase">Total Usuarios</p>
+                        <p className="text-3xl font-bold text-gray-800">{stats.totalUsers}</p>
+                    </div>
+                    <div className="bg-blue-100 p-3 rounded-full text-blue-600 text-2xl">
+                        👥
+                    </div>
+                </div>
+
+                <div className="bg-white p-6 rounded-xl shadow-md border-l-4 border-purple-500 flex items-center justify-between">
+                    <div>
+                        <p className="text-gray-500 text-sm font-medium uppercase">Productos</p>
+                        <p className="text-3xl font-bold text-gray-800">{stats.totalProducts}</p>
+                    </div>
+                    <div className="bg-purple-100 p-3 rounded-full text-purple-600 text-2xl">
+                        📦
+                    </div>
+                </div>
+
+                <div className="bg-white p-6 rounded-xl shadow-md border-l-4 border-orange-500 flex items-center justify-between">
+                    <div>
+                        <p className="text-gray-500 text-sm font-medium uppercase">Pagos Pendientes</p>
+                        <p className="text-3xl font-bold text-gray-800">{stats.pendingPayments}</p>
+                    </div>
+                    <div className="bg-orange-100 p-3 rounded-full text-orange-600 text-2xl">
+                        💳
+                    </div>
+                </div>
+
+                <div className="bg-white p-6 rounded-xl shadow-md border-l-4 border-green-500 flex items-center justify-between">
+                    <div>
+                        <p className="text-gray-500 text-sm font-medium uppercase">Usuarios Activos</p>
+                        <p className="text-3xl font-bold text-gray-800">{stats.activeUsers}</p>
+                    </div>
+                    <div className="bg-green-100 p-3 rounded-full text-green-600 text-2xl">
+                        ✅
+                    </div>
+                </div>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="bg-white p-6 rounded-lg shadow-md mb-6">
+                <h3 className="text-lg font-semibold text-gray-700 mb-4">Acciones Rápidas</h3>
+                <div className="flex gap-4 flex-wrap">
+                    <button
+                        onClick={() => setShowActivationModal(true)}
+                        className="px-6 py-3 bg-green-500 text-white font-bold rounded-lg hover:bg-green-600 transition shadow-md"
+                    >
+                        ✅ Activar Usuario
+                    </button>
+                </div>
+            </div>
+
+            <div className="flex gap-4 mb-6 border-b">
+                <button
+                    className={`pb-2 px-4 ${activeTab === 'products' ? 'border-b-2 border-blue-600 font-bold text-blue-600' : 'text-gray-500'}`}
+                    onClick={() => setActiveTab('products')}
+                >
+                    Products
+                </button>
+                <button
+                    className={`pb-2 px-4 ${activeTab === 'users' ? 'border-b-2 border-blue-600 font-bold text-blue-600' : 'text-gray-500'}`}
+                    onClick={() => setActiveTab('users')}
+                >
+                    Users
+                </button>
+                <button
+                    className={`pb-2 px-4 ${activeTab === 'payments' ? 'border-b-2 border-blue-600 font-bold text-blue-600' : 'text-gray-500'}`}
+                    onClick={() => setActiveTab('payments')}
+                >
+                    Payment Approvals
+                </button>
+            </div>
+
+            {activeTab === 'users' && <AdminUsers />}
+            {activeTab === 'payments' && <AdminPayments />}
+            {activeTab === 'products' && (
+                <>
+                    <div className="bg-white p-6 rounded-lg shadow-md mb-8">
+                        <h2 className="text-xl font-semibold mb-4 text-gray-800">{editingId ? 'Editar Producto' : 'Crear Nuevo Producto'}</h2>
+                        <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+                            <div className="flex flex-col">
+                                <label className="text-sm font-medium text-gray-700 mb-1">Nombre del Producto</label>
+                                <input
+                                    name="name"
+                                    value={formData.name}
+                                    onChange={handleChange}
+                                    className="border border-gray-300 p-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                                    required
+                                />
+                            </div>
+
+                            <div className="flex flex-col">
+                                <label className="text-sm font-medium text-gray-700 mb-1">Categoría</label>
+                                <input
+                                    name="category"
+                                    value={formData.category}
+                                    onChange={handleChange}
+                                    className="border border-gray-300 p-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                                    required
+                                />
+                            </div>
+
+                            <div className="flex flex-col">
+                                <label className="text-sm font-medium text-gray-700 mb-1">Precio (USD)</label>
+                                <input
+                                    type="number"
+                                    name="price_usd"
+                                    value={formData.price_usd}
+                                    onChange={handleChange}
+                                    className="border border-gray-300 p-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                                    required
+                                />
+                            </div>
+
+                            <div className="flex flex-col">
+                                <label className="text-sm font-medium text-gray-700 mb-1">Precio (COP - Opcional)</label>
+                                <input
+                                    type="number"
+                                    name="price_local"
+                                    value={formData.price_local}
+                                    onChange={handleChange}
+                                    className="border border-gray-300 p-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                                />
+                            </div>
+
+                            <div className="flex flex-col">
+                                <label className="text-sm font-medium text-gray-700 mb-1">Puntos (PV)</label>
+                                <input
+                                    type="number"
+                                    name="pv"
+                                    value={formData.pv}
+                                    onChange={handleChange}
+                                    className="border border-gray-300 p-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                                />
+                            </div>
+
+                            <div className="flex flex-col">
+                                <label className="text-sm font-medium text-gray-700 mb-1">Stock Inicial</label>
+                                <input
+                                    type="number"
+                                    name="stock"
+                                    value={formData.stock}
+                                    onChange={handleChange}
+                                    className="border border-gray-300 p-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                                />
+                            </div>
+
+                            <div className="flex flex-col">
+                                <label className="text-sm font-medium text-gray-700 mb-1">Peso (gramos)</label>
+                                <input
+                                    type="number"
+                                    name="weight_grams"
+                                    value={formData.weight_grams}
+                                    onChange={handleChange}
+                                    placeholder="500"
+                                    className="border border-gray-300 p-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                                />
+                            </div>
+
+                            <div className="col-span-1 md:col-span-2 lg:col-span-3 flex flex-col">
+                                <label className="text-sm font-medium text-gray-700 mb-1">Descripción</label>
+                                <textarea
+                                    name="description"
+                                    value={formData.description}
+                                    onChange={handleChange}
+                                    rows="3"
+                                    className="border border-gray-300 p-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                                />
+                            </div>
+
+                            <div className="col-span-1 md:col-span-2 lg:col-span-3 flex flex-col">
+                                <label className="text-sm font-medium text-gray-700 mb-1">URL de Imagen</label>
+                                <input
+                                    type="url"
+                                    name="image_url"
+                                    value={formData.image_url}
+                                    onChange={handleChange}
+                                    placeholder="https://i.imgur.com/ejemplo.jpg"
+                                    className="border border-gray-300 p-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                                />
+                                <p className="text-xs text-gray-500 mt-1">Sube tu imagen a Imgur y pega la URL aquí</p>
+                                {formData.image_url && (
+                                    <div className="mt-3 admin-product-preview">
+                                        <p className="text-sm font-medium text-gray-700 mb-2">Vista Previa:</p>
+                                        <div className="admin-preview-container">
+                                            <img
+                                                src={formData.image_url}
+                                                alt="Preview"
+                                                onError={(e) => {
+                                                    e.target.style.display = 'none';
+                                                    e.target.parentElement.nextSibling.style.display = 'block';
+                                                }}
+                                            />
+                                        </div>
+                                        <p className="text-xs text-red-500 mt-1" style={{ display: 'none' }}>No se pudo cargar la imagen. Verifica la URL.</p>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="col-span-1 md:col-span-2 lg:col-span-3 flex items-center gap-3 p-4 bg-gray-50 rounded border border-gray-200">
+                                <input
+                                    type="checkbox"
+                                    id="is_activation"
+                                    name="is_activation"
+                                    checked={formData.is_activation}
+                                    onChange={handleChange}
+                                    className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                                />
+                                <label htmlFor="is_activation" className="text-gray-700 font-medium cursor-pointer">
+                                    ¿Es un Producto de Activación? (Paquete de Inicio)
+                                </label>
+                            </div>
+
+                            <div className="col-span-1 md:col-span-2 lg:col-span-3">
+                                <button
+                                    type="submit"
+                                    className={`w-full py-3 px-4 rounded-lg font-bold text-white transition shadow-md ${editingId
+                                        ? 'bg-yellow-500 hover:bg-yellow-600'
+                                        : 'bg-blue-600 hover:bg-blue-700'
+                                        }`}
+                                >
+                                    {editingId ? '💾 Actualizar Producto' : '➕ Crear Producto'}
+                                </button>
+                                {editingId && (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setEditingId(null);
+                                            setFormData({
+                                                name: '', description: '', category: '', price_usd: 0, price_local: 0, pv: 0, stock: 0, is_activation: false, image_url: '', weight_grams: 500
+                                            });
+                                        }}
+                                        className="w-full mt-2 py-2 px-4 rounded-lg font-medium text-gray-600 bg-gray-200 hover:bg-gray-300 transition"
+                                    >
+                                        Cancelar Edición
+                                    </button>
+                                )}
+                            </div>
+                        </form>
+                    </div>
+
+                    <div className="bg-white rounded-lg shadow-md overflow-hidden">
+                        <div className="p-4 border-b bg-gray-50">
+                            <h2 className="text-lg font-semibold text-gray-700">Lista de Productos</h2>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left border-collapse">
+                                <thead className="bg-gray-100 text-gray-600 uppercase text-xs font-bold">
+                                    <tr>
+                                        <th className="p-4 border-b">Imagen</th>
+                                        <th className="p-4 border-b">Nombre</th>
+                                        <th className="p-4 border-b">Categoría</th>
+                                        <th className="p-4 border-b">Precio USD</th>
+                                        <th className="p-4 border-b">PV</th>
+                                        <th className="p-4 border-b text-center">Activación</th>
+                                        <th className="p-4 border-b text-right">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-200">
+                                    {products.length === 0 ? (
+                                        <tr>
+                                            <td colSpan="7" className="p-8 text-center text-gray-500">
+                                                No hay productos registrados aún.
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        products.map(p => (
+                                            <tr key={p.id} className="hover:bg-blue-50 transition">
+                                                <td className="p-4">
+                                                    {p.image_url ? (
+                                                        <div className="admin-image-container admin-product-table">
+                                                            <img
+                                                                src={p.image_url}
+                                                                alt={p.name}
+                                                                onError={(e) => {
+                                                                    e.target.style.display = 'none';
+                                                                    e.target.parentElement.innerHTML = '📦';
+                                                                }}
+                                                            />
+                                                        </div>
+                                                    ) : (
+                                                        <div className="admin-image-container">
+                                                            📦
+                                                        </div>
+                                                    )}
+                                                </td>
+                                                <td className="p-4 font-medium text-gray-800">{p.name}</td>
+                                                <td className="p-4 text-gray-600">
+                                                    <span className="bg-gray-200 text-gray-700 py-1 px-2 rounded text-xs">
+                                                        {p.category}
+                                                    </span>
+                                                </td>
+                                                <td className="p-4 text-green-600 font-bold">${p.price_usd}</td>
+                                                <td className="p-4 text-gray-600">{p.pv}</td>
+                                                <td className="p-4 text-center">
+                                                    {p.is_activation ? (
+                                                        <span className="bg-green-100 text-green-800 py-1 px-2 rounded-full text-xs font-bold">
+                                                            SI
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-gray-400 text-xs">-</span>
+                                                    )}
+                                                </td>
+                                                <td className="p-4 text-right space-x-2">
+                                                    <button
+                                                        onClick={() => handleEdit(p)}
+                                                        className="text-blue-600 hover:text-blue-800 font-medium text-sm transition"
+                                                    >
+                                                        ✏️ Editar
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDelete(p.id)}
+                                                        className="text-red-500 hover:text-red-700 font-medium text-sm transition"
+                                                    >
+                                                        🗑️ Eliminar
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </>
+            )}
+
+            {/* Activation Modal */}
+            {showActivationModal && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: 'rgba(0,0,0,0.5)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 1000
+                }}>
+                    <div style={{
+                        background: 'white',
+                        borderRadius: '1rem',
+                        padding: '2rem',
+                        maxWidth: '500px',
+                        width: '90%',
+                        maxHeight: '90vh',
+                        overflow: 'auto'
+                    }}>
+                        <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#1e3a8a', marginBottom: '1.5rem' }}>
+                            Activar Usuario Manualmente
+                        </h3>
+
+                        <div style={{ marginBottom: '1rem' }}>
+                            <label style={{ display: 'block', color: '#374151', fontWeight: '500', marginBottom: '0.5rem' }}>
+                                ID del Usuario
+                            </label>
+                            <input
+                                type="number"
+                                value={activationData.userId}
+                                onChange={(e) => setActivationData({ ...activationData, userId: e.target.value })}
+                                placeholder="Ej: 2"
+                                style={{
+                                    width: '100%',
+                                    padding: '0.75rem',
+                                    border: '1px solid #d1d5db',
+                                    borderRadius: '0.5rem',
+                                    fontSize: '1rem'
+                                }}
+                            />
+                        </div>
+
+                        <div style={{ marginBottom: '1.5rem' }}>
+                            <label style={{ display: 'block', color: '#374151', fontWeight: '500', marginBottom: '0.5rem' }}>
+                                Monto del Paquete (USD)
+                            </label>
+                            <input
+                                type="number"
+                                value={activationData.packageAmount}
+                                onChange={(e) => setActivationData({ ...activationData, packageAmount: e.target.value })}
+                                placeholder="100"
+                                style={{
+                                    width: '100%',
+                                    padding: '0.75rem',
+                                    border: '1px solid #d1d5db',
+                                    borderRadius: '0.5rem',
+                                    fontSize: '1rem'
+                                }}
+                            />
+                        </div>
+
+                        {activationResult && (
+                            <div style={{
+                                padding: '1rem',
+                                borderRadius: '0.5rem',
+                                marginBottom: '1rem',
+                                background: activationResult.success ? '#d1fae5' : '#fee2e2',
+                                border: `1px solid ${activationResult.success ? '#10b981' : '#ef4444'}`,
+                                color: activationResult.success ? '#065f46' : '#991b1b'
+                            }}>
+                                <p style={{ fontWeight: '600', marginBottom: '0.5rem' }}>{activationResult.message}</p>
+                                {activationResult.success && activationResult.data && (
+                                    <div style={{ fontSize: '0.875rem' }}>
+                                        <p>Membresía: {activationResult.data.membership_code}</p>
+                                        <p>Comisiones generadas: {activationResult.data.total_commissions_generated}</p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+                            <button
+                                onClick={() => {
+                                    setShowActivationModal(false);
+                                    setActivationResult(null);
+                                    setActivationData({ userId: '', packageAmount: '100' });
+                                }}
+                                style={{
+                                    padding: '0.75rem 1.5rem',
+                                    background: '#6b7280',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '0.5rem',
+                                    cursor: 'pointer',
+                                    fontWeight: '500'
+                                }}
+                            >
+                                Cerrar
+                            </button>
+                            <button
+                                onClick={handleActivateUser}
+                                disabled={activating}
+                                style={{
+                                    padding: '0.75rem 1.5rem',
+                                    background: activating ? '#9ca3af' : '#10b981',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '0.5rem',
+                                    cursor: activating ? 'not-allowed' : 'pointer',
+                                    fontWeight: '600'
+                                }}
+                            >
+                                {activating ? 'Activando...' : 'Activar Usuario'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+export default AdminDashboard;

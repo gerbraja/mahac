@@ -10,5 +10,6 @@ python-jose[cryptography]
 pyyaml
 requests
 pytest
-python-jose[cryptography]
+python-multipart
+argon2-cffi
 

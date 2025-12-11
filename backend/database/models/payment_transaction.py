@@ -14,7 +14,9 @@ class PaymentTransaction(Base):
     currency = Column(String(10), nullable=False, default="COP")
     status = Column(String(50), default="pending")  # pending, success, failed
     idempotency_key = Column(String(255), nullable=True)
-    metadata = Column(JSON, nullable=True)
+    # avoid using attribute name `metadata` because SQLAlchemy reserves it on declarative
+    # classes; keep DB column name as 'metadata' for compatibility with existing migrations
+    metadata_json = Column('metadata', JSON, nullable=True)
     raw_payload = Column(JSON, nullable=True)
     processed_event_id = Column(String(255), nullable=True, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

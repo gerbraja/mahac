@@ -17,6 +17,7 @@ def list_users(db: Session = Depends(get_db)):
             "monthly_earnings": u.monthly_earnings,
             "total_earnings": u.total_earnings,
             "available_balance": u.available_balance,
+            "crypto_balance": u.crypto_balance,
         }
         for u in users
     ]

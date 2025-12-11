@@ -10,7 +10,11 @@ class ProductBase(BaseModel):
     price_usd: float
     price_eur: Optional[float] = None
     price_local: Optional[float] = None
+    pv: int = 0
     stock: int = 0
+    weight_grams: int = 500  # Weight in grams
+    is_activation: bool = False
+    image_url: Optional[str] = None  # URL of product image
 
 
 class ProductCreate(ProductBase):
@@ -24,6 +28,6 @@ class Product(ProductBase):
     updated_at: Optional[datetime] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True  # Pydantic v2 syntax (was orm_mode in v1)
 
 

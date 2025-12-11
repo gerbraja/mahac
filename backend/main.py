@@ -1,14 +1,23 @@
+import os
+import sys
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-import os
-from backend.database.connection import Base, engine
-from backend.database.models.user import User
-from sqlalchemy import text
 
+from sqlalchemy import text
+from backend.database.connection import Base, engine
+from backend.routers.payments import router as payments_router
+from backend.routers import wallet
+from backend.routers import admin
+from backend.routers import categories as categories_router
+from backend.routers import auth
+from backend.routers import binary
+
+# CREATE TABLES AUTOMATICALLY - DISABLED FOR DEBUG
 # ========================================================
-# CREATE TABLES AUTOMATICALLY
-# ========================================================
-Base.metadata.create_all(bind=engine)
+# if os.getenv("TESTING") != "true":
+#     print("[MAIN] before Base.metadata.create_all()")
+#     Base.metadata.create_all(bind=engine)
+#     print("[MAIN] after Base.metadata.create_all()")
 
 # Ensure Postgres sequence for membership numbers exists (safe to run on startup)
 try:
@@ -29,6 +38,11 @@ app = FastAPI(
     version="1.0.0",
 )
 
+
+@app.on_event("startup")
+def _log_startup():
+    print("[MAIN] FastAPI startup event fired")
+
 # ========================================================
 # CORS - allow frontend development origins
 # ========================================================
@@ -44,6 +58,8 @@ FRONTEND_ORIGINS = [
     "http://127.0.0.1:3000",
     "http://localhost:5173",
     "http://127.0.0.1:5173",
+    "https://tuempresainternacional.com",
+    "https://www.tuempresainternacional.com",
 ]
 
 # Allow overriding/adding via environment variables
@@ -57,48 +73,89 @@ env_next_public = os.getenv("NEXT_PUBLIC_API_BASE")
 if env_next_public:
     FRONTEND_ORIGINS.append(env_next_public)
 
+# Production: Allow comma-separated list of origins
+env_allowed_origins = os.getenv("ALLOWED_ORIGINS")
+if env_allowed_origins:
+    origins_list = [origin.strip() for origin in env_allowed_origins.split(",") if origin.strip()]
+    FRONTEND_ORIGINS.extend(origins_list)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=FRONTEND_ORIGINS,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 # ========================================================
-# IMPORT AND REGISTER ROUTERS
-# ========================================================
-from backend.routers import users, products, cart, orders, mlm
-from backend.routers import mlm_plans_router, unilevel_router, binary_router
-from backend.routers import ws_notifications, honor_router
-from backend.routers import categories as categories_router
-from backend.routers import payments as payments_router
-
-app.include_router(users.router, prefix="/api/users", tags=["Users"])
-app.include_router(products.router, prefix="/api/products", tags=["Products"])
-app.include_router(cart.router, prefix="/api/cart", tags=["Cart"])
-app.include_router(orders.router, prefix="/api/orders", tags=["Orders"])
-app.include_router(mlm.router, prefix="/api/mlm", tags=["MLM"])
-app.include_router(mlm_plans_router, prefix="/api/mlm/plans", tags=["MLM Plans"])
-# Register the unilevel router (it already has its internal prefix)
-app.include_router(unilevel_router)
-# Register the binary router (binary plan endpoints)
-app.include_router(binary_router)
-# Register websocket notifications router (contains websocket endpoint and test POST)
-app.include_router(ws_notifications)
-
-# Honor ranks endpoints (router already sets its internal prefix)
-app.include_router(honor_router)
-
 # Payments router (webhook + create/get endpoints)
 app.include_router(payments_router)
 
+# Wallet router
+app.include_router(wallet.router, prefix="/api")
+
+# Admin router (Manual Triggers)
+app.include_router(admin.router)
+
 # Categories router (mounted under /api/categories)
-app.include_router(categories_router.router, prefix="/api/categories", tags=["Categories"])
+app.include_router(categories_router.router, prefix="/api", tags=["Categories"])
+
+# Products router
+from backend.routers import products
+app.include_router(products.router, prefix="/api")
+
+# Orders router
+from backend.routers import orders
+app.include_router(orders.router)
+
+# Auth router (registration and login)
+app.include_router(auth.router)
+
+# Binary router (pre-registration in binary plan)
+# Binary router (pre-registration in binary plan)
+app.include_router(binary.router, prefix="/api")
+
+# Millionaire router (Binary Millionaire plan)
+from backend.routers import millionaire
+app.include_router(millionaire.router)
+
+# Forced Matrix router (9-level matrix system)
+from backend.routers import forced_matrix
+app.include_router(forced_matrix.router)
+
+# Unilevel router (7-level unilevel system)
+from backend.routers import unilevel
+app.include_router(unilevel.router)
+
+# Marketing router (bubbles)
+from backend.routers import marketing
+app.include_router(marketing.router)
+
+# WebSocket notifications
+from backend.routers.ws_notifications import router as ws_notifications_router
+app.include_router(ws_notifications_router)
+
+# Public stats (for homepage)
+from backend.routers import public_stats
+app.include_router(public_stats.router)
 
 # ========================================================
 # TEST ENDPOINT
 # ========================================================
 @app.get("/")
 def root():
-    return {"message": "Welcome to the TEI Shopping Center Backend 🚀"}
+    return {"message": "Welcome to the TEI Shopping Center Backend 🚀", "version": "1.0.1"}
+
+@app.get("/debug-db")
+def debug_db():
+    from backend.database.connection import DATABASE_URL
+    import os
+    db_path = "Unknown"
+    if "sqlite" in DATABASE_URL and "///" in DATABASE_URL:
+        path_part = DATABASE_URL.split("///")[1]
+        db_path = os.path.abspath(path_part)
+    return {
+        "DATABASE_URL": DATABASE_URL,
+        "RESOLVED_DB_PATH": db_path,
+        "CWD": os.getcwd()
+    }
