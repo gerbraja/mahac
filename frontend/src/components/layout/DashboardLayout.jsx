@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, Outlet, useLocation, Navigate } from 'react-router-dom';
 import TeiLogo from '../TeiLogo';
 import './DashboardLayout.css';
@@ -6,7 +6,25 @@ import './DashboardLayout.css';
 const DashboardLayout = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const location = useLocation();
+
+  useEffect(() => {
+    const checkAdmin = () => {
+      const token = localStorage.getItem('access_token');
+      if (!token) return;
+      try {
+        // Simple JWT decode to check is_admin claim
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        if (payload.is_admin) {
+          setIsAdmin(true);
+        }
+      } catch (e) {
+        console.error("Error checking admin status", e);
+      }
+    };
+    checkAdmin();
+  }, []);
 
   // Check authentication
   const token = localStorage.getItem('access_token');
@@ -28,7 +46,19 @@ const DashboardLayout = () => {
     { to: '/dashboard/qualified-ranks', icon: '🏆', label: 'Rangos Calificación', gradient: 'from-purple-500 to-purple-600' },
     { to: '/dashboard/honor-ranks', icon: '🎖️', label: 'Rangos Honor', gradient: 'from-emerald-500 to-emerald-600' },
     { to: '/dashboard/orders', icon: '📦', label: 'Mis Pedidos', gradient: 'from-orange-500 to-orange-600' },
+    { to: '/dashboard/orders', icon: '📦', label: 'Mis Pedidos', gradient: 'from-orange-500 to-orange-600' },
   ];
+
+  // Add Admin Link if user is admin
+  if (isAdmin) {
+    navItems.unshift({
+      to: '/admin',
+      icon: '🛡️',
+      label: 'Panel Admin',
+      gradient: 'from-slate-700 to-slate-900',
+      className: 'admin-link' // Optional custom class
+    });
+  }
 
   const isActive = (path) => location.pathname === path;
 

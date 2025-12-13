@@ -13,10 +13,6 @@ export default function Cart() {
   const [shippingAddress, setShippingAddress] = useState("");
   const [shippingCity, setShippingCity] = useState("");
 
-  // Discount code
-  const [discountCode, setDiscountCode] = useState("");
-  const [discountApplied, setDiscountApplied] = useState(null);
-
   // Calculate totals
   const totalPV = cart.reduce((sum, p) => sum + (p.pv || 0) * p.quantity, 0);
 
@@ -49,24 +45,8 @@ export default function Cart() {
   // Convert shipping cost to USD (removed as we only use COP)
   // const shippingCostUSD = shippingCostCOP / 4000;
 
-  const discountAmount = discountApplied ? (subtotalCOP * discountApplied.percentage / 100) : 0;
-
   // Final total
-  const totalCOP = subtotalCOP + shippingCostCOP - discountAmount;
-
-  const handleApplyDiscount = () => {
-    // Simulate discount validation
-    if (discountCode.toUpperCase() === "BIENVENIDO10") {
-      setDiscountApplied({ code: "BIENVENIDO10", percentage: 10 });
-      setMessage("✅ Código de descuento aplicado: 10% de descuento");
-    } else if (discountCode.toUpperCase() === "PROMO20") {
-      setDiscountApplied({ code: "PROMO20", percentage: 20 });
-      setMessage("✅ Código de descuento aplicado: 20% de descuento");
-    } else {
-      setMessage("❌ Código de descuento inválido");
-      setDiscountApplied(null);
-    }
-  };
+  const totalCOP = subtotalCOP + shippingCostCOP;
 
   const navigate = useNavigate();
 
@@ -99,8 +79,6 @@ export default function Cart() {
       const res = await api.post("/api/orders/", payload);
       // Success - Redirect to confirmation
       clearCart();
-      setDiscountApplied(null);
-      setDiscountCode("");
       navigate(`/order-confirmation/${res.data.id}`);
 
     } catch (error) {
@@ -274,29 +252,6 @@ export default function Cart() {
             <div className="bg-white rounded-lg shadow-md p-6 sticky top-6">
               <h2 className="text-xl font-bold text-gray-800 mb-4">Resumen del Pedido</h2>
 
-              {/* Discount Code */}
-              <div className="mb-4 pb-4 border-b">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Código de Descuento</label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={discountCode}
-                    onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
-                    placeholder="CÓDIGO"
-                    className="flex-1 p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
-                  />
-                  <button
-                    onClick={handleApplyDiscount}
-                    className="px-4 py-2 bg-gray-800 text-white rounded hover:bg-gray-900 font-medium"
-                  >
-                    Aplicar
-                  </button>
-                </div>
-                {discountApplied && (
-                  <p className="text-sm text-green-600 mt-2">✅ {discountApplied.code} aplicado ({discountApplied.percentage}% desc.)</p>
-                )}
-              </div>
-
               {/* Price Breakdown */}
               <div className="space-y-3 mb-4">
                 <div className="flex justify-between text-gray-700">
@@ -310,13 +265,6 @@ export default function Cart() {
                   <span>Envío</span>
                   <span>{shippingCostCOP === 0 ? 'GRATIS' : `$${shippingCostCOP.toLocaleString()} COP`}</span>
                 </div>
-
-                {discountApplied && (
-                  <div className="flex justify-between text-green-600 font-medium">
-                    <span>Descuento ({discountApplied.percentage}%)</span>
-                    <span>-${discountAmount.toFixed(2)}</span>
-                  </div>
-                )}
 
                 <div className="flex justify-between text-blue-600 font-medium">
                   <span>Puntos Totales (PV)</span>

@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 const EducationView = () => {
     return (
@@ -15,15 +16,15 @@ const EducationView = () => {
                 <div className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
                     <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-6">
                         <div className="text-white text-4xl mb-2">🎓</div>
-                        <h3 className="text-white font-bold text-xl">Introducción a TEI</h3>
+                        <h3 className="text-white font-bold text-xl">Presentación de Negocio</h3>
                     </div>
                     <div className="p-6">
                         <p className="text-gray-600 mb-4">
-                            Aprende los fundamentos del negocio, cómo funciona el plan de compensación y cómo empezar.
+                            Descubre el ecosistema completo de TEI y cómo construir tu libertad financiera.
                         </p>
-                        <button className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">
-                            Comenzar Curso
-                        </button>
+                        <Link to="/opportunity" className="block w-full text-center bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 px-4 rounded-lg hover:scale-105 transition-transform font-bold shadow-lg">
+                            🚀 Tu Libertad Financiera
+                        </Link>
                     </div>
                 </div>
 

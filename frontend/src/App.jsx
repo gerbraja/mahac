@@ -17,6 +17,7 @@ import StoreView from './pages/dashboard/StoreView';
 import DashboardHome from './pages/dashboard/DashboardHome';
 import AdminDashboard from './pages/dashboard/AdminDashboard';
 import Login from './pages/Login';
+import Opportunity from './pages/Opportunity';
 import Personal from './pages/Personal';
 import OrderConfirmation from './pages/OrderConfirmation';
 import QualifiedRanksView from './pages/dashboard/QualifiedRanksView';
@@ -50,6 +51,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/opportunity" element={<Opportunity />} />
         <Route path="/personal" element={<Personal />} />
         <Route path="/usuario/:username" element={<ReferralRedirect />} />
         <Route path="/complete-registration" element={<CompleteRegistration />} />

@@ -71,13 +71,21 @@ export default function AdminUsers() {
         }
     };
 
-    const handleDelete = async (userId) => {
-        if (!window.confirm('¿Estás seguro de eliminar este usuario? Esta acción no se puede deshacer.')) {
+    const handleDelete = async (user) => {
+        const confirmMsg = `⚠️ ¿Desea BORRAR este usuario?
+
+Nombre: ${user.name}
+Usuario: ${user.username}
+Email: ${user.email}
+
+❌ Esta acción NO se puede deshacer.`;
+
+        if (!window.confirm(confirmMsg)) {
             return;
         }
 
         try {
-            await api.delete(`/api/admin/users/${userId}`);
+            await api.delete(`/api/admin/users/${user.id}`);
             setMessage('Usuario eliminado exitosamente');
             fetchUsers(search);
             setTimeout(() => setMessage(''), 3000);
@@ -85,6 +93,38 @@ export default function AdminUsers() {
             const errorMsg = error.response?.data?.detail || 'Error al eliminar usuario';
             setMessage(errorMsg);
             alert('Error: ' + errorMsg);
+        }
+    };
+
+    const handlePasswordReset = async (user) => {
+        const newPassword = window.prompt(`Ingresa la nueva contraseña para ${user.name}:`);
+        if (newPassword === null) return; // Cancelled
+        if (newPassword.length < 6) {
+            alert("La contraseña debe tener al menos 6 caracteres.");
+            return;
+        }
+
+        try {
+            await api.put(`/api/admin/users/${user.id}/reset-password`, { newPassword });
+            alert(`Contraseña actualizada exitosamente para ${user.name}`);
+        } catch (error) {
+            alert(error.response?.data?.detail || "Error al actualizar la contraseña");
+        }
+    };
+
+    const handlePinReset = async (user) => {
+        const newPin = window.prompt(`Ingresa el nuevo PIN de transacciones (6 dígitos) para ${user.name}:`);
+        if (newPin === null) return; // Cancelled
+        if (!newPin.match(/^\d{6}$/)) {
+            alert("El PIN debe ser exactamente 6 dígitos numéricos.");
+            return;
+        }
+
+        try {
+            const response = await api.put(`/api/admin/users/${user.id}/reset-transaction-pin`, { new_pin: newPin });
+            alert(`PIN de transacciones actualizado exitosamente para ${user.name}.\nNuevo PIN: ${newPin}`);
+        } catch (error) {
+            alert(error.response?.data?.detail || "Error al actualizar el PIN de transacciones");
         }
     };
 
@@ -225,27 +265,52 @@ export default function AdminUsers() {
                                             ✏️ Editar
                                         </button>
                                         <button
-                                            onClick={() => handleDelete(user.id)}
-                                            disabled={user.status === 'active' || user.is_admin}
+                                            onClick={() => handlePasswordReset(user)}
+                                            style={{
+                                                padding: '0.5rem 1rem',
+                                                background: '#8b5cf6',
+                                                color: 'white',
+                                                border: 'none',
+                                                borderRadius: '0.375rem',
+                                                cursor: 'pointer',
+                                                fontWeight: '500'
+                                            }}
+                                        >
+                                            🔑 Clave
+                                        </button>
+                                        <button
+                                            onClick={() => handlePinReset(user)}
+                                            style={{
+                                                padding: '0.5rem 1rem',
+                                                background: '#f59e0b',
+                                                color: 'white',
+                                                border: 'none',
+                                                borderRadius: '0.375rem',
+                                                cursor: 'pointer',
+                                                fontWeight: '500'
+                                            }}
+                                        >
+                                            🔢 PIN
+                                        </button>
+                                        <button
+                                            onClick={() => handleDelete(user)}
+                                            disabled={user.is_admin}
                                             title={
-                                                user.is_admin 
-                                                    ? 'No se puede eliminar un administrador' 
-                                                    : user.status === 'active' 
-                                                    ? 'No se puede eliminar un usuario activo. Los usuarios activos están protegidos.' 
+                                                user.is_admin
+                                                    ? 'No se puede eliminar un administrador'
                                                     : 'Eliminar usuario'
                                             }
                                             style={{
                                                 padding: '0.5rem 1rem',
-                                                background: (user.status === 'active' || user.is_admin) ? '#d1d5db' : '#ef4444',
+                                                background: user.is_admin ? '#d1d5db' : '#ef4444',
                                                 color: 'white',
                                                 border: 'none',
                                                 borderRadius: '0.375rem',
-                                                cursor: (user.status === 'active' || user.is_admin) ? 'not-allowed' : 'pointer',
-                                                fontWeight: '500',
-                                                opacity: (user.status === 'active' || user.is_admin) ? 0.6 : 1
+                                                cursor: user.is_admin ? 'not-allowed' : 'pointer',
+                                                fontWeight: '500'
                                             }}
                                         >
-                                            🗑️ {(user.status === 'active' || user.is_admin) ? '🔒 Protegido' : 'Eliminar'}
+                                            🗑️ Borrar
                                         </button>
                                     </td>
                                 </tr>

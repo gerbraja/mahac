@@ -7,9 +7,19 @@ from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv()
 
-# Local development DB (SQLite) by default. Production can override via
-# the DATABASE_URL environment variable (e.g. a Postgres DSN).
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./dev.db")
+# Build DATABASE_URL from Cloud SQL environment variables
+# This supports both local development (SQLite) and production (PostgreSQL Cloud SQL)
+db_user = os.getenv("DB_USER")
+db_pass = os.getenv("DB_PASS")
+db_name = os.getenv("DB_NAME")
+cloud_sql_connection_name = os.getenv("CLOUD_SQL_CONNECTION_NAME")
+
+if all([db_user, db_pass, db_name, cloud_sql_connection_name]):
+    # Production: Cloud SQL with Unix socket
+    DATABASE_URL = f"postgresql+pg8000://{db_user}:{db_pass}@/{db_name}?unix_sock=/cloudsql/{cloud_sql_connection_name}/.s.PGSQL.5432"
+else:
+    # Local development: SQLite or explicit DATABASE_URL
+    DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./dev.db")
 
 # For SQLite we need a specific connect arg
 connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
