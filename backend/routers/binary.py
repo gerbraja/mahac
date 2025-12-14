@@ -58,9 +58,12 @@ def get_global_status(user_id: int, db: Session = Depends(get_db)):
     if not member:
         return {"status": "not_registered"}
     
+    # Use member.id as fallback if global_position is NULL
+    display_position = member.global_position if member.global_position is not None else member.id
+    
     return {
         "status": "active" if member.is_active else "pre_registered",
-        "global_position": member.global_position,
+        "global_position": display_position,
         "activation_deadline": member.activation_deadline.isoformat() if member.activation_deadline else None,
         "earning_deadline": member.earning_deadline.isoformat() if member.earning_deadline else None,
         "activated_at": member.activated_at.isoformat() if member.activated_at else None,
@@ -69,6 +72,7 @@ def get_global_status(user_id: int, db: Session = Depends(get_db)):
         "upline_id": member.upline_id,
         "is_active": member.is_active
     }
+
 
 @router.get("/global/stats/{user_id}")
 def get_global_stats(user_id: int, db: Session = Depends(get_db)):

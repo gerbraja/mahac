@@ -248,10 +248,10 @@ const BinaryGlobalView = () => {
                     <div style={{ marginTop: '1.5rem' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', marginBottom: '0.5rem' }}>
                             <span>Progreso de Red</span>
-                            <span>{stats?.total_network_members || 0} / 2,097,152 posibles</span>
+                            <span>{leftLineCount + rightLineCount} / 2,097,152 posibles</span>
                         </div>
                         <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: '9999px', height: '8px', overflow: 'hidden' }}>
-                            <div style={{ background: 'white', width: `${((stats?.total_network_members || 0) / 2097152 * 100).toFixed(4)}%`, height: '100%', borderRadius: '9999px', transition: 'width 0.3s' }}></div>
+                            <div style={{ background: 'white', width: `${((leftLineCount + rightLineCount) / 2097152 * 100).toFixed(4)}%`, height: '100%', borderRadius: '9999px', transition: 'width 0.3s' }}></div>
                         </div>
                     </div>
                 </div>
