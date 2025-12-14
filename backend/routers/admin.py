@@ -270,6 +270,75 @@ def delete_user(
     
     return {"message": "User deleted successfully", "user_id": user_id}
 
+@router.put("/users/{user_id}/reset-password")
+def reset_user_password(
+    user_id: int,
+    data: dict, # Expects {"new_password": "..."}
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user)
+):
+    """
+    Admin: Reset a user's password manually.
+    """
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    new_password = data.get("new_password")
+    if not new_password or len(new_password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+        
+    try:
+        from passlib.context import CryptContext
+        # Use simple bcrypt context directly to ensure compatibility
+        pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+        # Truncate password to 72 bytes for bcrypt compatibility (same as registration/login)
+        password_to_hash = new_password[:72]
+        hashed_password = pwd_context.hash(password_to_hash)
+        
+        user.password = hashed_password
+        db.commit()
+        
+        return {"message": f"Password for user {user.username} has been reset successfully."}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error resetting password: {str(e)}")
+
+@router.put("/users/{user_id}/reset-transaction-pin")
+def reset_user_transaction_pin(
+    user_id: int,
+    data: dict, # Expects {"new_pin": "123456"}
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user)
+):
+    """
+    Admin: Reset a user's transaction PIN manually.
+    """
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    new_pin = data.get("new_pin")
+    if not new_pin:
+        raise HTTPException(status_code=400, detail="new_pin is required")
+    
+    # Validate PIN format (6 digits)
+    if not new_pin.isdigit() or len(new_pin) != 6:
+        raise HTTPException(status_code=400, detail="Transaction PIN must be exactly 6 digits")
+        
+    try:
+        from passlib.context import CryptContext
+        pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+        hashed_pin = pwd_context.hash(new_pin)
+        
+        user.transaction_pin = hashed_pin
+        db.commit()
+        
+        return {"message": f"Transaction PIN for user {user.username} has been reset successfully.", "new_pin": new_pin}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error resetting transaction PIN: {str(e)}")
+
 # --- Qualification Ranks Management ---
 from backend.database.models.qualified_rank import QualifiedRank, UserQualifiedRank
 

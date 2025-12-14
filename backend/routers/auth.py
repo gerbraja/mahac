@@ -328,52 +328,44 @@ def update_profile(data: UpdateProfileData, current_user: UserModel = Depends(ge
 @router.post("/login")
 def login(data: LoginData, db: Session = Depends(get_db)):
     try:
-        # Write to log file
-        with open("login_debug.log", "a", encoding="utf-8") as f:
-            f.write(f"\n{'='*60}\n")
-            f.write(f"LOGIN ATTEMPT\n")
-            f.write(f"{'='*60}\n")
-            f.write(f"Username: {data.username}\n")
-            f.write(f"Email: {data.email}\n")
-            f.write(f"Password length: {len(data.password) if data.password else 0}\n")
+        # Log to stdout for Cloud Run
+        print(f"{'='*60}")
+        print(f"LOGIN ATTEMPT")
+        print(f"{'='*60}")
+        print(f"Username: {data.username}")
+        print(f"Email: {data.email}")
+        print(f"Password length: {len(data.password) if data.password else 0}")
         
         # Find by username if provided, otherwise by email
         user = None
         if data.username:
             user = db.query(UserModel).filter(UserModel.username == data.username).first()
-            with open("login_debug.log", "a", encoding="utf-8") as f:
-                f.write(f"Searching by username '{data.username}': {'FOUND' if user else 'NOT FOUND'}\n")
+            print(f"Searching by username '{data.username}': {'FOUND' if user else 'NOT FOUND'}")
         elif data.email:
             user = db.query(UserModel).filter(UserModel.email == data.email).first()
-            with open("login_debug.log", "a", encoding="utf-8") as f:
-                f.write(f"Searching by email '{data.email}': {'FOUND' if user else 'NOT FOUND'}\n")
+            print(f"Searching by email '{data.email}': {'FOUND' if user else 'NOT FOUND'}")
 
         if not user:
-            with open("login_debug.log", "a", encoding="utf-8") as f:
-                f.write("User not found - returning 401\n")
+            print("User not found - returning 401")
             raise HTTPException(status_code=401, detail="Invalid credentials")
 
-        with open("login_debug.log", "a", encoding="utf-8") as f:
-            f.write(f"User found: {user.name} (ID: {user.id})\n")
-            f.write(f"   is_admin: {user.is_admin}\n")
-            f.write(f"   Password hash exists: {bool(user.password)}\n")
+        print(f"User found: {user.name} (ID: {user.id})")
+        print(f"   is_admin: {user.is_admin}")
+        print(f"   Password hash exists: {bool(user.password)}")
         
         # Verify password (truncate to 72 bytes for compatibility)
         password_to_verify = data.password[:72] if data.password else ''
         stored_hash = getattr(user, 'password', '')
         
-        with open("login_debug.log", "a", encoding="utf-8") as f:
-            f.write(f"   Password to verify: '{password_to_verify}'\n")
-            f.write(f"   Stored hash (first 50 chars): {stored_hash[:50] if stored_hash else 'NONE'}\n")
+        print(f"   Password to verify: '{password_to_verify}'")
+        print(f"   Stored hash (first 50 chars): {stored_hash[:50] if stored_hash else 'NONE'}")
         
         try:
             pwd_hasher.verify(stored_hash, password_to_verify)
-            with open("login_debug.log", "a", encoding="utf-8") as f:
-                f.write("Password verification SUCCESS\n")
+            print("Password verification SUCCESS")
         except Exception as verify_error:
             # Any verification error (VerifyMismatchError, InvalidHash, etc.)
-            with open("login_debug.log", "a", encoding="utf-8") as f:
-                f.write(f"Password verification FAILED: {type(verify_error).__name__}: {verify_error}\n")
+            print(f"Password verification FAILED: {type(verify_error).__name__}: {verify_error}")
             raise HTTPException(status_code=401, detail="Invalid credentials")
         
         
@@ -383,9 +375,8 @@ def login(data: LoginData, db: Session = Depends(get_db)):
             "is_admin": user.is_admin
         }, SECRET_KEY, algorithm=ALGORITHM)
         
-        with open("login_debug.log", "a", encoding="utf-8") as f:
-            f.write(f"Login successful - Token generated\n")
-            f.write(f"{'='*60}\n")
+        print(f"Login successful - Token generated")
+        print(f"{'='*60}")
         
         return {"access_token": token, "token_type": "bearer"}
     except HTTPException:
@@ -442,7 +433,7 @@ def change_password(data: ChangePasswordData, current_user: UserModel = Depends(
         print(f"Error updating password: {str(e)}")
         raise HTTPException(
             status_code=500,
-            detail="Error al actualizar la contraseña. Por favor intenta de nuevo."
+            detail=f"Error al actualizar la contraseña: {str(e)}"
         )
 
 

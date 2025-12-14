@@ -87,6 +87,22 @@ export default function AdminUsers() {
         }
     };
 
+    const handlePasswordReset = async (user) => {
+        const newPassword = window.prompt(`Ingresa la nueva contraseña para ${user.name}:`);
+        if (newPassword === null) return; // Cancelled
+        if (newPassword.length < 6) {
+            alert("La contraseña debe tener al menos 6 caracteres.");
+            return;
+        }
+
+        try {
+            await api.put(`/api/admin/users/${user.id}/reset-password`, { newPassword });
+            alert(`Contraseña actualizada exitosamente para ${user.name}`);
+        } catch (error) {
+            alert(error.response?.data?.detail || "Error al actualizar la contraseña");
+        }
+    };
+
     return (
         <div>
             <div className="mb-8">
@@ -123,8 +139,8 @@ export default function AdminUsers() {
 
                 {message && (
                     <div className={`p-4 mb-4 rounded-lg border ${message.includes('Error')
-                            ? 'bg-red-100 text-red-800 border-red-200'
-                            : 'bg-green-100 text-green-800 border-green-200'
+                        ? 'bg-red-100 text-red-800 border-red-200'
+                        : 'bg-green-100 text-green-800 border-green-200'
                         }`}>
                         {message}
                     </div>
@@ -169,8 +185,8 @@ export default function AdminUsers() {
                                         <td className="p-4 text-gray-600">{user.document_id || '-'}</td>
                                         <td className="p-4">
                                             <span className={`px-3 py-1 rounded-full text-xs font-medium ${user.status === 'active'
-                                                    ? 'bg-green-100 text-green-800'
-                                                    : 'bg-yellow-100 text-yellow-800'
+                                                ? 'bg-green-100 text-green-800'
+                                                : 'bg-yellow-100 text-yellow-800'
                                                 }`}>
                                                 {user.status}
                                             </span>
@@ -181,6 +197,12 @@ export default function AdminUsers() {
                                                 className="px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-sm font-medium"
                                             >
                                                 ✏️ Editar
+                                            </button>
+                                            <button
+                                                onClick={() => handlePasswordReset(user)}
+                                                className="px-3 py-1.5 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors text-sm font-medium"
+                                            >
+                                                🔑 Clave
                                             </button>
                                             <button
                                                 onClick={() => handleDelete(user.id)}

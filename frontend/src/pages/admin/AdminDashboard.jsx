@@ -11,12 +11,15 @@ export default function AdminDashboard() {
     const [loadingStats, setLoadingStats] = useState(true);
     const [statsError, setStatsError] = useState(null);
     const [showActivationModal, setShowActivationModal] = useState(false);
-    const [activationData, setActivationData] = useState({ userId: '', packageAmount: '100' });
+    const [activationData, setActivationData] = useState({ userId: '', selectedPackage: null });
     const [activating, setActivating] = useState(false);
     const [activationResult, setActivationResult] = useState(null);
+    const [activationPackages, setActivationPackages] = useState([]);
+    const [loadingPackages, setLoadingPackages] = useState(false);
 
     useEffect(() => {
         fetchStats();
+        fetchActivationPackages();
     }, []);
 
     const fetchStats = async () => {
@@ -60,19 +63,43 @@ export default function AdminDashboard() {
         }
     };
 
+    const fetchActivationPackages = async () => {
+        setLoadingPackages(true);
+        try {
+            const response = await api.get('/api/products/');
+            const packages = response.data.filter(p => p.is_activation === true);
+            setActivationPackages(packages);
+            // Select first package by default
+            if (packages.length > 0) {
+                setActivationData(prev => ({ ...prev, selectedPackage: packages[0].id }));
+            }
+        } catch (error) {
+            console.error('Error loading activation packages:', error);
+        } finally {
+            setLoadingPackages(false);
+        }
+    };
+
     const handleActivateUser = async () => {
         if (!activationData.userId) {
             alert('Por favor ingresa el ID del usuario');
             return;
         }
 
+        if (!activationData.selectedPackage) {
+            alert('Por favor selecciona un paquete de activación');
+            return;
+        }
+
         setActivating(true);
         setActivationResult(null);
+
+        const selectedPkg = activationPackages.find(p => p.id === parseInt(activationData.selectedPackage));
 
         try {
             const response = await api.post('/api/admin/activate-user', {
                 user_id: parseInt(activationData.userId),
-                package_amount: parseFloat(activationData.packageAmount)
+                package_amount: selectedPkg.price_usd
             });
 
             setActivationResult({
@@ -339,21 +366,32 @@ export default function AdminDashboard() {
 
                         <div style={{ marginBottom: '1.5rem' }}>
                             <label style={{ display: 'block', color: '#374151', fontWeight: '500', marginBottom: '0.5rem' }}>
-                                Monto del Paquete (USD)
+                                Paquete de Activación
                             </label>
-                            <input
-                                type="number"
-                                value={activationData.packageAmount}
-                                onChange={(e) => setActivationData({ ...activationData, packageAmount: e.target.value })}
-                                placeholder="100"
-                                style={{
-                                    width: '100%',
-                                    padding: '0.75rem',
-                                    border: '1px solid #d1d5db',
-                                    borderRadius: '0.5rem',
-                                    fontSize: '1rem'
-                                }}
-                            />
+                            {loadingPackages ? (
+                                <p style={{ color: '#6b7280' }}>Cargando paquetes...</p>
+                            ) : activationPackages.length === 0 ? (
+                                <p style={{ color: '#ef4444' }}>No hay paquetes de activación disponibles</p>
+                            ) : (
+                                <select
+                                    value={activationData.selectedPackage || ''}
+                                    onChange={(e) => setActivationData({ ...activationData, selectedPackage: e.target.value })}
+                                    style={{
+                                        width: '100%',
+                                        padding: '0.75rem',
+                                        border: '1px solid #d1d5db',
+                                        borderRadius: '0.5rem',
+                                        fontSize: '1rem',
+                                        backgroundColor: 'white'
+                                    }}
+                                >
+                                    {activationPackages.map(pkg => (
+                                        <option key={pkg.id} value={pkg.id}>
+                                            {pkg.name} - ${pkg.price_usd} USD / ${pkg.price_local.toLocaleString()} COP - {pkg.pv} PV
+                                        </option>
+                                    ))}
+                                </select>
+                            )}
                         </div>
 
                         {activationResult && (
