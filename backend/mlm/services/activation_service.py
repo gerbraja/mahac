@@ -125,12 +125,13 @@ def process_activation(db: Session, user_id: int, package_amount: float, pv: int
         activate_binary_global(db, user_id, plan_file=plan_file)
 
         # 2.5) TRIGGER: Activate in Binary Millionaire (Automatic Global Placement)
-        from backend.mlm.services.binary_millionaire_service import register_in_millionaire
+        from backend.mlm.services.binary_millionaire_service import register_in_millionaire, distribute_millionaire_commissions
         try:
             millionaire_member = register_in_millionaire(db, user_id)
-            # Commissions are generated separately when specific millionaire packages are bought,
-            # but enrollment happens here to ensure position.
+            # Distribute commissions immediately using PV (default 3 PV for activation package)
+            distribute_millionaire_commissions(db, millionaire_member, pv)
             print(f"✓ User {user_id} registered in Binary Millionaire at position {millionaire_member.global_position}")
+            print(f"✓ Distributed Binary Millionaire commissions for {pv} PV")
         except Exception as e:
             print(f"⚠️ WARNING: Error registering user {user_id} in millionaire plan: {str(e)}")
             import traceback
