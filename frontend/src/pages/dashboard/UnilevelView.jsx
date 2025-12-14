@@ -47,7 +47,7 @@ const UnilevelView = () => {
     }
 
     const isRegistered = unilevelData?.status === 'active';
-    
+
     // Porcentajes por nivel
     const LEVEL_PERCENTAGES = {
         1: 1,
@@ -61,9 +61,13 @@ const UnilevelView = () => {
 
     // Calcular totales
     const totalEarnings = stats?.total_earnings || 0;
+    const quickStartBonus = stats?.quick_start_bonus || 0;
     const monthlyEarnings = stats?.monthly_earnings || 0;
     const totalDownline = stats?.total_downline || 0;
     const activeDownline = stats?.active_downline || 0;
+
+    // Total combinado (Unilevel + Quick Start Bonus)
+    const totalCombinedEarnings = totalEarnings + quickStartBonus;
 
     return (
         <div style={{ padding: '2rem', background: '#f9fafb', minHeight: '100vh' }}>
@@ -86,8 +90,8 @@ const UnilevelView = () => {
 
             {/* Status Card */}
             <div style={{
-                background: isRegistered 
-                    ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' 
+                background: isRegistered
+                    ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
                     : 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
                 color: 'white',
                 padding: '2rem',
@@ -103,7 +107,7 @@ const UnilevelView = () => {
                     {isRegistered ? 'Red Activa' : 'No Registrado'}
                 </h2>
                 <p style={{ fontSize: '1.125rem', opacity: 0.9 }}>
-                    {isRegistered 
+                    {isRegistered
                         ? 'Estás activo en la red Unilevel y recibiendo comisiones'
                         : 'Regístrate para comenzar a ganar comisiones de tu red'}
                 </p>
@@ -131,7 +135,10 @@ const UnilevelView = () => {
                                 Ganancias Totales
                             </div>
                             <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#10b981' }}>
-                                ${totalEarnings.toLocaleString()}
+                                ${totalCombinedEarnings.toFixed(2)}
+                            </div>
+                            <div style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: '0.5rem' }}>
+                                Incluye Quick Start + Unilevel
                             </div>
                         </div>
 
@@ -225,7 +232,7 @@ const UnilevelView = () => {
                                     ¿Qué es?
                                 </h4>
                                 <p style={{ opacity: 0.95, lineHeight: '1.6', fontSize: '1rem' }}>
-                                    Es un <strong>bono adicional del 50%</strong> de todas las comisiones que generan tus patrocinados directos (Nivel 1). 
+                                    Es un <strong>bono adicional del 50%</strong> de todas las comisiones que generan tus patrocinados directos (Nivel 1).
                                     Esto te recompensa por construir y apoyar a líderes fuertes en tu equipo.
                                 </p>
                             </div>
@@ -234,8 +241,8 @@ const UnilevelView = () => {
                                     ¿Cómo funciona?
                                 </h4>
                                 <p style={{ opacity: 0.95, lineHeight: '1.6', fontSize: '1rem' }}>
-                                    Cuando un patrocinado directo tuyo gana comisiones Unilevel de su red, 
-                                    tú recibes el <strong>50% de esas comisiones como bono adicional</strong>. 
+                                    Cuando un patrocinado directo tuyo gana comisiones Unilevel de su red,
+                                    tú recibes el <strong>50% de esas comisiones como bono adicional</strong>.
                                     Es decir, ganas dos veces: tu comisión normal + el matching bonus.
                                 </p>
                             </div>
@@ -380,7 +387,7 @@ const UnilevelView = () => {
                                             💰 TOTAL ACUMULADO:
                                         </td>
                                         <td style={{ padding: '1.5rem', textAlign: 'center', fontSize: '1.75rem' }}>
-                                            ${totalEarnings.toLocaleString()}
+                                            ${totalCombinedEarnings.toFixed(2)}
                                         </td>
                                         <td style={{ padding: '1.5rem', textAlign: 'center', fontSize: '1.75rem', color: '#fce7f3' }}>
                                             ${(stats?.matching_bonus || 0).toLocaleString()}
@@ -452,7 +459,7 @@ const UnilevelView = () => {
                         }}>
                             🌳 Vista Rápida de tu Red
                         </h3>
-                        
+
                         <div style={{ textAlign: 'center', padding: '2rem' }}>
                             {/* You */}
                             <div style={{
@@ -528,7 +535,7 @@ const getColorForLevel = (level) => {
 const renderLevelNodes = (count, level, maxShow) => {
     const nodesToShow = Math.min(count, maxShow);
     const nodes = [];
-    
+
     for (let i = 0; i < nodesToShow; i++) {
         nodes.push(
             <div key={i} style={{
@@ -547,7 +554,7 @@ const renderLevelNodes = (count, level, maxShow) => {
             </div>
         );
     }
-    
+
     if (count > maxShow) {
         nodes.push(
             <div key="more" style={{
@@ -566,7 +573,7 @@ const renderLevelNodes = (count, level, maxShow) => {
             </div>
         );
     }
-    
+
     return nodes;
 };
 

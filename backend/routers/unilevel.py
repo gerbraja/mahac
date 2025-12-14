@@ -7,6 +7,7 @@ from backend.database.connection import get_db
 from backend.mlm.services.unilevel_service import calculate_unilevel_commissions
 from backend.database.models.unilevel import UnilevelMember, UnilevelCommission
 from backend.database.models.user import User
+from backend.database.models.sponsorship import SponsorshipCommission
 
 router = APIRouter(prefix="/api/unilevel", tags=["Unilevel"])
 
@@ -91,10 +92,17 @@ def get_unilevel_stats(user_id: int, db: Session = Depends(get_db)):
     ).first()
     
     if not member:
+        # Even if not in unilevel_members, calculate Quick Start Bonus
+        quick_start_bonus = db.query(func.sum(SponsorshipCommission.commission_amount)).filter(
+            SponsorshipCommission.sponsor_id == user_id
+        ).scalar() or 0
+        
         return {
             "user_id": user_id,
             "total_earnings": 0,
             "monthly_earnings": 0,
+            "matching_bonus": 0,
+            "quick_start_bonus": float(quick_start_bonus),
             "total_downline": 0,
             "active_downline": 0,
             "total_volume": 0,
@@ -113,6 +121,11 @@ def get_unilevel_stats(user_id: int, db: Session = Depends(get_db)):
         UnilevelCommission.type == 'matching'
     ).scalar() or 0
     
+    # Get Quick Start Bonus (Sponsorship Commissions)
+    quick_start_bonus = db.query(func.sum(SponsorshipCommission.commission_amount)).filter(
+        SponsorshipCommission.sponsor_id == user_id
+    ).scalar() or 0
+    
     # Get monthly earnings (current month)
     from datetime import datetime
     current_month = datetime.now().month
@@ -126,43 +139,43 @@ def get_unilevel_stats(user_id: int, db: Session = Depends(get_db)):
     
     
     # Get downline count - count actual Unilevel members in the network
-    def count_downline_recursive(sponsor_id, max_depth=7, current_depth=1):
+    def count_downline_recursive(sponsor_member_id, max_depth=7, current_depth=1):
         """Recursively count all downline members"""
         if current_depth > max_depth:
             return 0
         
         direct_members = db.query(UnilevelMember).filter(
-            UnilevelMember.sponsor_id == sponsor_id
+            UnilevelMember.sponsor_id == sponsor_member_id
         ).all()
         
         count = len(direct_members)
-        for member in direct_members:
-            count += count_downline_recursive(member.user_id, max_depth, current_depth + 1)
+        for direct_member in direct_members:
+            count += count_downline_recursive(direct_member.id, max_depth, current_depth + 1)
         
         return count
     
-    total_downline = count_downline_recursive(user_id)
+    total_downline = count_downline_recursive(member.id)
     
     # Count active downline (users with status='active')
-    def count_active_downline_recursive(sponsor_id, max_depth=7, current_depth=1):
+    def count_active_downline_recursive(sponsor_member_id, max_depth=7, current_depth=1):
         """Recursively count active downline members"""
         if current_depth > max_depth:
             return 0
         
         direct_members = db.query(UnilevelMember).filter(
-            UnilevelMember.sponsor_id == sponsor_id
+            UnilevelMember.sponsor_id == sponsor_member_id
         ).all()
         
         count = 0
-        for member in direct_members:
-            user = db.query(User).filter(User.id == member.user_id).first()
+        for direct_member in direct_members:
+            user = db.query(User).filter(User.id == direct_member.user_id).first()
             if user and user.status == 'active':
                 count += 1
-            count += count_active_downline_recursive(member.user_id, max_depth, current_depth + 1)
+            count += count_active_downline_recursive(direct_member.id, max_depth, current_depth + 1)
         
         return count
     
-    active_downline = count_active_downline_recursive(user_id)
+    active_downline = count_active_downline_recursive(member.id)
     
     # Get total volume (sum of all unilevel commissions' sale_amount)
     total_volume = db.query(func.sum(UnilevelCommission.sale_amount)).filter(
@@ -173,11 +186,16 @@ def get_unilevel_stats(user_id: int, db: Session = Depends(get_db)):
     # Get stats by level
     levels_stats = {}
     for level_num in range(1, 8):
-        # Count actual members at this level
-        members_at_level = db.query(UnilevelMember).filter(
-            UnilevelMember.sponsor_id == user_id,
-            UnilevelMember.level == level_num
-        ).all()
+        # Count actual members at this level (direct downline only for level 1)
+        if level_num == 1:
+            # Direct downline: members whose sponsor is this user's member record
+            members_at_level = db.query(UnilevelMember).filter(
+                UnilevelMember.sponsor_id == member.id
+            ).all()
+        else:
+            # For other levels, we need to traverse the tree
+            # For simplicity, we'll use the commission records as a proxy
+            members_at_level = []
         
         # Count active members at this level
         active_at_level = 0
@@ -218,6 +236,7 @@ def get_unilevel_stats(user_id: int, db: Session = Depends(get_db)):
         "total_earnings": float(total_earnings),
         "monthly_earnings": float(monthly_earnings),
         "matching_bonus": float(matching_bonus),
+        "quick_start_bonus": float(quick_start_bonus),
         "total_downline": total_downline,
         "active_downline": active_downline,
         "total_volume": float(total_volume),

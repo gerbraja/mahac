@@ -160,7 +160,6 @@ const BinaryMillionaireView = () => {
                             borderRadius: '50%',
                             width: '60px',
                             height: '60px',
-                            display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
                             fontSize: '2rem'
@@ -388,7 +387,7 @@ const BinaryMillionaireView = () => {
                                             Nivel {level}
                                         </td>
                                         <td style={{ padding: '0.75rem', textAlign: 'center', fontFamily: 'monospace', fontWeight: '600', color: '#10b981' }}>
-                                            {level.percent}%
+                                            {percent}%
                                         </td>
                                         <td style={{ padding: '0.75rem', textAlign: 'right', fontFamily: 'monospace', fontSize: '0.75rem' }}>
                                             {possible.toLocaleString()}
