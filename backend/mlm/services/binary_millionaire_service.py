@@ -65,7 +65,10 @@ def find_millionaire_placement(db: Session, sponor_user_id: Optional[int] = None
     return None
 
 def register_in_millionaire(db: Session, user_id: int) -> BinaryMillionaireMember:
-    """Register a user in the Binary Millionaire plan."""
+    """Register a user in the Binary Millionaire plan.
+    
+    Note: This function does NOT commit. The caller must commit the transaction.
+    """
     exists = db.query(BinaryMillionaireMember).filter(BinaryMillionaireMember.user_id == user_id).first()
     if exists:
         return exists
@@ -95,8 +98,7 @@ def register_in_millionaire(db: Session, user_id: int) -> BinaryMillionaireMembe
         is_active=True # Always active upon purchase
     )
     db.add(new_member)
-    db.commit()
-    db.refresh(new_member)
+    db.flush()  # Get the ID without committing
     
     return new_member
 
