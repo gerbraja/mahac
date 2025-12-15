@@ -129,11 +129,16 @@ def get_forced_matrix_stats(user_id: int, db: Session = Depends(get_db)):
             grand_children = db.query(MatrixMember).filter(MatrixMember.upline_id == child.id).all()
             active_count += len(grand_children)
             
-        # Earnings
-        earnings = db.query(func.sum(MatrixCommission.amount)).filter(
-            MatrixCommission.user_id == user_id,
-            MatrixCommission.matrix_id == db_matrix_id
-        ).scalar() or 0.0
+        # Earnings (with error handling for missing table)
+        earnings = 0.0
+        try:
+            earnings = db.query(func.sum(MatrixCommission.amount)).filter(
+                MatrixCommission.user_id == user_id,
+                MatrixCommission.matrix_id == db_matrix_id
+            ).scalar() or 0.0
+        except Exception as e:
+            print(f"Warning: Could not fetch matrix commissions for user {user_id}, matrix {db_matrix_id}: {e}")
+            # Continue with 0 earnings
         
         stats["matrices"][str(level)] = {
             "level": level,
