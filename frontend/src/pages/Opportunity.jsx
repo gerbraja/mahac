@@ -1,8 +1,10 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
 const Opportunity = () => {
+  const [searchParams] = useSearchParams();
+  const refCode = searchParams.get('ref') || '';
   const fadeIn = {
     initial: { opacity: 0, y: 20 },
     animate: { opacity: 1, y: 0 },
@@ -15,9 +17,9 @@ const Opportunity = () => {
       <section className="relative h-screen flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-blue-900 via-purple-900 to-slate-900 opacity-90 z-0"></div>
         <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1556761175-5973dc0f32e7?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80')] bg-cover bg-center mix-blend-overlay z-0"></div>
-        
+
         <div className="container mx-auto px-4 z-10 text-center">
-          <motion.h1 
+          <motion.h1
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.8 }}
@@ -25,19 +27,19 @@ const Opportunity = () => {
           >
             Tu Empresa Internacional
           </motion.h1>
-          <motion.p 
+          <motion.p
             {...fadeIn}
             transition={{ delay: 0.2 }}
             className="text-xl md:text-2xl text-gray-300 mb-10 max-w-3xl mx-auto"
           >
             La plataforma definitiva que combina E-commerce, Educación Digital y un Plan de Compensación Híbrido para construir tu libertad financiera desde casa.
           </motion.p>
-          <motion.div 
+          <motion.div
             {...fadeIn}
             transition={{ delay: 0.4 }}
             className="flex flex-col md:flex-row gap-4 justify-center"
           >
-            <Link to="/register" className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full text-lg font-bold hover:scale-105 transition-transform shadow-lg shadow-blue-500/30">
+            <Link to={`/register${refCode ? `?ref=${refCode}` : ''}`} className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full text-lg font-bold hover:scale-105 transition-transform shadow-lg shadow-blue-500/30">
               Comenzar Ahora
             </Link>
             <a href="#plan" className="px-8 py-4 border border-white/30 rounded-full text-lg font-bold hover:bg-white/10 transition-colors backdrop-blur-sm">
@@ -57,7 +59,7 @@ const Opportunity = () => {
 
           <div className="grid md:grid-cols-3 gap-8">
             {/* Card 1 */}
-            <motion.div 
+            <motion.div
               whileHover={{ y: -10 }}
               className="bg-slate-700/50 p-8 rounded-2xl border border-slate-600 hover:border-blue-500 transition-colors"
             >
@@ -69,7 +71,7 @@ const Opportunity = () => {
             </motion.div>
 
             {/* Card 2 */}
-            <motion.div 
+            <motion.div
               whileHover={{ y: -10 }}
               className="bg-slate-700/50 p-8 rounded-2xl border border-slate-600 hover:border-purple-500 transition-colors"
             >
@@ -81,7 +83,7 @@ const Opportunity = () => {
             </motion.div>
 
             {/* Card 3 */}
-            <motion.div 
+            <motion.div
               whileHover={{ y: -10 }}
               className="bg-slate-700/50 p-8 rounded-2xl border border-slate-600 hover:border-emerald-500 transition-colors"
             >
@@ -103,7 +105,7 @@ const Opportunity = () => {
               Plan de Compensación Híbrido
             </h2>
             <p className="text-gray-300 text-lg max-w-2xl mx-auto">
-              Hemos diseñado el sistema más agresivo y sostenible del mercado. 
+              Hemos diseñado el sistema más agresivo y sostenible del mercado.
               Combina la estabilidad del Unilevel con la explosividad del Binario.
             </p>
           </div>
@@ -117,7 +119,7 @@ const Opportunity = () => {
                   <p className="text-gray-400">Gana comisiones inmediatas por cada nuevo socio o cliente que traigas a la compañía.</p>
                 </div>
               </div>
-              
+
               <div className="flex gap-4">
                 <div className="w-12 h-12 rounded-full bg-purple-600 flex items-center justify-center font-bold text-xl shrink-0">2</div>
                 <div>
@@ -182,7 +184,7 @@ const Opportunity = () => {
           <p className="text-xl text-blue-100 mb-10 max-w-2xl mx-auto">
             La oportunidad perfecta en el momento perfecto. No dejes pasar el tren de la economía digital.
           </p>
-          <Link to="/register" className="inline-block px-12 py-5 bg-white text-blue-900 rounded-full text-xl font-bold hover:bg-gray-100 hover:scale-105 transition-all shadow-2xl">
+          <Link to={`/register${refCode ? `?ref=${refCode}` : ''}`} className="inline-block px-12 py-5 bg-white text-blue-900 rounded-full text-xl font-bold hover:bg-gray-100 hover:scale-105 transition-all shadow-2xl">
             ¡Sí, Quiero Unirme Ahora!
           </Link>
           <p className="mt-6 text-blue-200 text-sm">Registro 100% Seguro • Acceso Inmediato</p>
