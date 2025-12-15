@@ -138,31 +138,37 @@ def process_activation(db: Session, user_id: int, package_amount: float, pv: int
             traceback.print_exc()
             # Don't fail activation if millionaire registration fails
 
-        # 3) TRIGGER: Activate in Forced Matrix 3x3 (Buy Position)
-        # We assume Matrix ID 1 is the default matrix triggered by activation
-        from backend.mlm.services.matrix_service import MatrixService
-        # For simplicity, load the forced-matrix plan and use its first matrix id as the activation level.
-        from backend.mlm.schemas.plan import MatrixPlan
-        import yaml
-        import os
 
-        # Load Matrix Plan (Hardcoded path for now, ideally from config)
-        matrix_plan_path = os.path.join(os.path.dirname(__file__), "..", "plans", "matriz_forzada", "plan_template.yml")
-        if os.path.exists(matrix_plan_path):
-            try:
+        # 3) TRIGGER: Activate in Forced Matrix 3x3 (Buy Position in CONSUMIDOR Matrix)
+        # All activated users enter Matrix ID 27 (CONSUMIDOR - $77)
+        try:
+            from backend.mlm.services.matrix_service import MatrixService
+            from backend.mlm.schemas.plan import MatrixPlan
+            import yaml
+            import os
+            
+            # Load Matrix Plan
+            matrix_plan_path = os.path.join(os.path.dirname(__file__), "..", "plans", "matriz_forzada", "plan_template.yml")
+            
+            if os.path.exists(matrix_plan_path):
                 with open(matrix_plan_path, 'r') as f:
                     plan_data = yaml.safe_load(f)
                     matrix_plan = MatrixPlan(**plan_data)
                     matrix_service = MatrixService(matrix_plan)
-                    # Use the first matrix id defined in the plan (if available)
-                    first_matrix_id = matrix_plan.matrices[0].id if getattr(matrix_plan, 'matrices', None) and len(matrix_plan.matrices) > 0 else None
-                    if first_matrix_id:
-                        try:
-                            matrix_service.buy_matrix(db, user_id, matrix_id=first_matrix_id)
-                        except Exception as e:
-                            print(f"Error activating matrix: {e}")
-            except Exception as e:
-                print(f"Error loading matrix plan: {e}")
+                    
+                    # Register user in Matrix 27 (CONSUMIDOR) - default activation matrix
+                    CONSUMIDOR_MATRIX_ID = 27
+                    matrix_service.buy_matrix(db, user_id, matrix_id=CONSUMIDOR_MATRIX_ID)
+                    print(f"✓ User {user_id} registered in Forced Matrix CONSUMIDOR (ID: {CONSUMIDOR_MATRIX_ID})")
+            else:
+                print(f"⚠️  WARNING: Matrix plan file not found at {matrix_plan_path}")
+                print(f"   User {user_id} activated but NOT registered in Forced Matrix")
+        except Exception as e:
+            print(f"⚠️  ERROR activating user {user_id} in Forced Matrix: {e}")
+            import traceback
+            traceback.print_exc()
+            # Don't fail activation if matrix registration fails, but log it prominently
+
 
         # commit atomically
         db.commit()
