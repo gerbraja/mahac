@@ -807,3 +807,88 @@ def activate_user_manually(
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Error activating user: {str(e)}")
+
+
+# --- TEMPORARY: Matrix Migration Endpoint ---
+@router.post("/migrate-matrix-registrations")
+def migrate_matrix_registrations(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user)
+):
+    """
+    TEMPORARY endpoint to register existing active users in Forced Matrix CONSUMIDOR (ID 27).
+    Run this ONCE after deploying the matrix registration fix.
+    """
+    try:
+        from backend.mlm.services.matrix_service import MatrixService
+        from backend.mlm.schemas.plan import MatrixPlan
+        from backend.database.models.matrix import MatrixMember
+        import yaml
+        import os
+        
+        CONSUMIDOR_MATRIX_ID = 27
+        
+        # Load Matrix Plan
+        matrix_plan_path = os.path.join(os.path.dirname(__file__), "..", "mlm", "plans", "matriz_forzada", "plan_template.yml")
+        
+        if not os.path.exists(matrix_plan_path):
+            raise HTTPException(status_code=500, detail=f"Matrix plan file not found at {matrix_plan_path}")
+        
+        with open(matrix_plan_path, 'r') as f:
+            plan_data = yaml.safe_load(f)
+            matrix_plan = MatrixPlan(**plan_data)
+            matrix_service = MatrixService(matrix_plan)
+        
+        # Get all active users
+        active_users = db.query(User).filter(User.status == 'active').order_by(User.id.asc()).all()
+        
+        registered_count = 0
+        skipped_count = 0
+        results = []
+        
+        for user in active_users:
+            # Check if user is already in Matrix 27
+            existing = db.query(MatrixMember).filter(
+                MatrixMember.user_id == user.id,
+                MatrixMember.matrix_id == CONSUMIDOR_MATRIX_ID
+            ).first()
+            
+            if existing:
+                skipped_count += 1
+                results.append({
+                    "user_id": user.id,
+                    "username": user.username,
+                    "action": "skipped",
+                    "reason": "already registered"
+                })
+                continue
+            
+            try:
+                # Register user in Matrix 27
+                matrix_service.buy_matrix(db, user.id, matrix_id=CONSUMIDOR_MATRIX_ID)
+                registered_count += 1
+                results.append({
+                    "user_id": user.id,
+                    "username": user.username,
+                    "action": "registered",
+                    "matrix_id": CONSUMIDOR_MATRIX_ID
+                })
+            except Exception as e:
+                results.append({
+                    "user_id": user.id,
+                    "username": user.username,
+                    "action": "error",
+                    "error": str(e)
+                })
+        
+        return {
+            "message": "Matrix migration completed",
+            "total_active_users": len(active_users),
+            "newly_registered": registered_count,
+            "already_registered": skipped_count,
+            "details": results
+        }
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Migration error: {str(e)}")
