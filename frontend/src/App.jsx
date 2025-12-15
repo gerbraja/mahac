@@ -44,6 +44,12 @@ function ReferralRedirect() {
   return <Navigate to={`/?ref=${username}`} replace />;
 }
 
+// Component to redirect /register to home while preserving ref parameter
+function RegisterRedirect() {
+  const search = window.location.search;
+  return <Navigate to={`/${search}`} replace />;
+}
+
 export default function App() {
   return (
     <>
@@ -53,6 +59,7 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/opportunity" element={<Opportunity />} />
         <Route path="/personal" element={<Personal />} />
+        <Route path="/register" element={<RegisterRedirect />} />
         <Route path="/usuario/:username" element={<ReferralRedirect />} />
         <Route path="/complete-registration" element={<CompleteRegistration />} />
         <Route path="/cart" element={<CartPage />} />
