@@ -137,6 +137,7 @@ def get_forced_matrix_stats(user_id: int, db: Session = Depends(get_db)):
                 MatrixCommission.matrix_id == db_matrix_id
             ).scalar() or 0.0
         except Exception as e:
+            db.rollback()  # Rollback to clear aborted transaction
             print(f"Warning: Could not fetch matrix commissions for user {user_id}, matrix {db_matrix_id}: {e}")
             # Continue with 0 earnings
         
