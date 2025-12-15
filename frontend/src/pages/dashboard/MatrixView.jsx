@@ -61,15 +61,17 @@ const MatrixNode = ({ filled, name, level }) => {
     );
 };
 
-const MatrixVisual = ({ matrixConfig, activeMembers = 0, showTitle = true }) => {
+const MatrixVisual = ({ matrixConfig, statsData = {}, showTitle = true }) => {
     // Matrix 3x3: 1 + 3 + 9 = 13 total positions
     const level1 = 1; // You
     const level2 = 3; // First level
     const level3 = 9; // Second level
-    
-    const filledLevel2 = Math.min(activeMembers, level2);
-    const filledLevel3 = Math.max(0, Math.min(activeMembers - level2, level3));
-    
+
+    // Use counts from backend (which properly tracks level 2 and level 3)
+    const activeMembers = statsData.active_members || 0;
+    const filledLevel2 = statsData.level2_count || 0;
+    const filledLevel3 = statsData.level3_count || 0;
+
     const remaining = 12 - activeMembers; // 12 positions to fill (excluding yourself)
 
     return (
@@ -216,7 +218,7 @@ const MatrixVisual = ({ matrixConfig, activeMembers = 0, showTitle = true }) => 
                     }}>
                         NIVEL 3 ({filledLevel3}/{level3})
                     </div>
-                    <div style={{ 
+                    <div style={{
                         display: 'grid',
                         gridTemplateColumns: 'repeat(3, 1fr)',
                         gap: '0.75rem',
@@ -340,13 +342,12 @@ const MatrixView = () => {
                 {[1, 2, 3, 4].map(matrixId => {
                     const config = MATRIX_LEVELS[matrixId];
                     const statsData = matrixStats.matrices?.[matrixId] || {};
-                    const activeMembers = statsData.active_members || 0;
-                    
+
                     return (
                         <MatrixVisual
                             key={matrixId}
                             matrixConfig={config}
-                            activeMembers={activeMembers}
+                            statsData={statsData}
                             showTitle={true}
                         />
                     );
@@ -368,7 +369,7 @@ const MatrixView = () => {
                 }}>
                     📊 Resumen Completo de Todas las Matrices
                 </h3>
-                
+
                 <div style={{ overflowX: 'auto' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '900px' }}>
                         <thead style={{ background: '#1e3a8a' }}>
@@ -389,18 +390,18 @@ const MatrixView = () => {
                                 const config = MATRIX_LEVELS[matrixId];
                                 const data = userMatrices[matrixId] || {};
                                 const statsData = matrixStats.matrices?.[matrixId] || {};
-                                
+
                                 const isActive = data.is_active || false;
                                 const cyclesCompleted = data.cycles_completed || 0;
                                 const totalEarned = (statsData.total_earned_usd || 0) + (statsData.total_earned_crypto || 0);
                                 const activeMembers = statsData.active_members || 0;
-                                
+
                                 // Placeholder for monthly cycles (backend doesn't track this yet)
                                 const monthlyCycles = 0;
                                 const remainingCycles = Math.max(0, config.monthlyLimit - monthlyCycles);
 
                                 return (
-                                    <tr key={matrixId} style={{ 
+                                    <tr key={matrixId} style={{
                                         borderBottom: '1px solid #e5e7eb',
                                         background: index % 2 === 0 ? 'white' : '#f9fafb'
                                     }}>
@@ -489,8 +490,8 @@ const MatrixView = () => {
                                     </tr>
                                 );
                             })}
-                            <tr style={{ 
-                                background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)', 
+                            <tr style={{
+                                background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
                                 color: 'white',
                                 fontWeight: 'bold',
                                 fontSize: '1.25rem'

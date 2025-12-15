@@ -118,16 +118,19 @@ def get_forced_matrix_stats(user_id: int, db: Session = Depends(get_db)):
             
         # Count active members in this matrix under this user
         # 3x3 (2 levels) = direct children (3) + grandchildren (9) = 12 total
-        # We need to count children + grandchildren
+        # We need to count children + grandchildren SEPARATELY for frontend display
         
-        # 1. Direct children
+        # 1. Direct children (Level 2)
         children = db.query(MatrixMember).filter(MatrixMember.upline_id == member.id).all()
-        active_count = len(children)
+        level2_count = len(children)
         
-        # 2. Grandchildren
+        # 2. Grandchildren (Level 3)
+        level3_count = 0
         for child in children:
             grand_children = db.query(MatrixMember).filter(MatrixMember.upline_id == child.id).all()
-            active_count += len(grand_children)
+            level3_count += len(grand_children)
+        
+        active_count = level2_count + level3_count
             
         # Earnings (with error handling for missing table)
         earnings = 0.0
@@ -145,8 +148,10 @@ def get_forced_matrix_stats(user_id: int, db: Session = Depends(get_db)):
             "level": level,
             "name": config["name"],
             "status": "active",
-            "active_members": active_count, # 0-12
-            "earned_usd": earnings, # Simplified: assume all cash for now
+            "active_members": active_count,  # Total (for backwards compatibility)
+            "level2_count": level2_count,    # Direct children
+            "level3_count": level3_count,    # Grandchildren
+            "earned_usd": earnings,
             "earned_crypto": 0.0,
             "total_earned_usd": earnings,
             "total_earned_crypto": 0.0
