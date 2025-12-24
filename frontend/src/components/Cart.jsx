@@ -51,7 +51,7 @@ export default function Cart() {
   const navigate = useNavigate();
 
   const handleCheckout = async () => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('access_token');
     if (!token) {
       setMessage("⚠️ Debes iniciar sesión para completar la compra.");
       setTimeout(() => navigate('/login', { state: { view: 'login' } }), 2000);
@@ -286,6 +286,13 @@ export default function Cart() {
                   }`}
               >
                 {loading ? '⏳ Procesando...' : '✅ Proceder al Pago'}
+              </button>
+
+              <button
+                onClick={() => navigate('/dashboard/store')}
+                className="w-full mt-3 py-3 rounded-lg font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 transition"
+              >
+                🛍️ Quiero más Productos
               </button>
 
               <button

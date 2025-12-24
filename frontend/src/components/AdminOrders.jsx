@@ -39,7 +39,7 @@ const AdminOrders = () => {
 
     const fetchOrders = async () => {
         try {
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('access_token');
             const response = await axios.get(`${API_URL}/api/orders/`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -75,7 +75,7 @@ const AdminOrders = () => {
         }
 
         try {
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('access_token');
             await axios.put(
                 `${API_URL}/api/orders/${selectedOrder.id}/status`,
                 {
@@ -136,8 +136,8 @@ const AdminOrders = () => {
                 <button
                     onClick={() => setFilterStatus('all')}
                     className={`px-4 py-2 rounded-lg font-medium transition ${filterStatus === 'all'
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                         }`}
                 >
                     Todos ({orders.length})
@@ -147,8 +147,8 @@ const AdminOrders = () => {
                         key={status}
                         onClick={() => setFilterStatus(status)}
                         className={`px-4 py-2 rounded-lg font-medium transition ${filterStatus === status
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                             }`}
                     >
                         {label} ({orders.filter(o => o.status === status).length})
@@ -372,19 +372,28 @@ const AdminOrders = () => {
                                 </div>
                             </div>
 
-                            {/* Botones de acción */}
-                            <div className="flex gap-3">
+                            {/* Botones de acción y Utilidades */}
+                            <div className="flex flex-col gap-3">
+                                <div className="flex gap-3">
+                                    <button
+                                        onClick={updateOrderStatus}
+                                        className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-medium"
+                                    >
+                                        Actualizar Estado
+                                    </button>
+                                    <button
+                                        onClick={closeModal}
+                                        className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+                                    >
+                                        Cancelar
+                                    </button>
+                                </div>
+
                                 <button
-                                    onClick={updateOrderStatus}
-                                    className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-medium"
+                                    onClick={() => handlePrintRemision(selectedOrder)}
+                                    className="w-full bg-gray-800 text-white px-4 py-2 rounded-lg hover:bg-gray-900 transition font-medium flex justify-center items-center gap-2"
                                 >
-                                    Actualizar Estado
-                                </button>
-                                <button
-                                    onClick={closeModal}
-                                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
-                                >
-                                    Cancelar
+                                    🖨️ Imprimir Remisión (Alistamiento)
                                 </button>
                             </div>
                         </div>
@@ -393,6 +402,95 @@ const AdminOrders = () => {
             )}
         </div>
     );
+};
+
+// Helper function to print packing slip
+const handlePrintRemision = (order) => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return alert('Por favor permite ventanas emergentes para imprimir.');
+
+    const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Remisión de Pedido #${order.id}</title>
+            <style>
+                body { font-family: sans-serif; padding: 20px; color: #000; }
+                .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px; }
+                .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+                .section-title { font-weight: bold; border-bottom: 1px solid #ccc; margin-bottom: 10px; }
+                table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+                th, td { border: 1px solid #000; padding: 8px; text-align: left; }
+                th { background-color: #f0f0f0; }
+                .footer { margin-top: 40px; text-align: center; font-size: 0.8em; }
+                .checkbox { width: 20px; height: 20px; display: inline-block; border: 1px solid #000; margin-right: 10px; }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1>ORDEN DE ALISTAMIENTO (REMISIÓN)</h1>
+                <h2>Pedido #${order.id}</h2>
+                <p>Fecha: ${new Date().toLocaleDateString()}</p>
+            </div>
+
+            <div class="info-grid">
+                <div>
+                    <div class="section-title">CLIENTE</div>
+                    <p><strong>ID Usuario:</strong> ${order.user_id}</p>
+                    <p><strong>Dirección de Envío:</strong> ${order.shipping_address || 'No especificada'}</p>
+                </div>
+                <div>
+                    <div class="section-title">DETALLES DE ENVÍO</div>
+                    <p><strong>Estado Actual:</strong> ${order.status}</p>
+                    <p><strong>Guía:</strong> ${order.tracking_number || 'Pendiente'}</p>
+                </div>
+            </div>
+
+            <div class="section-title">PRODUCTOS A DESPACHAR</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 50px;">Check</th>
+                        <th>Producto</th>
+                        <th style="width: 80px;">Cant.</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${order.items.map(item => `
+                        <tr>
+                            <td style="text-align: center;"><div class="checkbox"></div></td>
+                            <td>${item.product_name}</td>
+                            <td style="text-align: center; font-weight: bold; font-size: 1.2em;">${item.quantity}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+
+            <div class="info-grid" style="margin-top: 20px; border: 1px solid #000; padding: 10px;">
+               <div>
+                   <strong>Alistado por:</strong> _________________
+               </div>
+               <div>
+                   <strong>Verificado por:</strong> _________________
+               </div>
+            </div>
+
+            <div class="footer">
+                <p>Centro Comercial TEI - Control Interno de Despachos</p>
+                <button onclick="window.print()" style="padding: 10px 20px; font-size: 1.2em; cursor: pointer; margin-top: 20px;" class="no-print">IMPRIMIR ESCÁNER</button>
+            </div>
+            
+            <style>
+                @media print {
+                    .no-print { display: none; }
+                }
+            </style>
+        </body>
+        </html>
+    `;
+
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
 };
 
 export default AdminOrders;
