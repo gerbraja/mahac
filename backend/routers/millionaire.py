@@ -85,7 +85,7 @@ def get_millionaire_stats(user_id: int, db: Session = Depends(get_db)):
         # Count members at this level
         level_members = db.execute(text("""
             WITH RECURSIVE downline AS (
-                SELECT id, user_id, upline_id, 1 as depth
+                SELECT id, user_id, upline_id, 0 as depth
                 FROM binary_millionaire_members
                 WHERE user_id = :user_id
                 

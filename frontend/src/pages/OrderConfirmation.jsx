@@ -64,20 +64,28 @@ const OrderConfirmation = () => {
         setWalletError("");
 
         try {
-            // Simulate API call to verify second password and process payment
-            // await api.post('/api/wallet/pay', { orderId, secondPassword });
+            // Real API call
+            const res = await api.post('/api/wallet/pay-order', {
+                orderId: order.id,
+                pin: secondPassword
+            });
 
-            await new Promise(resolve => setTimeout(resolve, 1500)); // Mock delay
+            if (res.data.success) {
+                alert("✅ Pago realizado con éxito desde tu Billetera Virtual!");
+                setShowWalletModal(false);
+                // Update order status locally
+                setOrder(prev => ({ ...prev, status: 'paid' }));
 
-            // Mock success
-            alert("✅ Pago realizado con éxito desde tu Billetera Virtual!");
-            setShowWalletModal(false);
-            // Update order status locally or refetch
-            setOrder(prev => ({ ...prev, status: 'paid' }));
+                // Redirect after short delay? Or just show status update
+                setTimeout(() => {
+                    navigate('/dashboard/store');
+                }, 2000);
+            }
 
         } catch (error) {
             console.error("Payment error:", error);
-            setWalletError("Contraseña incorrecta o saldo insuficiente.");
+            const msg = error.response?.data?.detail || "Contraseña incorrecta o saldo insuficiente.";
+            setWalletError(msg);
         } finally {
             setProcessingPayment(false);
         }
