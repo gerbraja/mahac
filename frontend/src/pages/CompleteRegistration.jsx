@@ -48,7 +48,7 @@ export default function CompleteRegistration({ referralCode = "", onBack = null 
             setMessage(`¡Registro Exitoso! 🎉 Tu link de referido: ${window.location.origin}${response.data.referral_link}`);
 
             // Store token in localStorage for auto-login
-            localStorage.setItem("token", response.data.access_token);
+            localStorage.setItem("access_token", response.data.access_token);
 
             // Redirect to dashboard after 3 seconds
             setTimeout(() => {
@@ -160,13 +160,14 @@ export default function CompleteRegistration({ referralCode = "", onBack = null 
 
                                 <div>
                                     <label style={{ display: "block", color: "#1e3a8a", fontWeight: "500", marginBottom: "0.5rem" }}>
-                                        Código de Referido (Opcional)
+                                        Código de Referido *
                                     </label>
                                     <input
                                         type="text"
                                         name="referral_code"
                                         value={formData.referral_code}
                                         onChange={handleChange}
+                                        required
                                         style={{
                                             width: "100%",
                                             padding: "0.75rem",
@@ -174,7 +175,7 @@ export default function CompleteRegistration({ referralCode = "", onBack = null 
                                             border: "2px solid rgba(59, 130, 246, 0.3)",
                                             outline: "none"
                                         }}
-                                        placeholder="Usuario que te refirió (opcional)"
+                                        placeholder="Usuario que te refirió"
                                     />
                                 </div>
 

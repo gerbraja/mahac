@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 
 export default function HonorRanks() {
   const [honors, setHonors] = useState([]);
-  const token = localStorage.getItem("token");
+  const token = localStorage.getItem("access_token");
 
   useEffect(() => {
     fetch("/api/honor/my_honors", {

@@ -6,8 +6,8 @@ const BASE = process.env.REACT_APP_API_BASE || "http://localhost:8000";
 
 export default function OrderHistory() {
   const [orders, setOrders] = useState([]);
-  useEffect(()=> {
-    const token = localStorage.getItem("token");
+  useEffect(() => {
+    const token = localStorage.getItem("access_token");
     axios.get(`${BASE}/api/orders/my`, { headers: { Authorization: `Bearer ${token}` } })
       .then(res => setOrders(res.data))
       .catch(err => console.error(err));

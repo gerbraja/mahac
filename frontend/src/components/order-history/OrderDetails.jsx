@@ -7,8 +7,8 @@ const BASE = process.env.REACT_APP_API_BASE || "http://localhost:8000";
 export default function OrderDetails() {
   const { id } = useParams();
   const [order, setOrder] = useState(null);
-  useEffect(()=> {
-    const token = localStorage.getItem("token");
+  useEffect(() => {
+    const token = localStorage.getItem("access_token");
     axios.get(`${BASE}/api/orders/${id}`, { headers: { Authorization: `Bearer ${token}` } })
       .then(res => setOrder(res.data))
       .catch(err => console.error(err));
