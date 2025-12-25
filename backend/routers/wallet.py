@@ -845,8 +845,11 @@ def pay_order(
         else:
              raise HTTPException(status_code=400, detail="Monto del pedido inválido.")
 
-    if current_user.available_balance < amount_to_deduct:
-        raise HTTPException(status_code=400, detail=f"Saldo insuficiente. Tienes ${current_user.available_balance:.2f} USD, necesitas ${amount_to_deduct:.2f} USD.")
+    # Use bank_balance (Saldo Disponible) instead of global available_balance
+    current_balance = current_user.bank_balance or 0.0
+
+    if current_balance < amount_to_deduct:
+        raise HTTPException(status_code=400, detail=f"Saldo insuficiente en Banco. Tienes ${current_balance:.2f} USD, necesitas ${amount_to_deduct:.2f} USD.")
 
     try:
         # 4. Deduct Balance
