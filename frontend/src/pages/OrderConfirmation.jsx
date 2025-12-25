@@ -16,18 +16,26 @@ const OrderConfirmation = () => {
     const [walletError, setWalletError] = useState("");
     const [processingPayment, setProcessingPayment] = useState(false);
 
+    const [hasPin, setHasPin] = useState(false);
+
     useEffect(() => {
-        const fetchOrder = async () => {
+        const fetchData = async () => {
             try {
-                const res = await api.get(`/api/orders/${orderId}`);
-                setOrder(res.data);
+                // Fetch Order
+                const resOrder = await api.get(`/api/orders/${orderId}`);
+                setOrder(resOrder.data);
+
+                // Fetch User Info to check PIN
+                const resUser = await api.get('/auth/me');
+                setHasPin(resUser.data.has_transaction_pin);
+
             } catch (error) {
-                console.error("Error fetching order:", error);
+                console.error("Error fetching data:", error);
             } finally {
                 setLoading(false);
             }
         };
-        fetchOrder();
+        fetchData();
     }, [orderId]);
 
     if (loading) return <div className="p-8 text-center">Cargando detalles del pedido...</div>;
@@ -45,6 +53,12 @@ const OrderConfirmation = () => {
 
     const handleConfirmPayment = () => {
         if (paymentMethod === 'wallet') {
+            if (!hasPin) {
+                // Should not happen due to UI disabled state, but safety check
+                alert("Debes configurar tu clave de transacciones primero.");
+                navigate('/dashboard/security');
+                return;
+            }
             setShowWalletModal(true);
         } else if (paymentMethod === 'bank') {
             alert("Por favor envía el comprobante por WhatsApp para confirmar tu pago.");
@@ -162,6 +176,22 @@ const OrderConfirmation = () => {
                                         <span className="font-bold text-gray-800">Billetera Virtual</span>
                                     </div>
                                     <p className="text-sm text-gray-600 mt-1">Pagar usando el saldo disponible en tu oficina virtual.</p>
+
+                                    {!hasPin && paymentMethod === 'wallet' && (
+                                        <div className="mt-3 bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-800">
+                                            <p className="font-bold mb-1">⚠️ Clave de Transacciones No Configurada</p>
+                                            <p className="mb-2">Para usar tu billetera, primero debes configurar tu clave de seguridad.</p>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    navigate('/dashboard/security');
+                                                }}
+                                                className="bg-red-600 text-white px-3 py-1 rounded text-xs font-bold hover:bg-red-700"
+                                            >
+                                                Configurar Ahora
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                             </label>
 
@@ -244,9 +274,16 @@ const OrderConfirmation = () => {
                         {!['PSE', 'Nequi', 'Efecty'].includes(paymentMethod) && (
                             <button
                                 onClick={handleConfirmPayment}
-                                className="w-full bg-green-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-green-700 transition-shadow shadow-lg flex items-center justify-center gap-2"
+                                disabled={paymentMethod === 'wallet' && !hasPin}
+                                className={`w-full py-4 rounded-xl font-bold text-lg transition-shadow shadow-lg flex items-center justify-center gap-2
+                                    ${paymentMethod === 'wallet' && !hasPin
+                                        ? 'bg-gray-400 text-white cursor-not-allowed'
+                                        : 'bg-green-600 text-white hover:bg-green-700'}`}
                             >
-                                <span>✅ Confirmar Pago</span>
+                                <span>
+                                    {paymentMethod === 'wallet' && !hasPin ? '🚫 ' : '✅ '}
+                                    Confirmar Pago
+                                </span>
                             </button>
                         )}
 

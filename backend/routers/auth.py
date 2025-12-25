@@ -74,13 +74,32 @@ def register(data: RegisterData, db: Session = Depends(get_db)):
         if existing_username:
             raise HTTPException(status_code=400, detail="Este nombre de usuario ya está en uso")
 
-        # If a referral_code is provided, try to resolve the referer user
-        referer = None
-        if data.referral_code:
-            referer = db.query(UserModel).filter(
-                (UserModel.username == data.referral_code) |
-                (UserModel.referral_code == data.referral_code)
-            ).first()
+        # Mandatory Referral Check
+        if not data.referral_code:
+            raise HTTPException(status_code=400, detail="El código de referido es OBLIGATORIO")
+
+        # Verify referrer exists
+        referer = db.query(UserModel).filter(
+            (UserModel.username == data.referral_code) |
+            (UserModel.referral_code == data.referral_code)
+        ).first()
+
+        if not referer:
+            raise HTTPException(status_code=400, detail="El código de referido no existe. Verifica con tu patrocinador.")
+
+        # Daily Referral Limit Check (Max 20 per day)
+        today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+        daily_referrals = db.query(UserModel).filter(
+            UserModel.referred_by_id == referer.id,
+            UserModel.created_at >= today_start
+        ).count()
+
+        if daily_referrals >= 20:
+            print(f"⚠️ Limit reached for referrer {referer.username}: {daily_referrals} today")
+            raise HTTPException(
+                status_code=400, 
+                detail="Este patrocinador ha alcanzado su límite diario de registros (20). Por favor intenta de nuevo mañana o contacta soporte."
+            )
 
         # Hash password (truncate to 72 bytes for compatibility)
         password_to_hash = data.password[:72] if data.password else ''
@@ -123,18 +142,18 @@ def register(data: RegisterData, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(new_user)
         
-        # AUTO-REGISTER EN BINARY GLOBAL: Crear BinaryGlobalMember automáticamente
-        # (para reservar su posición en Binary Global)
+        
+        # AUTO-REGISTER IN BINARY GLOBAL ONLY (as per business rules)
+        # When a user fills the registration form, they are ONLY registered in Binary Global as pre-affiliate
+        # When they activate (pay), they will be registered in ALL other networks (Unilevel, Forced Matrix, Binary Millionaire)
+        
         try:
-            binary_global_member = BinaryGlobalMember(
-                user_id=new_user.id,
-                position=None  # Se asignará cuando se complete el pago
-            )
-            db.add(binary_global_member)
-            db.commit()
-            db.refresh(binary_global_member)
+            # Binary Global - Use the proper service function with position assignment
+            from ..mlm.services.binary_service import register_in_binary_global
+            register_in_binary_global(db, new_user.id)
+            print(f"✅ User {new_user.id} registered in Binary Global (pre-affiliate)")
         except Exception as e:
-            print(f"Error creating BinaryGlobalMember: {e}")
+            print(f"❌ Error registering in Binary Global: {e}")
             db.rollback()
         
         # Send WebSocket notification for marketing bubbles
@@ -386,6 +405,22 @@ def login(data: LoginData, db: Session = Depends(get_db)):
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Internal server error")
+
+
+@router.get("/me")
+def get_current_user_info(current_user: UserModel = Depends(get_current_user_object)):
+    """Get current user information."""
+    return {
+        "id": current_user.id,
+        "username": current_user.username,
+        "email": current_user.email,
+        "name": current_user.name,
+        "is_admin": current_user.is_admin,
+        "referral_link": f"/usuario/{current_user.username}",
+        "has_transaction_pin": bool(current_user.transaction_pin),
+        "bank_balance": current_user.bank_balance or 0.0,
+        "available_balance": current_user.available_balance or 0.0
+    }
 
 
 # ==================== SECURITY ENDPOINTS ====================
