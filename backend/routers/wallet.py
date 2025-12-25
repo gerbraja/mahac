@@ -853,12 +853,12 @@ def pay_order(
 
     try:
         # 4. Deduct Balance
-        current_user.available_balance -= amount_to_deduct
+        current_user.bank_balance = current_balance - amount_to_deduct
         
         # 5. Create Transaction Record
         tx = PaymentTransaction(
             order_id=order.id,
-            provider="wallet",
+            provider="wallet_bank",
             amount=amount_to_deduct,
             currency="USD",
             status="approved",
