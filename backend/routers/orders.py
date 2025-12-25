@@ -141,3 +141,28 @@ async def update_order_status(
                 print(f"Error distributing commissions for order {order.id}: {e}")
     
     return {"ok": True, "order_id": order.id, "status": order.status, "tracking_number": order.tracking_number}
+@router.post("/{order_id}/confirm-payment")
+def confirm_order_payment(
+    order_id: int, 
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    """
+    Manually confirm payment for an order (Admin only).
+    Triggers the same logic as automatic wallet payment:
+    - Calculates Unilevel/Binary commissions
+    - Activates user (if applicable)
+    - Updates status to 'pendiente_envio' or 'completado'
+    """
+    if not getattr(current_user, "is_admin", False):
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    from backend.mlm.services.payment_service import process_successful_payment
+    try:
+        process_successful_payment(db, order_id)
+        
+        # Reload order to get new status
+        order = db.query(Order).filter(Order.id == order_id).first()
+        return {"success": True, "new_status": order.status}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))

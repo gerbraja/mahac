@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from backend.database.models.order import Order
 from backend.database.models.order_item import OrderItem
 from backend.database.models.payment_transaction import PaymentTransaction
@@ -18,8 +19,27 @@ def process_successful_payment(db: Session, order_id: int, transaction_id: int =
     if not order:
         raise ValueError("Order not found")
 
-    # 1. Update Order status
-    order.status = "paid"
+    # 1. Update Order status based on content
+    # rule: Activation items (Level 1) do not require shipping (Digital). 
+    # Products/Upgrades require shipping.
+    
+    needs_shipping = False
+    items = db.query(OrderItem).filter(OrderItem.order_id == order.id).all()
+    
+    for item in items:
+        prod = db.query(Product).filter(Product.id == item.product_id).first()
+        if prod and not prod.is_activation:
+             # If it's a normal product (not just an activation fee/package), it needs shipping
+             needs_shipping = True
+             break
+    
+    if needs_shipping:
+        order.status = "pendiente_envio"
+    else:
+        # Digital only (Activation)
+        order.status = "completado"
+        order.completed_at = func.now()
+
     db.add(order)
     
     # 2. Update Transaction status if provided

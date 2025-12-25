@@ -37,6 +37,25 @@ const AdminOrders = () => {
         fetchOrders();
     }, []);
 
+    const handleValidatePayment = async (orderId) => {
+        if (!window.confirm("¿Confirmar que el pago ha sido recibido? Esto validará la orden y calculará comisiones.")) return;
+
+        try {
+            const token = localStorage.getItem('access_token');
+            const res = await axios.post(`${API_URL}/api/orders/${orderId}/confirm-payment`, {}, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            if (res.data.success) {
+                alert(`Pago validado. Nuevo estado: ${statusLabels[res.data.new_status]}`);
+                fetchOrders();
+            }
+        } catch (error) {
+            console.error("Error confirming payment:", error);
+            alert("Error al validar el pago: " + (error.response?.data?.detail || error.message));
+        }
+    };
+
     const fetchOrders = async () => {
         try {
             const token = localStorage.getItem('access_token');
@@ -222,12 +241,23 @@ const AdminOrders = () => {
                                             {formatDate(order.created_at)}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                            <button
-                                                onClick={() => openOrderModal(order)}
-                                                className="text-blue-600 hover:text-blue-900"
-                                            >
-                                                Gestionar
-                                            </button>
+                                            <div className="flex gap-2">
+                                                {order.status === 'reservado' && (
+                                                    <button
+                                                        onClick={() => handleValidatePayment(order.id)}
+                                                        className="text-green-600 hover:text-green-900 bg-green-50 px-2 py-1 rounded border border-green-200 text-xs"
+                                                        title="Validar Pago Manualmente"
+                                                    >
+                                                        Validar
+                                                    </button>
+                                                )}
+                                                <button
+                                                    onClick={() => openOrderModal(order)}
+                                                    className="text-blue-600 hover:text-blue-900"
+                                                >
+                                                    Gestionar
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))
