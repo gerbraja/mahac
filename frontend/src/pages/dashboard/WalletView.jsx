@@ -1,669 +1,505 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import { api } from '../../api/api';
+import SimpleErrorBoundary from '../../components/SimpleErrorBoundary';
+import EarningsCard from '../../components/dashboard/EarningsCard';
+import WithdrawalModal from './components/WithdrawalModal';
+
+// Componente para animar números
+const AnimatedNumber = ({ value }) => {
+    const [displayValue, setDisplayValue] = useState(0);
+
+    useEffect(() => {
+        let start = 0;
+        const end = value;
+        const duration = 1000;
+        const increment = end / (duration / 16);
+
+        const timer = setInterval(() => {
+            start += increment;
+            if (start >= end) {
+                setDisplayValue(end);
+                clearInterval(timer);
+            } else {
+                setDisplayValue(start);
+            }
+        }, 16);
+
+        return () => clearInterval(timer);
+    }, [value]);
+
+    return (
+        <React.Fragment>
+            {displayValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+        </React.Fragment>
+    );
+};
 
 const WalletView = () => {
     const [walletData, setWalletData] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState('overview');
+    const [activeTab, setActiveTab] = useState('assets');
+    const [showNumbers, setShowNumbers] = useState(false);
+    const [withdrawalStatus, setWithdrawalStatus] = useState(null);
+    const [showWithdrawalModal, setShowWithdrawalModal] = useState(false);
 
     useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const token = localStorage.getItem('access_token');
-                const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
-
-                const res = await axios.get(`http://localhost:8000/api/wallet/summary`, config);
-                setWalletData(res.data);
-            } catch (error) {
-                console.error("Error fetching wallet data:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
+        console.log("APP VERSION: WALLET_COP_FIXED_V2"); // Cache Buster
         fetchData();
+        // Animation trigger
+        setTimeout(() => setShowNumbers(true), 100);
     }, []);
 
-    if (loading) return <div className="p-4">Loading wallet data...</div>;
-    if (!walletData) return <div className="p-4 text-red-500">Failed to load wallet data.</div>;
+    const [errorMsg, setErrorMsg] = useState(null);
+
+    const fetchData = async () => {
+        try {
+            setErrorMsg(null);
+            const res = await api.get('/api/wallet/summary');
+            setWalletData(res.data);
+
+            // Fetch withdrawal status
+            try {
+                const statusRes = await api.get('/api/wallet/withdrawal-status');
+                setWithdrawalStatus(statusRes.data);
+            } catch (wErr) {
+                console.warn("Could not fetch withdrawal status", wErr);
+            }
+        } catch (error) {
+            console.error("Error fetching wallet data:", error);
+            setErrorMsg(error.response?.data?.detail || error.message || "Unknown error");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    if (loading) return (
+        <div className="flex justify-center items-center h-screen bg-gray-50">
+            <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-600"></div>
+        </div>
+    );
+
+    if (!walletData) return (
+        <div className="p-8 text-center text-red-500 bg-red-50 rounded-xl">
+            <p className="font-bold text-xl">⚠️ Error de conexión</p>
+            <p className="font-mono text-sm mt-2 p-2 bg-red-100 rounded">{errorMsg || "No se pudieron cargar los datos."}</p>
+            <button
+                onClick={fetchData}
+                className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+            >
+                Reintentar
+            </button>
+        </div>
+    );
 
     const earnings = walletData.earnings_by_source || {};
 
-    // Datos simulados para gráficas de crecimiento (últimos 6 meses)
-    const monthlyGrowth = {
-        overview: [120, 280, 450, 680, 920, 1200],
-        special: [50, 150, 250, 400, 600, 800],
-        transactions: [80, 160, 300, 520, 780, 1100],
-        bonuses: [40, 90, 180, 320, 450, 650]
-    };
+    // Calculate Total Asset Value (Cash + Crypto + Prize Value)
+    const prizeValue = (walletData.special_bonuses?.product_purchase?.total_value || 0) +
+        (walletData.special_bonuses?.car_purchase?.total_value || 0) +
+        (walletData.special_bonuses?.apartment_purchase?.total_value || 0);
 
-    const getGrowthPercentage = (data) => {
-        if (!data || data.length < 2) return 0;
-        const previous = data[data.length - 2];
-        const current = data[data.length - 1];
-        if (previous === 0) return 100;
-        return ((current - previous) / previous * 100).toFixed(1);
-    };
+    const totalAssetValue = (walletData.available_balance || 0) +
+        (walletData.bank_balance || 0) +
+        (walletData.crypto_balance || 0) +
+        (walletData.frozen_crypto_balance || 0) +
+        prizeValue;
 
-    const renderMiniChart = (data, colorClass) => {
-        const max = Math.max(...data);
-        const normalized = data.map(val => (val / max) * 100);
 
-        return (
-            <div className="flex items-end gap-1 h-16 mt-3">
-                {normalized.map((height, idx) => (
-                    <div
-                        key={idx}
-                        className={`flex-1 rounded-t transition-all ${colorClass}`}
-                        style={{
-                            height: `${height}%`,
-                            minHeight: '4px',
-                            opacity: 0.7 + (idx * 0.05)
-                        }}
-                    />
-                ))}
-            </div>
-        );
-    };
+    const incomeSources = [
+        {
+            key: 'binary_global',
+            name: 'Binario Global',
+            icon: '🔴',
+            color: 'from-red-500 to-pink-600',
+            bg: 'bg-red-50',
+            border: 'border-red-200',
+            data: earnings.binary_global
+        },
+        {
+            key: 'binary_millionaire',
+            name: 'Binario Millonario',
+            icon: '💎',
+            color: 'from-blue-400 to-cyan-500',
+            bg: 'bg-cyan-50',
+            border: 'border-cyan-200',
+            data: earnings.binary_millionaire
+        },
+        {
+            key: 'unilevel',
+            name: 'Unilevel',
+            icon: '🌳',
+            color: 'from-emerald-400 to-green-600',
+            bg: 'bg-emerald-50',
+            border: 'border-emerald-200',
+            data: earnings.unilevel
+        },
+        {
+            key: 'matching_bonus',
+            name: 'Matching Bonus',
+            icon: '🤝',
+            color: 'from-purple-500 to-indigo-600',
+            bg: 'bg-purple-50',
+            border: 'border-purple-200',
+            data: earnings.matching_bonus
+        },
+        {
+            key: 'forced_matrix',
+            name: 'Matriz Forzada',
+            icon: '⚡',
+            color: 'from-yellow-400 to-orange-500',
+            bg: 'bg-orange-50',
+            border: 'border-orange-200',
+            data: earnings.forced_matrix
+        },
+        {
+            key: 'global_pool',
+            name: 'Pool Global',
+            icon: '🌍',
+            color: 'from-blue-600 to-indigo-800',
+            bg: 'bg-blue-50',
+            border: 'border-blue-200',
+            data: earnings.global_pool
+        }
+    ];
+
+    // Aggregated Earnings Calculations
+    const unilevelTotal = (earnings.unilevel?.total || 0) +
+        (earnings.sponsorship?.total || 0) +
+        (earnings.matching_bonus?.total || 0);
+
+    const binaryGlobalTotal = earnings.binary_global?.total || 0;
+    const binaryMillionaireTotal = earnings.binary_millionaire?.total || 0;
+    const matrixTotal = earnings.forced_matrix?.total || 0;
+
+    // Global Pool is usually separate or added to one, keeping it separate for now or just adding to total.
+    const globalPoolTotal = earnings.global_pool?.total || 0;
+
+    // COP Conversion
+    const COP_RATE = 4500;
+    const totalCOP = totalAssetValue * COP_RATE;
 
     return (
-        <div className="space-y-6">
-            <h1 className="text-3xl font-bold text-gray-800">💰 Mi Billetera</h1>
-
-            {/* Section Navigation Cards with Charts - ARRIBA */}
-            <div className="flex flex-col lg:flex-row gap-8 mb-8">
-                {/* Resumen Card */}
-                <button
-                    onClick={() => setActiveTab('summary')}
-                    className={`flex-1 relative overflow-hidden rounded-2xl shadow-2xl transition-all duration-300 transform hover:scale-105 hover:-translate-y-2 ${activeTab === 'summary'
-                            ? 'ring-4 ring-blue-400 shadow-blue-500/50'
-                            : 'hover:shadow-blue-500/30'
-                        }`}
-                >
-                    <div className="bg-gradient-to-br from-blue-700 via-blue-800 to-blue-900 p-8 text-white min-h-[240px] flex flex-col">
-                        <div className="flex items-start justify-between mb-4">
-                            <div className="text-6xl">📊</div>
-                            <div className="text-right">
-                                <div className="text-4xl font-bold tracking-tight">${walletData.total_earnings?.toFixed(0) || '0'}</div>
-                                <div className="text-sm opacity-80 mt-1">Total</div>
+        <SimpleErrorBoundary>
+            <div className="min-h-screen bg-gray-50 pb-12">
+                {/* Hero Section */}
+                <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white p-8 pb-32 mb-[-6rem]">
+                    <div className="max-w-7xl mx-auto">
+                        <div className="flex justify-between items-center mb-8">
+                            <div>
+                                <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent">
+                                    Billetera Digital
+                                </h1>
+                                <p className="opacity-60 text-sm mt-1">Gestión integral de activos y comisiones</p>
                             </div>
+                            <button
+                                onClick={fetchData}
+                                className="p-2 bg-slate-700/50 rounded-full hover:bg-slate-700 transition"
+                                title="Actualizar"
+                            >
+                                🔄
+                            </button>
                         </div>
-                        <h3 className="text-lg font-bold mb-3">Resumen General</h3>
-                        <div className="flex items-center gap-2 text-sm mb-3">
-                            <span className="text-green-300 font-bold">↗ +{getGrowthPercentage(monthlyGrowth.overview)}%</span>
-                            <span className="opacity-80">vs mes anterior</span>
-                        </div>
-                        <div className="mt-auto">
-                            {renderMiniChart(monthlyGrowth.overview, 'bg-blue-300')}
+
+                        <div className="text-center py-8">
+                            <p className="text-slate-400 text-sm uppercase tracking-widest font-semibold mb-2">Valor Total de Activos</p>
+                            <div
+                                style={{
+                                    fontSize: '4.5rem',
+                                    fontWeight: '800',
+                                    background: 'linear-gradient(to right, #6ee7b7, #3b82f6)',
+                                    WebkitBackgroundClip: 'text',
+                                    WebkitTextFillColor: 'transparent',
+                                    display: 'inline-block'
+                                }}
+                                className="pb-2 filter drop-shadow-lg"
+                            >
+                                <AnimatedNumber value={totalAssetValue} />
+                                <span style={{ fontSize: '1.5rem', WebkitTextFillColor: '#94a3b8' }} className="font-normal ml-3">USD</span>
+                            </div>
+
+                            {/* COP Display */}
+                            <div className="mb-4 mt-2">
+                                <span className="text-2xl font-extrabold text-yellow-400 bg-slate-900/80 px-6 py-2 rounded-full border-2 border-yellow-500 shadow-lg shadow-yellow-500/20 block md:inline-block">
+                                    🇨🇴 ≈ $ <AnimatedNumber value={totalCOP} /> <span className="text-sm font-bold text-yellow-200">COP</span>
+                                </span>
+                            </div>
+                            <p className="text-slate-400 text-sm mt-4">
+                                Saldo Disponible: <span className="text-emerald-400 font-bold">${walletData.available_balance?.toLocaleString()}</span>
+                                {' • '}
+                                Saldo Banco: <span className="text-green-400 font-bold">${walletData.bank_balance?.toLocaleString()}</span>
+                                {' • '}
+                                Cripto: <span className="text-yellow-400 font-bold">${walletData.crypto_balance?.toLocaleString()}</span>
+                                {' • '}
+                                Saldo Compras: <span className="text-blue-400 font-bold">${walletData.purchase_balance?.toLocaleString() || '0'}</span>
+                                {' • '}
+                                Premios: <span className="text-purple-400 font-bold">${prizeValue?.toLocaleString()}</span>
+                            </p>
                         </div>
                     </div>
-                </button>
-
-                {/* Bonos Especiales Card */}
-                <button
-                    onClick={() => setActiveTab('special')}
-                    className={`flex-1 relative overflow-hidden rounded-2xl shadow-2xl transition-all duration-300 transform hover:scale-105 hover:-translate-y-2 ${activeTab === 'special'
-                            ? 'ring-4 ring-green-400 shadow-green-500/50'
-                            : 'hover:shadow-green-500/30'
-                        }`}
-                >
-                    <div className="bg-gradient-to-br from-green-700 via-green-800 to-green-900 p-8 text-white min-h-[240px] flex flex-col">
-                        <div className="flex items-start justify-between mb-4">
-                            <div className="text-6xl">🎁</div>
-                            <div className="text-right">
-                                <div className="text-4xl font-bold tracking-tight">
-                                    {(walletData.special_bonuses?.product_purchase?.count || 0) +
-                                        (walletData.special_bonuses?.car_purchase?.count || 0) +
-                                        (walletData.special_bonuses?.apartment_purchase?.count || 0) +
-                                        (walletData.special_bonuses?.travel?.count || 0)}
-                                </div>
-                                <div className="text-sm opacity-80 mt-1">Bonos</div>
-                            </div>
-                        </div>
-                        <h3 className="text-lg font-bold mb-3">Bonos Especiales</h3>
-                        <div className="flex items-center gap-2 text-sm mb-3">
-                            <span className="text-green-300 font-bold">↗ +{getGrowthPercentage(monthlyGrowth.special)}%</span>
-                            <span className="opacity-80">crecimiento</span>
-                        </div>
-                        <div className="mt-auto">
-                            {renderMiniChart(monthlyGrowth.special, 'bg-green-300')}
-                        </div>
-                    </div>
-                </button>
-
-                {/* Transacciones Card */}
-                <button
-                    onClick={() => setActiveTab('transactions')}
-                    className={`flex-1 relative overflow-hidden rounded-2xl shadow-2xl transition-all duration-300 transform hover:scale-105 hover:-translate-y-2 ${activeTab === 'transactions'
-                            ? 'ring-4 ring-teal-400 shadow-teal-500/50'
-                            : 'hover:shadow-teal-500/30'
-                        }`}
-                >
-                    <div className="bg-gradient-to-br from-teal-700 via-cyan-800 to-cyan-900 p-8 text-white min-h-[240px] flex flex-col">
-                        <div className="flex items-start justify-between mb-4">
-                            <div className="text-6xl">📜</div>
-                            <div className="text-right">
-                                <div className="text-4xl font-bold tracking-tight">
-                                    {(earnings.unilevel?.count || 0) +
-                                        (earnings.matching_bonus?.count || 0) +
-                                        (earnings.global_pool?.count || 0)}
-                                </div>
-                                <div className="text-sm opacity-80 mt-1">Total</div>
-                            </div>
-                        </div>
-                        <h3 className="text-lg font-bold mb-3">Transacciones</h3>
-                        <div className="flex items-center gap-2 text-sm mb-3">
-                            <span className="text-green-300 font-bold">↗ +{getGrowthPercentage(monthlyGrowth.transactions)}%</span>
-                            <span className="opacity-80">actividad</span>
-                        </div>
-                        <div className="mt-auto">
-                            {renderMiniChart(monthlyGrowth.transactions, 'bg-teal-300')}
-                        </div>
-                    </div>
-                </button>
-
-                {/* Rangos Card */}
-                <button
-                    onClick={() => setActiveTab('bonuses')}
-                    className={`flex-1 relative overflow-hidden rounded-2xl shadow-2xl transition-all duration-300 transform hover:scale-105 hover:-translate-y-2 ${activeTab === 'bonuses'
-                            ? 'ring-4 ring-indigo-400 shadow-indigo-500/50'
-                            : 'hover:shadow-indigo-500/30'
-                        }`}
-                >
-                    <div className="bg-gradient-to-br from-indigo-700 via-indigo-800 to-indigo-900 p-8 text-white min-h-[240px] flex flex-col">
-                        <div className="flex items-start justify-between mb-4">
-                            <div className="text-6xl">🏆</div>
-                            <div className="text-right">
-                                <div className="text-4xl font-bold tracking-tight">
-                                    {(earnings.qualified_ranks?.count || 0) +
-                                        (earnings.honor_ranks?.count || 0)}
-                                </div>
-                                <div className="text-sm opacity-80 mt-1">Logros</div>
-                            </div>
-                        </div>
-                        <h3 className="text-lg font-bold mb-3">Rangos y Logros</h3>
-                        <div className="flex items-center gap-2 text-sm mb-3">
-                            <span className="text-green-300 font-bold">↗ +{getGrowthPercentage(monthlyGrowth.bonuses)}%</span>
-                            <span className="opacity-80">progreso</span>
-                        </div>
-                        <div className="mt-auto">
-                            {renderMiniChart(monthlyGrowth.bonuses, 'bg-indigo-300')}
-                        </div>
-                    </div>
-                </button>
-            </div>
-
-            {/* Balance Cards - ABAJO de los cuadros de navegación */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <div className="bg-gradient-to-br from-green-500 to-green-600 p-6 rounded-xl shadow-lg text-white">
-                    <h3 className="text-sm font-medium opacity-90 uppercase">Saldo Disponible</h3>
-                    <p className="text-4xl font-bold mt-2">${walletData.available_balance?.toFixed(2) || '0.00'}</p>
-                    <p className="text-xs mt-2 opacity-75">Disponible para retiro</p>
                 </div>
 
-                <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-6 rounded-xl shadow-lg text-white">
-                    <h3 className="text-sm font-medium opacity-90 uppercase">Saldo Congelado</h3>
-                    <p className="text-4xl font-bold mt-2">${walletData.frozen_crypto_balance?.toFixed(2) || '0.00'}</p>
-                    <p className="text-xs mt-2 opacity-75">Bloqueado temporalmente</p>
-                </div>
-
-                <div className="bg-gradient-to-br from-purple-500 to-purple-600 p-6 rounded-xl shadow-lg text-white">
-                    <h3 className="text-sm font-medium opacity-90 uppercase">Ganancias Totales</h3>
-                    <p className="text-4xl font-bold mt-2">${walletData.total_earnings?.toFixed(2) || '0.00'}</p>
-                    <p className="text-xs mt-2 opacity-75">De todos los planes</p>
-                </div>
-
-                <div className="bg-gradient-to-br from-yellow-500 to-yellow-600 p-6 rounded-xl shadow-lg text-white">
-                    <h3 className="text-sm font-medium opacity-90 uppercase">Cripto Balance</h3>
-                    <p className="text-4xl font-bold mt-2">${walletData.crypto_balance?.toFixed(2) || '0.00'}</p>
-                    <p className="text-xs mt-2 opacity-75">Saldo en criptomonedas</p>
-                </div>
-            </div>
-
-            {/* Content Area */}
-            <div className="bg-white rounded-lg shadow p-6">
-                {activeTab === 'overview' && (
-                    <div className="space-y-6">
-                        <h2 className="text-xl font-bold text-gray-800">Ganancias por Fuente</h2>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                            {/* Binary Global */}
-                            <div className="bg-gradient-to-br from-red-50 to-red-100 p-5 rounded-lg border-l-4 border-red-500">
-                                <div className="flex items-center justify-between mb-2">
-                                    <h4 className="text-sm font-semibold text-gray-700">🔴 Binario Global</h4>
-                                    <span className="text-xs bg-red-500 text-white px-2 py-1 rounded-full">
-                                        {earnings.binary_global?.count || 0}
-                                    </span>
-                                </div>
-                                <p className="text-2xl font-bold text-gray-900">
-                                    ${earnings.binary_global?.total?.toFixed(2) || '0.00'}
-                                </p>
-                                <p className="text-xs text-gray-600 mt-1">Plan 2x2 Global</p>
-                            </div>
-
-                            {/* Binary Millionaire */}
-                            <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-5 rounded-lg border-l-4 border-orange-500">
-                                <div className="flex items-center justify-between mb-2">
-                                    <h4 className="text-sm font-semibold text-gray-700">💎 Binario Millonario</h4>
-                                    <span className="text-xs bg-orange-500 text-white px-2 py-1 rounded-full">
-                                        {earnings.binary_millionaire?.count || 0}
-                                    </span>
-                                </div>
-                                <p className="text-2xl font-bold text-gray-900">
-                                    ${earnings.binary_millionaire?.total?.toFixed(2) || '0.00'}
-                                </p>
-                                <p className="text-xs text-gray-600 mt-1">27 niveles 2x2</p>
-                            </div>
-
-                            {/* Unilevel */}
-                            <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 p-5 rounded-lg border-l-4 border-indigo-500">
-                                <div className="flex items-center justify-between mb-2">
-                                    <h4 className="text-sm font-semibold text-gray-700">🌳 Unilevel</h4>
-                                    <span className="text-xs bg-indigo-500 text-white px-2 py-1 rounded-full">
-                                        {earnings.unilevel?.count || 0}
-                                    </span>
-                                </div>
-                                <p className="text-2xl font-bold text-gray-900">
-                                    ${earnings.unilevel?.total?.toFixed(2) || '0.00'}
-                                </p>
-                                <p className="text-xs text-gray-600 mt-1">7 niveles (27%)</p>
-                            </div>
-
-                            {/* Matching Bonus */}
-                            <div className="bg-gradient-to-br from-pink-50 to-pink-100 p-5 rounded-lg border-l-4 border-pink-500">
-                                <div className="flex items-center justify-between mb-2">
-                                    <h4 className="text-sm font-semibold text-gray-700">🎁 Matching Bonus</h4>
-                                    <span className="text-xs bg-pink-500 text-white px-2 py-1 rounded-full">
-                                        {earnings.matching_bonus?.count || 0}
-                                    </span>
-                                </div>
-                                <p className="text-2xl font-bold text-gray-900">
-                                    ${earnings.matching_bonus?.total?.toFixed(2) || '0.00'}
-                                </p>
-                                <p className="text-xs text-gray-600 mt-1">50% de directos</p>
-                            </div>
-
-                            {/* Forced Matrix */}
-                            <div className="bg-gradient-to-br from-teal-50 to-teal-100 p-5 rounded-lg border-l-4 border-teal-500">
-                                <div className="flex items-center justify-between mb-2">
-                                    <h4 className="text-sm font-semibold text-gray-700">⚡ Matrices Forzadas</h4>
-                                    <span className="text-xs bg-teal-500 text-white px-2 py-1 rounded-full">
-                                        {earnings.forced_matrix?.count || 0}
-                                    </span>
-                                </div>
-                                <p className="text-2xl font-bold text-gray-900">
-                                    ${earnings.forced_matrix?.total?.toFixed(2) || '0.00'}
-                                </p>
-                                <p className="text-xs text-gray-600 mt-1">9 matrices (3x7)</p>
-                            </div>
-
-                            {/* Qualified Ranks */}
-                            <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 p-5 rounded-lg border-l-4 border-yellow-500">
-                                <div className="flex items-center justify-between mb-2">
-                                    <h4 className="text-sm font-semibold text-gray-700">🏆 Bonos de Calificación</h4>
-                                    <span className="text-xs bg-yellow-500 text-white px-2 py-1 rounded-full">
-                                        {earnings.qualified_ranks?.count || 0}
-                                    </span>
-                                </div>
-                                <p className="text-2xl font-bold text-gray-900">
-                                    ${earnings.qualified_ranks?.total?.toFixed(2) || '0.00'}
-                                </p>
-                                <p className="text-xs text-gray-600 mt-1">Matrices cerradas</p>
-                            </div>
-
-                            {/* Honor Ranks */}
-                            <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-5 rounded-lg border-l-4 border-purple-500">
-                                <div className="flex items-center justify-between mb-2">
-                                    <h4 className="text-sm font-semibold text-gray-700">👑 Rangos de Honor</h4>
-                                    <span className="text-xs bg-purple-500 text-white px-2 py-1 rounded-full">
-                                        {earnings.honor_ranks?.count || 0}
-                                    </span>
-                                </div>
-                                <p className="text-2xl font-bold text-gray-900">Ver detalles</p>
-                                <p className="text-xs text-gray-600 mt-1">Reconocimientos</p>
-                            </div>
-
-                            {/* Global Pool */}
-                            <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-5 rounded-lg border-l-4 border-blue-500">
-                                <div className="flex items-center justify-between mb-2">
-                                    <h4 className="text-sm font-semibold text-gray-700">🌍 Pool Global</h4>
-                                    <span className="text-xs bg-blue-500 text-white px-2 py-1 rounded-full">
-                                        {earnings.global_pool?.count || 0}
-                                    </span>
-                                </div>
-                                <p className="text-2xl font-bold text-gray-900">
-                                    ${earnings.global_pool?.total?.toFixed(2) || '0.00'}
-                                </p>
-                                <p className="text-xs text-gray-600 mt-1">7% distribuido</p>
-                            </div>
-                        </div>
-                    </div>
+                {/* Withdrawal Modal */}
+                {showWithdrawalModal && (
+                    <WithdrawalModal
+                        onClose={() => setShowWithdrawalModal(false)}
+                        onWithdrawSuccess={() => {
+                            fetchData(); // Refresh balance
+                        }}
+                    />
                 )}
 
-                {activeTab === 'special' && (
-                    <div className="space-y-6">
-                        <h2 className="text-xl font-bold text-gray-800 mb-6">🎁 Bonos Especiales</h2>
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-                        {/* Bono para Compra de Productos */}
-                        <div className="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-xl border-l-4 border-green-500">
-                            <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-lg font-bold text-gray-800">🛒 Bono para Compra de Productos</h3>
-                                <span className="bg-green-500 text-white px-4 py-2 rounded-full text-sm font-bold">
-                                    {walletData.special_bonuses?.product_purchase?.count || 0} bonos
-                                </span>
-                            </div>
-                            <p className="text-4xl font-bold text-green-600 mb-2">
-                                ${walletData.special_bonuses?.product_purchase?.total_value?.toFixed(2) || '0.00'}
+                    {/* Bank Available Balance Card (New Request) */}
+                    <div className="mb-8 p-6 bg-white rounded-2xl shadow-lg border border-indigo-100 flex flex-col md:flex-row justify-between items-center bg-gradient-to-r from-white to-indigo-50">
+                        <div>
+                            <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                                🏦 Banco: Saldo Disponible
+                                {withdrawalStatus?.active_window && (
+                                    <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full border border-green-200">
+                                        Retiros Habilitados
+                                    </span>
+                                )}
+                            </h2>
+                            <p className="text-gray-500 text-sm mt-1">
+                                {withdrawalStatus?.message || "Cargando estado..."}
                             </p>
-                            <p className="text-sm text-gray-600 mb-4">Disponible para comprar productos en la tienda</p>
 
-                            {walletData.special_bonuses?.product_purchase?.bonuses?.map((bonus, idx) => (
-                                <div key={idx} className="bg-white p-4 rounded-lg mt-2">
-                                    <div className="flex justify-between items-center">
-                                        <div>
-                                            <p className="font-semibold">${bonus.value.toFixed(2)}</p>
-                                            <p className="text-sm text-gray-600">{bonus.awarded_for}</p>
-                                            <p className="text-xs text-gray-500">{new Date(bonus.awarded_at).toLocaleDateString()}</p>
-                                        </div>
-                                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${bonus.status === 'active' ? 'bg-green-100 text-green-800' :
-                                                bonus.status === 'used' ? 'bg-gray-100 text-gray-800' :
-                                                    'bg-yellow-100 text-yellow-800'
-                                            }`}>
-                                            {bonus.status === 'active' ? 'Activo' : bonus.status === 'used' ? 'Usado' : 'Pendiente'}
-                                        </span>
-                                    </div>
-                                </div>
-                            ))}
-
-                            {!walletData.special_bonuses?.product_purchase?.bonuses?.length && (
-                                <p className="text-center text-gray-500 py-4">No has ganado bonos de productos aún</p>
-                            )}
+                            {/* Payment Calendar Info */}
+                            <div className="mt-4 p-3 bg-blue-50/50 rounded-lg border border-blue-100 text-sm">
+                                <p className="font-bold text-blue-800 mb-1 flex items-center gap-1">
+                                    📅 Calendario de Pagos:
+                                </p>
+                                <ul className="space-y-1 text-xs text-blue-700">
+                                    <li className="flex items-center gap-2">
+                                        <span className="w-12 font-bold bg-white px-1 rounded border border-blue-200 text-center">Día 7</span>
+                                        <span>Ganancias de Matrices</span>
+                                    </li>
+                                    <li className="flex items-center gap-2">
+                                        <span className="w-12 font-bold bg-white px-1 rounded border border-blue-200 text-center">Día 17</span>
+                                        <span>Binario Millonario</span>
+                                    </li>
+                                    <li className="flex items-center gap-2">
+                                        <span className="w-12 font-bold bg-white px-1 rounded border border-blue-200 text-center">Día 27</span>
+                                        <span>Comisiones Generales</span>
+                                    </li>
+                                </ul>
+                            </div>
                         </div>
 
-                        {/* Bono Compra de Auto */}
-                        <div className="bg-gradient-to-br from-red-50 to-red-100 p-6 rounded-xl border-l-4 border-red-500">
-                            <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-lg font-bold text-gray-800">🚗 Bono Compra de Auto</h3>
-                                <span className="bg-red-500 text-white px-4 py-2 rounded-full text-sm font-bold">
-                                    {walletData.special_bonuses?.car_purchase?.count || 0} bonos
-                                </span>
+                        <div className="flex items-center gap-6 mt-4 md:mt-0">
+                            <div className="text-right">
+                                <p className="text-xs text-gray-500 uppercase font-semibold">Disponible Hoy</p>
+                                <p className={`text-3xl font-bold ${withdrawalStatus?.max_withdrawable > 0 ? 'text-green-600' : 'text-gray-400'}`}>
+                                    ${withdrawalStatus?.max_withdrawable?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
+                                </p>
+                                {withdrawalStatus?.max_withdrawable > 0 && (
+                                    <p className="text-sm font-bold text-yellow-600 bg-yellow-100 px-2 py-0.5 rounded-full inline-block mt-1">
+                                        ≈ ${(withdrawalStatus.max_withdrawable * 4500).toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} COP
+                                    </p>
+                                )}
                             </div>
-                            <p className="text-4xl font-bold text-red-600 mb-2">
-                                ${walletData.special_bonuses?.car_purchase?.total_value?.toFixed(2) || '0.00'}
-                            </p>
-                            <p className="text-sm text-gray-600 mb-4">Disponible para la compra de un vehículo</p>
 
-                            {walletData.special_bonuses?.car_purchase?.bonuses?.map((bonus, idx) => (
-                                <div key={idx} className="bg-white p-4 rounded-lg mt-2">
-                                    <div className="flex justify-between items-center">
-                                        <div>
-                                            <p className="font-semibold text-lg">🚗 ${bonus.value.toFixed(2)}</p>
-                                            <p className="text-sm text-gray-600">{bonus.description}</p>
-                                            <p className="text-sm font-medium text-red-600 mt-1">{bonus.awarded_for}</p>
-                                            <p className="text-xs text-gray-500">{new Date(bonus.awarded_at).toLocaleDateString()}</p>
-                                        </div>
-                                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${bonus.status === 'active' ? 'bg-green-100 text-green-800' :
-                                                bonus.status === 'used' ? 'bg-gray-100 text-gray-800' :
-                                                    'bg-yellow-100 text-yellow-800'
-                                            }`}>
-                                            {bonus.status === 'active' ? 'Disponible' : bonus.status === 'used' ? 'Usado' : 'Pendiente'}
-                                        </span>
-                                    </div>
-                                </div>
-                            ))}
+                            <button
+                                onClick={() => setShowWithdrawalModal(true)}
+                                className={`px-6 py-3 rounded-xl font-bold text-white shadow-lg transition-all transform hover:scale-105 active:scale-95 ${withdrawalStatus?.max_withdrawable > 0
+                                    ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 shadow-green-200'
+                                    : 'bg-gray-300 cursor-not-allowed shadow-none'
+                                    }`}
+                                disabled={!withdrawalStatus || withdrawalStatus.max_withdrawable <= 0}
+                            >
+                                Retirar Fondos 💸
+                            </button>
+                        </div>
+                    </div>
 
-                            {!walletData.special_bonuses?.car_purchase?.bonuses?.length && (
-                                <p className="text-center text-gray-500 py-4">No has ganado bonos de auto aún. ¡Sigue avanzando!</p>
-                            )}
+                    {/* 4 Network Cards Section */}
+                    <div className="mb-12">
+                        <h2 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+                            📊 Desglose por Red
+                            <span className="text-sm font-normal text-gray-500 bg-gray-200 px-2 py-1 rounded-full">4 Fuentes</span>
+                        </h2>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                            {/* 1. Unilevel Card (Includes Sponsorship + Matching) */}
+                            <EarningsCard
+                                title="Red Unilevel"
+                                totalEarnings={unilevelTotal}
+                                monthlyEarnings={0}
+                                totalNetwork={earnings.unilevel?.count || 0}
+                                icon="🌳"
+                                gradient="bg-gradient-to-br from-emerald-400 to-green-600"
+                                customStyle={{ background: 'linear-gradient(135deg, #34d399 0%, #059669 100%)' }}
+                                description={`Incluye Quick Start ($${earnings.sponsorship?.total || 0}) + Matching`}
+                                onClick={() => setActiveTab('history')}
+                            />
+
+                            {/* 2. Binary Global Card */}
+                            <EarningsCard
+                                title="Binario Global"
+                                totalEarnings={binaryGlobalTotal}
+                                monthlyEarnings={0}
+                                totalNetwork={earnings.binary_global?.count || 0}
+                                icon="🔴"
+                                gradient="bg-gradient-to-br from-red-500 to-pink-600"
+                                customStyle={{ background: 'linear-gradient(135deg, #ef4444 0%, #db2777 100%)' }}
+                                description="Ciclos y bonos directos"
+                                onClick={() => setActiveTab('history')}
+                            />
+
+                            {/* 3. Binary Millionaire Card */}
+                            <EarningsCard
+                                title="Binario Millonario"
+                                totalEarnings={binaryMillionaireTotal}
+                                monthlyEarnings={0}
+                                totalNetwork={earnings.binary_millionaire?.count || 0}
+                                icon="💎"
+                                gradient="bg-gradient-to-br from-blue-400 to-cyan-500"
+                                customStyle={{ background: 'linear-gradient(135deg, #60a5fa 0%, #06b6d4 100%)' }}
+                                description="Posicionamiento automático"
+                                onClick={() => setActiveTab('history')}
+                            />
+
+                            {/* 4. Forced Matrix Card */}
+                            <EarningsCard
+                                title="Matriz Forzada"
+                                totalEarnings={matrixTotal}
+                                monthlyEarnings={0}
+                                totalNetwork={earnings.forced_matrix?.count || 0}
+                                icon="⚡"
+                                gradient="bg-gradient-to-br from-yellow-400 to-orange-500"
+                                customStyle={{ background: 'linear-gradient(135deg, #facc15 0%, #f97316 100%)' }}
+                                description="Matriz 3x3 progresiva"
+                                onClick={() => setActiveTab('history')}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Other Assets / Tabs (Preserved for history/prizes) */}
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                        <div className="flex gap-4 mb-6 border-b border-gray-100">
+                            <button
+                                onClick={() => setActiveTab('assets')}
+                                className={`pb-4 px-2 font-medium transition-all ${activeTab === 'assets'
+                                    ? 'text-blue-600 border-b-2 border-blue-600'
+                                    : 'text-gray-500 hover:text-gray-700'
+                                    }`}
+                            >
+                                🎁 Mis Premios (Activos)
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('history')}
+                                className={`pb-4 px-2 font-medium transition-all ${activeTab === 'history'
+                                    ? 'text-blue-600 border-b-2 border-blue-600'
+                                    : 'text-gray-500 hover:text-gray-700'
+                                    }`}
+                            >
+                                📜 Historial Completo
+                            </button>
                         </div>
 
-                        {/* Bono Compra de Apartamento */}
-                        <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-xl border-l-4 border-blue-500">
-                            <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-lg font-bold text-gray-800">🏠 Bono Compra de Apartamento</h3>
-                                <span className="bg-blue-500 text-white px-4 py-2 rounded-full text-sm font-bold">
-                                    {walletData.special_bonuses?.apartment_purchase?.count || 0} bonos
-                                </span>
-                            </div>
-                            <p className="text-4xl font-bold text-blue-600 mb-2">
-                                ${walletData.special_bonuses?.apartment_purchase?.total_value?.toFixed(2) || '0.00'}
-                            </p>
-                            <p className="text-sm text-gray-600 mb-4">Disponible para la compra de propiedad</p>
-
-                            {walletData.special_bonuses?.apartment_purchase?.bonuses?.map((bonus, idx) => (
-                                <div key={idx} className="bg-white p-4 rounded-lg mt-2">
-                                    <div className="flex justify-between items-center">
-                                        <div>
-                                            <p className="font-semibold text-lg">🏠 ${bonus.value.toFixed(2)}</p>
-                                            <p className="text-sm text-gray-600">{bonus.description}</p>
-                                            <p className="text-sm font-medium text-blue-600 mt-1">{bonus.awarded_for}</p>
-                                            <p className="text-xs text-gray-500">{new Date(bonus.awarded_at).toLocaleDateString()}</p>
-                                        </div>
-                                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${bonus.status === 'active' ? 'bg-green-100 text-green-800' :
-                                                bonus.status === 'used' ? 'bg-gray-100 text-gray-800' :
-                                                    'bg-yellow-100 text-yellow-800'
-                                            }`}>
-                                            {bonus.status === 'active' ? 'Disponible' : bonus.status === 'used' ? 'Usado' : 'Pendiente'}
-                                        </span>
-                                    </div>
+                        {activeTab === 'assets' && (
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 animate-fade-in">
+                                {/* Cars */}
+                                <div className="h-full">
+                                    <EarningsCard
+                                        title="Fondo Automotriz"
+                                        totalEarnings={walletData.special_bonuses?.car_purchase?.total_value}
+                                        monthlyEarnings={0}
+                                        totalNetwork={`${walletData.special_bonuses?.car_purchase?.count || 0} Bonos`}
+                                        icon="🚗"
+                                        gradient="bg-gradient-to-br from-red-500 to-rose-600"
+                                        customStyle={{ background: 'linear-gradient(135deg, #ef4444 0%, #e11d48 100%)' }}
+                                        description="Acumulado para compra de vehículo"
+                                        labelNetwork="Bonos"
+                                        labelEarnings="Acumulado"
+                                        onClick={() => setActiveTab('special')}
+                                    />
                                 </div>
-                            ))}
 
-                            {!walletData.special_bonuses?.apartment_purchase?.bonuses?.length && (
-                                <p className="text-center text-gray-500 py-4">No has ganado bonos de apartamento aún. ¡Alcanza el siguiente rango!</p>
-                            )}
-                        </div>
+                                {/* Apartments */}
+                                <div className="h-full">
+                                    <EarningsCard
+                                        title="Fondo Vivienda"
+                                        totalEarnings={walletData.special_bonuses?.apartment_purchase?.total_value}
+                                        monthlyEarnings={0}
+                                        totalNetwork={`${walletData.special_bonuses?.apartment_purchase?.count || 0} Bonos`}
+                                        icon="🏠"
+                                        gradient="bg-gradient-to-br from-blue-500 to-indigo-600"
+                                        customStyle={{ background: 'linear-gradient(135deg, #3b82f6 0%, #4f46e5 100%)' }}
+                                        description="Acumulado para compra de propiedad"
+                                        labelNetwork="Bonos"
+                                        labelEarnings="Acumulado"
+                                        onClick={() => setActiveTab('special')}
+                                    />
+                                </div>
 
-                        {/* Bono de Viajes */}
-                        <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-xl border-l-4 border-purple-500">
-                            <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-lg font-bold text-gray-800">✈️ Bono de Viajes</h3>
-                                <span className="bg-purple-500 text-white px-4 py-2 rounded-full text-sm font-bold">
-                                    {walletData.special_bonuses?.travel?.count || 0} bonos
-                                </span>
-                            </div>
-                            <div className="grid grid-cols-3 gap-4 mb-4">
-                                <div className="bg-white p-4 rounded-lg text-center">
-                                    <p className="text-3xl font-bold text-purple-600">{walletData.special_bonuses?.travel?.total_trips || 0}</p>
-                                    <p className="text-xs text-gray-600 mt-1">Total Viajes</p>
-                                </div>
-                                <div className="bg-white p-4 rounded-lg text-center">
-                                    <p className="text-3xl font-bold text-green-600">{walletData.special_bonuses?.travel?.trips_available || 0}</p>
-                                    <p className="text-xs text-gray-600 mt-1">Disponibles</p>
-                                </div>
-                                <div className="bg-white p-4 rounded-lg text-center">
-                                    <p className="text-3xl font-bold text-gray-600">{walletData.special_bonuses?.travel?.trips_used || 0}</p>
-                                    <p className="text-xs text-gray-600 mt-1">Usados</p>
+                                {/* Travel */}
+                                <div className="h-full">
+                                    <EarningsCard
+                                        title="Viajes de Incentivo"
+                                        totalEarnings={0}
+                                        monthlyEarnings={0}
+                                        totalNetwork={`${walletData.special_bonuses?.travel?.trips_available || 0} Viajes`}
+                                        icon="✈️"
+                                        gradient="bg-gradient-to-br from-purple-500 to-fuchsia-600"
+                                        customStyle={{ background: 'linear-gradient(135deg, #a855f7 0%, #d946ef 100%)' }}
+                                        description="Viajes todo pago disponibles"
+                                        labelNetwork="Disponibles"
+                                        labelEarnings="Usados"
+                                        customEarningsValue={`${walletData.special_bonuses?.travel?.trips_used || 0} Viajes`}
+                                        onClick={() => setActiveTab('special')}
+                                    />
                                 </div>
                             </div>
+                        )}
 
-                            {walletData.special_bonuses?.travel?.bonuses?.map((bonus, idx) => (
-                                <div key={idx} className="bg-white p-4 rounded-lg mt-2">
-                                    <div className="flex justify-between items-start">
-                                        <div className="flex-1">
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <span className="text-2xl">✈️</span>
-                                                <p className="font-semibold text-lg">
-                                                    {bonus.trips_count} {bonus.trips_count === 1 ? 'Viaje' : 'Viajes'}
-                                                </p>
+                        {activeTab === 'history' && (
+                            <div className="divide-y divide-gray-50 animate-fade-in">
+                                {/* Combined History View */}
+                                {[
+                                    ...(earnings.unilevel?.transactions || []),
+                                    ...(earnings.binary_global?.transactions || []),
+                                    ...(earnings.binary_millionaire?.transactions || []),
+                                    ...(earnings.forced_matrix?.transactions || []),
+                                    ...(earnings.sponsorship?.transactions || [])
+                                ]
+                                    .sort((a, b) => new Date(b.date) - new Date(a.date))
+                                    .slice(0, 20)
+                                    .map((tx, idx) => (
+                                        <div key={idx} className="p-4 flex items-center justify-between hover:bg-gray-50 transition">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 font-bold text-sm">
+                                                    IN
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-semibold text-gray-800">
+                                                        {tx.new_member_name ? `Bono Patrocinio: ${tx.new_member_name}` :
+                                                            tx.matrix_level ? `Matriz Nivel ${tx.matrix_level}` :
+                                                                tx.type ? `Bono ${tx.type}` :
+                                                                    `Comisión Venta $${tx.sale_amount || '?'}`}
+                                                    </p>
+                                                    <p className="text-xs text-gray-400">
+                                                        {new Date(tx.date).toLocaleDateString()}
+                                                    </p>
+                                                </div>
                                             </div>
-                                            {bonus.destination_category && (
-                                                <p className="text-sm text-purple-600 font-medium mb-1">📍 {bonus.destination_category}</p>
-                                            )}
-                                            {bonus.estimated_value_per_trip && (
-                                                <p className="text-sm text-gray-600">Valor estimado: ${bonus.estimated_value_per_trip.toFixed(2)} por viaje</p>
-                                            )}
-                                            <p className="text-xs text-gray-500 mt-2">Otorgado: {new Date(bonus.awarded_at).toLocaleDateString()}</p>
-                                            {bonus.expires_at && (
-                                                <p className="text-xs text-red-600 mt-1">Expira: {new Date(bonus.expires_at).toLocaleDateString()}</p>
-                                            )}
-                                        </div>
-                                        <div className="text-right">
-                                            <p className="text-sm font-semibold text-gray-700 mb-1">
-                                                {bonus.trips_remaining} disponibles
-                                            </p>
-                                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${bonus.status === 'active' ? 'bg-green-100 text-green-800' :
-                                                    bonus.status === 'used' ? 'bg-gray-100 text-gray-800' :
-                                                        bonus.status === 'expired' ? 'bg-red-100 text-red-800' :
-                                                            'bg-yellow-100 text-yellow-800'
-                                                }`}>
-                                                {bonus.status === 'active' ? 'Activo' :
-                                                    bonus.status === 'used' ? 'Completo' :
-                                                        bonus.status === 'expired' ? 'Expirado' : 'Pendiente'}
+                                            <span className="font-bold text-green-600 flex items-center">
+                                                + <AnimatedNumber value={tx.amount || tx.commission_amount} />
                                             </span>
                                         </div>
+                                    ))}
+                                {(!earnings.unilevel?.transactions?.length && !earnings.binary_global?.transactions?.length) && (
+                                    <div className="p-8 text-center text-gray-400">
+                                        No hay transacciones recientes para mostrar
                                     </div>
-                                </div>
-                            ))}
-
-                            {!walletData.special_bonuses?.travel?.bonuses?.length && (
-                                <p className="text-center text-gray-500 py-4">No has ganado bonos de viajes aún. ¡Alcanza rangos más altos!</p>
-                            )}
-                        </div>
+                                )}
+                            </div>
+                        )}
                     </div>
-                )}
-
-                {activeTab === 'transactions' && (
-                    <div className="space-y-4">
-                        <h2 className="text-xl font-bold text-gray-800">Historial de Transacciones</h2>
-
-                        {/* Mostrar transacciones de todas las fuentes */}
-                        <div className="space-y-3">
-                            {(earnings.binary_global?.transactions?.length > 0 ||
-                                earnings.binary_millionaire?.transactions?.length > 0 ||
-                                earnings.unilevel?.transactions?.length > 0 ||
-                                earnings.matching_bonus?.transactions?.length > 0 ||
-                                earnings.forced_matrix?.transactions?.length > 0) ? (
-                                <>
-                                    {/* Binary Global */}
-                                    {earnings.binary_global?.transactions?.map((tx, idx) => (
-                                        <div key={`bg-${idx}`} className="flex items-center justify-between p-4 bg-red-50 rounded-lg border-l-4 border-red-500">
-                                            <div>
-                                                <p className="font-semibold text-gray-800">🔴 Binario Global - {tx.type}</p>
-                                                <p className="text-sm text-gray-600">Nivel {tx.level} • {new Date(tx.date).toLocaleDateString()}</p>
-                                            </div>
-                                            <p className="text-xl font-bold text-green-600">+${tx.amount.toFixed(2)}</p>
-                                        </div>
-                                    ))}
-
-                                    {/* Binary Millionaire */}
-                                    {earnings.binary_millionaire?.transactions?.map((tx, idx) => (
-                                        <div key={`bm-${idx}`} className="flex items-center justify-between p-4 bg-orange-50 rounded-lg border-l-4 border-orange-500">
-                                            <div>
-                                                <p className="font-semibold text-gray-800">💎 Binario Millonario</p>
-                                                <p className="text-sm text-gray-600">Nivel {tx.level} • {new Date(tx.date).toLocaleDateString()}</p>
-                                            </div>
-                                            <p className="text-xl font-bold text-green-600">+${tx.amount.toFixed(2)}</p>
-                                        </div>
-                                    ))}
-
-                                    {/* Unilevel */}
-                                    {earnings.unilevel?.transactions?.map((tx, idx) => (
-                                        <div key={`un-${idx}`} className="flex items-center justify-between p-4 bg-indigo-50 rounded-lg border-l-4 border-indigo-500">
-                                            <div>
-                                                <p className="font-semibold text-gray-800">🌳 Unilevel</p>
-                                                <p className="text-sm text-gray-600">Nivel {tx.level} • Venta: ${tx.sale_amount} • {new Date(tx.date).toLocaleDateString()}</p>
-                                            </div>
-                                            <p className="text-xl font-bold text-green-600">+${tx.amount.toFixed(2)}</p>
-                                        </div>
-                                    ))}
-
-                                    {/* Matching Bonus */}
-                                    {earnings.matching_bonus?.transactions?.map((tx, idx) => (
-                                        <div key={`mb-${idx}`} className="flex items-center justify-between p-4 bg-pink-50 rounded-lg border-l-4 border-pink-500">
-                                            <div>
-                                                <p className="font-semibold text-gray-800">🎁 Matching Bonus</p>
-                                                <p className="text-sm text-gray-600">50% de directos • Venta: ${tx.sale_amount} • {new Date(tx.date).toLocaleDateString()}</p>
-                                            </div>
-                                            <p className="text-xl font-bold text-green-600">+${tx.amount.toFixed(2)}</p>
-                                        </div>
-                                    ))}
-
-                                    {/* Forced Matrix */}
-                                    {earnings.forced_matrix?.transactions?.map((tx, idx) => (
-                                        <div key={`fm-${idx}`} className="flex items-center justify-between p-4 bg-teal-50 rounded-lg border-l-4 border-teal-500">
-                                            <div>
-                                                <p className="font-semibold text-gray-800">⚡ Matriz {tx.matrix_level}</p>
-                                                <p className="text-sm text-gray-600">{tx.reward_type} • {new Date(tx.date).toLocaleDateString()}</p>
-                                            </div>
-                                            <p className="text-xl font-bold text-green-600">+${tx.amount.toFixed(2)}</p>
-                                        </div>
-                                    ))}
-                                </>
-                            ) : (
-                                <div className="text-center py-12 text-gray-500">
-                                    <p className="text-lg">📭 No hay transacciones aún</p>
-                                    <p className="text-sm mt-2">Tus comisiones aparecerán aquí</p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                )}
-
-                {activeTab === 'bonuses' && (
-                    <div className="space-y-6">
-                        <div>
-                            <h2 className="text-xl font-bold text-gray-800 mb-4">🏆 Bonos de Calificación (Matrices Cerradas)</h2>
-                            {earnings.qualified_ranks?.bonuses?.length > 0 ? (
-                                <div className="space-y-3">
-                                    {earnings.qualified_ranks.bonuses.map((bonus, idx) => (
-                                        <div key={idx} className="flex items-center justify-between p-4 bg-yellow-50 rounded-lg border-l-4 border-yellow-500">
-                                            <div>
-                                                <p className="font-semibold text-gray-800">{bonus.rank}</p>
-                                                <p className="text-sm text-gray-600">{new Date(bonus.date).toLocaleDateString()}</p>
-                                            </div>
-                                            <p className="text-xl font-bold text-green-600">${bonus.reward?.toFixed(2)}</p>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <p className="text-gray-500 text-center py-8">No has alcanzado rangos de calificación aún</p>
-                            )}
-                        </div>
-
-                        <div>
-                            <h2 className="text-xl font-bold text-gray-800 mb-4">👑 Rangos de Honor</h2>
-                            {earnings.honor_ranks?.bonuses?.length > 0 ? (
-                                <div className="space-y-3">
-                                    {earnings.honor_ranks.bonuses.map((bonus, idx) => (
-                                        <div key={idx} className="flex items-center justify-between p-4 bg-purple-50 rounded-lg border-l-4 border-purple-500">
-                                            <div>
-                                                <p className="font-semibold text-gray-800">{bonus.rank}</p>
-                                                <p className="text-sm text-gray-600">{bonus.reward}</p>
-                                                <p className="text-xs text-gray-500 mt-1">{new Date(bonus.date).toLocaleDateString()}</p>
-                                            </div>
-                                            <span className="text-2xl">👑</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <p className="text-gray-500 text-center py-8">No has alcanzado rangos de honor aún</p>
-                            )}
-                        </div>
-
-                        <div>
-                            <h2 className="text-xl font-bold text-gray-800 mb-4">🌍 Pool Global</h2>
-                            {earnings.global_pool?.transactions?.length > 0 ? (
-                                <div className="space-y-3">
-                                    {earnings.global_pool.transactions.map((tx, idx) => (
-                                        <div key={idx} className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border-l-4 border-blue-500">
-                                            <div>
-                                                <p className="font-semibold text-gray-800">{tx.rank}</p>
-                                                <p className="text-sm text-gray-600">Período: {tx.period}</p>
-                                                <p className="text-xs text-gray-500 mt-1">{new Date(tx.date).toLocaleDateString()}</p>
-                                            </div>
-                                            <p className="text-xl font-bold text-green-600">${tx.amount.toFixed(2)}</p>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <p className="text-gray-500 text-center py-8">No has recibido comisiones del pool global aún</p>
-                            )}
-                        </div>
-                    </div>
-                )}
+                </div>
             </div>
-        </div>
+        </SimpleErrorBoundary>
     );
 };
 

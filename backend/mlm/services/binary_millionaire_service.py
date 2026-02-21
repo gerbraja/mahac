@@ -121,13 +121,14 @@ def distribute_millionaire_commissions(db: Session, member: BinaryMillionaireMem
         percent = LEVEL_RULES.get(level_up, 0.0)
         
         if percent > 0:
-            # Calculate commission in currency (COP)
-            commission_amount = (pv_amount * percent) * PV_VALUE_COP
+            # Calculate commission in USD/PV (Standard for DB)
+            # Previously was calculating COP (commission = pv * percent * 4500) which caused mixed currency issues
+            commission_amount = (pv_amount * percent)
             
             # Create Commission
             comm = BinaryCommission(
                 user_id=upline.user_id,
-                sale_amount=float(pv_amount), # Store PV as sale amount for reference? Or convert? Let's store PV.
+                sale_amount=float(pv_amount), 
                 commission_amount=commission_amount,
                 level=level_up,
                 type="millionaire_level_bonus"

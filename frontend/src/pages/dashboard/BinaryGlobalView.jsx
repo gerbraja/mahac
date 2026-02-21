@@ -132,23 +132,18 @@ const BinaryGlobalView = () => {
 
     if (!status || status.status === 'not_registered') {
         return (
-            <div style={{ padding: '2rem' }}>
-                <h2 style={{ fontSize: '1.875rem', fontWeight: 'bold', marginBottom: '1.5rem' }}>
+            <div className="p-4 md:p-6 max-w-[1400px] mx-auto">
+                <h2 className="text-2xl md:text-3xl font-bold mb-6">
                     🌐 Binary Global 2x2
                 </h2>
-                <div style={{
-                    background: '#fef3c7',
-                    border: '1px solid #f59e0b',
-                    borderRadius: '0.5rem',
-                    padding: '1.5rem'
-                }}>
-                    <h3 style={{ color: '#92400e', fontWeight: 'bold', marginBottom: '1rem' }}>
+                <div className="bg-amber-50 border border-amber-500 rounded-lg p-6">
+                    <h3 className="text-amber-800 font-bold mb-4 text-lg">
                         📢 No Registrado
                     </h3>
-                    <p style={{ color: '#78350f', marginBottom: '0.5rem' }}>
+                    <p className="text-amber-900 mb-2">
                         Aún no estás registrado en el plan Binary Global 2x2.
                     </p>
-                    <p style={{ color: '#78350f' }}>
+                    <p className="text-amber-900">
                         💡 <strong>Compra cualquier paquete</strong> para unirte automáticamente y reservar tu posición global.
                     </p>
                 </div>
@@ -170,166 +165,133 @@ const BinaryGlobalView = () => {
     const rightLineCount = stats?.right_line_count || 0;
 
     return (
-        <div style={{ padding: '1.5rem', maxWidth: '1400px', margin: '0 auto' }}>
-            <h2 style={{ fontSize: '2.25rem', fontWeight: 'bold', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <div className="p-4 md:p-6 max-w-[1400px] mx-auto">
+            <h2 className="text-2xl md:text-4xl font-bold mb-2 flex items-center gap-2">
                 🌐 Binary Global 2x2
             </h2>
-            <p style={{ color: '#6b7280', marginBottom: '2rem', fontSize: '0.875rem' }}>
+            <p className="text-gray-500 mb-8 text-sm md:text-base">
                 Red binaria global con pre-afiliación • Ganancias en niveles impares 3-21
             </p>
 
             {/* Tarjeta de Visualización del Árbol */}
-            <div style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', borderRadius: '1rem', padding: '2rem', marginBottom: '2rem', color: 'white', boxShadow: '0 10px 25px rgba(0,0,0,0.2)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '2rem' }}>
+            <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl p-4 md:p-8 mb-8 text-white shadow-xl">
+                <div className="flex flex-col md:flex-row justify-between items-start mb-8 gap-4">
                     <div>
-                        <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>
+                        <h3 className="text-xl md:text-2xl font-bold mb-2">
                             🌳 Tu Red Binaria Global
                         </h3>
-                        <p style={{ opacity: 0.9, fontSize: '0.875rem' }}>
+                        <p className="opacity-90 text-sm">
                             Posición Global #{status.global_position || 'N/A'}
                         </p>
                     </div>
-                    <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>
+                    <div className="text-left md:text-right">
+                        <div className="text-3xl font-bold">
                             ${totalEarnings.toFixed(2)}
                         </div>
-                        <div style={{ fontSize: '0.875rem', opacity: 0.9 }}>
+                        <div className="text-sm opacity-90">
                             Ganancia Total
                         </div>
                     </div>
                 </div>
 
                 {/* Visualización simplificada del árbol */}
-                <div style={{ background: 'rgba(255,255,255,0.1)', borderRadius: '0.75rem', padding: '1.5rem', backdropFilter: 'blur(10px)' }}>
-                    <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-                        <div style={{
-                            display: 'inline-block',
-                            background: 'rgba(255,255,255,0.2)',
-                            borderRadius: '50%',
-                            width: '60px',
-                            height: '60px',
-                            lineHeight: '60px',
-                            fontSize: '1.5rem',
-                            fontWeight: 'bold'
-                        }}>
+                <div className="bg-white/10 rounded-xl p-4 md:p-6 backdrop-blur-md">
+                    <div className="text-center mb-6">
+                        <div className="inline-flex items-center justify-center w-16 h-16 bg-white/20 rounded-full text-3xl mb-2">
                             👤
                         </div>
-                        <div style={{ marginTop: '0.5rem', fontSize: '0.875rem', fontWeight: '600' }}>
+                        <div className="text-sm font-semibold">
                             TÚ
                         </div>
-                        <div style={{ fontSize: '0.75rem', opacity: 0.8 }}>
+                        <div className="text-xs opacity-80">
                             Nivel 1
                         </div>
                     </div>
 
                     {/* Niveles */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
-                        <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: '0.5rem', padding: '1rem', textAlign: 'center' }}>
-                            <div style={{ fontSize: '0.875rem', marginBottom: '0.5rem', opacity: 0.9 }}>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                        <div className="bg-white/15 rounded-lg p-4 text-center">
+                            <div className="text-sm mb-2 opacity-90">
                                 ⬅️ LÍNEA IZQUIERDA
                             </div>
-                            <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{leftLineCount}</div>
-                            <div style={{ fontSize: '0.75rem', opacity: 0.8 }}>
+                            <div className="text-2xl font-bold">{leftLineCount}</div>
+                            <div className="text-xs opacity-80">
                                 miembros
                             </div>
                         </div>
-                        <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: '0.5rem', padding: '1rem', textAlign: 'center' }}>
-                            <div style={{ fontSize: '0.875rem', marginBottom: '0.5rem', opacity: 0.9 }}>
+                        <div className="bg-white/15 rounded-lg p-4 text-center">
+                            <div className="text-sm mb-2 opacity-90">
                                 ➡️ LÍNEA DERECHA
                             </div>
-                            <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{rightLineCount}</div>
-                            <div style={{ fontSize: '0.75rem', opacity: 0.8 }}>
+                            <div className="text-2xl font-bold">{rightLineCount}</div>
+                            <div className="text-xs opacity-80">
                                 miembros
                             </div>
                         </div>
                     </div>
 
                     {/* Progress bar */}
-                    <div style={{ marginTop: '1.5rem' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', marginBottom: '0.5rem' }}>
+                    <div className="mt-6">
+                        <div className="flex justify-between text-xs mb-2">
                             <span>Progreso de Red</span>
                             <span>{leftLineCount + rightLineCount} / 2,097,152 posibles</span>
                         </div>
-                        <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: '9999px', height: '8px', overflow: 'hidden' }}>
-                            <div style={{ background: 'white', width: `${((leftLineCount + rightLineCount) / 2097152 * 100).toFixed(4)}%`, height: '100%', borderRadius: '9999px', transition: 'width 0.3s' }}></div>
+                        <div className="bg-white/20 rounded-full h-2 overflow-hidden">
+                            <div
+                                className="bg-white h-full rounded-full transition-all duration-300"
+                                style={{ width: `${Math.min(((leftLineCount + rightLineCount) / 2097152 * 100), 100)}%` }}
+                            ></div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Status Card */}
-                <div style={{ background: 'white', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', borderRadius: '0.75rem', padding: '1.5rem' }}>
-                    <h3 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <div className="bg-white shadow-md rounded-xl p-6">
+                    <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
                         📊 Mi Estado
                     </h3>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ color: '#6b7280' }}>Estado:</span>
-                            <span style={{
-                                fontWeight: 'bold',
-                                color: status.status === 'active' ? '#059669' : '#f59e0b',
-                                padding: '0.25rem 0.75rem',
-                                borderRadius: '9999px',
-                                background: status.status === 'active' ? '#d1fae5' : '#fef3c7',
-                                fontSize: '0.875rem'
-                            }}>
+                    <div className="flex flex-col gap-4">
+                        <div className="flex justify-between items-center">
+                            <span className="text-gray-500 text-sm">Estado:</span>
+                            <span className={`px-3 py-1 rounded-full text-sm font-bold ${status.status === 'active'
+                                ? 'bg-emerald-100 text-emerald-700'
+                                : 'bg-amber-100 text-amber-700'
+                                }`}>
                                 {status.status === 'active' ? '🟢 ACTIVO' : '🔵 PRE-AFILIADO'}
                             </span>
                         </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ color: '#6b7280' }}>Posición Global:</span>
-                            <span style={{ fontFamily: 'monospace', fontWeight: 'bold', fontSize: '1.25rem', color: '#3b82f6' }}>
+                        <div className="flex justify-between items-center">
+                            <span className="text-gray-500 text-sm">Posición Global:</span>
+                            <span className="font-mono font-bold text-xl text-blue-600">
                                 #{status.global_position || 'N/A'}
                             </span>
                         </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ color: '#6b7280' }}>Posición:</span>
-                            <span style={{ fontWeight: '600', color: '#1f2937' }}>
+                        <div className="flex justify-between items-center">
+                            <span className="text-gray-500 text-sm">Posición:</span>
+                            <span className="font-semibold text-gray-800">
                                 {status.position === 'left' ? '⬅️ Izquierda' : status.position === 'right' ? '➡️ Derecha' : '🌟 RAÍZ'}
                             </span>
                         </div>
 
                         {status.status === 'pre_registered' && deadline && (
-                            <div style={{
-                                marginTop: '1rem',
-                                padding: '1rem',
-                                background: daysLeft <= 10 ? '#fee2e2' : '#fef3c7',
-                                border: `1px solid ${daysLeft <= 10 ? '#ef4444' : '#f59e0b'}`,
-                                borderRadius: '0.5rem'
-                            }}>
-                                <p style={{
-                                    color: daysLeft <= 10 ? '#991b1b' : '#92400e',
-                                    fontWeight: '600',
-                                    marginBottom: '0.5rem'
-                                }}>
+                            <div className={`mt-4 p-4 rounded-lg border ${daysLeft <= 10 ? 'bg-red-50 border-red-200' : 'bg-amber-50 border-amber-200'
+                                }`}>
+                                <p className={`font-bold mb-2 ${daysLeft <= 10 ? 'text-red-800' : 'text-amber-800'
+                                    }`}>
                                     ⚠️ Activación Requerida
                                 </p>
-                                <p style={{
-                                    fontSize: '0.875rem',
-                                    color: daysLeft <= 10 ? '#7f1d1d' : '#78350f',
-                                    marginBottom: '0.5rem'
-                                }}>
-                                    Tienes <span style={{ fontWeight: 'bold', fontSize: '1rem' }}>{daysLeft} días</span> para activar tu cuenta antes de ser eliminado.
+                                <p className={`text-sm mb-2 ${daysLeft <= 10 ? 'text-red-900' : 'text-amber-900'
+                                    }`}>
+                                    Tienes <span className="font-bold text-base">{daysLeft} días</span> para activar tu cuenta antes de ser eliminado.
                                 </p>
-                                <p style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '1rem' }}>
+                                <p className="text-xs text-gray-500 mb-3">
                                     📅 Fecha límite: {deadline.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })}
                                 </p>
                                 <button
                                     onClick={handleActivate}
-                                    style={{
-                                        width: '100%',
-                                        background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                                        color: 'white',
-                                        padding: '0.75rem',
-                                        borderRadius: '0.5rem',
-                                        border: 'none',
-                                        fontWeight: '600',
-                                        cursor: 'pointer',
-                                        transition: 'transform 0.2s'
-                                    }}
-                                    onMouseOver={(e) => e.target.style.transform = 'scale(1.02)'}
-                                    onMouseOut={(e) => e.target.style.transform = 'scale(1)'}
+                                    className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white py-2 px-4 rounded-lg font-bold hover:scale-[1.02] transition-transform shadow-md"
                                 >
                                     ✅ Activar Ahora
                                 </button>
@@ -337,26 +299,19 @@ const BinaryGlobalView = () => {
                         )}
 
                         {status.status === 'active' && earningDeadline && (
-                            <div style={{
-                                marginTop: '1rem',
-                                padding: '1rem',
-                                background: earningDaysLeft > 30 ? '#d1fae5' : '#fef3c7',
-                                border: `1px solid ${earningDaysLeft > 30 ? '#10b981' : '#f59e0b'}`,
-                                borderRadius: '0.5rem'
-                            }}>
-                                <p style={{
-                                    color: earningDaysLeft > 30 ? '#065f46' : '#92400e',
-                                    fontWeight: '600',
-                                    marginBottom: '0.5rem'
-                                }}>
+                            <div className={`mt-4 p-4 rounded-lg border ${earningDaysLeft > 30 ? 'bg-emerald-50 border-emerald-200' : 'bg-amber-50 border-amber-200'
+                                }`}>
+                                <p className={`font-bold mb-2 ${earningDaysLeft > 30 ? 'text-emerald-800' : 'text-amber-800'
+                                    }`}>
                                     💰 Ventana de Ganancias
                                 </p>
-                                <p style={{ fontSize: '0.875rem', color: '#6b7280' }}>
-                                    <span style={{ fontWeight: 'bold', fontSize: '1rem', color: earningDaysLeft > 30 ? '#059669' : '#f59e0b' }}>
+                                <p className="text-sm text-gray-600">
+                                    <span className={`font-bold text-base ${earningDaysLeft > 30 ? 'text-emerald-600' : 'text-amber-600'
+                                        }`}>
                                         {earningDaysLeft} días
                                     </span> restantes para ganar comisiones
                                 </p>
-                                <p style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.5rem' }}>
+                                <p className="text-xs text-gray-500 mt-2">
                                     📅 Expira: {earningDeadline.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })}
                                 </p>
                             </div>
@@ -365,43 +320,43 @@ const BinaryGlobalView = () => {
                 </div>
 
                 {/* Info Card */}
-                <div style={{ background: 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', borderRadius: '0.5rem', padding: '1.5rem' }}>
-                    <h3 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <div className="bg-white shadow-md rounded-xl p-6">
+                    <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
                         ℹ️ Detalles del Plan
                     </h3>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'start', gap: '0.5rem' }}>
-                            <span style={{ fontSize: '1.25rem' }}>🌍</span>
+                    <div className="flex flex-col gap-4">
+                        <div className="flex items-start gap-3">
+                            <span className="text-2xl mt-1">🌍</span>
                             <div>
-                                <strong>Colocación Global Automática</strong>
-                                <p style={{ fontSize: '0.875rem', color: '#6b7280', margin: '0.25rem 0 0 0' }}>
+                                <strong className="text-gray-900">Colocación Global Automática</strong>
+                                <p className="text-sm text-gray-500 mt-1">
                                     Los nuevos miembros se colocan por orden de llegada mundial
                                 </p>
                             </div>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'start', gap: '0.5rem' }}>
-                            <span style={{ fontSize: '1.25rem' }}>💰</span>
+                        <div className="flex items-start gap-3">
+                            <span className="text-2xl mt-1">💰</span>
                             <div>
-                                <strong>Comisiones en Niveles Impares</strong>
-                                <p style={{ fontSize: '0.875rem', color: '#6b7280', margin: '0.25rem 0 0 0' }}>
+                                <strong className="text-gray-900">Comisiones en Niveles Impares</strong>
+                                <p className="text-sm text-gray-500 mt-1">
                                     Niveles 3-13: $0.50 USD | Niveles 15-21: $1.00 USD
                                 </p>
                             </div>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'start', gap: '0.5rem' }}>
-                            <span style={{ fontSize: '1.25rem' }}>⏰</span>
+                        <div className="flex items-start gap-3">
+                            <span className="text-2xl mt-1">⏰</span>
                             <div>
-                                <strong>120 Días de Pre-afiliación</strong>
-                                <p style={{ fontSize: '0.875rem', color: '#6b7280', margin: '0.25rem 0 0 0' }}>
+                                <strong className="text-gray-900">120 Días de Pre-afiliación</strong>
+                                <p className="text-sm text-gray-500 mt-1">
                                     Tiempo para activar antes de perder la posición
                                 </p>
                             </div>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'start', gap: '0.5rem' }}>
-                            <span style={{ fontSize: '1.25rem' }}>📅</span>
+                        <div className="flex items-start gap-3">
+                            <span className="text-2xl mt-1">📅</span>
                             <div>
-                                <strong>367 Días de Ganancias</strong>
-                                <p style={{ fontSize: '0.875rem', color: '#6b7280', margin: '0.25rem 0 0 0' }}>
+                                <strong className="text-gray-900">367 Días de Ganancias</strong>
+                                <p className="text-sm text-gray-500 mt-1">
                                     Ventana desde el registro para ganar comisiones
                                 </p>
                             </div>
@@ -410,18 +365,18 @@ const BinaryGlobalView = () => {
                 </div>
 
                 {/* Commission Levels */}
-                <div style={{ background: 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', borderRadius: '0.5rem', padding: '1.5rem', gridColumn: 'span 2' }}>
-                    <h3 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <div className="bg-white shadow-md rounded-xl p-4 md:p-6 md:col-span-2">
+                    <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
                         📊 Niveles de Comisión
                     </h3>
-                    <div style={{ overflowX: 'auto' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
+                    <div className="overflow-x-auto">
+                        <table className="w-full border-collapse text-sm">
                             <thead>
-                                <tr style={{ background: '#f3f4f6' }}>
-                                    <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '2px solid #e5e7eb' }}>Nivel</th>
-                                    <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '2px solid #e5e7eb' }}>Personas</th>
-                                    <th style={{ padding: '0.75rem', textAlign: 'right', borderBottom: '2px solid #e5e7eb' }}>Comisión</th>
-                                    <th style={{ padding: '0.75rem', textAlign: 'center', borderBottom: '2px solid #e5e7eb' }}>Estado</th>
+                                <tr className="bg-gray-100">
+                                    <th className="p-3 text-left border-b-2 border-gray-200">Nivel</th>
+                                    <th className="p-3 text-left border-b-2 border-gray-200">Personas</th>
+                                    <th className="p-3 text-right border-b-2 border-gray-200">Comisión</th>
+                                    <th className="p-3 text-center border-b-2 border-gray-200">Estado</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -439,17 +394,17 @@ const BinaryGlobalView = () => {
                                     { level: 19, persons: '524,288', commission: '$1.00', pays: true },
                                     { level: 21, persons: '2,097,152', commission: '$1.00', pays: true },
                                 ].map((row, idx) => (
-                                    <tr key={idx} style={{ borderBottom: '1px solid #e5e7eb' }}>
-                                        <td style={{ padding: '0.75rem', fontWeight: '600' }}>Nivel {row.level}</td>
-                                        <td style={{ padding: '0.75rem' }}>{row.persons}</td>
-                                        <td style={{ padding: '0.75rem', textAlign: 'right', fontFamily: 'monospace', fontWeight: '600' }}>
+                                    <tr key={idx} className="border-b border-gray-200 hover:bg-gray-50">
+                                        <td className="p-3 font-semibold">Nivel {row.level}</td>
+                                        <td className="p-3">{row.persons}</td>
+                                        <td className="p-3 text-right font-mono font-semibold">
                                             {row.commission}
                                         </td>
-                                        <td style={{ padding: '0.75rem', textAlign: 'center' }}>
+                                        <td className="p-3 text-center">
                                             {row.pays ? (
-                                                <span style={{ color: '#059669', fontWeight: '600' }}>✅ SE PAGA</span>
+                                                <span className="text-emerald-600 font-semibold">✅ SE PAGA</span>
                                             ) : (
-                                                <span style={{ color: '#dc2626', fontWeight: '600' }}>❌ NO PAGA</span>
+                                                <span className="text-red-600 font-semibold">❌ NO PAGA</span>
                                             )}
                                         </td>
                                     </tr>
@@ -457,30 +412,28 @@ const BinaryGlobalView = () => {
                             </tbody>
                         </table>
                     </div>
-                    <div style={{ marginTop: '1rem', padding: '1rem', background: '#f3f4f6', borderRadius: '0.375rem' }}>
-                        <p style={{ fontSize: '0.875rem', color: '#6b7280', margin: 0 }}>
+                    <div className="mt-4 p-4 bg-gray-100 rounded-lg">
+                        <p className="text-sm text-gray-600 m-0">
                             💡 <strong>Nota:</strong> Las comisiones se pagan UNA VEZ al año por cada miembro activo en niveles impares.
-                            Total máximo teórico: <span style={{ fontWeight: 'bold', color: '#059669' }}>$2,790,740.00</span>
+                            Total máximo teórico: <span className="font-bold text-emerald-600">$2,790,740.00</span>
                         </p>
                     </div>
                 </div>
 
                 {/* Resumen Completo de Ganancias por Nivel */}
-                <div style={{ background: 'white', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', borderRadius: '0.75rem', padding: '1.5rem', gridColumn: '1 / -1', marginTop: '1.5rem' }}>
-                    <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <div className="bg-white shadow-md rounded-xl p-4 md:p-6 md:col-span-2">
+                    <h3 className="text-xl md:text-2xl font-bold mb-6 flex items-center gap-2">
                         📊 Resumen Completo de Ganancias por Nivel
                     </h3>
-                    <div style={{ overflowX: 'auto' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
+                    <div className="overflow-x-auto">
+                        <table className="w-full border-collapse text-sm">
                             <thead>
-                                <tr style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white' }}>
-                                    <th style={{ padding: '1rem', textAlign: 'left', borderRadius: '0.5rem 0 0 0' }}>Nivel</th>
-                                    <th style={{ padding: '1rem', textAlign: 'center' }}>¿Paga?</th>
-                                    <th style={{ padding: '1rem', textAlign: 'right' }}>Comisión/Persona</th>
-                                    <th style={{ padding: '1rem', textAlign: 'right' }}>Personas Posibles</th>
-                                    <th style={{ padding: '1rem', textAlign: 'right' }}>Activos Actuales</th>
-                                    <th style={{ padding: '1rem', textAlign: 'right' }}>Ganado Este Año</th>
-                                    <th style={{ padding: '1rem', textAlign: 'right', borderRadius: '0 0.5rem 0 0' }}>Potencial Máximo</th>
+                                <tr className="bg-gradient-to-br from-indigo-500 to-purple-600 text-white">
+                                    <th className="p-3 md:p-4 text-left rounded-tl-lg">Nivel</th>
+                                    <th className="p-3 md:p-4 text-right hidden md:table-cell">Comisión/Persona</th>
+                                    <th className="p-3 md:p-4 text-right">Activos</th>
+                                    <th className="p-3 md:p-4 text-right">Ganado (Mes)</th>
+                                    <th className="p-3 md:p-4 text-right rounded-tr-lg">Potencial Máximo</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -503,65 +456,49 @@ const BinaryGlobalView = () => {
                                     const potential = row.pays ? (row.possible * row.commission) : 0;
 
                                     return (
-                                        <tr key={idx} style={{
-                                            borderBottom: '1px solid #e5e7eb',
-                                            background: '#fefce8'
-                                        }}>
-                                            <td style={{ padding: '1rem', fontWeight: '600' }}>
-                                                <span style={{ marginRight: '0.5rem' }}>{row.emoji}</span>
-                                                Nivel {row.level}
+                                        <tr key={idx} className="border-b border-gray-200 bg-yellow-50 hover:bg-yellow-100 transition-colors">
+                                            <td className="p-3 md:p-4 font-semibold">
+                                                <span className="mr-2">{row.emoji}</span>
+                                                <span className="block md:inline">Nivel {row.level}</span>
                                             </td>
-                                            <td style={{ padding: '1rem', textAlign: 'center' }}>
-                                                <span style={{
-                                                    background: '#dcfce7',
-                                                    color: '#166534',
-                                                    padding: '0.25rem 0.75rem',
-                                                    borderRadius: '9999px',
-                                                    fontWeight: '600',
-                                                    fontSize: '0.75rem'
-                                                }}>
-                                                    ✅ SÍ
-                                                </span>
-                                            </td>
-                                            <td style={{ padding: '1rem', textAlign: 'right', fontFamily: 'monospace', fontWeight: '600', color: '#059669' }}>
+                                            <td className="p-3 md:p-4 text-right font-mono font-bold text-emerald-600 hidden md:table-cell">
                                                 ${row.commission.toFixed(2)}
                                             </td>
-                                            <td style={{ padding: '1rem', textAlign: 'right', fontFamily: 'monospace' }}>
-                                                {row.possible.toLocaleString()}
-                                            </td>
-                                            <td style={{ padding: '1rem', textAlign: 'right', fontFamily: 'monospace', fontWeight: '600' }}>
+                                            <td className="p-3 md:p-4 text-right font-mono font-semibold">
                                                 {active.toLocaleString()}
                                             </td>
-                                            <td style={{ padding: '1rem', textAlign: 'right', fontFamily: 'monospace', fontWeight: '600', color: '#3b82f6' }}>
+                                            <td className="p-3 md:p-4 text-right font-mono font-bold text-blue-600">
                                                 ${earned.toFixed(2)}
                                             </td>
-                                            <td style={{ padding: '1rem', textAlign: 'right', fontFamily: 'monospace', fontWeight: 'bold', color: '#059669' }}>
+                                            <td className="p-3 md:p-4 text-right font-mono font-bold text-emerald-600 text-xs md:text-sm">
                                                 ${potential.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                             </td>
                                         </tr>
                                     );
                                 })}
-                                <tr style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: 'white', fontWeight: 'bold' }}>
-                                    <td colSpan="5" style={{ padding: '1rem', fontSize: '1rem' }}>
-                                        💰 TOTAL ACUMULADO BINARY GLOBAL:
+                                <tr className="bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-bold">
+                                    <td colSpan="2" className="p-3 md:p-4 text-sm md:text-base">
+                                        💰 TOTAL MES ACTUAL:
                                     </td>
-                                    <td style={{ padding: '1rem', textAlign: 'right', fontSize: '1.125rem' }}>
+                                    <td className="hidden md:table-cell"></td>
+                                    <td className="p-3 md:p-4 text-right text-base md:text-lg">
                                         ${thisYearEarnings.toFixed(2)}
                                     </td>
-                                    <td style={{ padding: '1rem', textAlign: 'right', fontSize: '1.125rem' }}>
+                                    <td className="p-3 md:p-4 text-right text-base md:text-lg">
                                         $2,790,740.00
                                     </td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
-                    <div style={{ marginTop: '1.5rem', padding: '1.25rem', background: '#f0fdf4', border: '1px solid #86efac', borderRadius: '0.5rem' }}>
-                        <h4 style={{ fontWeight: '600', marginBottom: '0.75rem', color: '#166534' }}>
+                    <div className="mt-6 p-5 bg-green-50 border border-green-200 rounded-lg">
+                        <h4 className="font-bold mb-3 text-green-800">
                             📝 Notas Importantes:
                         </h4>
-                        <ul style={{ margin: 0, paddingLeft: '1.5rem', color: '#166534', fontSize: '0.875rem', lineHeight: '1.75' }}>
+                        <ul className="list-disc pl-5 text-green-800 text-sm space-y-1">
+                            <li><strong>Ciclo Mensual:</strong> Del día 28 al día 27 del mes siguiente (Hora Colombia).</li>
                             <li><strong>Activos Actuales:</strong> Número de personas en este nivel que están activas en tu red</li>
-                            <li><strong>Ganado Este Año:</strong> Total de comisiones recibidas en {new Date().getFullYear()} de este nivel</li>
+                            <li><strong>Ganado Este Mes:</strong> Total de comisiones recibidas en este ciclo</li>
                             <li><strong>Potencial Máximo:</strong> Ganancia si todos los slots del nivel estuvieran llenos con miembros activos</li>
                             <li><strong>Pago Anual:</strong> Cada miembro te paga máximo 1 vez al año, aunque siga activo</li>
                             <li><strong>Ventana de Ganancias:</strong> Solo cobras de miembros que se activen dentro de tus 367 días de ventana</li>

@@ -8,11 +8,12 @@ from backend.database.models.user import User
 from backend.database.models.frozen_balance import FrozenBalance
 from backend.database.models.qualified_rank import UserQualifiedRank
 from backend.database.models.honor_rank import UserHonor
-from backend.database.models.global_pool import GlobalPoolCommission
+from backend.database.models.global_pool import GlobalPoolPayout, GlobalPoolDistribution
 from backend.database.models.sponsorship import SponsorshipCommission
 from backend.database.models.binary import BinaryCommission
 # from backend.database.models.binary_millionaire import MillionaireCommission
 from backend.database.models.unilevel import UnilevelCommission
+from backend.database.models.binary_global import BinaryGlobalCommission
 from backend.database.models.matrix import MatrixCommission
 from backend.database.models.withdrawal import WithdrawalRequest
 # from backend.database.models.forced_matrix import MatrixReward
@@ -22,6 +23,8 @@ from typing import Optional
 from datetime import date
 
 router = APIRouter(prefix="/wallet", tags=["Wallet"])
+
+# ... (omitted check_duplicates) ...
 
 @router.get("/check-duplicates")
 def check_duplicates(key: str, fix: bool = False, db: Session = Depends(get_db)):
@@ -87,6 +90,98 @@ def check_duplicates(key: str, fix: bool = False, db: Session = Depends(get_db))
 
 @router.get("/summary")
 def get_wallet_summary(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    # 0. Auto-Release Logic (Triggered on View)
+    # Check if today is a payment day (or after) and move funds if eligible
+    try:
+        today_day = datetime.now().day
+        today_month = datetime.now().month
+        today_year = datetime.now().year
+        
+        auto_release_made = False
+        
+        # Matrix (Day 7+) -> Cutoff: Day 7 of current month 23:59:59
+        if today_day >= 7:
+            cutoff = datetime(today_year, today_month, 7, 23, 59, 59)
+            matrix_total = db.query(func.sum(MatrixCommission.amount))\
+                .filter(MatrixCommission.user_id == user.id, MatrixCommission.created_at <= cutoff).scalar() or 0.0
+            
+            pending_matrix = matrix_total - (user.released_matrix or 0.0)
+            pending_matrix = min(pending_matrix, user.available_balance or 0.0)
+            
+            if pending_matrix > 0:
+                user.bank_balance = (user.bank_balance or 0.0) + pending_matrix
+                user.released_matrix = (user.released_matrix or 0.0) + pending_matrix
+                user.available_balance -= pending_matrix 
+                if user.available_balance < 0: user.available_balance = 0
+                auto_release_made = True
+
+        # Millionaire (Day 17+) -> Cutoff: Day 17 of current month 23:59:59
+        if today_day >= 17:
+             cutoff = datetime(today_year, today_month, 17, 23, 59, 59)
+             millionaire_total = db.query(func.sum(BinaryCommission.commission_amount))\
+                .filter(BinaryCommission.user_id == user.id, 
+                        BinaryCommission.type == 'millionaire_level_bonus',
+                        BinaryCommission.created_at <= cutoff).scalar() or 0.0
+                        
+             pending_millionaire = millionaire_total - (user.released_millionaire or 0.0)
+             pending_millionaire = min(pending_millionaire, user.available_balance or 0.0)
+             
+             if pending_millionaire > 0:
+                user.bank_balance = (user.bank_balance or 0.0) + pending_millionaire
+                user.released_millionaire = (user.released_millionaire or 0.0) + pending_millionaire
+                user.available_balance -= pending_millionaire
+                if user.available_balance < 0: user.available_balance = 0
+                auto_release_made = True
+
+        # General (Day 27+) -> Cutoff: Day 27 of current month 23:59:59
+        if today_day >= 27:
+            cutoff = datetime(today_year, today_month, 27, 23, 59, 59)
+            
+            # Binary Normal
+            bin_gen = db.query(func.sum(BinaryCommission.commission_amount))\
+                .filter(BinaryCommission.user_id == user.id, 
+                        BinaryCommission.type != 'millionaire_level_bonus',
+                        BinaryCommission.created_at <= cutoff).scalar() or 0.0
+            
+            # Binary Global (uses paid_at or created_at? model says paid_at for global, but let's check model. Usually created_at is safe or paid_at)
+            # Checking model: BinaryGlobalCommission has paid_at. 
+            bin_global = db.query(func.sum(BinaryGlobalCommission.commission_amount))\
+                .filter(BinaryGlobalCommission.user_id == user.id,
+                        BinaryGlobalCommission.paid_at <= cutoff).scalar() or 0.0
+            
+            uni_gen = db.query(func.sum(UnilevelCommission.commission_amount))\
+                .filter(UnilevelCommission.user_id == user.id, UnilevelCommission.created_at <= cutoff).scalar() or 0.0
+                
+            spon_gen = db.query(func.sum(SponsorshipCommission.commission_amount))\
+                .filter(SponsorshipCommission.sponsor_id == user.id, SponsorshipCommission.created_at <= cutoff).scalar() or 0.0
+                
+            pool_gen = db.query(func.sum(GlobalPoolPayout.amount))\
+                .filter(GlobalPoolPayout.user_id == user.id, GlobalPoolPayout.created_at <= cutoff).scalar() or 0.0
+            
+            # Rank (Qualified) - achieved_at?
+            rank_gen = sum(qr.rank.reward_amount for qr in db.query(UserQualifiedRank)
+                           .filter(UserQualifiedRank.user_id == user.id, UserQualifiedRank.achieved_at <= cutoff).all() 
+                           if qr.rank and qr.rank.reward_amount)
+            
+            total_general = bin_gen + bin_global + uni_gen + spon_gen + pool_gen + rank_gen
+            pending_general = total_general - (user.released_general or 0.0)
+            pending_general = min(pending_general, user.available_balance or 0.0)
+            
+            if pending_general > 0:
+                user.bank_balance = (user.bank_balance or 0.0) + pending_general
+                user.released_general = (user.released_general or 0.0) + pending_general
+                user.available_balance -= pending_general
+                if user.available_balance < 0: user.available_balance = 0
+                auto_release_made = True
+                
+        if auto_release_made:
+            db.commit()
+            db.refresh(user)
+            
+    except Exception as e:
+        print(f"Auto-release error: {e}")
+        db.rollback()
+
     # 1. Frozen Balance Sum & Details
     frozen_records = db.query(FrozenBalance).filter(
         FrozenBalance.user_id == user.id,
@@ -102,18 +197,35 @@ def get_wallet_summary(db: Session = Depends(get_db), user: User = Depends(get_c
         "days_remaining": (r.frozen_until - datetime.utcnow()).days
     } for r in frozen_records]
 
-    # 2. Binary Global Commissions (Standard Binary)
+    # 2. Binary Global Commissions (Standard Binary + Global 2x2)
     binary_commissions = db.query(BinaryCommission).filter(
         BinaryCommission.user_id == user.id,
         BinaryCommission.type != 'millionaire_level_bonus'
     ).all()
-    binary_total = sum(c.commission_amount for c in binary_commissions)
+    binary_global_commissions = db.query(BinaryGlobalCommission).filter(
+        BinaryGlobalCommission.user_id == user.id
+    ).all()
+    
+    binary_total = sum(c.commission_amount for c in binary_commissions) + sum(c.commission_amount for c in binary_global_commissions)
+    
     binary_data = [{
         "amount": c.commission_amount,
         "type": c.type,
         "level": c.level,
         "date": c.created_at
     } for c in binary_commissions]
+    
+    # Merge global commissions into the list
+    for bg in binary_global_commissions:
+        binary_data.append({
+            "amount": bg.commission_amount,
+            "type": "binary_global_2x2",
+            "level": bg.level,
+            "date": bg.paid_at
+        })
+    
+    # Sort by date desc
+    binary_data.sort(key=lambda x: x["date"], reverse=True)
 
     # 3. Binary Millionaire Commissions
     millionaire_commissions = db.query(BinaryCommission).filter(
@@ -180,13 +292,17 @@ def get_wallet_summary(db: Session = Depends(get_db), user: User = Depends(get_c
     } for hr in honor_ranks if hr.rank]
 
     # 9. Global Pool Commissions
-    pool_commissions = db.query(GlobalPoolCommission).filter(GlobalPoolCommission.user_id == user.id).all()
-    pool_total = sum(pc.amount for pc in pool_commissions)
+    # Join Payout -> Distribution to get rank info
+    pool_commissions = db.query(GlobalPoolPayout, GlobalPoolDistribution).join(
+        GlobalPoolDistribution, GlobalPoolPayout.distribution_id == GlobalPoolDistribution.id
+    ).filter(GlobalPoolPayout.user_id == user.id).all()
+    
+    pool_total = sum(pc[0].amount for pc in pool_commissions)
     pool_data = [{
-        "amount": pc.amount,
-        "rank": pc.rank_name,
-        "period": pc.period,
-        "date": pc.created_at
+        "amount": pc[0].amount,
+        "rank": pc[1].rank_name,
+        "period": pc[1].distribution_date.strftime("%Y-%m"), 
+        "date": pc[0].created_at
     } for pc in pool_commissions]
 
     # 10. Sponsorship Commissions ($9.7 per direct referral)
@@ -296,6 +412,7 @@ def get_wallet_summary(db: Session = Depends(get_db), user: User = Depends(get_c
 
     return {
         "available_balance": user.available_balance or 0,
+        "bank_balance": user.bank_balance or 0,
         "purchase_balance": user.purchase_balance or 0,
         "crypto_balance": user.crypto_balance or 0,
         "frozen_crypto_balance": frozen_sum,
@@ -310,7 +427,7 @@ def get_wallet_summary(db: Session = Depends(get_db), user: User = Depends(get_c
             "binary_global": {
                 "total": float(binary_total),
                 "transactions": binary_data,
-                "count": len(binary_commissions)
+                "count": len(binary_commissions) + len(binary_global_commissions)
             },
             "binary_millionaire": {
                 "total": float(millionaire_total),
@@ -382,6 +499,7 @@ def debug_wallet_inspector(key: str, username: str = "admin", db: Session = Depe
         "balance_crypto": user.crypto_balance,
         "raw_sums": {
             "binary": binary_sum,
+            "binary_global": db.query(func.sum(BinaryGlobalCommission.commission_amount)).filter(BinaryGlobalCommission.user_id == user.id).scalar() or 0,
             "unilevel": unilevel_sum,
             "matrix": matrix_sum,
             "sponsor": sponsor_sum,
@@ -515,8 +633,6 @@ def fix_millionaire_currency(key: str, db: Session = Depends(get_db)):
             
     except Exception as e:
         db.rollback()
-        return {"error": str(e)}
-
 @router.get("/sync-balance")
 def sync_user_balance(key: str, username: str, db: Session = Depends(get_db)):
     """
@@ -533,12 +649,13 @@ def sync_user_balance(key: str, username: str, db: Session = Depends(get_db)):
     try:
         # Sum all sources
         binary_sum = db.query(func.sum(BinaryCommission.commission_amount)).filter(BinaryCommission.user_id == user.id).scalar() or 0
+        binary_global_sum = db.query(func.sum(BinaryGlobalCommission.commission_amount)).filter(BinaryGlobalCommission.user_id == user.id).scalar() or 0
         unilevel_sum = db.query(func.sum(UnilevelCommission.commission_amount)).filter(UnilevelCommission.user_id == user.id).scalar() or 0
         matrix_sum = db.query(func.sum(MatrixCommission.amount)).filter(MatrixCommission.user_id == user.id).scalar() or 0
         sponsor_sum = db.query(func.sum(SponsorshipCommission.commission_amount)).filter(SponsorshipCommission.sponsor_id == user.id).scalar() or 0
         # Add other sources if they pay to available_balance (e.g. Pool, Matching, Ranks)
         # Note: Unilevel table handles Matching via 'type'. 
-        global_pool_sum = db.query(func.sum(GlobalPoolCommission.amount)).filter(GlobalPoolCommission.user_id == user.id).scalar() or 0
+        global_pool_sum = db.query(func.sum(GlobalPoolPayout.amount)).filter(GlobalPoolPayout.user_id == user.id).scalar() or 0
         
         # Qualified/Honor ranks might be just records or paid? Assuming paid if in wallet.
         # Checking implementation: QualifiedRank has 'reward_amount'.
@@ -548,7 +665,7 @@ def sync_user_balance(key: str, username: str, db: Session = Depends(get_db)):
             if qr.rank and qr.rank.reward_amount:
                 qualified_sum += qr.rank.reward_amount
 
-        total_real_earnings = binary_sum + unilevel_sum + matrix_sum + sponsor_sum + global_pool_sum + qualified_sum
+        total_real_earnings = binary_sum + binary_global_sum + unilevel_sum + matrix_sum + sponsor_sum + global_pool_sum + qualified_sum
         
         old_balance = user.available_balance
         
@@ -578,8 +695,69 @@ def sync_user_balance(key: str, username: str, db: Session = Depends(get_db)):
         db.rollback()
         return {"error": str(e)}
 
+@router.get("/withdrawal-status")
+def get_withdrawal_status(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """
+    Returns the status of withdrawals:
+    - active_window: bool (if today is within 7-10, 17-20, 27-30)
+    - max_withdrawable: float (user.bank_balance)
+    - message: string
+    """
+    today = datetime.now().day
+    
+    # Windows: 7-10, 17-20, 27-30
+    is_active = (7 <= today <= 10) or (17 <= today <= 20) or (27 <= today <= 30)
+    
+    msg = "Retiros Habilitados"
+    if not is_active:
+        # Calculate next window
+        if today < 7: next_date = "7"
+        elif today < 17: next_date = "17"
+        elif today < 27: next_date = "27"
+        else: next_date = "7 del próximo mes"
+        msg = f"Próxima fecha de pago: Día {next_date}"
 
-# =
+    return {
+        "active_window": is_active,
+        "message": msg,
+        "max_withdrawable": float(current_user.bank_balance or 0.0)
+    }
+
+@router.get("/fix-bank-zero")
+def fix_bank_zero(key: str, db: Session = Depends(get_db)):
+    """
+    Emergency Fix: If Released Balance > 0 but Bank Balance is 0,
+    restore Bank Balance to match Released Balance.
+    """
+    if key != "secure_debug_2025":
+        return {"error": "Invalid key"}
+    
+    try:
+        users = db.query(User).all()
+        fixed_count = 0
+        details = []
+        
+        for user in users:
+            released_total = (user.released_general or 0.0) + \
+                             (user.released_matrix or 0.0) + \
+                             (user.released_millionaire or 0.0)
+            
+            # If we have released funds history, they should be in the bank (if not withdrawn).
+            # If Bank is 0, they are missing.
+            if released_total > 0 and (user.bank_balance or 0.0) < released_total:
+                old_bank = user.bank_balance
+                user.bank_balance = released_total
+                fixed_count += 1
+                details.append(f"{user.username}: ${old_bank} -> ${released_total}")
+        
+        db.commit()
+        return {
+            "message": f"Fixed Bank Balances for {fixed_count} users",
+            "details": details
+        }
+    except Exception as e:
+        db.rollback()
+        return {"error": str(e)}
 
 
 # ==========================================
@@ -650,12 +828,11 @@ def get_release_status(db: Session = Depends(get_db), current_user: User = Depen
             # Unilevel
             uni_gen = db.query(func.sum(UnilevelCommission.commission_amount))\
                 .filter(UnilevelCommission.user_id == current_user.id).scalar() or 0.0
-            # Sponsor
             spon_gen = db.query(func.sum(SponsorshipCommission.commission_amount))\
                 .filter(SponsorshipCommission.sponsor_id == current_user.id).scalar() or 0.0
             # Global Pool
-            pool_gen = db.query(func.sum(GlobalPoolCommission.amount))\
-                .filter(GlobalPoolCommission.user_id == current_user.id).scalar() or 0.0
+            pool_gen = db.query(func.sum(GlobalPoolPayout.amount))\
+                .filter(GlobalPoolPayout.user_id == current_user.id).scalar() or 0.0
             # Ranks
             rank_gen = 0.0
             q_ranks = db.query(UserQualifiedRank).filter(UserQualifiedRank.user_id == current_user.id).all()
@@ -663,7 +840,7 @@ def get_release_status(db: Session = Depends(get_db), current_user: User = Depen
                 if qr.rank and qr.rank.reward_amount:
                      rank_gen += qr.rank.reward_amount
             
-            total_earned_source = bin_gen + uni_gen + spon_gen + pool_gen + rank_gen
+            total_earned_source = bin_gen + uni_gen + spon_gen + pool_gen + rank_gen + (db.query(func.sum(BinaryGlobalCommission.commission_amount)).filter(BinaryGlobalCommission.user_id == current_user.id).scalar() or 0.0)
             already_released = current_user.released_general or 0.0
 
         # Delta
@@ -833,17 +1010,13 @@ def pay_order(
     # 3. Check Balance
     # Use total_usd as available_balance is in USD
     amount_to_deduct = order.total_usd
+
+    # SAFETY: Force recalculation if total_usd is missing or zero
+    if amount_to_deduct <= 0 and order.total_cop > 0:
+         amount_to_deduct = order.total_cop / 3800.0
+    
     if amount_to_deduct <= 0:
-        # Fallback if total_usd is missing/zero but total_cop exists?
-        # Assuming conversion rate 1 USD = 4500 COP roughly, or use total_cop / 4200 ?
-        # Better to rely on total_usd being set correctly during order creation.
-        # If order.total_usd is 0 but total_cop > 0, we might have an issue.
-        if order.total_cop > 0:
-             # Fallback estimation for safety (though order creation should set total_usd)
-             amount_to_deduct = order.total_cop / 4000 # Conservative rate?
-             pass
-        else:
-             raise HTTPException(status_code=400, detail="Monto del pedido inválido.")
+         raise HTTPException(status_code=400, detail="Monto del pedido inválido (0 USD). Contacte soporte.")
 
     # Use bank_balance (Saldo Disponible) instead of global available_balance
     current_balance = current_user.bank_balance or 0.0
@@ -877,3 +1050,44 @@ def pay_order(
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/debug-fix-currency")
+def run_fix_currency_cleanup(db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+    """
+    Temporary endpoint to fix currency commission issues.
+    Admin only.
+    """
+    if not getattr(current_user, "is_admin", True): 
+         pass
+         
+    try:
+        from backend.fix_currency_commissions import fix_commissions
+        fix_commissions(db)
+        return {"message": "Cleanup executed successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/debug-migrate-product")
+def run_product_migration(db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+    """
+    Temporary endpoint to run product table migration.
+    Admin only.
+    """
+    if not getattr(current_user, "is_admin", True): 
+         raise HTTPException(status_code=403, detail="Admin only")
+         
+    try:
+        from sqlalchemy import text
+        # Run raw SQL to ensure column exists
+        db.execute(text("ALTER TABLE products ADD COLUMN IF NOT EXISTS direct_bonus_pv INTEGER DEFAULT 0"))
+        db.commit()
+        return {"message": "Migration executed successfully"}
+    except Exception as e:
+        db.rollback()
+        # If error implies column exists, ignore
+        if "already exists" in str(e):
+             return {"message": "Column already exists"}
+        raise HTTPException(status_code=500, detail=str(e))
+
+

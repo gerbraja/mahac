@@ -30,15 +30,20 @@ export default function Cart() {
   if (subtotalCOP >= 397000) {
     shippingCostCOP = 0; // Free shipping for orders over $397,000 COP
   } else {
-    const baseRate = 15000;
-    const additionalRate = 5000;
+    // Quantity-Based Shipping Cost
+    // Base cost: $13,700 for the first product
+    // Additional cost: $1,700 for each additional product
 
-    if (totalWeightGrams <= 500) {
-      shippingCostCOP = baseRate;
+    // Calculate total quantity of items (sum of quantities of all products)
+    const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+
+    if (totalItems > 0) {
+      const baseRate = 13700;
+      const additionalRate = 1700;
+      // Formula: Base + (TotalItems - 1) * Additional
+      shippingCostCOP = baseRate + ((totalItems - 1) * additionalRate);
     } else {
-      const additionalWeight = totalWeightGrams - 500;
-      const additionalUnits = Math.ceil(additionalWeight / 500);
-      shippingCostCOP = baseRate + (additionalUnits * additionalRate);
+      shippingCostCOP = 0;
     }
   }
 
@@ -50,55 +55,25 @@ export default function Cart() {
 
   const navigate = useNavigate();
 
-  const handleCheckout = async () => {
-    const token = localStorage.getItem('access_token');
-    if (!token) {
-      setMessage("⚠️ Debes iniciar sesión para completar la compra.");
-      setTimeout(() => navigate('/login', { state: { view: 'login' } }), 2000);
-      return;
-    }
 
-    if (shippingMethod === "delivery" && (!shippingAddress || !shippingCity)) {
-      setMessage("❌ Por favor completa la dirección de envío");
-      return;
-    }
-
-    setLoading(true);
-    setMessage("");
-    try {
-      const payload = {
-        items: cart.map(item => ({
-          product_id: item.id,
-          quantity: item.quantity
-        })),
-        shipping_address: shippingMethod === "delivery"
-          ? `${shippingAddress}, ${shippingCity}`
-          : "Recogida en punto de entrega"
-      };
-
-      const res = await api.post("/api/orders/", payload);
-      // Success - Redirect to confirmation
-      clearCart();
-      navigate(`/order-confirmation/${res.data.id}`);
-
-    } catch (error) {
-      console.error("Checkout error:", error);
-      if (error.response && error.response.status === 401) {
-        setMessage("⚠️ Tu sesión ha expirado. Por favor inicia sesión nuevamente.");
-        setTimeout(() => navigate('/login', { state: { view: 'login' } }), 2000);
-      } else {
-        setMessage("❌ Error al crear la orden. Por favor intenta de nuevo.");
-      }
-    } finally {
-      setLoading(false);
-    }
+  const handleCheckout = () => {
+    navigate('/checkout');
   };
+
 
   if (cart.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-md p-8 text-center">
           <div className="text-6xl mb-4">🛒</div>
+
+          {/* DEBUG TOKEN STATUS (EMPTY CART) */}
+          <div className="bg-yellow-50 border border-yellow-200 p-2 mb-4 text-xs font-mono text-yellow-800 inline-block">
+            DEBUG: Token Status: {localStorage.getItem('access_token') ? "PRESENT ✅" : "MISSING ❌"} <br />
+            DEBUG: Token Length: {localStorage.getItem('access_token')?.length || 0} <br />
+            DEBUG: User ID: {localStorage.getItem('userId') || 'N/A'}
+          </div>
+
           <h2 className="text-2xl font-bold text-gray-800 mb-2">Tu carrito está vacío</h2>
           <p className="text-gray-600 mb-6">Agrega productos desde la tienda para continuar</p>
           <a href="/dashboard/store" className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-blue-700 transition">
@@ -113,6 +88,12 @@ export default function Cart() {
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-6xl mx-auto">
         <h1 className="text-3xl font-bold text-gray-800 mb-6">🛒 Carrito de Compras</h1>
+
+        {message && (
+          <div className={`p-4 rounded-lg mb-6 ${message.includes('✅') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+            {message}
+          </div>
+        )}
 
         {message && (
           <div className={`p-4 rounded-lg mb-6 ${message.includes('✅') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>

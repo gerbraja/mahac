@@ -3,6 +3,7 @@ import { api } from '../../api/api';
 
 export default function AdminUsers() {
     const [users, setUsers] = useState([]);
+    const [countryStats, setCountryStats] = useState([]);
     const [search, setSearch] = useState('');
     const [loading, setLoading] = useState(false);
     const [editingUser, setEditingUser] = useState(null);
@@ -11,7 +12,17 @@ export default function AdminUsers() {
 
     useEffect(() => {
         fetchUsers();
+        fetchCountryStats();
     }, []);
+
+    const fetchCountryStats = async () => {
+        try {
+            const response = await api.get('/api/admin/users/stats/countries');
+            setCountryStats(response.data);
+        } catch (error) {
+            console.error('Error fetching country stats:', error);
+        }
+    };
 
     const fetchUsers = async (searchQuery = '') => {
         setLoading(true);
@@ -54,7 +65,8 @@ export default function AdminUsers() {
             city: user.city || '',
             province: user.province || '',
             postal_code: user.postal_code || '',
-            status: user.status || 'pre-affiliate'
+            status: user.status || 'pre-affiliate',
+            package_level: user.package_level || 0
         });
     };
 
@@ -128,12 +140,75 @@ Email: ${user.email}
         }
     };
 
+    const handleImpersonate = async (user) => {
+        const confirmMsg = `🕵️‍♂️ MODO IMPERSONACIÓN \n\nEstás a punto de iniciar sesión como: ${user.name} (${user.username})\n\n⚠️ Podrás ver y hacer todo lo que este usuario puede hacer.\n¿Deseas continuar?`;
+
+        if (!window.confirm(confirmMsg)) {
+            return;
+        }
+
+        try {
+            const response = await api.post(`/api/admin/users/${user.id}/impersonate`);
+            const { access_token } = response.data;
+
+            if (access_token) {
+                // Logout Current Admin (technically nice to save it but simple replacement is fine for now)
+                localStorage.setItem('access_token', access_token);
+                localStorage.setItem('userId', user.id); // Fix: Update userId to impersonated user
+
+                // Optional: Save admin token to session storage to "return" later? 
+                // For now, simpler is creating a clean session for the user.
+
+                alert(`¡Éxito! Redirigiendo al dashboard de ${user.name}...`);
+                window.location.href = '/dashboard';
+            }
+        } catch (error) {
+            console.error("Impersonation error:", error);
+            alert(error.response?.data?.detail || "Error al iniciar sesión como usuario.");
+        }
+    };
+
     return (
         <div>
             <div style={{ marginBottom: '2rem' }}>
                 <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#1e3a8a', marginBottom: '1rem' }}>
                     Gestión de Usuarios
                 </h2>
+
+                {/* Country Stats */}
+                <div style={{ marginBottom: '2rem', padding: '1.5rem', background: '#f8fafc', borderRadius: '0.75rem', border: '1px solid #e2e8f0' }}>
+                    <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#1e3a8a', marginBottom: '1rem' }}>
+                        Estadísticas por País
+                    </h3>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '1rem' }}>
+                        {countryStats.map((stat, index) => (
+                            <div key={index} style={{
+                                background: 'white',
+                                padding: '1rem',
+                                borderRadius: '0.5rem',
+                                border: '1px solid #e2e8f0',
+                                boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center'
+                            }}>
+                                <div>
+                                    <div style={{ fontWeight: 'bold', color: '#334155' }}>{stat.country || 'Sin País'}</div>
+                                    <div style={{ fontSize: '0.875rem', color: stat.count >= 500 ? '#16a34a' : '#64748b' }}>
+                                        {stat.status}
+                                    </div>
+                                </div>
+                                <div style={{ textAlign: 'right' }}>
+                                    <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#1e3a8a' }}>{stat.count}</div>
+                                    <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Usuarios</div>
+                                </div>
+                            </div>
+                        ))}
+                        {countryStats.length === 0 && !loading && (
+                            <div style={{ color: '#64748b', fontStyle: 'italic' }}>No hay datos disponibles</div>
+                        )}
+                    </div>
+                </div>
 
                 {/* Search */}
                 <form onSubmit={handleSearch} style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
@@ -214,19 +289,20 @@ Email: ${user.email}
                             <th style={{ padding: '1rem', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Usuario</th>
                             <th style={{ padding: '1rem', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Documento</th>
                             <th style={{ padding: '1rem', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Estado</th>
+                            <th style={{ padding: '1rem', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Paquete</th>
                             <th style={{ padding: '1rem', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
                         {loading ? (
                             <tr>
-                                <td colSpan="7" style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>
+                                <td colSpan="8" style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>
                                     Cargando...
                                 </td>
                             </tr>
                         ) : users.length === 0 ? (
                             <tr>
-                                <td colSpan="7" style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>
+                                <td colSpan="8" style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>
                                     No se encontraron usuarios
                                 </td>
                             </tr>
@@ -248,6 +324,26 @@ Email: ${user.email}
                                         }}>
                                             {user.status}
                                         </span>
+                                    </td>
+                                    <td style={{ padding: '1rem' }}>
+                                        {user.package_level ? (
+                                            <span style={{
+                                                padding: '0.25rem 0.75rem',
+                                                borderRadius: '0.375rem',
+                                                fontSize: '0.875rem',
+                                                fontWeight: '600',
+                                                background: user.package_level === 3 ? '#fef3c7' : (user.package_level === 2 ? '#e5e7eb' : '#dbeafe'),
+                                                color: user.package_level === 3 ? '#b45309' : (user.package_level === 2 ? '#374151' : '#1e40af'),
+                                                border: `1px solid ${user.package_level === 3 ? '#fcd34d' : (user.package_level === 2 ? '#d1d5db' : '#93c5fd')}`
+                                            }}>
+                                                {user.package_level === 1 && 'FDI 1'}
+                                                {user.package_level === 2 && 'FDI 2'}
+                                                {user.package_level === 3 && 'FDI 3'}
+                                                {![1, 2, 3].includes(user.package_level) && `Nivel ${user.package_level}`}
+                                            </span>
+                                        ) : (
+                                            <span style={{ color: '#9ca3af', fontSize: '0.875rem' }}>-</span>
+                                        )}
                                     </td>
                                     <td style={{ padding: '1rem', display: 'flex', gap: '0.5rem' }}>
                                         <button
@@ -312,6 +408,27 @@ Email: ${user.email}
                                         >
                                             🗑️ Borrar
                                         </button>
+
+                                        {!user.is_admin && (
+                                            <button
+                                                onClick={() => handleImpersonate(user)}
+                                                style={{
+                                                    padding: '0.5rem 1rem',
+                                                    background: '#10b981', // Emerald green
+                                                    color: 'white',
+                                                    border: 'none',
+                                                    borderRadius: '0.375rem',
+                                                    cursor: 'pointer',
+                                                    fontWeight: '500',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '0.25rem'
+                                                }}
+                                                title="Iniciar sesión como este usuario"
+                                            >
+                                                🕵️‍♂️ Acceder
+                                            </button>
+                                        )}
                                     </td>
                                 </tr>
                             ))
@@ -505,6 +622,31 @@ Email: ${user.email}
                                     <option value="active">Activo</option>
                                     <option value="suspended">Suspendido</option>
                                 </select>
+                            </div>
+
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', color: '#374151' }}>
+                                    Nivel de Paquete (Franquicia)
+                                </label>
+                                <select
+                                    value={formData.package_level || 0}
+                                    onChange={(e) => setFormData({ ...formData, package_level: parseInt(e.target.value) })}
+                                    style={{
+                                        width: '100%',
+                                        padding: '0.75rem',
+                                        border: '1px solid #d1d5db',
+                                        borderRadius: '0.5rem',
+                                        background: 'white'
+                                    }}
+                                >
+                                    <option value={0}>0 - Sin Paquete / N/A</option>
+                                    <option value={1}>1 - Franquicia 1 ($68.7 USD)</option>
+                                    <option value={2}>2 - Franquicia 2 / Otro</option>
+                                    <option value={3}>3 - Franquicia 3</option>
+                                </select>
+                                <p style={{ fontSize: '0.8em', color: '#666', marginTop: '4px' }}>
+                                    * Define el nivel para cálculo de Upgrades (descuentos).
+                                </p>
                             </div>
 
                             <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>

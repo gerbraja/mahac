@@ -42,12 +42,29 @@ class User(Base):
     monthly_earnings = Column(Float, default=0.0)
     total_earnings = Column(Float, default=0.0)
     available_balance = Column(Float, default=0.0)
+    
+    # New Bank Model Columns
+    bank_balance = Column(Float, default=0.0)
+    released_matrix = Column(Float, default=0.0)
+    released_millionaire = Column(Float, default=0.0)
+    released_general = Column(Float, default=0.0)
+    
+    # KYC / Verification
+    is_kyc_verified = Column(Boolean, default=False)
+
     crypto_balance = Column(Float, default=0.0)  # TEI Coin Balance
     purchase_balance = Column(Float, default=0.0)  # Credit for product purchases only
     
-    # Membership numbering (assigned on activation)
     membership_number = Column(Integer, unique=True, nullable=True)
     membership_code = Column(String(32), unique=True, nullable=True)
+    
+    # Financial Info
+    crypto_wallet = Column(String(255), nullable=True) # User's crypto wallet address (e.g. USDT TRC20)
+    
+    # Package Level (1=Franq 1, 2=Franq 2, 3=Franq 3)
+    # Default is 1 (Digital) if not specified for active users. 
+    # 0 might be used for pre-affiliates.
+    package_level = Column(Integer, default=0)
 
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

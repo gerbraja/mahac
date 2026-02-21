@@ -1,5 +1,5 @@
 import axios from "axios";
-const BASE = process.env.REACT_APP_API_BASE || "http://localhost:8000";
+const BASE = import.meta.env.VITE_API_BASE || 'https://mlm-backend-s52yictoyq-rj.a.run.app';
 
 export async function getMyOrders(token) {
   const res = await axios.get(`${BASE}/api/orders/my`, { headers: { Authorization: `Bearer ${token}` } });

@@ -56,7 +56,15 @@ def get_millionaire_status(user_id: int, db: Session = Depends(get_db)):
     ).first()
     
     if not member:
-        return {"status": "not_registered"}
+        # SELF-HEALING: Auto-register if missing
+        try:
+            from backend.mlm.services.binary_millionaire_service import register_in_millionaire
+            member = register_in_millionaire(db, user_id)
+            db.commit()
+            db.refresh(member)
+        except Exception as e:
+            print(f"Error auto-registering Millionaire: {e}")
+            return {"status": "not_registered"}
     
     return {
         "status": "active" if member.is_active else "inactive",
@@ -80,6 +88,18 @@ def get_millionaire_stats(user_id: int, db: Session = Depends(get_db)):
     # Calculate level statistics (only odd levels 1-27)
     level_stats = []
     odd_levels = [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27]
+    year_start = datetime(datetime.now().year, 1, 1)
+    
+    # Cycle logic: 18th to 17th (Colombia Time)
+    now = datetime.now()
+    if now.day >= 18:
+        cycle_start = datetime(now.year, now.month, 18)
+    else:
+        # Previous month
+        if now.month == 1:
+            cycle_start = datetime(now.year - 1, 12, 18)
+        else:
+            cycle_start = datetime(now.year, now.month - 1, 18)
     
     for level in odd_levels:
         # Count members at this level
@@ -113,21 +133,20 @@ def get_millionaire_stats(user_id: int, db: Session = Depends(get_db)):
         else:  # 25, 27
             percent = 0.5
         
-        # Get earnings from this level
-        year_start = datetime(datetime.now().year, 1, 1)
+        # Get earnings from this level (CURRENT CYCLE)
         earned = db.query(func.sum(BinaryCommission.commission_amount)).filter(
             BinaryCommission.user_id == user_id,
             BinaryCommission.level == level,
             BinaryCommission.type == "millionaire_level_bonus",
-            BinaryCommission.created_at >= year_start
+            BinaryCommission.created_at >= cycle_start
         ).scalar() or 0.0
         
-        # Total PV at this level (stored in sale_amount)
+        # Total PV at this level (CURRENT CYCLE)
         total_pv = db.query(func.sum(BinaryCommission.sale_amount)).filter(
             BinaryCommission.user_id == user_id,
             BinaryCommission.level == level,
             BinaryCommission.type == "millionaire_level_bonus",
-            BinaryCommission.created_at >= year_start
+            BinaryCommission.created_at >= cycle_start
         ).scalar() or 0.0
         
         level_stats.append({

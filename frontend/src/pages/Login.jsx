@@ -32,29 +32,35 @@ export default function Login() {
             });
 
             // Store token
-            localStorage.setItem('access_token', response.data.access_token);
+            const newToken = response.data.access_token;
+            localStorage.setItem('access_token', newToken);
 
-            // Fetch user data to get userId and check if admin
+            // Fetch user data generally (non-blocking for redirect)
             try {
                 const userResponse = await api.get('/auth/me');
                 localStorage.setItem('userId', userResponse.data.id);
+            } catch (err) {
+                console.warn("Could not fetch user info immediately, but proceeding.", err);
+            }
 
-                // Check if there's a return path saved (e.g., from admin panel)
-                const returnTo = localStorage.getItem('returnTo');
-                if (returnTo) {
-                    localStorage.removeItem('returnTo'); // Clean up
-                    navigate(returnTo);
+            // Always check for return path functionality
+            const returnTo = localStorage.getItem('returnTo');
+            if (returnTo) {
+                console.log("Redirecting to saved path:", returnTo);
+                localStorage.removeItem('returnTo');
+                navigate(returnTo);
+                return;
+            }
+
+            // Default: Redirect based on user role (if we have role info, otherwise dashboard)
+            try {
+                const tokenPayload = JSON.parse(atob(response.data.access_token.split('.')[1]));
+                if (tokenPayload.is_admin) {
+                    navigate('/admin');
                 } else {
-                    // Redirect based on user role
-                    if (userResponse.data.is_admin) {
-                        navigate('/admin'); // Admin users go to admin panel
-                    } else {
-                        navigate('/dashboard'); // Regular users go to dashboard
-                    }
+                    navigate('/dashboard');
                 }
-            } catch (userErr) {
-                console.error('Error fetching user data:', userErr);
-                // Default redirect to dashboard if user fetch fails
+            } catch (e) {
                 navigate('/dashboard');
             }
         } catch (err) {

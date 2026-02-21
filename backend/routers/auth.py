@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional
@@ -11,47 +11,43 @@ from ..database.connection import get_db
 from ..database.models.user import User as UserModel
 from ..database.models.binary_global import BinaryGlobalMember
 from ..utils.websocket_manager import manager
+from ..database.models.honor_rank import HonorRank, UserHonor
+from ..utils.email_service import send_welcome_email
+from passlib.context import CryptContext
 
-router = APIRouter(prefix="/auth", tags=["Auth"])
+# Password handling
+# Password handling
+pwd_context = CryptContext(schemes=["argon2", "bcrypt"], deprecated="auto")
 
-# Environment-backed secrets
-SECRET_KEY = os.getenv("SECRET_KEY", "secret123")
-ALGORITHM = os.getenv("ALGORITHM", "HS256")
-
-# Use Argon2 instead of bcrypt (bcrypt has issues with Python 3.14)
-pwd_hasher = PasswordHasher()
-
-
-class RegisterData(BaseModel):
-    """Complete registration data: all fields at once."""
-    name: str
-    email: str
-    username: str
-    password: str
-    confirm_password: str
-    # Personal information
-    document_id: str
-    gender: str  # "M" or "F"
-    birth_date: str  # Format: "YYYY-MM-DD"
-    phone: str
-    # Address information
-    address: str
-    city: str
-    province: str
-    postal_code: str
-    # Country information
-    country: Optional[str] = None
-    referral_code: Optional[str] = None  # Can be username or old code format
-
-
+# Request Models
 class LoginData(BaseModel):
     username: Optional[str] = None
     email: Optional[str] = None
     password: str
 
+class RegisterData(BaseModel):
+    name: str
+    email: str
+    username: str
+    password: str
+    confirm_password: str
+    referral_code: str
+    gender: str
+    document_id: str
+    birth_date: str
+    phone: str
+    address: str
+    city: str
+    province: str
+    postal_code: str
+    country: str
+
+router = APIRouter(prefix="/auth", tags=["Auth"])
+
+# ... (omitted code) ...
 
 @router.post("/register")
-def register(data: RegisterData, db: Session = Depends(get_db)):
+def register(data: RegisterData, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     """Register a user with all information at once."""
     try:
         # Validations
@@ -101,16 +97,20 @@ def register(data: RegisterData, db: Session = Depends(get_db)):
                 detail="Este patrocinador ha alcanzado su límite diario de registros (20). Por favor intenta de nuevo mañana o contacta soporte."
             )
 
-        # Hash password (truncate to 72 bytes for compatibility)
-        password_to_hash = data.password[:72] if data.password else ''
-        
+        # Hash password (using Argon2 for unlimited length support)
         try:
-            hashed_password = pwd_hasher.hash(password_to_hash)
+            hashed_password = pwd_context.hash(data.password)
         except Exception as hash_error:
             print(f"Password hashing error: {hash_error}")
+            # DEBUG: Write error to file to see what's happening
+            try:
+                with open("password_error.log", "a") as f:
+                    f.write(f"Error hashing: {type(hash_error).__name__}: {str(hash_error)}\n")
+            except:
+                pass
             raise HTTPException(
                 status_code=400, 
-                detail="Error al procesar la contraseña. Por favor intenta con una contraseña diferente."
+                detail="Error al procesar la contraseña. Intente con otra o contacte soporte."
             )
 
         # Create user record with all information
@@ -143,18 +143,47 @@ def register(data: RegisterData, db: Session = Depends(get_db)):
         db.refresh(new_user)
         
         
-        # AUTO-REGISTER IN BINARY GLOBAL ONLY (as per business rules)
-        # When a user fills the registration form, they are ONLY registered in Binary Global as pre-affiliate
-        # When they activate (pay), they will be registered in ALL other networks (Unilevel, Forced Matrix, Binary Millionaire)
-        
+        # AUTO-REGISTER IN NETWORKS
+        # 1. Binary Global (Pre-affiliate)
         try:
-            # Binary Global - Use the proper service function with position assignment
             from ..mlm.services.binary_service import register_in_binary_global
             register_in_binary_global(db, new_user.id)
             print(f"✅ User {new_user.id} registered in Binary Global (pre-affiliate)")
         except Exception as e:
             print(f"❌ Error registering in Binary Global: {e}")
-            db.rollback()
+            # db.rollback() # Don't rollback user creation if network fails, just log it. Fix later.
+
+        # 2. Unilevel Network (Universal Access)
+        try:
+            from ..database.models.unilevel import UnilevelMember
+            # Find sponsor's unilevel node
+            uni_sponsor = None
+            if referer:
+                uni_sponsor = db.query(UnilevelMember).filter(UnilevelMember.user_id == referer.id).first()
+            
+            new_uni = UnilevelMember(
+                user_id=new_user.id,
+                sponsor_id=uni_sponsor.id if uni_sponsor else None,
+                level=(uni_sponsor.level + 1) if uni_sponsor else 1
+            )
+            db.add(new_uni)
+            # db.commit() # Commit handled at end or implicitly? flushing is safer
+            db.flush()
+            print(f"✅ User {new_user.id} registered in Unilevel Network")
+        except Exception as e:
+             print(f"❌ Error registering in Unilevel: {e}")
+
+        # 3. Millionaire Binary (Universal Access)
+        try:
+            from ..mlm.services.binary_millionaire_service import register_in_millionaire
+            # This service handles sponsor lookup and placement logic internally
+            register_in_millionaire(db, new_user.id)
+            print(f"✅ User {new_user.id} registered in Millionaire Binary")
+        except Exception as e:
+             print(f"❌ Error registering in Millionaire Binary: {e}")
+
+        # Commit all network registrations
+        db.commit()
         
         # Send WebSocket notification for marketing bubbles
         try:
@@ -180,6 +209,17 @@ def register(data: RegisterData, db: Session = Depends(get_db)):
         except Exception as e:
             print(f"Error sending WebSocket notification: {e}")
         
+        # Send Welcome Email (Background Task)
+        # We pass necessary info so we don't rely on DB objects inside async task (avoid detachment issues)
+        referral_link_url = f"https://tiendavirtualtei.com/usuario/{new_user.username}"
+        background_tasks.add_task(
+            send_welcome_email,
+            to_email=new_user.email,
+            username=new_user.username,
+            full_name=new_user.name,
+            referral_link=referral_link_url
+        )
+
         # Generate token for auto-login
         token = jwt.encode({"user_id": new_user.id}, SECRET_KEY, algorithm=ALGORITHM)
         
@@ -225,29 +265,7 @@ def verify_referral_code(username: str, db: Session = Depends(get_db)):
     return {"valid": False}
 
 
-from fastapi.security import OAuth2PasswordBearer
-
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
-
-
-def get_current_user_object(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> UserModel:
-    """Get current user object from JWT token. Returns User model instance for use in dependencies.
-    
-    This function must be defined early so it can be used as a dependency in other route handlers.
-    """
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id: int = payload.get("user_id")
-        if user_id is None:
-            raise HTTPException(status_code=401, detail="Invalid authentication credentials")
-    except jwt.JWTError:
-        raise HTTPException(status_code=401, detail="Invalid authentication credentials")
-    
-    user = db.query(UserModel).filter(UserModel.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    return user
+from ..utils.auth import get_current_user_object, oauth2_scheme, SECRET_KEY, ALGORITHM
 
 
 @router.get("/me")
@@ -294,9 +312,21 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         "full_address": user.address,
         "city": user.city,
         "province": user.province,
+        "province": user.province,
         "postal_code": user.postal_code,
-        "created_at": user.created_at
+        "created_at": user.created_at,
+        "created_at": user.created_at,
+        "crypto_wallet_address": user.crypto_wallet,
+        "rank": _get_user_honor_rank(db, user.id)
     }
+
+def _get_user_honor_rank(db: Session, user_id: int) -> str:
+    """Helper to get user's highest honor rank name."""
+    highest_rank = db.query(HonorRank).join(UserHonor).filter(
+        UserHonor.user_id == user_id
+    ).order_by(HonorRank.commission_required.desc()).first()
+    
+    return highest_rank.name if highest_rank else "Sin Rango"
 
 
 class UpdateProfileData(BaseModel):
@@ -307,6 +337,7 @@ class UpdateProfileData(BaseModel):
     city: Optional[str] = None
     province: Optional[str] = None
     country: Optional[str] = None
+    crypto_wallet: Optional[str] = None # New Wallet Field
 
 
 @router.put("/profile")
@@ -317,6 +348,8 @@ def update_profile(data: UpdateProfileData, current_user: UserModel = Depends(ge
         current_user.name = data.name
     if data.phone_number:
         current_user.phone = data.phone_number
+    if data.crypto_wallet is not None: # Allow empty string to clear it
+        current_user.crypto_wallet = data.crypto_wallet
     if data.gender:
         # Accept frontend values 'male'/'female'/'other' and normalize to DB format 'M'/'F' or store as-is for other
         g = data.gender.lower()
@@ -380,11 +413,16 @@ def login(data: LoginData, db: Session = Depends(get_db)):
         print(f"   Stored hash (first 50 chars): {stored_hash[:50] if stored_hash else 'NONE'}")
         
         try:
-            pwd_hasher.verify(stored_hash, password_to_verify)
-            print("Password verification SUCCESS")
+            # passlib handles checking the hash type automatically (bcrypt or argon2)
+            valid = pwd_context.verify(password_to_verify, stored_hash)
+            if valid:
+                print("Password verification SUCCESS")
+            else:
+                print("Password verification FAILED: Invalid password")
+                raise HTTPException(status_code=401, detail="Invalid credentials")
         except Exception as verify_error:
-            # Any verification error (VerifyMismatchError, InvalidHash, etc.)
-            print(f"Password verification FAILED: {type(verify_error).__name__}: {verify_error}")
+            # Any verification error
+            print(f"Password verification ERROR: {type(verify_error).__name__}: {verify_error}")
             raise HTTPException(status_code=401, detail="Invalid credentials")
         
         
@@ -408,7 +446,7 @@ def login(data: LoginData, db: Session = Depends(get_db)):
 
 
 @router.get("/me")
-def get_current_user_info(current_user: UserModel = Depends(get_current_user_object)):
+def get_current_user_info(current_user: UserModel = Depends(get_current_user_object), db: Session = Depends(get_db)):
     """Get current user information."""
     return {
         "id": current_user.id,
@@ -419,7 +457,8 @@ def get_current_user_info(current_user: UserModel = Depends(get_current_user_obj
         "referral_link": f"/usuario/{current_user.username}",
         "has_transaction_pin": bool(current_user.transaction_pin),
         "bank_balance": current_user.bank_balance or 0.0,
-        "available_balance": current_user.available_balance or 0.0
+        "available_balance": current_user.available_balance or 0.0,
+        "rank": _get_user_honor_rank(db, current_user.id)
     }
 
 
@@ -440,7 +479,7 @@ def change_password(data: ChangePasswordData, current_user: UserModel = Depends(
     """Change user's access password."""
     
     # Verify current password
-    if not pwd_hasher.verify(data.current_password, current_user.password):
+    if not pwd_context.verify(data.current_password, current_user.password):
         raise HTTPException(
             status_code=401,
             detail="Contraseña actual incorrecta"
@@ -448,7 +487,7 @@ def change_password(data: ChangePasswordData, current_user: UserModel = Depends(
     
     # Hash new password
     try:
-        hashed = pwd_hasher.hash(data.new_password)
+        hashed = pwd_context.hash(data.new_password)
     except Exception as hash_error:
         print(f"Password hashing error: {hash_error}")
         raise HTTPException(
@@ -477,7 +516,7 @@ def set_transaction_pin(data: SetTransactionPinData, current_user: UserModel = D
     """Set or update user's transaction PIN."""
     
     # Verify current password
-    if not pwd_hasher.verify(data.current_password, current_user.password):
+    if not pwd_context.verify(data.current_password, current_user.password):
         raise HTTPException(
             status_code=401,
             detail="Contraseña actual incorrecta"
@@ -492,7 +531,7 @@ def set_transaction_pin(data: SetTransactionPinData, current_user: UserModel = D
     
     # Hash transaction PIN
     try:
-        hashed_pin = pwd_hasher.hash(data.transaction_pin)
+        hashed_pin = pwd_context.hash(data.transaction_pin)
     except Exception as hash_error:
         print(f"PIN hashing error: {hash_error}")
         raise HTTPException(

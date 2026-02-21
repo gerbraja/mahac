@@ -10,8 +10,12 @@ export default function AdminLayout() {
         { path: '/admin', label: 'Dashboard', icon: '📊' },
         { path: '/admin/users', label: 'Usuarios', icon: '👥' },
         { path: '/admin/products', label: 'Productos', icon: '📦' },
+        { path: '/admin/suppliers', label: 'Proveedores', icon: '🏭' },
         { path: '/admin/payments', label: 'Pagos Pendientes', icon: '💳' },
+        { path: '/admin/kyc', label: 'Validaciones KYC', icon: '🆔' },
+        { path: '/admin/withdrawals', label: 'Retiros', icon: '🏦' },
         { path: '/admin/sponsorship-commissions', label: 'Comisiones Patrocinio', icon: '💰' },
+        { path: '/admin/pickup-points', label: 'Puntos de Recogida', icon: '📍' },
         { path: '/admin/reports', label: 'Reportes', icon: '📈' },
     ];
 
@@ -64,7 +68,13 @@ export default function AdminLayout() {
                 </div>
 
                 {/* Menu Items */}
-                <nav style={{ flex: 1, padding: '1rem 0' }}>
+                <nav style={{
+                    flex: 1,
+                    padding: '1rem 0',
+                    overflowY: 'auto',
+                    scrollbarWidth: 'thin',
+                    scrollbarColor: 'rgba(255, 255, 255, 0.2) transparent'
+                }}>
                     {menuItems.map((item) => (
                         <button
                             key={item.path}

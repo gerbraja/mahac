@@ -96,24 +96,18 @@ const BinaryMillionaireView = () => {
 
     if (!status || status.status === 'not_registered') {
         return (
-            <div style={{ padding: '1.5rem', maxWidth: '1400px', margin: '0 auto' }}>
-                <h2 style={{ fontSize: '2.25rem', fontWeight: 'bold', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <div className="p-4 md:p-6 max-w-[1400px] mx-auto">
+                <h2 className="text-2xl md:text-4xl font-bold mb-2 flex items-center gap-2">
                     💎 Red Binaria Millonaria
                 </h2>
-                <div style={{
-                    background: '#fef3c7',
-                    border: '1px solid #f59e0b',
-                    borderRadius: '0.5rem',
-                    padding: '1.5rem',
-                    marginTop: '2rem'
-                }}>
-                    <h3 style={{ color: '#92400e', fontWeight: 'bold', marginBottom: '1rem' }}>
+                <div className="bg-amber-50 border border-amber-500 rounded-lg p-6 mt-8">
+                    <h3 className="text-amber-800 font-bold mb-4 text-lg">
                         📢 No Registrado
                     </h3>
-                    <p style={{ color: '#78350f', marginBottom: '0.5rem' }}>
+                    <p className="text-amber-900 mb-2">
                         Aún no estás registrado en el Plan Binario Millonario.
                     </p>
-                    <p style={{ color: '#78350f' }}>
+                    <p className="text-amber-900">
                         💡 <strong>Compra un paquete millonario</strong> para unirte y comenzar a ganar comisiones por niveles.
                     </p>
                 </div>
@@ -122,113 +116,107 @@ const BinaryMillionaireView = () => {
     }
 
     return (
-        <div style={{ padding: '1.5rem', maxWidth: '1400px', margin: '0 auto' }}>
-            <h2 style={{ fontSize: '2.25rem', fontWeight: 'bold', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <div className="p-4 md:p-6 max-w-[1400px] mx-auto">
+            <h2 className="text-2xl md:text-4xl font-bold mb-2 flex items-center gap-2">
                 💎 Red Binaria Millonaria
             </h2>
-            <p style={{ color: '#6b7280', marginBottom: '2rem', fontSize: '0.875rem' }}>
+            <p className="text-gray-500 mb-8 text-sm md:text-base">
                 Comisiones por niveles impares 1-27 • Basado en Puntos de Volumen (PV)
             </p>
 
             {/* Tarjeta de Visualización del Árbol */}
-            <div style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', borderRadius: '1rem', padding: '2rem', marginBottom: '2rem', color: 'white', boxShadow: '0 10px 25px rgba(16,185,129,0.3)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '2rem' }}>
+            <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl p-4 md:p-8 mb-8 text-white shadow-xl">
+                <div className="flex flex-col md:flex-row justify-between items-start mb-8 gap-4">
                     <div>
-                        <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>
+                        <h3 className="text-xl md:text-2xl font-bold mb-2">
                             🌳 Tu Red Binaria Millonaria
                         </h3>
-                        <p style={{ opacity: 0.9, fontSize: '0.875rem' }}>
+                        <p className="opacity-90 text-sm">
                             Posición Global #{status.global_position || 'N/A'}
                         </p>
                     </div>
-                    <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>
+                    <div className="text-left md:text-right">
+                        <div className="text-3xl font-bold">
                             ${totalEarnings.toFixed(2)}
                         </div>
-                        <div style={{ fontSize: '0.875rem', opacity: 0.9 }}>
+                        <div className="text-sm opacity-90">
                             Ganancia Total
                         </div>
                     </div>
                 </div>
 
                 {/* Visualización simplificada del árbol */}
-                <div style={{ background: 'rgba(255,255,255,0.1)', borderRadius: '0.75rem', padding: '1.5rem', backdropFilter: 'blur(10px)' }}>
-                    <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-                        <div style={{
-                            display: 'inline-block',
-                            background: 'rgba(255,255,255,0.2)',
-                            borderRadius: '50%',
-                            width: '60px',
-                            height: '60px',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '2rem'
-                        }}>
+                <div className="bg-white/10 rounded-xl p-4 md:p-6 backdrop-blur-md">
+                    <div className="text-center mb-6">
+                        <div className="inline-flex items-center justify-center w-16 h-16 bg-white/20 rounded-full text-3xl mb-2">
                             👤
                         </div>
-                        <div style={{ marginTop: '0.5rem', fontSize: '0.875rem', fontWeight: '600' }}>
+                        <div className="text-sm font-semibold">
                             TÚ
                         </div>
-                        <div style={{ fontSize: '0.75rem', opacity: 0.8 }}>
+                        <div className="text-xs opacity-80">
                             Nivel 1
                         </div>
                     </div>
 
                     {/* Niveles */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
-                        <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: '0.5rem', padding: '1rem', textAlign: 'center' }}>
-                            <div style={{ fontSize: '0.875rem', marginBottom: '0.5rem', opacity: 0.9 }}>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                        <div className="bg-white/15 rounded-lg p-4 text-center">
+                            <div className="text-sm mb-2 opacity-90">
                                 ⬅️ LÍNEA IZQUIERDA
                             </div>
-                            <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{leftLineCount}</div>
-                            <div style={{ fontSize: '0.75rem', opacity: 0.8 }}>
+                            <div className="text-2xl font-bold">{leftLineCount}</div>
+                            <div className="text-xs opacity-80">
                                 miembros
                             </div>
                         </div>
-                        <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: '0.5rem', padding: '1rem', textAlign: 'center' }}>
-                            <div style={{ fontSize: '0.875rem', marginBottom: '0.5rem', opacity: 0.9 }}>
+                        <div className="bg-white/15 rounded-lg p-4 text-center">
+                            <div className="text-sm mb-2 opacity-90">
                                 ➡️ LÍNEA DERECHA
                             </div>
-                            <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{rightLineCount}</div>
-                            <div style={{ fontSize: '0.75rem', opacity: 0.8 }}>
+                            <div className="text-2xl font-bold">{rightLineCount}</div>
+                            <div className="text-xs opacity-80">
                                 miembros
                             </div>
                         </div>
                     </div>
 
                     {/* Progress bar */}
-                    <div style={{ marginTop: '1.5rem' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', marginBottom: '0.5rem' }}>
+                    <div className="mt-6">
+                        <div className="flex justify-between text-xs mb-2">
                             <span>Total PV Generado</span>
                             <span>{totalPV.toLocaleString()} PV</span>
                         </div>
-                        <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: '9999px', height: '8px', overflow: 'hidden' }}>
-                            <div style={{ background: 'white', width: `${Math.min((totalPV / 100000 * 100), 100)}%`, height: '100%', borderRadius: '9999px', transition: 'width 0.3s' }}></div>
+                        <div className="bg-white/20 rounded-full h-2 overflow-hidden">
+                            <div
+                                className="bg-white h-full rounded-full transition-all duration-300"
+                                style={{ width: `${Math.min((totalPV / 100000 * 100), 100)}%` }}
+                            ></div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Tarjeta de Estado */}
-                <div style={{ background: 'white', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', borderRadius: '0.75rem', padding: '1.5rem' }}>
-                    <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <div className="bg-white shadow-md rounded-xl p-6">
+                    <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
                         📊 Estado de Cuenta
                     </h3>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <div className="flex flex-col gap-4">
                         <div>
-                            <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.25rem' }}>Estado</p>
-                            <p style={{ fontSize: '1.125rem', fontWeight: 'bold', color: status.is_active ? '#059669' : '#dc2626' }}>
+                            <p className="text-sm text-gray-500 mb-1">Estado</p>
+                            <p className={`text-lg font-bold ${status.is_active ? 'text-emerald-600' : 'text-red-600'}`}>
                                 {status.is_active ? '✅ Activo' : '❌ Inactivo'}
                             </p>
                         </div>
                         <div>
-                            <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.25rem' }}>Posición Global</p>
-                            <p style={{ fontSize: '1.125rem', fontWeight: 'bold' }}>#{status.global_position}</p>
+                            <p className="text-sm text-gray-500 mb-1">Posición Global</p>
+                            <p className="text-lg font-bold">#{status.global_position}</p>
                         </div>
                         <div>
-                            <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.25rem' }}>Fecha de Ingreso</p>
-                            <p style={{ fontSize: '0.875rem', fontWeight: '600' }}>
+                            <p className="text-sm text-gray-500 mb-1">Fecha de Ingreso</p>
+                            <p className="text-sm font-semibold">
                                 {status.created_at ? new Date(status.created_at).toLocaleDateString('es-ES') : 'N/A'}
                             </p>
                         </div>
@@ -236,21 +224,21 @@ const BinaryMillionaireView = () => {
                 </div>
 
                 {/* Tarjeta de Información */}
-                <div style={{ background: 'white', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', borderRadius: '0.75rem', padding: '1.5rem' }}>
-                    <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <div className="bg-white shadow-md rounded-xl p-6">
+                    <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
                         ℹ️ Plan Millonario
                     </h3>
-                    <div style={{ fontSize: '0.875rem', color: '#374151', lineHeight: '1.75' }}>
-                        <p style={{ marginBottom: '0.5rem' }}>
+                    <div className="text-sm text-gray-700 space-y-2">
+                        <p>
                             <strong>🎯 Modelo:</strong> Binario 2x2
                         </p>
-                        <p style={{ marginBottom: '0.5rem' }}>
+                        <p>
                             <strong>💰 Niveles que Pagan:</strong> Impares 1-27
                         </p>
-                        <p style={{ marginBottom: '0.5rem' }}>
+                        <p>
                             <strong>📊 Conversión:</strong> 1 PV = $4,500 COP
                         </p>
-                        <p style={{ marginBottom: '0.5rem' }}>
+                        <p>
                             <strong>⚡ Placement:</strong> Orden de Llegada (BFS)
                         </p>
                     </div>
@@ -258,20 +246,18 @@ const BinaryMillionaireView = () => {
             </div>
 
             {/* Tabla de Comisiones por Nivel */}
-            <div style={{ background: 'white', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', borderRadius: '0.75rem', padding: '1.5rem', marginTop: '1.5rem' }}>
-                <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    💵 Estructura de Comisiones por Nivel
+            <div className="bg-white shadow-md rounded-xl p-4 md:p-6 mt-6">
+                <h3 className="text-xl md:text-2xl font-bold mb-4 flex items-center gap-2">
+                    💵 Estructura de Comisiones por Nivel (mensual)
                 </h3>
-                <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
+                <div className="overflow-x-auto">
+                    <table className="w-full border-collapse text-sm">
                         <thead>
-                            <tr style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: 'white' }}>
-                                <th style={{ padding: '1rem', textAlign: 'left', borderRadius: '0.5rem 0 0 0' }}>Niveles</th>
-                                <th style={{ padding: '1rem', textAlign: 'center' }}>% Comisión</th>
-                                <th style={{ padding: '1rem', textAlign: 'right' }}>Personas Posibles</th>
-                                <th style={{ padding: '1rem', textAlign: 'right' }}>Activos Actuales</th>
-                                <th style={{ padding: '1rem', textAlign: 'right' }}>PV Generado</th>
-                                <th style={{ padding: '1rem', textAlign: 'right', borderRadius: '0 0.5rem 0 0' }}>Ganado (COP)</th>
+                            <tr className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white">
+                                <th className="p-3 md:p-4 text-left rounded-tl-lg">Niveles</th>
+                                <th className="p-3 md:p-4 text-center">Comisión</th>
+                                <th className="p-3 md:p-4 text-right">Activos</th>
+                                <th className="p-3 md:p-4 text-right rounded-tr-lg">Ganado (USD)</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -298,53 +284,43 @@ const BinaryMillionaireView = () => {
                                 });
 
                                 return (
-                                    <tr key={idx} style={{
-                                        borderBottom: '1px solid #e5e7eb',
-                                        background: idx % 2 === 0 ? '#fef3c7' : '#d1fae5'
-                                    }}>
-                                        <td style={{ padding: '1rem', fontWeight: '600' }}>
-                                            <span style={{ marginRight: '0.5rem' }}>{group.emoji}</span>
-                                            Niveles {group.levels}
+                                    <tr key={idx} className={`border-b border-gray-200 ${idx % 2 === 0 ? 'bg-amber-50' : 'bg-emerald-50'}`}>
+                                        <td className="p-3 md:p-4 font-semibold">
+                                            <span className="mr-2">{group.emoji}</span>
+                                            <span className="block md:inline">Niveles {group.levels}</span>
                                         </td>
-                                        <td style={{ padding: '1rem', textAlign: 'center', fontFamily: 'monospace', fontWeight: 'bold', fontSize: '1.125rem', color: '#10b981' }}>
+                                        <td className="p-3 md:p-4 text-center font-mono font-bold text-lg text-emerald-600">
                                             {group.percent}%
                                         </td>
-                                        <td style={{ padding: '1rem', textAlign: 'right', fontFamily: 'monospace' }}>
-                                            {totalPossible.toLocaleString()}
-                                        </td>
-                                        <td style={{ padding: '1rem', textAlign: 'right', fontFamily: 'monospace', fontWeight: '600' }}>
+                                        <td className="p-3 md:p-4 text-right font-mono font-semibold">
                                             {totalActive.toLocaleString()}
                                         </td>
-                                        <td style={{ padding: '1rem', textAlign: 'right', fontFamily: 'monospace', fontWeight: '600', color: '#7c3aed' }}>
-                                            {totalPV.toLocaleString()} PV
-                                        </td>
-                                        <td style={{ padding: '1rem', textAlign: 'right', fontFamily: 'monospace', fontWeight: 'bold', color: '#059669' }}>
-                                            ${totalEarned.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                                        <td className="p-3 md:p-4 text-right font-mono font-bold text-emerald-700">
+                                            ${totalEarned.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                         </td>
                                     </tr>
                                 );
                             })}
-                            <tr style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: 'white', fontWeight: 'bold' }}>
-                                <td colSpan="4" style={{ padding: '1rem', fontSize: '1rem' }}>
-                                    💰 TOTAL ACUMULADO MILLONARIO:
+                            <tr className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white font-bold">
+                                <td colSpan="2" className="p-3 md:p-4 text-base md:text-lg">
+                                    💰 TOTAL MES ACTUAL:
                                 </td>
-                                <td style={{ padding: '1rem', textAlign: 'right', fontSize: '1.125rem' }}>
-                                    {totalPV.toLocaleString()} PV
-                                </td>
-                                <td style={{ padding: '1rem', textAlign: 'right', fontSize: '1.125rem' }}>
-                                    ${thisYearEarnings.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                                <td></td>
+                                <td className="p-3 md:p-4 text-right text-base md:text-lg">
+                                    ${(stats?.level_stats?.reduce((acc, curr) => acc + (curr.earned_amount || 0), 0) || 0).toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                 </td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
-                <div style={{ marginTop: '1.5rem', padding: '1.25rem', background: '#fef3c7', border: '1px solid #fbbf24', borderRadius: '0.5rem' }}>
-                    <h4 style={{ fontWeight: '600', marginBottom: '0.75rem', color: '#92400e' }}>
+                <div className="mt-6 p-5 bg-amber-50 border border-amber-300 rounded-lg">
+                    <h4 className="font-bold mb-3 text-amber-800">
                         📝 Notas Importantes:
                     </h4>
-                    <ul style={{ margin: 0, paddingLeft: '1.5rem', color: '#78350f', fontSize: '0.875rem', lineHeight: '1.75' }}>
+                    <ul className="list-disc pl-5 text-amber-900 text-sm space-y-1">
+                        <li><strong>Ciclo Mensual:</strong> Del día 18 al día 17 del mes siguiente (Hora Colombia).</li>
                         <li><strong>Niveles Impares:</strong> Solo los niveles impares (1, 3, 5, 7...) generan comisiones</li>
-                        <li><strong>Fórmula:</strong> Comisión = (PV × %) × $4,500 COP por cada miembro activo</li>
+                        <li><strong>Fórmula:</strong> Comisión = (PV × %) × Valor del Punto (USD) por cada miembro activo</li>
                         <li><strong>PV (Puntos de Volumen):</strong> Determinado por el paquete comprado por cada usuario</li>
                         <li><strong>Hasta Nivel 27:</strong> El plan paga comisiones hasta el nivel 27 de profundidad</li>
                         <li><strong>Placement Automático:</strong> Los nuevos miembros se colocan en orden de llegada (BFS)</li>
@@ -353,20 +329,18 @@ const BinaryMillionaireView = () => {
             </div>
 
             {/* Resumen Detallado por Nivel Individual */}
-            <div style={{ background: 'white', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', borderRadius: '0.75rem', padding: '1.5rem', gridColumn: '1 / -1', marginTop: '1.5rem' }}>
-                <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <div className="bg-white shadow-md rounded-xl p-4 md:p-6 mt-6">
+                <h3 className="text-xl md:text-2xl font-bold mb-6 flex items-center gap-2">
                     📊 Resumen Detallado por Nivel (Niveles Impares)
                 </h3>
-                <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
+                <div className="overflow-x-auto">
+                    <table className="w-full border-collapse text-sm">
                         <thead>
-                            <tr style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: 'white' }}>
-                                <th style={{ padding: '0.75rem', textAlign: 'left', borderRadius: '0.5rem 0 0 0' }}>Nivel</th>
-                                <th style={{ padding: '0.75rem', textAlign: 'center' }}>%</th>
-                                <th style={{ padding: '0.75rem', textAlign: 'right' }}>Posibles</th>
-                                <th style={{ padding: '0.75rem', textAlign: 'right' }}>Activos</th>
-                                <th style={{ padding: '0.75rem', textAlign: 'right' }}>PV Total</th>
-                                <th style={{ padding: '0.75rem', textAlign: 'right', borderRadius: '0 0.5rem 0 0' }}>Ganado (COP)</th>
+                            <tr className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white">
+                                <th className="p-3 md:p-4 text-left rounded-tl-lg">Nivel</th>
+                                <th className="p-3 md:p-4 text-center">%</th>
+                                <th className="p-3 md:p-4 text-right">Activos</th>
+                                <th className="p-3 md:p-4 text-right rounded-tr-lg">Ganado (USD)</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -379,27 +353,18 @@ const BinaryMillionaireView = () => {
                                 const earned = levelStat?.earned_amount || 0;
 
                                 return (
-                                    <tr key={idx} style={{
-                                        borderBottom: '1px solid #e5e7eb',
-                                        background: '#fef3c7'
-                                    }}>
-                                        <td style={{ padding: '0.75rem', fontWeight: '600' }}>
+                                    <tr key={idx} className="border-b border-gray-200 bg-amber-50 hover:bg-amber-100 transition-colors">
+                                        <td className="p-3 md:p-4 font-semibold">
                                             Nivel {level}
                                         </td>
-                                        <td style={{ padding: '0.75rem', textAlign: 'center', fontFamily: 'monospace', fontWeight: '600', color: '#10b981' }}>
+                                        <td className="p-3 md:p-4 text-center font-mono font-semibold text-emerald-600">
                                             {percent}%
                                         </td>
-                                        <td style={{ padding: '0.75rem', textAlign: 'right', fontFamily: 'monospace', fontSize: '0.75rem' }}>
-                                            {possible.toLocaleString()}
-                                        </td>
-                                        <td style={{ padding: '0.75rem', textAlign: 'right', fontFamily: 'monospace', fontWeight: '600' }}>
+                                        <td className="p-3 md:p-4 text-right font-mono font-semibold">
                                             {active.toLocaleString()}
                                         </td>
-                                        <td style={{ padding: '0.75rem', textAlign: 'right', fontFamily: 'monospace', fontWeight: '600', color: '#7c3aed' }}>
-                                            {pv.toLocaleString()}
-                                        </td>
-                                        <td style={{ padding: '0.75rem', textAlign: 'right', fontFamily: 'monospace', fontWeight: 'bold', color: '#059669' }}>
-                                            ${earned.toLocaleString('es-CO', { minimumFractionDigits: 0 })}
+                                        <td className="p-3 md:p-4 text-right font-mono font-bold text-emerald-700">
+                                            ${earned.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                         </td>
                                     </tr>
                                 );

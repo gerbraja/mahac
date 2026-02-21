@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+import { api } from '../api/api';
 
 const UserOrders = () => {
     const [orders, setOrders] = useState([]);
@@ -35,15 +33,25 @@ const UserOrders = () => {
 
     const fetchOrders = async () => {
         try {
-            const token = localStorage.getItem('access_token');
-            const response = await axios.get(`${API_URL}/api/orders/my`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const response = await api.get('/api/orders/my');
             setOrders(response.data);
             setLoading(false);
         } catch (error) {
             console.error('Error fetching orders:', error);
             setLoading(false);
+        }
+    };
+
+    const handleDeleteOrder = async (orderId) => {
+        if (!confirm('¿Estás seguro de que deseas eliminar este pedido? Esta acción no se puede deshacer.')) return;
+
+        try {
+            await api.delete(`/api/orders/${orderId}`);
+            alert('Pedido eliminado correctamente.');
+            fetchOrders(); // Refresh list
+        } catch (error) {
+            console.error('Error deleting order:', error);
+            alert(`Error al eliminar el pedido: ${error.message}\nIntentando conectar a: ${api.defaults.baseURL}\nEndpoint: /api/orders/${orderId}`);
         }
     };
 
@@ -87,7 +95,7 @@ const UserOrders = () => {
 
     return (
         <div className="space-y-6">
-            <h1 className="text-3xl font-bold mb-6">Mis Pedidos</h1>
+            <h1 className="text-3xl font-bold mb-6">Mis Pedidos (V2)</h1>
 
             {/* Pestañas de filtro por estado - SIEMPRE VISIBLES */}
             <div className="mb-6 flex gap-2 flex-wrap">
@@ -275,24 +283,12 @@ const UserOrders = () => {
                     {/* Botones de acción según el estado */}
                     <div className="px-6 py-4 bg-gray-50 border-t flex gap-3 flex-wrap">
                         {order.status === 'reservado' && (
-                            <>
-                                <button
-                                    onClick={() => window.location.href = `/order-confirmation/${order.id}`}
-                                    className="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition font-medium"
-                                >
-                                    💳 Proceder al Pago
-                                </button>
-                                <button
-                                    onClick={() => {
-                                        if (confirm('¿Estás seguro de que deseas eliminar este pedido?')) {
-                                            alert('Funcionalidad de eliminación en desarrollo');
-                                        }
-                                    }}
-                                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-medium"
-                                >
-                                    🗑️ Borrar Pedido
-                                </button>
-                            </>
+                            <button
+                                onClick={() => handleDeleteOrder(order.id)}
+                                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-medium w-full sm:w-auto text-center"
+                            >
+                                🗑️ Borrar Pedido
+                            </button>
                         )}
 
                         {order.status === 'pendiente_envio' && (
@@ -330,8 +326,9 @@ const UserOrders = () => {
                         </button>
                     </div>
                 </div>
-            ))}
-        </div>
+            ))
+            }
+        </div >
     );
 };
 

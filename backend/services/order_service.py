@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Session
+import json
 from backend.database.models.product import Product
 from backend.database.models.order import Order
 from backend.database.models.order_item import OrderItem
@@ -22,6 +23,11 @@ def create_order(db: Session, payload: OrderCreate, current_user):
         subtotal_usd = item.quantity * product.price_usd
         # Assuming price_local is COP
         subtotal_cop = item.quantity * (product.price_local or 0.0)
+        
+        # Fallback: If product has no USD price, convert from COP
+        if subtotal_usd <= 0 and subtotal_cop > 0:
+             subtotal_usd = subtotal_cop / 3800.0
+
         subtotal_pv = item.quantity * product.pv
 
         total_usd += subtotal_usd
@@ -36,13 +42,35 @@ def create_order(db: Session, payload: OrderCreate, current_user):
             "subtotal_pv": subtotal_pv
         })
 
+    # Determine user_id (registered) or None (guest)
+    user_id = current_user.id if current_user else None
+    
+    # Handle Guest Info serialization
+    guest_info_json = None
+    if payload.guest_info:
+        guest_info_json = json.dumps(payload.guest_info.dict())
+        
+        # Fallback: If no current_user (e.g. invalid token), try to match by email
+        if not user_id and payload.guest_info.email:
+             from backend.database.models.user import User
+             existing_user = db.query(User).filter(User.email == payload.guest_info.email).first()
+             if existing_user:
+                 user_id = existing_user.id
+
+    # Determine Shipping Address
+    shipping_addr = getattr(payload, "shipping_address", None)
+    if not shipping_addr and current_user:
+         shipping_addr = f"{current_user.address}, {current_user.city}, {current_user.province}"
+    
     order = Order(
-        user_id=current_user.id,
+        user_id=user_id,
+        guest_info=guest_info_json,
         total_usd=round(total_usd,2),
         total_cop=round(total_cop,2),
         total_pv=round(total_pv,2),
-        shipping_address=getattr(payload, "shipping_address", None) or f"{current_user.address}, {current_user.city}, {current_user.province}",
-        status="pending"
+        shipping_address=shipping_addr,
+        payment_method=payload.payment_method,
+        status="reservado"
     )
     db.add(order)
     db.commit()

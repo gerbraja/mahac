@@ -12,7 +12,7 @@ from backend.database.models.unilevel import UnilevelMember
 SPONSORSHIP_COMMISSION_USD = 9.7
 
 
-def process_activation(db: Session, user_id: int, package_amount: float, pv: int = 3, signup_percent: float | None = None, plan_file: str | None = None):
+def process_activation(db: Session, user_id: int, package_amount: float, pv: int = 3, signup_percent: float | None = None, plan_file: str | None = None, package_level: int = 1):
     """Process user activation atomically.
 
     - Locks the user row
@@ -66,7 +66,9 @@ def process_activation(db: Session, user_id: int, package_amount: float, pv: int
         user.membership_code = f"{int(next_num):07d}"
         
         # Change user status to 'active'
+        # Change user status to 'active'
         user.status = 'active'
+        user.package_level = package_level
 
         # write activation log
         activation_log = ActivationLog(user_id=user_id, package_amount=package_amount)
@@ -75,15 +77,21 @@ def process_activation(db: Session, user_id: int, package_amount: float, pv: int
         # CREATE SPONSORSHIP COMMISSION ($9.7 USD to direct sponsor)
         sponsorship_commission = None
         if hasattr(user, 'referred_by_id') and user.referred_by_id:
-            sponsorship_commission = SponsorshipCommission(
-                sponsor_id=user.referred_by_id,
-                new_member_id=user_id,
-                package_amount=package_amount,
-                commission_amount=SPONSORSHIP_COMMISSION_USD,
-                status="pending"  # Can be marked as 'paid' when processed
-            )
-            db.add(sponsorship_commission)
-            db.flush()  # Get the commission ID
+            # Update Sponsor's Balance IMMEDIATELY
+            sponsor_user = db.query(User).filter(User.id == user.referred_by_id).with_for_update().first()
+            if sponsor_user:
+                sponsor_user.available_balance = (sponsor_user.available_balance or 0.0) + SPONSORSHIP_COMMISSION_USD
+                sponsor_user.total_earnings = (sponsor_user.total_earnings or 0.0) + SPONSORSHIP_COMMISSION_USD
+                
+                sponsorship_commission = SponsorshipCommission(
+                    sponsor_id=user.referred_by_id,
+                    new_member_id=user_id,
+                    package_amount=package_amount,
+                    commission_amount=SPONSORSHIP_COMMISSION_USD,
+                    status="paid"  # Mark as paid immediately since we updated balance
+                )
+                db.add(sponsorship_commission)
+                db.flush()  # Get the commission ID
 
         # Ensure Unilevel placement exists for the user (create if missing).
         # We use the referred_by_id from User to link sponsor (if present).

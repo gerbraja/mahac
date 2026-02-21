@@ -35,12 +35,7 @@ const UnilevelView = () => {
 
     if (loading) {
         return (
-            <div style={{
-                padding: '2rem',
-                textAlign: 'center',
-                fontSize: '1.25rem',
-                color: '#6b7280'
-            }}>
+            <div className="p-8 text-center text-xl text-gray-500">
                 Cargando datos de Red Unilevel...
             </div>
         );
@@ -69,44 +64,55 @@ const UnilevelView = () => {
     // Total combinado (Unilevel + Quick Start Bonus)
     const totalCombinedEarnings = totalEarnings + quickStartBonus;
 
+    // Helper para formatear moneda (USD + COP)
+    const formatCurrency = (usdValue) => {
+        const value = usdValue || 0;
+        const copValue = value * 4500; // Tasa fija de conversión
+
+        const usdString = '$' + value.toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+
+        const copString = '$' + copValue.toLocaleString('es-CO', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        });
+
+        return (
+            <div className="flex flex-col items-center">
+                <span>{usdString} USD</span>
+                <span className="text-[0.6em] opacity-80 mt-0.5">
+                    (≈ {copString} COP)
+                </span>
+            </div>
+        );
+    };
+
     return (
-        <div style={{ padding: '2rem', background: '#f9fafb', minHeight: '100vh' }}>
+        <div className="p-4 md:p-8 bg-gray-50 min-h-screen">
             {/* Header */}
-            <div style={{ marginBottom: '3rem', textAlign: 'center' }}>
-                <h1 style={{
-                    fontSize: '2.5rem',
-                    fontWeight: 'bold',
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                    marginBottom: '0.5rem'
-                }}>
+            <div className="mb-8 text-center">
+                <h1 className="text-3xl md:text-4xl font-bold mb-2 bg-gradient-to-br from-indigo-500 to-purple-600 bg-clip-text text-transparent">
                     🌳 Red Unilevel
                 </h1>
-                <p style={{ color: '#6b7280', fontSize: '1.125rem' }}>
+                <p className="text-gray-500 text-lg">
                     Sistema de comisiones en 7 niveles - Total acumulado: 27%
                 </p>
             </div>
 
             {/* Status Card */}
-            <div style={{
-                background: isRegistered
-                    ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
-                    : 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
-                color: 'white',
-                padding: '2rem',
-                borderRadius: '1rem',
-                marginBottom: '2rem',
-                boxShadow: '0 10px 15px rgba(0,0,0,0.1)',
-                textAlign: 'center'
-            }}>
-                <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>
+            <div className={`p-6 md:p-8 rounded-2xl mb-8 shadow-lg text-center text-white ${isRegistered
+                    ? 'bg-gradient-to-br from-emerald-500 to-emerald-700'
+                    : 'bg-gradient-to-br from-red-500 to-red-600'
+                }`}>
+                <div className="text-5xl mb-4">
                     {isRegistered ? '✅' : '❌'}
                 </div>
-                <h2 style={{ fontSize: '1.75rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>
+                <h2 className="text-2xl md:text-3xl font-bold mb-2">
                     {isRegistered ? 'Red Activa' : 'No Registrado'}
                 </h2>
-                <p style={{ fontSize: '1.125rem', opacity: 0.9 }}>
+                <p className="text-lg opacity-90">
                     {isRegistered
                         ? 'Estás activo en la red Unilevel y recibiendo comisiones'
                         : 'Regístrate para comenzar a ganar comisiones de tu red'}
@@ -116,148 +122,106 @@ const UnilevelView = () => {
             {isRegistered && (
                 <>
                     {/* Stats Cards Grid */}
-                    <div style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-                        gap: '1.5rem',
-                        marginBottom: '3rem'
-                    }}>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                         {/* Total Earnings */}
-                        <div style={{
-                            background: 'white',
-                            padding: '1.5rem',
-                            borderRadius: '1rem',
-                            boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-                            border: '3px solid #10b981'
-                        }}>
-                            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>💰</div>
-                            <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>
+                        <div className="bg-white p-6 rounded-2xl shadow-md border-b-4 border-emerald-500">
+                            <div className="text-4xl mb-2">💰</div>
+                            <div className="text-sm text-gray-500 mb-2 font-medium">
                                 Ganancias Totales
                             </div>
-                            <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#10b981' }}>
-                                ${totalCombinedEarnings.toFixed(2)}
+                            <div className="text-2xl font-bold text-emerald-600">
+                                {formatCurrency(totalCombinedEarnings)}
                             </div>
-                            <div style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: '0.5rem' }}>
+                            <div className="text-xs text-gray-400 mt-2">
                                 Incluye Quick Start + Unilevel
                             </div>
                         </div>
 
                         {/* Monthly Earnings */}
-                        <div style={{
-                            background: 'white',
-                            padding: '1.5rem',
-                            borderRadius: '1rem',
-                            boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-                            border: '3px solid #3b82f6'
-                        }}>
-                            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📅</div>
-                            <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>
+                        <div className="bg-white p-6 rounded-2xl shadow-md border-b-4 border-blue-500">
+                            <div className="text-4xl mb-2">📅</div>
+                            <div className="text-sm text-gray-500 mb-2 font-medium">
                                 Ganancias del Mes
                             </div>
-                            <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#3b82f6' }}>
-                                ${monthlyEarnings.toLocaleString()}
+                            <div className="text-2xl font-bold text-blue-600">
+                                {formatCurrency(monthlyEarnings)}
                             </div>
                         </div>
 
                         {/* Total Downline */}
-                        <div style={{
-                            background: 'white',
-                            padding: '1.5rem',
-                            borderRadius: '1rem',
-                            boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-                            border: '3px solid #8b5cf6'
-                        }}>
-                            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>👥</div>
-                            <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>
+                        <div className="bg-white p-6 rounded-2xl shadow-md border-b-4 border-purple-500">
+                            <div className="text-4xl mb-2">👥</div>
+                            <div className="text-sm text-gray-500 mb-2 font-medium">
                                 Total Red
                             </div>
-                            <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#8b5cf6' }}>
+                            <div className="text-2xl font-bold text-purple-600">
                                 {totalDownline}
                             </div>
                         </div>
 
                         {/* Active Downline */}
-                        <div style={{
-                            background: 'white',
-                            padding: '1.5rem',
-                            borderRadius: '1rem',
-                            boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-                            border: '3px solid #f59e0b'
-                        }}>
-                            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>⚡</div>
-                            <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>
+                        <div className="bg-white p-6 rounded-2xl shadow-md border-b-4 border-amber-500">
+                            <div className="text-4xl mb-2">⚡</div>
+                            <div className="text-sm text-gray-500 mb-2 font-medium">
                                 Red Activa
                             </div>
-                            <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#f59e0b' }}>
+                            <div className="text-2xl font-bold text-amber-500">
                                 {activeDownline}
                             </div>
                         </div>
 
                         {/* Matching Bonus Earned */}
-                        <div style={{
-                            background: 'white',
-                            padding: '1.5rem',
-                            borderRadius: '1rem',
-                            boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-                            border: '3px solid #ec4899'
-                        }}>
-                            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🎁</div>
-                            <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>
+                        <div className="bg-white p-6 rounded-2xl shadow-md border-b-4 border-teal-500 md:col-span-2 lg:col-span-1">
+                            <div className="text-4xl mb-2">🎁</div>
+                            <div className="text-sm text-gray-500 mb-2 font-medium">
                                 Bono de Igualación
                             </div>
-                            <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#ec4899' }}>
-                                ${(stats?.matching_bonus || 0).toLocaleString()}
+                            <div className="text-2xl font-bold text-teal-600">
+                                {formatCurrency(stats?.matching_bonus)}
                             </div>
-                            <div style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: '0.5rem' }}>
+                            <div className="text-xs text-gray-400 mt-2">
                                 50% de comisiones de directos
                             </div>
                         </div>
                     </div>
 
                     {/* Matching Bonus Explanation */}
-                    <div style={{
-                        background: 'linear-gradient(135deg, #ec4899 0%, #db2777 100%)',
-                        color: 'white',
-                        padding: '2rem',
-                        borderRadius: '1rem',
-                        marginBottom: '2rem',
-                        boxShadow: '0 10px 15px rgba(236,72,153,0.3)'
-                    }}>
-                        <h3 style={{ fontSize: '1.75rem', fontWeight: 'bold', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <div className="bg-gradient-to-br from-teal-500 to-teal-700 text-white p-4 rounded-xl mb-6 shadow-md overflow-hidden">
+                        <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
                             🎁 Bono de Igualación (Matching Bonus)
                         </h3>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <div>
-                                <h4 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '0.75rem' }}>
+                                <h4 className="text-lg font-bold mb-2">
                                     ¿Qué es?
                                 </h4>
-                                <p style={{ opacity: 0.95, lineHeight: '1.6', fontSize: '1rem' }}>
+                                <p className="text-sm opacity-90 leading-relaxed">
                                     Es un <strong>bono adicional del 50%</strong> de todas las comisiones que generan tus patrocinados directos (Nivel 1).
                                     Esto te recompensa por construir y apoyar a líderes fuertes en tu equipo.
                                 </p>
                             </div>
                             <div>
-                                <h4 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '0.75rem' }}>
+                                <h4 className="text-lg font-bold mb-2">
                                     ¿Cómo funciona?
                                 </h4>
-                                <p style={{ opacity: 0.95, lineHeight: '1.6', fontSize: '1rem' }}>
+                                <p className="text-sm opacity-90 leading-relaxed">
                                     Cuando un patrocinado directo tuyo gana comisiones Unilevel de su red,
                                     tú recibes el <strong>50% de esas comisiones como bono adicional</strong>.
                                     Es decir, ganas dos veces: tu comisión normal + el matching bonus.
                                 </p>
                             </div>
                             <div>
-                                <h4 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '0.75rem' }}>
+                                <h4 className="text-lg font-bold mb-2">
                                     Ejemplo Práctico
                                 </h4>
-                                <div style={{ background: 'rgba(255,255,255,0.2)', padding: '1rem', borderRadius: '0.5rem', fontSize: '0.95rem' }}>
-                                    <p style={{ marginBottom: '0.5rem' }}>
+                                <div className="bg-white/20 p-4 rounded-lg text-sm">
+                                    <p className="mb-2">
                                         • Tu directo Pedro gana <strong>$100</strong> en comisiones Unilevel
                                     </p>
-                                    <p style={{ marginBottom: '0.5rem' }}>
+                                    <p className="mb-2">
                                         • Tú recibes <strong>$50</strong> de matching bonus (50% de $100)
                                     </p>
-                                    <p style={{ marginBottom: 0, fontWeight: 'bold', fontSize: '1.1rem' }}>
+                                    <p className="font-bold text-base mt-2">
                                         💰 Total extra: $50 por cada directo exitoso
                                     </p>
                                 </div>
@@ -266,134 +230,68 @@ const UnilevelView = () => {
                     </div>
 
                     {/* Levels Breakdown */}
-                    <div style={{
-                        background: 'white',
-                        borderRadius: '1rem',
-                        padding: '2rem',
-                        boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-                        marginBottom: '3rem'
-                    }}>
-                        <h3 style={{
-                            fontSize: '1.5rem',
-                            fontWeight: 'bold',
-                            color: '#1e3a8a',
-                            marginBottom: '1.5rem',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '0.5rem'
-                        }}>
+                    <div className="bg-white rounded-2xl shadow-lg p-4 md:p-6 mb-8">
+                        <h3 className="text-xl md:text-2xl font-bold text-blue-900 mb-6 flex items-center gap-2">
                             📊 Comisiones por Nivel
                         </h3>
 
-                        <div style={{ overflowX: 'auto' }}>
-                            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                                <thead style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
+                        <div className="overflow-x-auto">
+                            <table className="w-full border-collapse">
+                                <thead className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white">
                                     <tr>
-                                        <th style={{ padding: '1rem', textAlign: 'left', color: 'white', borderBottom: '2px solid #5a67d8' }}>Nivel</th>
-                                        <th style={{ padding: '1rem', textAlign: 'center', color: 'white', borderBottom: '2px solid #5a67d8' }}>Porcentaje</th>
-                                        <th style={{ padding: '1rem', textAlign: 'center', color: 'white', borderBottom: '2px solid #5a67d8' }}>Personas</th>
-                                        <th style={{ padding: '1rem', textAlign: 'center', color: 'white', borderBottom: '2px solid #5a67d8' }}>Activos</th>
-                                        <th style={{ padding: '1rem', textAlign: 'center', color: 'white', borderBottom: '2px solid #5a67d8' }}>Comisiones Ganadas</th>
-                                        <th style={{ padding: '1rem', textAlign: 'center', color: 'white', borderBottom: '2px solid #5a67d8' }}>Matching Bonus</th>
-                                        <th style={{ padding: '1rem', textAlign: 'center', color: 'white', borderBottom: '2px solid #5a67d8' }}>Volumen del Nivel</th>
+                                        <th className="p-3 text-left border-b-2 border-indigo-400">Nivel</th>
+                                        <th className="p-3 text-center border-b-2 border-indigo-400">%</th>
+                                        <th className="p-3 text-center border-b-2 border-indigo-400">Activos</th>
+                                        <th className="p-3 text-center border-b-2 border-indigo-400">Ganancias</th>
+                                        {/* Removed Volume Column */}
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {[1, 2, 3, 4, 5, 6, 7].map((level, index) => {
                                         const levelStats = stats?.levels?.[level] || {};
-                                        const totalMembers = levelStats.total_members || 0;
+                                        // const totalMembers = levelStats.total_members || 0; // Unused
                                         const activeMembers = levelStats.active_members || 0;
                                         const earnings = levelStats.total_earnings || 0;
-                                        const volume = levelStats.total_volume || 0;
+                                        // const volume = levelStats.total_volume || 0; // Unused
                                         const percentage = LEVEL_PERCENTAGES[level];
 
                                         return (
-                                            <tr key={level} style={{
-                                                borderBottom: '1px solid #e5e7eb',
-                                                background: index % 2 === 0 ? '#fef3c7' : '#d1fae5'
-                                            }}>
-                                                <td style={{ padding: '1rem' }}>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                                        <div style={{
-                                                            width: '40px',
-                                                            height: '40px',
-                                                            borderRadius: '50%',
-                                                            background: `linear-gradient(135deg, ${getColorForLevel(level)})`,
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            justifyContent: 'center',
-                                                            color: 'white',
-                                                            fontWeight: 'bold',
-                                                            fontSize: '1.125rem'
-                                                        }}>
+                                            <tr key={level} className={`border-b border-gray-100 ${index % 2 === 0 ? 'bg-amber-50' : 'bg-emerald-50'
+                                                }`}>
+                                                <td className="p-3">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-sm" style={{ background: `linear-gradient(135deg, ${getColorForLevel(level)})` }}>
                                                             {level}
                                                         </div>
-                                                        <div>
-                                                            <div style={{ fontWeight: '700', fontSize: '1rem' }}>
-                                                                Nivel {level}
-                                                            </div>
-                                                            <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>
-                                                                Generación {level}
-                                                            </div>
+                                                        <div className="font-bold text-sm text-gray-700">
+                                                            Nvl {level}
                                                         </div>
                                                     </div>
                                                 </td>
-                                                <td style={{ padding: '1rem', textAlign: 'center' }}>
-                                                    <div style={{
-                                                        display: 'inline-block',
-                                                        padding: '0.5rem 1rem',
-                                                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                                                        color: 'white',
-                                                        borderRadius: '9999px',
-                                                        fontWeight: 'bold',
-                                                        fontSize: '1.125rem'
-                                                    }}>
+                                                <td className="p-3 text-center">
+                                                    <div className="inline-block px-2 py-1 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-full text-xs font-bold">
                                                         {percentage}%
                                                     </div>
                                                 </td>
-                                                <td style={{ padding: '1rem', textAlign: 'center', fontWeight: '600', fontSize: '1.125rem' }}>
-                                                    {totalMembers}
-                                                </td>
-                                                <td style={{ padding: '1rem', textAlign: 'center' }}>
-                                                    <span style={{
-                                                        padding: '0.5rem 1rem',
-                                                        borderRadius: '9999px',
-                                                        background: activeMembers > 0 ? '#d1fae5' : '#f3f4f6',
-                                                        color: activeMembers > 0 ? '#065f46' : '#6b7280',
-                                                        fontWeight: '700'
-                                                    }}>
+                                                <td className="p-3 text-center">
+                                                    <span className={`px-2 py-1 rounded-full text-xs font-bold ${activeMembers > 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-500'
+                                                        }`}>
                                                         {activeMembers}
                                                     </span>
                                                 </td>
-                                                <td style={{ padding: '1rem', textAlign: 'center', fontWeight: 'bold', fontSize: '1.125rem', color: '#10b981' }}>
-                                                    ${earnings.toLocaleString()}
+                                                <td className="p-3 text-center font-bold text-sm text-emerald-600">
+                                                    {formatCurrency(earnings)}
                                                 </td>
-                                                <td style={{ padding: '1rem', textAlign: 'center', fontWeight: 'bold', fontSize: '1.125rem', color: '#ec4899' }}>
-                                                    {level === 1 ? `$${(levelStats.matching_bonus || 0).toLocaleString()}` : 'N/A'}
-                                                </td>
-                                                <td style={{ padding: '1rem', textAlign: 'center', fontWeight: '600', color: '#6b7280' }}>
-                                                    ${volume.toLocaleString()}
-                                                </td>
+                                                {/* Removed Volume Column Data */}
                                             </tr>
                                         );
                                     })}
-                                    <tr style={{
-                                        background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
-                                        color: 'white',
-                                        fontWeight: 'bold',
-                                        fontSize: '1.25rem'
-                                    }}>
-                                        <td colSpan="4" style={{ padding: '1.5rem', textAlign: 'right' }}>
-                                            💰 TOTAL ACUMULADO:
+                                    <tr className="bg-gradient-to-r from-blue-800 to-blue-600 text-white font-bold text-base">
+                                        <td colSpan="3" className="p-3 text-right">
+                                            💰 TOTAL:
                                         </td>
-                                        <td style={{ padding: '1.5rem', textAlign: 'center', fontSize: '1.75rem' }}>
-                                            ${totalCombinedEarnings.toFixed(2)}
-                                        </td>
-                                        <td style={{ padding: '1.5rem', textAlign: 'center', fontSize: '1.75rem', color: '#fce7f3' }}>
-                                            ${(stats?.matching_bonus || 0).toLocaleString()}
-                                        </td>
-                                        <td style={{ padding: '1.5rem', textAlign: 'center' }}>
-                                            ${(stats?.total_volume || 0).toLocaleString()}
+                                        <td className="p-3 text-center text-lg">
+                                            {formatCurrency(totalCombinedEarnings)}
                                         </td>
                                     </tr>
                                 </tbody>
@@ -402,39 +300,32 @@ const UnilevelView = () => {
                     </div>
 
                     {/* Info Box */}
-                    <div style={{
-                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                        color: 'white',
-                        padding: '2rem',
-                        borderRadius: '1rem',
-                        marginBottom: '2rem',
-                        boxShadow: '0 10px 15px rgba(0,0,0,0.1)'
-                    }}>
-                        <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1rem' }}>
+                    <div className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white p-6 rounded-2xl mb-8 shadow-md">
+                        <h3 className="text-xl font-bold mb-4">
                             📚 ¿Cómo funciona la Red Unilevel?
                         </h3>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <div>
-                                <h4 style={{ fontSize: '1.125rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>
+                                <h4 className="text-lg font-bold mb-2">
                                     🎯 7 Niveles de Profundidad
                                 </h4>
-                                <p style={{ opacity: 0.9, lineHeight: '1.6' }}>
+                                <p className="text-sm opacity-90 leading-relaxed">
                                     Ganas comisiones de hasta 7 niveles de profundidad en tu red. Cada nivel tiene su propio porcentaje de comisión.
                                 </p>
                             </div>
                             <div>
-                                <h4 style={{ fontSize: '1.125rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>
+                                <h4 className="text-lg font-bold mb-2">
                                     💎 Total 27% Distribuido
                                 </h4>
-                                <p style={{ opacity: 0.9, lineHeight: '1.6' }}>
+                                <p className="text-sm opacity-90 leading-relaxed">
                                     El sistema distribuye un total de 27% en comisiones: 1% + 2% + 2% + 4% + 5% + 6% + 7%
                                 </p>
                             </div>
                             <div>
-                                <h4 style={{ fontSize: '1.125rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>
+                                <h4 className="text-lg font-bold mb-2">
                                     ⚡ Comisiones Automáticas
                                 </h4>
-                                <p style={{ opacity: 0.9, lineHeight: '1.6' }}>
+                                <p className="text-sm opacity-90 leading-relaxed">
                                     Cada vez que alguien en tu red hace una compra, automáticamente recibes tu comisión según el nivel.
                                 </p>
                             </div>
@@ -442,70 +333,40 @@ const UnilevelView = () => {
                     </div>
 
                     {/* Genealogy Tree Preview */}
-                    <div style={{
-                        background: 'white',
-                        borderRadius: '1rem',
-                        padding: '2rem',
-                        boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
-                    }}>
-                        <h3 style={{
-                            fontSize: '1.5rem',
-                            fontWeight: 'bold',
-                            color: '#1e3a8a',
-                            marginBottom: '1.5rem',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '0.5rem'
-                        }}>
+                    <div className="bg-white rounded-2xl shadow-lg p-6 md:p-8">
+                        <h3 className="text-xl md:text-2xl font-bold text-blue-900 mb-6 flex items-center gap-2">
                             🌳 Vista Rápida de tu Red
                         </h3>
 
-                        <div style={{ textAlign: 'center', padding: '2rem' }}>
+                        <div className="text-center p-4">
                             {/* You */}
-                            <div style={{
-                                display: 'inline-block',
-                                padding: '1rem 2rem',
-                                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                                color: 'white',
-                                borderRadius: '1rem',
-                                fontWeight: 'bold',
-                                fontSize: '1.25rem',
-                                marginBottom: '2rem',
-                                boxShadow: '0 4px 6px rgba(16,185,129,0.3)'
-                            }}>
+                            <div className="inline-block px-6 py-3 bg-gradient-to-br from-emerald-500 to-emerald-700 text-white rounded-2xl font-bold text-lg mb-8 shadow-emerald-500/30 shadow-lg">
                                 👤 TÚ
                             </div>
 
                             {/* Level 1 */}
-                            <div style={{ marginBottom: '1.5rem' }}>
-                                <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.75rem', fontWeight: '600' }}>
+                            <div className="mb-6">
+                                <div className="text-sm text-gray-500 mb-3 font-semibold">
                                     Nivel 1 - {stats?.levels?.[1]?.total_members || 0} personas ({LEVEL_PERCENTAGES[1]}%)
                                 </div>
-                                <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+                                <div className="flex gap-4 justify-center flex-wrap">
                                     {renderLevelNodes(stats?.levels?.[1]?.total_members || 0, 1, 5)}
                                 </div>
                             </div>
 
                             {/* Level 2 */}
-                            <div style={{ marginBottom: '1.5rem' }}>
-                                <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.75rem', fontWeight: '600' }}>
+                            <div className="mb-6">
+                                <div className="text-sm text-gray-500 mb-3 font-semibold">
                                     Nivel 2 - {stats?.levels?.[2]?.total_members || 0} personas ({LEVEL_PERCENTAGES[2]}%)
                                 </div>
-                                <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+                                <div className="flex gap-3 justify-center flex-wrap">
                                     {renderLevelNodes(stats?.levels?.[2]?.total_members || 0, 2, 10)}
                                 </div>
                             </div>
 
                             {/* Remaining levels indicator */}
                             {totalDownline > 15 && (
-                                <div style={{
-                                    marginTop: '1.5rem',
-                                    padding: '1rem',
-                                    background: '#f3f4f6',
-                                    borderRadius: '0.5rem',
-                                    color: '#6b7280',
-                                    fontWeight: '600'
-                                }}>
+                                <div className="mt-6 p-4 bg-gray-50 rounded-lg text-gray-500 font-semibold text-sm">
                                     ... y {totalDownline - 15} personas más en niveles 3-7
                                 </div>
                             )}

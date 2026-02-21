@@ -234,6 +234,36 @@ class MatrixService:
                     if not existing_rank:
                         ur = UserQualifiedRank(user_id=user_id, rank_id=rank_config.id, achieved_at=now, reward_granted=True)
                         db.add(ur)
+
+                        # --- NEW QUALIFIED RANK PRIZES (Product Credits) ---
+                        # Plata (277) -> $127
+                        # Oro (877) -> $500
+                        # Platino (3000) -> $1700
+                        # Diamante (100000) -> $47,000 (Auto)
+                        prize_credit = 0.0
+                        prize_name = ""
+
+                        if rank_config.matrix_id_required == 277: # Plata
+                            prize_credit = 127.0
+                            prize_name = "Premio Producto Plata"
+                        elif rank_config.matrix_id_required == 877: # Oro
+                            prize_credit = 500.0
+                            prize_name = "Premio Producto Oro"
+                        elif rank_config.matrix_id_required == 3000: # Platino
+                            prize_credit = 1700.0
+                            prize_name = "Premio Producto Platino"
+                        elif rank_config.matrix_id_required == 100000: # Diamante
+                            prize_credit = 47000.0
+                            prize_name = "Premio Auto Diamante"
+                        
+                        if prize_credit > 0:
+                            # Credit to purchase_balance
+                            # We fetch user with lock to ensure atomic update
+                            u_prize = db.query(User).filter(User.id == user_id).with_for_update().first()
+                            if u_prize:
+                                u_prize.purchase_balance = (u_prize.purchase_balance or 0.0) + prize_credit
+                                print(f"🏆 AWARDED {prize_name}: Added ${prize_credit} to User {user_id} Purchase Balance.")
+                        # ---------------------------------------------------
                     
                     # 2. Calculate Payout
                     cash_reward = rank_config.reward_amount

@@ -35,7 +35,7 @@ steps:
     args: ['run', 'build']
     dir: 'frontend'
     env:
-      - 'VITE_API_URL=https://tei-backend-uc.a.run.app' # Placeholder, update after first backend deploy
+      - 'VITE_API_BASE=https://api.tuempresainternacional.com'
 
   # 6. Deploy Frontend to Firebase (Optional, requires token)
   # - name: 'gcr.io/$PROJECT_ID/firebase'

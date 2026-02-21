@@ -5,7 +5,10 @@ export default function RegistroNotifications() {
   const [notificaciones, setNotificaciones] = useState([]);
 
   useEffect(() => {
-    const socket = new WebSocket('ws://localhost:8000/ws/notificaciones');
+    const apiBase = import.meta.env.VITE_API_BASE || 'https://mlm-backend-s52yictoyq-rj.a.run.app';
+    const wsProtocol = apiBase.startsWith('https') ? 'wss:' : 'ws:';
+    const wsUrl = apiBase.replace(/^http(s?):/, wsProtocol);
+    const socket = new WebSocket(`${wsUrl}/ws/notificaciones`);
 
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
@@ -79,74 +82,102 @@ export default function RegistroNotifications() {
             exit={{ opacity: 0, x: 100, scale: 0.8 }}
             transition={{ duration: 0.5, type: 'spring', stiffness: 200 }}
             style={{
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              borderRadius: 20,
               padding: '16px 20px',
               display: 'flex',
-              alignItems: 'center',
-              gap: 16,
+              flexDirection: 'column',
+              justifyContent: 'center',
               minWidth: 320,
               maxWidth: 400,
-              boxShadow: '0 10px 40px rgba(102, 126, 234, 0.4), 0 0 20px rgba(118, 75, 162, 0.3)',
-              border: '2px solid rgba(255, 255, 255, 0.3)',
-              backdropFilter: 'blur(10px)',
-              position: 'relative'
+              borderRadius: 20,
+              boxShadow: '0 10px 40px rgba(0,0,0,0.5), 0 0 20px rgba(0,0,0,0.3)',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              position: 'relative',
+              overflow: 'hidden', // Ensure background image doesn't spill out
+              background: '#1a1a1a', // Fallback color
             }}
           >
-            {/* Country Flag Circle */}
+            {/* Background Image Layer */}
             <div style={{
-              width: 60,
-              height: 60,
-              borderRadius: '50%',
-              overflow: 'hidden',
-              border: '3px solid white',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
-              flexShrink: 0,
-              background: 'white',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}>
-              <img
-                src={`https://flagcdn.com/w80/${getCountryCode(n.user?.country)}.png`}
-                alt={n.user?.country || 'flag'}
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                onError={(e) => {
-                  e.target.src = 'https://flagcdn.com/w80/co.png'; // Fallback to Colombia
-                }}
-              />
-            </div>
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              backgroundImage: `url(https://flagcdn.com/w640/${getCountryCode(n.user?.country)}.png)`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              filter: 'brightness(0.4)', // Darken image for readability
+              zIndex: 0
+            }} />
 
-            {/* Content */}
-            <div style={{ flex: 1, color: 'white' }}>
+            {/* Gradient Overlay for extra readability */}
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              background: 'linear-gradient(to right, rgba(0,0,0,0.8), rgba(0,0,0,0.4))',
+              zIndex: 1
+            }} />
+
+            {/* Content Container (z-index ensure it's above background) */}
+            <div style={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', gap: 16 }}>
+              {/* Flag Circle - Kept as requested by "flag of each country" but integrated harmoniously */}
               <div style={{
-                fontSize: 11,
-                fontWeight: 600,
-                textTransform: 'uppercase',
-                letterSpacing: '1px',
-                marginBottom: 4,
-                opacity: 0.9,
-                color: '#ffd700'
-              }}>
-                🎉 {n.event === 'activacion' ? 'Nuevo Afiliado' : 'Nuevo Registro'}
-              </div>
-              <div style={{
-                fontSize: 16,
-                fontWeight: 'bold',
-                marginBottom: 2,
-                textShadow: '0 2px 4px rgba(0,0,0,0.2)'
-              }}>
-                {getShortName(n.user?.name)}
-              </div>
-              <div style={{
-                fontSize: 12,
-                opacity: 0.95,
+                width: 50,
+                height: 50,
+                borderRadius: '50%',
+                overflow: 'hidden',
+                border: '2px solid rgba(255, 255, 255, 0.8)',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+                flexShrink: 0,
+                background: 'rgba(255,255,255,0.1)',
                 display: 'flex',
                 alignItems: 'center',
-                gap: 6
+                justifyContent: 'center'
               }}>
-                <span>📍</span>
-                <span>{n.user?.city || ''}{n.user?.city && n.user?.country ? ', ' : ''}{n.user?.country || ''}</span>
+                <img
+                  src={`https://flagcdn.com/w80/${getCountryCode(n.user?.country)}.png`}
+                  alt={n.user?.country || 'flag'}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  onError={(e) => {
+                    e.target.src = 'https://flagcdn.com/w80/co.png';
+                  }}
+                />
+              </div>
+
+              {/* Text Content */}
+              <div style={{ flex: 1, color: 'white' }}>
+                <div style={{
+                  fontSize: 11,
+                  fontWeight: 600,
+                  textTransform: 'uppercase',
+                  letterSpacing: '1px',
+                  marginBottom: 4,
+                  opacity: 0.9,
+                  color: '#ffd700'
+                }}>
+                  🎉 {n.event === 'activacion' ? 'Nuevo Afiliado' : 'Nuevo Registro'}
+                </div>
+                <div style={{
+                  fontSize: 16,
+                  fontWeight: 'bold',
+                  marginBottom: 2,
+                  textShadow: '0 2px 4px rgba(0,0,0,0.8)' // Stronger shadow
+                }}>
+                  {getShortName(n.user?.name)}
+                </div>
+                <div style={{
+                  fontSize: 12,
+                  opacity: 0.95,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6
+                }}>
+                  <span>📍</span>
+                  <span>{n.user?.city || ''}{n.user?.city && n.user?.country ? ', ' : ''}{n.user?.country || ''}</span>
+                </div>
               </div>
             </div>
 
@@ -160,7 +191,8 @@ export default function RegistroNotifications() {
               borderRadius: '50%',
               background: '#ffd700',
               animation: 'pulse 2s infinite',
-              boxShadow: '0 0 10px #ffd700'
+              boxShadow: '0 0 10px #ffd700',
+              zIndex: 3
             }} />
           </motion.div>
         ))}

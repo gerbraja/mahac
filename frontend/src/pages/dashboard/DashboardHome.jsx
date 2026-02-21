@@ -12,7 +12,7 @@ const DashboardHome = () => {
             try {
                 const [userResponse, walletResponse] = await Promise.all([
                     api.get('/auth/me'),
-                    api.get('/api/wallet').catch(() => ({ data: null }))
+                    api.get('/api/wallet/summary').catch(() => ({ data: null }))
                 ]);
                 setUser(userResponse.data);
                 setWalletData(walletResponse.data);
@@ -48,33 +48,33 @@ const DashboardHome = () => {
     // Calculate statistics
     const totalEarnings = walletData?.total_earnings || 0;
     const cryptoAssets = walletData?.crypto_balance || 0;
-    const leadershipBonuses = walletData?.leadership_bonuses || 0;
+    const availableBalance = walletData?.available_balance || 0;
     const currentRank = user.rank || 'Nuevo';
 
     const statsCards = [
         {
             title: 'Ganancia Total',
-            value: `$${totalEarnings.toFixed(2)}`,
+            value: `$${totalEarnings.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
             icon: '💵',
             gradient: 'from-green-500 to-emerald-600',
             bgGradient: 'from-green-50 to-emerald-50',
             iconBg: 'bg-green-100'
         },
         {
+            title: 'Saldo Disponible',
+            value: `$${availableBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+            icon: '🏦',
+            gradient: 'from-purple-500 to-violet-600',
+            bgGradient: 'from-purple-50 to-violet-50',
+            iconBg: 'bg-purple-100'
+        },
+        {
             title: 'Criptoactivos Actuales',
-            value: `$${cryptoAssets.toFixed(2)}`,
+            value: `$${cryptoAssets.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
             icon: '₿',
             gradient: 'from-orange-500 to-amber-600',
             bgGradient: 'from-orange-50 to-amber-50',
             iconBg: 'bg-orange-100'
-        },
-        {
-            title: 'Bonos de Liderazgo',
-            value: `$${leadershipBonuses.toFixed(2)}`,
-            icon: '🏆',
-            gradient: 'from-purple-500 to-violet-600',
-            bgGradient: 'from-purple-50 to-violet-50',
-            iconBg: 'bg-purple-100'
         },
         {
             title: 'Rango Actual',
@@ -136,6 +136,33 @@ const DashboardHome = () => {
                         >
                             Ir a la Tienda y Activarme →
                         </Link>
+                    </div>
+
+                    {/* Referral Link for Pre-Affiliates */}
+                    <div className="mt-8 pt-6 border-t border-blue-400 border-opacity-30">
+                        <h4 className="text-white text-sm font-semibold mb-3 flex items-center gap-2">
+                            <span>🔗</span> Tu Enlace de Referido (¡Ya puedes invitar!)
+                        </h4>
+                        <div className="flex gap-2">
+                            <input
+                                type="text"
+                                readOnly
+                                value={`${window.location.origin}/usuario/${user.username}`}
+                                className="bg-blue-900 bg-opacity-40 border border-blue-300 text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-3 font-mono placeholder-blue-200"
+                            />
+                            <button
+                                onClick={() => {
+                                    navigator.clipboard.writeText(`${window.location.origin}/usuario/${user.username}`);
+                                    alert('¡Enlace copiado al portapapeles!');
+                                }}
+                                className="text-blue-900 bg-white hover:bg-blue-50 focus:ring-4 focus:ring-blue-300 font-bold rounded-lg text-sm px-6 py-3 focus:outline-none transition-all duration-300 whitespace-nowrap shadow-lg"
+                            >
+                                📋 Copiar
+                            </button>
+                        </div>
+                        <p className="text-blue-100 text-xs mt-2 opacity-80">
+                            Comparte este enlace para registrar nuevos socios y ganar comisiones Unilevel y Binario Millonario.
+                        </p>
                     </div>
                 </div>
             ) : (

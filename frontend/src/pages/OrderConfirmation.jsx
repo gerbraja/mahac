@@ -60,8 +60,9 @@ const OrderConfirmation = () => {
                 return;
             }
             setShowWalletModal(true);
-        } else if (paymentMethod === 'bank') {
-            alert("Por favor envía el comprobante por WhatsApp para confirmar tu pago.");
+        } else if (paymentMethod === 'bank' || paymentMethod === 'binance' || order.payment_method === 'binance') {
+            alert("Por favor envía el comprobante por WhatsApp para confirmar tu pago. Tu pedido ha sido registrado correctamente.");
+            navigate('/dashboard/orders');
         } else {
             // For other methods, we might redirect or show a success message for now
             alert(`Redirigiendo a pasarela de pago para ${paymentMethod}...`);
@@ -153,6 +154,28 @@ const OrderConfirmation = () => {
                                 <span className="text-xl font-bold text-green-600">${order.total_cop?.toLocaleString()} COP</span>
                             </div>
                         </div>
+
+                        {/* Product List Section - Added for Clarity */}
+                        <div className="mt-6">
+                            <h3 className="font-bold text-gray-800 mb-3 border-b pb-1">Productos del Pedido</h3>
+                            <div className="space-y-3">
+                                {order.items && order.items.map((item, idx) => (
+                                    <div key={idx} className="flex justify-between items-center p-3 bg-white border rounded-lg shadow-sm">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-xl">📦</div>
+                                            <div>
+                                                <p className="font-bold text-gray-800">{item.product_name}</p>
+                                                <p className="text-sm text-gray-500">Cantidad: {item.quantity}</p>
+                                            </div>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="font-bold text-gray-900">${(item.price_at_purchase || 0).toLocaleString()} COP</p>
+                                            <p className="text-xs text-gray-500">{item.pv} PV</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
                     </div>
 
                     {/* Payment Methods Section */}
@@ -192,6 +215,38 @@ const OrderConfirmation = () => {
                                             </button>
                                         </div>
                                     )}
+                                </div>
+                            </label>
+                            {/* Binance Option */}
+                            <label className={`flex items-start gap-4 p-4 border-2 rounded-xl cursor-pointer transition-all ${paymentMethod === 'binance' || order.payment_method === 'binance' ? 'border-orange-500 bg-orange-50' : 'border-gray-200 hover:border-orange-300'}`}>
+                                <input
+                                    type="radio"
+                                    name="payment"
+                                    value="binance"
+                                    checked={paymentMethod === 'binance' || order.payment_method === 'binance'}
+                                    onChange={(e) => setPaymentMethod(e.target.value)}
+                                    className="mt-1 w-5 h-5 text-orange-600"
+                                />
+                                <div className="flex-1">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-2xl">🔶</span>
+                                        <span className="font-bold text-gray-800">Binance Pay / Cripto (USDT)</span>
+                                    </div>
+                                    <div className="mt-2 text-sm text-gray-700 bg-white p-3 rounded border border-gray-200">
+                                        <div className="flex flex-col items-center mb-3">
+                                            <p className="font-bold text-lg mb-1">Total a Pagar:</p>
+                                            <p className="text-2xl font-mono text-orange-600 font-bold">${order.total_usd.toFixed(2)} USD</p>
+                                        </div>
+
+                                        <div className="flex justify-center mb-3">
+                                            <img src="/binance-qr.jpg" alt="Binance QR" className="w-48 h-48 object-contain border rounded shadow" />
+                                        </div>
+
+                                        <p className="text-center font-bold">Escanea el QR para pagar</p>
+                                        <p className="text-xs text-center text-gray-500 mt-1">Aceptamos USDT, BTC, ETH.</p>
+
+                                        <p className="mt-2 text-xs text-blue-600 font-bold text-center">⚠️ Envía el comprobante por WhatsApp.</p>
+                                    </div>
                                 </div>
                             </label>
 
@@ -317,11 +372,11 @@ const OrderConfirmation = () => {
                                     <span className="text-3xl">🔐</span>
                                 </div>
                                 <h2 className="text-2xl font-bold text-gray-800">Seguridad de Billetera</h2>
-                                <p className="text-gray-600 mt-2">Para confirmar el pago, por favor ingresa tu contraseña de seguridad (segundo nivel).</p>
+                                <p className="text-gray-600 mt-2">Para confirmar el pago, por favor ingresa tu Clave de Transacciones (PIN).</p>
                             </div>
 
                             <div className="mb-6">
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Contraseña de Dos Niveles</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Clave de Transacciones (6 dígitos)</label>
                                 <input
                                     type="password"
                                     value={secondPassword}
@@ -351,7 +406,7 @@ const OrderConfirmation = () => {
                     </motion.div>
                 )}
             </AnimatePresence>
-        </div>
+        </div >
     );
 };
 

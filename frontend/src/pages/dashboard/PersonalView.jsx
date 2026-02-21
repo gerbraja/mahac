@@ -247,6 +247,36 @@ const PersonalView = () => {
                             <p className="text-gray-900 text-lg font-medium">{user.province || 'No especificado'}</p>
                         )}
                     </div>
+
+                    {/* Crypto Wallet (New) */}
+                    <div className="md:col-span-2 bg-blue-50/50 p-4 rounded-xl border border-blue-100">
+                        <label className="block text-sm font-bold text-blue-800 mb-2 flex items-center gap-2">
+                            💰 Tu Billetera USDT (Red BEP20 - BNB Smart Chain)
+                        </label>
+                        <p className="text-xs text-red-600 font-bold mb-3 bg-red-50 p-2 rounded border border-red-100">
+                            ⚠️ IMPORTANTE: Solo usa direcciones de la red BEP20 (Binance Smart Chain). Si envías otra red, los fondos se perderán.
+                        </p>
+                        {editing ? (
+                            <input
+                                type="text"
+                                value={formData.crypto_wallet || formData.crypto_wallet_address || ''}
+                                onChange={(e) => setFormData({ ...formData, crypto_wallet: e.target.value })}
+                                placeholder="Ej: 0x..."
+                                className="w-full px-4 py-3 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
+                            />
+                        ) : (
+                            <div className="flex items-center gap-2">
+                                <p className="text-gray-900 text-lg font-mono break-all">
+                                    {user.crypto_wallet_address || 'No configurada'}
+                                </p>
+                                {user.crypto_wallet_address && (
+                                    <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full border border-green-200">
+                                        BEP20
+                                    </span>
+                                )}
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
 

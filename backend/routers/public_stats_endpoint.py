@@ -1,5 +1,6 @@
 """
 Public stats endpoint for homepage
+# Force Rebuild 2025-12-16
 """
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
@@ -25,12 +26,16 @@ def get_public_stats(db: Session = Depends(get_db)):
         ).scalar() or 0
         
         # Sum all user total_earnings as proxy for total commissions
-        total_commissions = db.query(func.sum(User.total_earnings)).scalar() or 0.0
+        # Only for ACTIVE users as requested
+        total_commissions = db.query(func.sum(User.total_earnings)).filter(
+            User.status == 'active'
+        ).scalar() or 0.0
         
         # Count unique countries
         total_countries = db.query(func.count(distinct(User.country))).filter(
             User.country.isnot(None),
-            User.country != ''
+            User.country != '',
+            User.status == 'active'  # Only count countries with active members
         ).scalar() or 0
         
         return {

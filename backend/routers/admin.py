@@ -1,11 +1,17 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from backend.database.connection import get_db
-from backend.mlm.services.closing_service import process_monthly_closing, process_global_pool
-from backend.routers.auth import get_current_user_object
+from backend.mlm.services.closing_service import process_monthly_closing
+from backend.mlm.services.pool_service import distribute_monthly_pools
+from backend.utils.auth import get_current_user_object
 from backend.database.models.user import User
+from backend.database.models.matrix import MatrixMember
+from backend.mlm.services.matrix_service import MatrixService
+from backend.mlm.schemas.plan import MatrixPlan
 
 router = APIRouter(prefix="/api/admin", tags=["Admin"])
+
 
 def get_current_admin_user(current_user: User = Depends(get_current_user_object)):
     if not current_user.is_admin:
@@ -14,6 +20,42 @@ def get_current_admin_user(current_user: User = Depends(get_current_user_object)
             detail="The user doesn't have enough privileges"
         )
     return current_user
+
+@router.post("/users/{user_id}/impersonate")
+def impersonate_user(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user)
+):
+    """
+    Admin: Generate a login token for a specific user to impersonate them.
+    """
+    print(f"[IMPERSONATE] Request received for user_id: {user_id}", flush=True)
+    print(f"[IMPERSONATE] Current admin user: {current_user.username}", flush=True)
+    
+    target_user = db.query(User).filter(User.id == user_id).first()
+    if not target_user:
+        print(f"[IMPERSONATE] ERROR: User {user_id} not found", flush=True)
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    print(f"[IMPERSONATE] Target user found: {target_user.username}", flush=True)
+    
+    from backend.utils.auth import SECRET_KEY, ALGORITHM
+    from jose import jwt
+    
+    # Generate token with target user's ID
+    token = jwt.encode({
+        "user_id": target_user.id,
+        "is_admin": target_user.is_admin 
+    }, SECRET_KEY, algorithm=ALGORITHM)
+    
+    print(f"[IMPERSONATE] Token generated successfully", flush=True)
+    
+    return {
+        "access_token": token, 
+        "token_type": "bearer",
+        "message": f"Impersonating user {target_user.username}"
+    }
 
 @router.post("/trigger-monthly-closing")
 def trigger_monthly_closing(
@@ -42,8 +84,8 @@ def trigger_global_pool(
     - Distributes 7% to each Diamond Rank
     """
     try:
-        results = process_global_pool(db)
-        return {"message": "Global Pool distributed successfully", "details": results}
+        distribute_monthly_pools(db)
+        return {"message": "Global Pool distributed successfully (Check logs for details)"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -139,6 +181,7 @@ class UserUpdateData(BaseModel):
     province: Optional[str] = None
     postal_code: Optional[str] = None
     status: Optional[str] = None
+    package_level: Optional[int] = None
 
 @router.get("/users")
 def get_users(
@@ -175,7 +218,9 @@ def get_users(
         "postal_code": u.postal_code,
         "country": u.country,
         "created_at": u.created_at,
-        "is_admin": u.is_admin
+        "is_admin": u.is_admin,
+        "is_kyc_verified": u.is_kyc_verified,
+        "package_level": u.package_level
     } for u in users]
 
 @router.put("/users/{user_id}")
@@ -215,6 +260,8 @@ def update_user(
         user.postal_code = data.postal_code
     if data.status is not None:
         user.status = data.status
+    if data.package_level is not None:
+        user.package_level = data.package_level
     
     db.commit()
     db.refresh(user)
@@ -269,6 +316,37 @@ def delete_user(
     db.commit()
     
     return {"message": "User deleted successfully", "user_id": user_id}
+
+@router.get("/users/stats/countries")
+def get_users_by_country(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user)
+):
+    """
+    Get total users count grouped by country.
+    Useful for determining when to open physical offices (threshold: 500 users).
+    """
+    try:
+        results = db.query(
+            User.country, 
+            func.count(User.id).label('count')
+        ).filter(
+            User.country.isnot(None),
+            User.country != ''
+        ).group_by(User.country).order_by(func.count(User.id).desc()).all()
+        
+        stats = []
+        for country, count in results:
+            stats.append({
+                "country": country,
+                "count": count,
+                "percentage": 0, # Calculated in frontend if needed
+                "status": "Ready for Legalization" if count >= 500 else "Growing"
+            })
+            
+        return stats
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.put("/users/{user_id}/reset-password")
 def reset_user_password(
@@ -749,6 +827,7 @@ from backend.mlm.services.activation_service import process_activation
 class ManualActivationData(BaseModel):
     user_id: int
     package_amount: float = 100.0
+    package_level: int = 1  # 1=Franq 1, 2=Franq 2, 3=Franq 3
 
 @router.post("/activate-user")
 def activate_user_manually(
@@ -777,7 +856,8 @@ def activate_user_manually(
             user_id=data.user_id,
             package_amount=data.package_amount,
             signup_percent=None,  # Use default from plan
-            plan_file=None  # Use default plan
+            plan_file=None,  # Use default plan
+            package_level=data.package_level
         )
         
         # Check if already activated
@@ -892,3 +972,302 @@ def migrate_matrix_registrations(
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Migration error: {str(e)}")
+
+# --- PV and Commission Fixes ---
+from backend.mlm.services.binary_millionaire_service import distribute_millionaire_commissions
+from backend.database.models.binary_millionaire import BinaryMillionaireMember
+from typing import List
+
+class PVFixRequest(BaseModel):
+    user_ids: List[int]
+    pv_amount: int = 3
+
+@router.post("/fix-millionaire-pv")
+def fix_millionaire_pv_manually(
+    data: PVFixRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user)
+):
+    """
+    Manually trigger commission distribution for specific users to fix missing PV.
+    """
+    results = []
+    for user_id in data.user_ids:
+        member = db.query(BinaryMillionaireMember).filter(BinaryMillionaireMember.user_id == user_id).first()
+        if member and member.is_active:
+            try:
+                # Distribute commissions retroactively
+                distribute_millionaire_commissions(db, member, data.pv_amount)
+                results.append({"user_id": user_id, "username": member.user.username if member.user else "Unknown", "status": "processed"})
+            except Exception as e:
+                 results.append({"user_id": user_id, "status": "error", "error": str(e)})
+        else:
+             results.append({"user_id": user_id, "status": "skipped", "reason": "not found or not active"})
+    
+    return {"results": results}
+
+@router.post("/fix-matrix-positioning")
+def fix_matrix_positioning(
+    key: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Manual fix for matrix 27 positioning issues:
+    1. Remove duplicate TeiAdmin (root duplicate)
+    2. Register Gerbraja (User 5)
+    """
+    if key != "secure_fix_2025":
+        raise HTTPException(status_code=403, detail="Forbidden")
+        
+    try:
+        results = []
+        
+        # 1. Remove Duplicate TeiAdmin (User 2) with upline_id=NULL
+        # Verify valid one exists first (upline_id=1)
+        valid_tei = db.query(MatrixMember).filter(
+            MatrixMember.user_id == 2, 
+            MatrixMember.matrix_id == 27,
+            MatrixMember.upline_id == 1
+        ).first()
+        
+        if valid_tei:
+            # Safe to delete the orphan duplicate
+            duplicate = db.query(MatrixMember).filter(
+                MatrixMember.user_id == 2, 
+                MatrixMember.matrix_id == 27,
+                MatrixMember.upline_id == None
+            ).first()
+            
+            if duplicate:
+                db.delete(duplicate)
+                results.append("Deleted duplicate TeiAdmin (User 2, upline=None)")
+            else:
+                results.append("No duplicate TeiAdmin found")
+        else:
+            results.append("Warning: Valid TeiAdmin (upline=1) not found, skipping delete to prevent total loss")
+            
+        # 2. Register Gerbraja (User 5)
+        gerbraja_member = db.query(MatrixMember).filter(
+            MatrixMember.user_id == 5,
+            MatrixMember.matrix_id == 27
+        ).first()
+        
+        if not gerbraja_member:
+            # Init Matrix Service (requires plan but we cheat for simple buy)
+            # We assume plan is loaded or we mock it enough for buy_matrix to work
+            # buy_matrix only needs self.plan for _find_level/limits
+            # We must load a basic plan object
+            import yaml
+            import os
+            plan_path = os.path.join(os.path.dirname(__file__), "..", "mlm", "plans", "matriz_forzada", "plan_template.yml")
+            if os.path.exists(plan_path):
+                with open(plan_path, 'r') as f:
+                    plan_data = yaml.safe_load(f)
+                    matrix_plan = MatrixPlan(**plan_data)
+                    service = MatrixService(matrix_plan)
+                    
+                    # BUY MATRIX 27
+                    res = service.buy_matrix(db, user_id=5, matrix_id=27)
+                    if res.get("ok"):
+                        results.append("Registered Gerbraja (User 5) in Matrix 27")
+                    else:
+                        results.append(f"Failed to register Gerbraja: {res.get('message')}")
+            else:
+                results.append("Plan file not found, cannot init service")
+        else:
+            results.append("Gerbraja (User 5) already in Matrix 27")
+            
+        db.commit()
+        return {"status": "success", "results": results}
+        
+    except Exception as e:
+        db.rollback()
+        return {"error": str(e)}
+
+# --- Withdrawal Management & KYC ---
+from backend.database.models.withdrawal import WithdrawalRequest
+from fastapi import Body
+
+@router.get("/withdrawals")
+def get_withdrawal_requests(
+    status: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user)
+):
+    """
+    List withdrawal requests. Optional filter by status.
+    """
+    query = db.query(
+        WithdrawalRequest,
+        User.name.label('user_name'),
+        User.email.label('user_email'),
+        User.document_id.label('user_doc'),
+        User.bank_balance.label('user_bank_balance'),
+        User.is_kyc_verified.label('user_kyc')
+    ).join(User, User.id == WithdrawalRequest.user_id)
+    
+    if status:
+        query = query.filter(WithdrawalRequest.status == status)
+        
+    requests = query.order_by(WithdrawalRequest.created_at.desc()).all()
+    
+    return [{
+        "id": r.WithdrawalRequest.id,
+        "amount": r.WithdrawalRequest.amount,
+        "status": r.WithdrawalRequest.status,
+        "source_type": r.WithdrawalRequest.source_type,
+        "payment_info": r.WithdrawalRequest.payment_info,
+        "created_at": r.WithdrawalRequest.created_at,
+        "processed_at": r.WithdrawalRequest.processed_at,
+        "rejection_reason": r.WithdrawalRequest.rejection_reason,
+        "user_id": r.WithdrawalRequest.user_id,
+        "user_name": r.user_name,
+        "user_email": r.user_email,
+        "user_doc": r.user_doc,
+        "user_bank_balance": r.user_bank_balance,
+        "user_kyc": r.user_kyc
+    } for r in requests]
+
+@router.post("/withdrawals/{request_id}/approve")
+def approve_withdrawal(
+    request_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user)
+):
+    """
+    Approve a withdrawal request (Mark as PAID).
+    The funds were already deducted from bank_balance at request time.
+    """
+    req = db.query(WithdrawalRequest).filter(WithdrawalRequest.id == request_id).first()
+    if not req:
+        raise HTTPException(status_code=404, detail="Request not found")
+        
+    if req.status != 'pending':
+        raise HTTPException(status_code=400, detail="Request is not pending")
+        
+    try:
+        req.status = 'paid'
+        req.processed_at = datetime.utcnow()
+        db.commit()
+        return {"message": "Withdrawal marked as PAID."}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/withdrawals/{request_id}/reject")
+def reject_withdrawal(
+    request_id: int,
+    reason: str = Body(..., embed=True),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user)
+):
+    """
+    Reject a withdrawal request.
+    REFUND the amount back to the user's bank_balance.
+    """
+    req = db.query(WithdrawalRequest).filter(WithdrawalRequest.id == request_id).first()
+    if not req:
+        raise HTTPException(status_code=404, detail="Request not found")
+        
+    if req.status != 'pending':
+        raise HTTPException(status_code=400, detail="Request is not pending")
+        
+    try:
+        user = db.query(User).filter(User.id == req.user_id).first()
+        if user:
+            # Refund
+            user.bank_balance = (user.bank_balance or 0.0) + req.amount
+            # Also restore global available? Yes, because we deducted from BOTH.
+            user.available_balance = (user.available_balance or 0.0) + req.amount
+            
+        req.status = 'rejected'
+        req.rejection_reason = reason
+        req.processed_at = datetime.utcnow()
+        
+        db.commit()
+        return {"message": "Withdrawal rejected and funds refunded."}
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.put("/users/{user_id}/kyc")
+def toggle_user_kyc(
+    user_id: int,
+    data: dict, # {"is_verified": true}
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user)
+):
+    """
+    Toggle KYC verification status for a user.
+    """
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    new_status = data.get("is_verified")
+    if new_status is None:
+         raise HTTPException(status_code=400, detail="is_verified field required")
+         
+    user.is_kyc_verified = bool(new_status)
+    db.commit()
+    
+    return {
+        "message": f"User KYC status updated to {user.is_kyc_verified}",
+        "user_id": user.id,
+        "is_verified": user.is_kyc_verified
+    }
+
+# --- EMERGENCY SCHEMA UPDATE ---
+@router.post("/schema-update-emergency")
+def schema_update_emergency(
+    key: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Emergency endpoint to update DB schema when migrations cannot be run via proxy.
+    """
+    if key != "TEI_SECURE_UPDATE_2025":
+        raise HTTPException(status_code=403, detail="Invalid key")
+        
+    results = []
+    from sqlalchemy import text
+    
+    # 1. Add Columns to USERS
+    columns_to_add = [
+        ("is_kyc_verified", "BOOLEAN DEFAULT FALSE"),
+        ("bank_balance", "FLOAT DEFAULT 0.0"),
+        ("released_matrix", "FLOAT DEFAULT 0.0"),
+        ("released_millionaire", "FLOAT DEFAULT 0.0"),
+        ("released_general", "FLOAT DEFAULT 0.0"),
+        ("package_level", "INTEGER DEFAULT 0")
+    ]
+    
+    for col, type_def in columns_to_add:
+        try:
+            db.execute(text(f"ALTER TABLE users ADD COLUMN {col} {type_def}"))
+            results.append(f"Added column {col}")
+        except Exception as e:
+            results.append(f"Column {col} might exist: {str(e)}")
+            db.rollback()
+            
+    # 1b. Update package_level for active users
+    try:
+        db.execute(text("UPDATE users SET package_level = 1 WHERE status = 'active' AND package_level = 0"))
+        results.append("Updated package_level for active users")
+    except Exception as e:
+        results.append(f"Error updating package_level: {str(e)}")
+        db.rollback()
+
+    # 2. Create Withdrawal Table
+    try:
+        from backend.database.models.withdrawal import WithdrawalRequest
+        from backend.database.connection import engine
+        WithdrawalRequest.__table__.create(bind=engine)
+        results.append("Created withdrawal_requests table")
+    except Exception as e:
+        results.append(f"Table withdrawal_requests might exist: {str(e)}")
+
+    db.commit()
+    return {"status": "completed", "log": results}
+

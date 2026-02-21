@@ -5,12 +5,14 @@ const MarketingBubbles = () => {
     const [currentBubble, setCurrentBubble] = useState(null);
     const queueRef = useRef([]);
     const [ws, setWs] = useState(null);
+    const apiBase = import.meta.env.VITE_API_BASE || 'https://mlm-backend-s52yictoyq-rj.a.run.app';
+
 
     // Fetch initial list
     useEffect(() => {
         const fetchRecent = async () => {
             try {
-                const response = await fetch('http://localhost:8000/api/marketing/recent-active');
+                const response = await fetch(`${apiBase}/api/marketing/recent-active`);
                 if (response.ok) {
                     const data = await response.json();
                     // Add to queue
@@ -24,7 +26,19 @@ const MarketingBubbles = () => {
         fetchRecent();
 
         // WebSocket connection
-        const socket = new WebSocket('ws://localhost:8000/ws/notificaciones');
+        // Convert http/https to ws/wss
+        const wsProtocol = apiBase.startsWith('https') ? 'wss:' : 'ws:';
+        const wsUrl = apiBase.replace(/^http(s?):/, wsProtocol);
+
+        console.log(`Attempting to connect to WebSocket at: ${wsUrl}/ws/notificaciones`);
+
+        let socket;
+        try {
+            socket = new WebSocket(`${wsUrl}/ws/notificaciones`);
+        } catch (e) {
+            console.error("Failed to create WebSocket:", e);
+            return;
+        }
 
         socket.onopen = () => {
             console.log('Connected to notifications WebSocket');
@@ -49,7 +63,9 @@ const MarketingBubbles = () => {
         setWs(socket);
 
         return () => {
-            socket.close();
+            if (socket) {
+                socket.close();
+            }
         };
     }, []);
 
@@ -60,10 +76,10 @@ const MarketingBubbles = () => {
                 const nextBubble = queueRef.current.shift();
                 setCurrentBubble({ ...nextBubble, id: Date.now() });
 
-                // Remove after 10 seconds
+                // Remove after 5 seconds
                 setTimeout(() => {
                     setCurrentBubble(null);
-                }, 10000);
+                }, 5000);
             }
         }, 1000); // Check queue every second
 
@@ -80,17 +96,17 @@ const MarketingBubbles = () => {
                         animate={{ opacity: 1, x: 0, scale: 1 }}
                         exit={{ opacity: 0, x: 100, scale: 0.8 }}
                         transition={{ duration: 0.5 }}
-                        className="bg-white/95 backdrop-blur-md border-l-4 border-blue-600 shadow-2xl rounded-lg px-6 py-4 flex items-center gap-4 min-w-[300px]"
+                        className="bg-white/95 backdrop-blur-md border-l-4 border-blue-600 shadow-2xl rounded-lg px-4 py-2 flex items-center gap-3 min-w-[200px]"
                     >
-                        <div className="text-4xl flex items-center justify-center">
+                        <div className="text-2xl flex items-center justify-center">
                             {currentBubble.flag_emoji || '🌍'}
                         </div>
                         <div className="flex flex-col">
-                            <span className="text-sm font-bold text-gray-800">{currentBubble.name}</span>
-                            <span className="text-xs text-green-600 font-semibold uppercase tracking-wide">
+                            <span className="text-xs font-bold text-gray-800">{currentBubble.name}</span>
+                            <span className="text-[10px] text-green-600 font-semibold uppercase tracking-wide">
                                 ¡Nuevo Pre-Afiliado!
                             </span>
-                            <span className="text-xs text-gray-600 font-medium mt-1">
+                            <span className="text-[10px] text-gray-600 font-medium mt-0.5">
                                 📍 {currentBubble.country || 'Global'}
                             </span>
                         </div>

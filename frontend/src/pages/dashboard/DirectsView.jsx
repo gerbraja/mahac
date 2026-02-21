@@ -33,207 +33,110 @@ const DirectsView = () => {
 
     if (loading) {
         return (
-            <div style={{
-                padding: '2rem',
-                textAlign: 'center',
-                fontSize: '1.25rem',
-                color: '#6b7280'
-            }}>
+            <div className="p-8 text-center text-xl text-gray-500">
                 Cargando datos de afiliados...
             </div>
         );
     }
 
     return (
-        <div style={{ padding: '2rem', background: '#f9fafb', minHeight: '100vh' }}>
+        <div className="p-4 md:p-8 bg-gray-50 min-h-screen">
             {/* Header */}
-            <div style={{ marginBottom: '3rem', textAlign: 'center' }}>
-                <h1 style={{
-                    fontSize: '2.5rem',
-                    fontWeight: 'bold',
-                    background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                    marginBottom: '0.5rem'
-                }}>
+            <div className="mb-8 text-center">
+                <h1 className="text-3xl md:text-4xl font-bold mb-2 bg-gradient-to-br from-emerald-500 to-emerald-700 bg-clip-text text-transparent">
                     👥 Mis Afiliados Directos
                 </h1>
-                <p style={{ color: '#6b7280', fontSize: '1.125rem' }}>
+                <p className="text-gray-500 text-lg">
                     Personas que has afiliado personalmente a tu red
                 </p>
             </div>
 
             {/* Stats Summary Cards */}
-            <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-                gap: '1.5rem',
-                marginBottom: '3rem'
-            }}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                 {/* Total Directs */}
-                <div style={{
-                    background: 'white',
-                    padding: '2rem',
-                    borderRadius: '1rem',
-                    boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-                    border: '3px solid #10b981',
-                    textAlign: 'center'
-                }}>
-                    <div style={{ fontSize: '3rem', marginBottom: '0.75rem' }}>👤</div>
-                    <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.75rem' }}>
+                <div className="bg-white p-6 md:p-8 rounded-2xl shadow-md border-b-4 border-emerald-500 text-center">
+                    <div className="text-4xl md:text-5xl mb-3">👤</div>
+                    <div className="text-sm text-gray-500 mb-2 font-medium">
                         Afiliados Directos (Nivel 1)
                     </div>
-                    <div style={{ fontSize: '3rem', fontWeight: 'bold', color: '#10b981' }}>
+                    <div className="text-4xl md:text-5xl font-bold text-emerald-600">
                         {directs?.total_directs || 0}
                     </div>
-                    <div style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: '0.75rem' }}>
+                    <div className="text-xs text-gray-400 mt-3">
                         Personas que afiliaste directamente
                     </div>
                 </div>
 
                 {/* Total Network */}
-                <div style={{
-                    background: 'white',
-                    padding: '2rem',
-                    borderRadius: '1rem',
-                    boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-                    border: '3px solid #667eea'
-                }}>
-                    <div style={{ fontSize: '3rem', marginBottom: '0.75rem', textAlign: 'center' }}>🌐</div>
-                    <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.75rem', textAlign: 'center' }}>
+                <div className="bg-white p-6 md:p-8 rounded-2xl shadow-md border-b-4 border-indigo-500 text-center">
+                    <div className="text-4xl md:text-5xl mb-3">🌐</div>
+                    <div className="text-sm text-gray-500 mb-2 font-medium">
                         Total Red (Todos los Niveles)
                     </div>
-                    <div style={{ fontSize: '3rem', fontWeight: 'bold', color: '#667eea', textAlign: 'center' }}>
+                    <div className="text-4xl md:text-5xl font-bold text-indigo-600">
                         {directs?.total_network || 0}
                     </div>
-                    <div style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: '0.75rem', textAlign: 'center' }}>
+                    <div className="text-xs text-gray-400 mt-3">
                         Todas las personas en tu red
                     </div>
                 </div>
             </div>
 
             {/* List of Directs */}
-            <div style={{
-                background: 'white',
-                borderRadius: '1rem',
-                padding: '2rem',
-                boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
-            }}>
-                <h2 style={{
-                    fontSize: '1.5rem',
-                    fontWeight: 'bold',
-                    color: '#1e3a8a',
-                    marginBottom: '1.5rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem'
-                }}>
+            <div className="bg-white rounded-2xl shadow-lg p-4 md:p-8">
+                <h2 className="text-xl md:text-2xl font-bold text-blue-900 mb-6 flex items-center gap-2">
                     📋 Lista de Afiliados
                 </h2>
 
                 {directs && directs.total_directs > 0 ? (
-                    <div style={{ overflowX: 'auto' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                            <thead style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)' }}>
+                    <div className="overflow-x-auto">
+                        <table className="w-full border-collapse">
+                            <thead className="bg-gradient-to-r from-emerald-500 to-emerald-700 text-white">
                                 <tr>
-                                    <th style={{
-                                        padding: '1rem',
-                                        textAlign: 'left',
-                                        color: 'white',
-                                        borderBottom: '2px solid #10b981',
-                                        fontWeight: 'bold'
-                                    }}>
+                                    <th className="p-4 text-left font-bold border-b-2 border-emerald-600 rounded-tl-lg">
                                         #
                                     </th>
-                                    <th style={{
-                                        padding: '1rem',
-                                        textAlign: 'left',
-                                        color: 'white',
-                                        borderBottom: '2px solid #10b981',
-                                        fontWeight: 'bold'
-                                    }}>
+                                    <th className="p-4 text-left font-bold border-b-2 border-emerald-600">
                                         Nombre
                                     </th>
-                                    <th style={{
-                                        padding: '1rem',
-                                        textAlign: 'left',
-                                        color: 'white',
-                                        borderBottom: '2px solid #10b981',
-                                        fontWeight: 'bold'
-                                    }}>
+                                    <th className="p-4 text-left font-bold border-b-2 border-emerald-600">
                                         Email
                                     </th>
-                                    <th style={{
-                                        padding: '1rem',
-                                        textAlign: 'center',
-                                        color: 'white',
-                                        borderBottom: '2px solid #10b981',
-                                        fontWeight: 'bold'
-                                    }}>
+                                    <th className="p-4 text-center font-bold border-b-2 border-emerald-600 rounded-tr-lg">
                                         Estado
                                     </th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {directs.directs.map((direct, index) => (
-                                    <tr key={direct.user_id} style={{
-                                        borderBottom: '1px solid #e5e7eb',
-                                        background: index % 2 === 0 ? '#f9fafb' : 'white',
-                                        transition: 'background 0.2s hover'
-                                    }}>
-                                        <td style={{
-                                            padding: '1rem',
-                                            fontWeight: '600',
-                                            color: '#6b7280',
-                                            fontSize: '0.95rem'
-                                        }}>
+                                    <tr key={direct.user_id} className={`border-b border-gray-100 hover:bg-gray-50 transition-colors ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'
+                                        }`}>
+                                        <td className="p-4 font-semibold text-gray-500">
                                             {index + 1}
                                         </td>
-                                        <td style={{ padding: '1rem' }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                                <div style={{
-                                                    width: '40px',
-                                                    height: '40px',
-                                                    borderRadius: '50%',
-                                                    background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    color: 'white',
-                                                    fontWeight: 'bold',
-                                                    fontSize: '1.125rem',
-                                                    flexShrink: 0
-                                                }}>
+                                        <td className="p-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white font-bold text-lg shadow-sm flex-shrink-0">
                                                     {direct.name.charAt(0).toUpperCase()}
                                                 </div>
                                                 <div>
-                                                    <div style={{ fontWeight: '600', color: '#1f2937', fontSize: '0.95rem' }}>
+                                                    <div className="font-bold text-gray-800">
                                                         {direct.name}
                                                     </div>
-                                                    <div style={{ fontSize: '0.75rem', color: '#9ca3af' }}>
+                                                    <div className="text-xs text-gray-400">
                                                         ID: {direct.user_id}
                                                     </div>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td style={{
-                                            padding: '1rem',
-                                            color: '#6b7280',
-                                            fontSize: '0.9rem',
-                                            wordBreak: 'break-word'
-                                        }}>
+                                        <td className="p-4 text-gray-600 text-sm break-all">
                                             {direct.email}
                                         </td>
-                                        <td style={{ padding: '1rem', textAlign: 'center' }}>
-                                            <span style={{
-                                                display: 'inline-block',
-                                                padding: '0.5rem 1rem',
-                                                background: direct.status === 'active' ? '#d1fae5' : '#f3f4f6',
-                                                color: direct.status === 'active' ? '#065f46' : '#6b7280',
-                                                borderRadius: '9999px',
-                                                fontWeight: '600',
-                                                fontSize: '0.875rem'
-                                            }}>
+                                        <td className="p-4 text-center">
+                                            <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${direct.status === 'active'
+                                                    ? 'bg-emerald-100 text-emerald-800'
+                                                    : 'bg-gray-100 text-gray-500'
+                                                }`}>
                                                 {direct.status === 'active' ? '✅ Activo' : '⏸️ Inactivo'}
                                             </span>
                                         </td>
@@ -243,31 +146,19 @@ const DirectsView = () => {
                         </table>
                     </div>
                 ) : (
-                    <div style={{
-                        textAlign: 'center',
-                        padding: '4rem 2rem',
-                        background: '#f9fafb',
-                        borderRadius: '0.75rem',
-                        color: '#6b7280'
-                    }}>
-                        <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>👥</div>
-                        <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '0.5rem' }}>
+                    <div className="text-center py-12 px-4 bg-gray-50 rounded-xl border border-dashed border-gray-300">
+                        <div className="text-6xl mb-4 text-gray-300">👥</div>
+                        <h3 className="text-xl font-bold text-gray-700 mb-2">
                             No tienes afiliados directos aún
                         </h3>
-                        <p style={{ fontSize: '0.95rem', opacity: 0.8, marginBottom: '1.5rem' }}>
+                        <p className="text-gray-500 mb-6">
                             Comienza a invitar personas a tu red para construir tu negocio y ganar comisiones
                         </p>
-                        <div style={{
-                            background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                            color: 'white',
-                            padding: '1.5rem',
-                            borderRadius: '0.75rem',
-                            display: 'inline-block'
-                        }}>
-                            <div style={{ fontSize: '1.125rem', fontWeight: '600' }}>
+                        <div className="inline-block bg-gradient-to-r from-emerald-500 to-emerald-600 text-white p-6 rounded-xl shadow-lg">
+                            <div className="text-lg font-bold mb-1">
                                 🎯 Próximo Paso
                             </div>
-                            <p style={{ fontSize: '0.95rem', marginTop: '0.5rem', opacity: 0.9 }}>
+                            <p className="text-sm opacity-90">
                                 Invita a personas a unirse a tu red y comienza a generar ingresos
                             </p>
                         </div>
@@ -276,39 +167,32 @@ const DirectsView = () => {
             </div>
 
             {/* Info Section */}
-            <div style={{
-                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                color: 'white',
-                padding: '2rem',
-                borderRadius: '1rem',
-                marginTop: '3rem',
-                boxShadow: '0 10px 15px rgba(16,185,129,0.3)'
-            }}>
-                <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1rem' }}>
+            <div className="mt-8 bg-gradient-to-br from-emerald-500 to-emerald-700 text-white p-6 md:p-8 rounded-2xl shadow-xl">
+                <h3 className="text-2xl font-bold mb-6 flex items-center gap-2">
                     ℹ️ Información sobre Afiliados
                 </h3>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
-                    <div>
-                        <h4 style={{ fontSize: '1.125rem', fontWeight: 'bold', marginBottom: '0.75rem' }}>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div className="bg-white/10 rounded-xl p-4 backdrop-blur-sm">
+                        <h4 className="text-lg font-bold mb-2 text-emerald-100">
                             ¿Qué son tus afiliados directos?
                         </h4>
-                        <p style={{ opacity: 0.95, lineHeight: '1.6' }}>
+                        <p className="text-sm opacity-90 leading-relaxed">
                             Son las personas que patrocinaste personalmente al unirse a la red. Ellos son tu Nivel 1 y son los que generan comisiones para ti a través del sistema Unilevel.
                         </p>
                     </div>
-                    <div>
-                        <h4 style={{ fontSize: '1.125rem', fontWeight: 'bold', marginBottom: '0.75rem' }}>
+                    <div className="bg-white/10 rounded-xl p-4 backdrop-blur-sm">
+                        <h4 className="text-lg font-bold mb-2 text-emerald-100">
                             ¿Cuáles son tus beneficios?
                         </h4>
-                        <p style={{ opacity: 0.95, lineHeight: '1.6' }}>
+                        <p className="text-sm opacity-90 leading-relaxed">
                             Recibes el 1% de comisión de sus compras. Además, si ellos patrocina a otros, tú recibes comisiones de hasta 7 niveles de profundidad.
                         </p>
                     </div>
-                    <div>
-                        <h4 style={{ fontSize: '1.125rem', fontWeight: 'bold', marginBottom: '0.75rem' }}>
+                    <div className="bg-white/10 rounded-xl p-4 backdrop-blur-sm">
+                        <h4 className="text-lg font-bold mb-2 text-emerald-100">
                             🎁 Bono Matching
                         </h4>
-                        <p style={{ opacity: 0.95, lineHeight: '1.6' }}>
+                        <p className="text-sm opacity-90 leading-relaxed">
                             Recibe el 50% extra de las comisiones que generan tus directs. Si tus directs ganan $100 en comisiones, tú ganas $50 adicionales.
                         </p>
                     </div>

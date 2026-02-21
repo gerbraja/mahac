@@ -6,68 +6,71 @@ export default function HonorRanksView() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
+    const [currentCommission, setCurrentCommission] = useState(0);
+    const [nextRank, setNextRank] = useState(null);
+
     // Datos reales de los rangos de honor del sistema
     const defaultRanks = [
-        { 
-            id: 1, 
-            name: 'Silver', 
-            emoji: '🥈', 
-            color: 'from-gray-400 to-gray-600', 
-            commission: 1000, 
+        {
+            id: 1,
+            name: 'Silver',
+            emoji: '🥈',
+            color: 'from-gray-400 to-gray-600',
+            commission: 1000,
             reward: 'Reward $97 worth of products',
             reward_value: 97
         },
-        { 
-            id: 2, 
-            name: 'Gold', 
-            emoji: '🥇', 
-            color: 'from-yellow-400 to-yellow-600', 
-            commission: 3700, 
+        {
+            id: 2,
+            name: 'Gold',
+            emoji: '🥇',
+            color: 'from-yellow-400 to-yellow-600',
+            commission: 3700,
             reward: 'Reward $277 worth of products',
             reward_value: 277
         },
-        { 
-            id: 3, 
-            name: 'Platinum', 
-            emoji: '💎', 
-            color: 'from-blue-300 to-blue-500', 
-            commission: 5700, 
+        {
+            id: 3,
+            name: 'Platinum',
+            emoji: '💎',
+            color: 'from-blue-300 to-blue-500',
+            commission: 5700,
             reward: 'Gift for $1000 USD',
             reward_value: 1000
         },
-        { 
-            id: 4, 
-            name: 'Rubí', 
-            emoji: '💍', 
-            color: 'from-red-600 to-red-800', 
-            commission: 9700, 
+        {
+            id: 4,
+            name: 'Rubí',
+            emoji: '💍',
+            color: 'from-red-600 to-red-800',
+            commission: 9700,
             reward: 'Domestic Trip x3',
             reward_value: null
         },
-        { 
-            id: 5, 
-            name: 'Esmeralda', 
-            emoji: '💚', 
-            color: 'from-green-600 to-green-800', 
-            commission: 19700, 
+        {
+            id: 5,
+            name: 'Esmeralda',
+            emoji: '💚',
+            color: 'from-green-600 to-green-800',
+            commission: 19700,
             reward: 'Cruise x4',
             reward_value: null
         },
-        { 
-            id: 6, 
-            name: 'Diamond', 
-            emoji: '✨', 
-            color: 'from-cyan-400 to-cyan-600', 
-            commission: 37700, 
+        {
+            id: 6,
+            name: 'Diamond',
+            emoji: '✨',
+            color: 'from-cyan-400 to-cyan-600',
+            commission: 37700,
             reward: 'International Cruise x5 + Pool 7%',
             reward_value: null
         },
-        { 
-            id: 7, 
-            name: 'Blue Diamond', 
-            emoji: '🔷', 
-            color: 'from-indigo-600 to-indigo-800', 
-            commission: 77700, 
+        {
+            id: 7,
+            name: 'Blue Diamond',
+            emoji: '🔷',
+            color: 'from-indigo-600 to-indigo-800',
+            commission: 77700,
             reward: 'Luxury trip x5 + Pool 7%',
             reward_value: null
         },
@@ -78,19 +81,38 @@ export default function HonorRanksView() {
     }, []);
 
     const fetchRanks = async () => {
-        setLoading(false);
-        // Usar datos predeterminados en lugar de llamar a la API
-        setRanks(defaultRanks);
+        try {
+            const response = await api.get('/api/wallet/summary');
+            const data = response.data;
+            const earned = data.total_earnings || 0;
+
+            setCurrentCommission(earned);
+            setRanks(defaultRanks); // We use the static definitions but currentCommission drives logic
+
+            // Determine next rank
+            const next = defaultRanks.find(r => r.commission > earned);
+            setNextRank(next || null);
+
+        } catch (err) {
+            console.error(err);
+            setError('Error al cargar información de rangos');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const formatCurrency = (amount) => {
-        if (!amount) return '-';
+        if (!amount && amount !== 0) return '-';
         return new Intl.NumberFormat('es-CO', {
             style: 'currency',
             currency: 'USD',
             minimumFractionDigits: 0
         }).format(amount);
     };
+
+    // Calculate progress percentage
+    const targetCommission = nextRank ? nextRank.commission : (defaultRanks[defaultRanks.length - 1].commission * 1.2); // Cap if maxed
+    const progressPercent = Math.min(100, Math.max(0, (currentCommission / targetCommission) * 100));
 
     return (
         <div className="p-6 space-y-8">
@@ -107,32 +129,40 @@ export default function HonorRanksView() {
                 <div className="mb-6">
                     <div className="flex justify-between items-center mb-6">
                         <span className="text-lg font-bold text-gray-800">Tu Progreso en los Rangos</span>
-                        <span className="text-2xl font-bold text-gray-600">Sin Rango Aún (0%)</span>
+                        <span className="text-2xl font-bold text-gray-600">
+                            {nextRank
+                                ? `Próximo: ${nextRank.name} (${progressPercent.toFixed(1)}%)`
+                                : '¡Máximo Rango Alcanzado!'}
+                        </span>
                     </div>
-                    
+
                     {/* Barra Visual Principal */}
                     <div className="relative w-full h-12 bg-gray-400 rounded-full overflow-hidden shadow-md mb-4">
                         {/* Relleno de progreso */}
-                        <div 
+                        <div
                             className="absolute h-full bg-gradient-to-r from-amber-500 via-yellow-400 to-green-400 transition-all duration-500 flex items-center"
-                            style={{width: '5%'}}
+                            style={{ width: `${progressPercent}%` }}
                         >
                             <div className="absolute right-2 top-1/2 transform -translate-y-1/2 w-6 h-6 bg-white rounded-full shadow-lg border-2 border-green-500"></div>
                         </div>
-                        
+
                         {/* Indicador de progreso */}
                         <div className="absolute inset-0 flex items-center pl-4 text-white font-bold drop-shadow-lg">
-                            <span className="text-sm">0% - Sin Rango</span>
+                            <span className="text-sm">
+                                {formatCurrency(currentCommission)} / {formatCurrency(targetCommission)}
+                            </span>
                         </div>
                     </div>
 
                     {/* Etiquetas de Rangos Debajo */}
-                    <div className="grid grid-cols-7 gap-2 text-center text-xs font-semibold mt-4">
+                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 gap-2 text-center text-xs font-semibold mt-4">
                         {defaultRanks.map((rank, idx) => (
-                            <div key={idx} className="flex flex-col items-center">
+                            <div key={idx} className={`flex flex-col items-center p-1 rounded-lg transition-colors ${currentCommission >= rank.commission ? 'bg-green-100 border border-green-300' : 'hover:bg-white/50'}`}>
                                 <div className="text-xl mb-1">{rank.emoji}</div>
-                                <span className="text-gray-800">{rank.name}</span>
-                                <span className="text-gray-600 text-xs">${rank.commission.toLocaleString()}</span>
+                                <span className="text-gray-800 truncate max-w-full">{rank.name}</span>
+                                <span className="text-gray-600 text-[10px] sm:text-xs font-bold truncate max-w-full">
+                                    ${rank.commission.toLocaleString()}
+                                </span>
                             </div>
                         ))}
                     </div>
@@ -140,9 +170,13 @@ export default function HonorRanksView() {
                     {/* Descripción del progreso */}
                     <div className="mt-6 p-4 bg-indigo-50 rounded-lg border-2 border-indigo-300">
                         <p className="text-sm text-gray-800">
-                            <span className="font-bold">Rango Actual: Sin Rango</span><br/>
-                            Comisión Acumulada: $0.00 / $1000.00<br/>
-                            <span className="text-indigo-600 font-semibold">¡Falta $1000.00 para alcanzar Silver!</span>
+                            <span className="font-bold">Total Comisiones: {formatCurrency(currentCommission)}</span><br />
+                            Meta Siguiente: {formatCurrency(targetCommission)}<br />
+                            <span className="text-indigo-600 font-semibold">
+                                {nextRank
+                                    ? `¡Falta ${formatCurrency(targetCommission - currentCommission)} para alcanzar ${nextRank.name}!`
+                                    : '¡Felicidades, eres un líder top!'}
+                            </span>
                         </p>
                     </div>
                 </div>

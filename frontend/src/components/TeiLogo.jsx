@@ -26,7 +26,7 @@ export default function TeiLogo({ size = "large", showSubtitle = true }) {
         color: "#64748b",
         letterSpacing: "0.8em",
         textTransform: "uppercase",
-        marginBottom: isLarge ? "2rem" : "0",
+        marginBottom: isLarge ? "0.5rem" : "0",
         marginLeft: "0.8em",
         display: "block"
     };
@@ -46,9 +46,24 @@ export default function TeiLogo({ size = "large", showSubtitle = true }) {
             {isLarge && <RotatingGlobe size="150px" />}
             <h1 style={titleStyle}>TEI</h1>
             {showSubtitle && (
-                <h2 style={subtitleStyle}>
-                    Tu Empresa Internacional
-                </h2>
+                <>
+                    <h2 style={subtitleStyle}>
+                        Tu Empresa Internacional
+                    </h2>
+                    <div style={{
+                        fontFamily: "'Outfit', sans-serif",
+                        fontSize: isLarge ? "clamp(0.6rem, 1.5vw, 0.9rem)" : "0.5rem",
+                        fontWeight: "400",
+                        color: "#64748b",
+                        letterSpacing: "0.1em",
+                        textTransform: "uppercase",
+                        marginTop: "0.2rem",
+                        marginBottom: isLarge ? "1.5rem" : "0.25rem",
+                        display: "block"
+                    }}>
+                        Esta Empresa es de Dios y Para su Gloria
+                    </div>
+                </>
             )}
             {showSubtitle && <div style={lineStyle}></div>}
         </div>

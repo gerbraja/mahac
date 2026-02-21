@@ -88,11 +88,22 @@ def get_global_stats(user_id: int, db: Session = Depends(get_db)):
     level_stats = []
     total_members_in_network = 0
     
+    # Cycle logic: 28th to 27th (Colombia Time)
+    now = datetime.now()
+    if now.day >= 28:
+        cycle_start = datetime(now.year, now.month, 28)
+    else:
+        # Previous month
+        if now.month == 1:
+            cycle_start = datetime(now.year - 1, 12, 28)
+        else:
+            cycle_start = datetime(now.year, now.month - 1, 28)
+    
     for level in range(1, 22):  # Levels 1-21
-        # Count members at this level in user's network
+        # Count ACTIVE members at this level in user's network
         level_members = db.execute(text("""
             WITH RECURSIVE downline AS (
-                SELECT id, user_id, upline_id, 1 as depth
+                SELECT id, user_id, upline_id, 0 as depth
                 FROM binary_global_members
                 WHERE user_id = :user_id
                 
@@ -103,9 +114,10 @@ def get_global_stats(user_id: int, db: Session = Depends(get_db)):
                 INNER JOIN downline d ON m.upline_id = d.id
                 WHERE d.depth < :target_level
             )
-            SELECT COUNT(*) as count
-            FROM downline
-            WHERE depth = :target_level
+            SELECT COUNT(d.id) as count
+            FROM downline d
+            JOIN binary_global_members m ON d.id = m.id
+            WHERE d.depth = :target_level AND m.is_active = true
         """), {"user_id": user_id, "target_level": level}).fetchone()
         
         count = level_members[0] if level_members else 0
@@ -115,15 +127,14 @@ def get_global_stats(user_id: int, db: Session = Depends(get_db)):
         pays = level % 2 == 1 and level >= 3
         commission_rate = 1.00 if level >= 15 else 0.50
         
-        # Get actual earnings from this level this year
-        year_start = datetime(datetime.now().year, 1, 1)
+        # Get actual earnings from this level this cycle
         earned_this_year = 0.0
         
         if pays:
             earnings = db.query(func.sum(BinaryGlobalCommission.commission_amount)).filter(
                 BinaryGlobalCommission.user_id == user_id,
                 BinaryGlobalCommission.level == level,
-                BinaryGlobalCommission.paid_at >= year_start
+                BinaryGlobalCommission.paid_at >= cycle_start
             ).scalar()
             earned_this_year = float(earnings) if earnings else 0.0
         
@@ -140,7 +151,7 @@ def get_global_stats(user_id: int, db: Session = Depends(get_db)):
     # Calculate total earnings
     total_this_year = db.query(func.sum(BinaryGlobalCommission.commission_amount)).filter(
         BinaryGlobalCommission.user_id == user_id,
-        BinaryGlobalCommission.paid_at >= year_start
+        BinaryGlobalCommission.paid_at >= cycle_start
     ).scalar()
     
     total_all_time = db.query(func.sum(BinaryGlobalCommission.commission_amount)).filter(
@@ -230,55 +241,238 @@ def arrival_trigger(payload: ArrivalRequest, db: Session = Depends(get_db)):
     return result
 
 
-class ActivationRequest(BaseModel):
-    user_id: int
-    package_amount: float
-    signup_percent: float | None = None
-    plan_file: str | None = None
 
 
-@router.post("/activate", response_model=dict)
-def activate_user(payload: ActivationRequest, db: Session = Depends(get_db)):
-    """Activate a user by registering a package purchase. This will:
-    - distribute signup/package commissions according to plan (binary distribution)
-    - apply arrival bonus rules for ancestors (if any)
-    Returns both lists of created commissions.
+
+@router.post("/debug-fix-commissions/{user_id}")
+def debug_fix_commissions(user_id: int, db: Session = Depends(get_db)):
     """
-    # Delegate activation processing to the service which performs the atomic work
-    try:
-        result = process_activation(db, payload.user_id, payload.package_amount, signup_percent=payload.signup_percent or None, plan_file=payload.plan_file or None)
-    except ValueError as e:
-        db.rollback()
-        raise HTTPException(status_code=404, detail=str(e))
-    except Exception:
-        db.rollback()
-        raise
-    def serialize_list(lst):
-        out = []
-        for c in lst:
-            created = getattr(c, 'created_at', None)
-            out.append({
-                'id': getattr(c, 'id', None),
-                'user_id': c.user_id,
-                'sale_amount': float(c.sale_amount) if c.sale_amount is not None else None,
-                'commission_amount': float(c.commission_amount) if c.commission_amount is not None else None,
-                'level': c.level,
-                'type': c.type,
-                'created_at': created.isoformat() if created is not None else None,
-            })
-        return out
+    Debug endpoint to check and fix missing commissions for a user in Binary Global.
+    Scans odd levels >= 3 and ensures a commission record exists for each active member.
+    """
+    from backend.database.models.binary_global import BinaryGlobalMember, BinaryGlobalCommission
+    from datetime import datetime
+    
+    # 1. Get Root Member
+    root_member = db.query(BinaryGlobalMember).filter(BinaryGlobalMember.user_id == user_id).first()
+    if not root_member:
+        raise HTTPException(status_code=404, detail="User not found in Binary Global")
+    
+    current_year = datetime.utcnow().year
+    fixed_count = 0
+    details = []
 
-    # If the service indicated it was already activated, return that
-    if result.get('already_activated'):
-        return {
-            'already_activated': True,
-            'membership_number': result.get('membership_number'),
-            'membership_code': result.get('membership_code'),
-        }
+    # 2. Iterate odd levels from 3 to 21
+    for level in range(3, 22, 2): # 3, 5, 7, ... 21
+        # Find all members at this level (relative depth)
+        
+        # Recursive query to find descendants at specific depth
+        level_members = db.execute(text("""
+            WITH RECURSIVE downline AS (
+                SELECT id, user_id, upline_id, 0 as depth
+                FROM binary_global_members
+                WHERE id = :root_id
+                
+                UNION ALL
+                
+                SELECT m.id, m.user_id, m.upline_id, d.depth + 1
+                FROM binary_global_members m
+                INNER JOIN downline d ON m.upline_id = d.id
+                WHERE d.depth < :target_level
+            )
+            SELECT d.id, d.user_id, m.is_active 
+            FROM downline d
+            JOIN binary_global_members m ON d.id = m.id
+            WHERE d.depth = :target_level
+        """), {"root_id": root_member.id, "target_level": level}).fetchall()
 
-    return {
-        'signup_commissions': serialize_list(result.get('signup_commissions', [])),
-        'arrival_commissions': serialize_list(result.get('arrival_commissions', [])),
-        'membership_number': result.get('membership_number'),
-        'membership_code': result.get('membership_code'),
-    }
+        if not level_members:
+            continue
+            
+        commission_rate = 1.00 if level >= 15 else 0.50
+        
+        for m in level_members:
+            # m[0]=id, m[1]=user_id, m[2]=is_active
+            descendant_member_id = m[0]
+            is_active = m[2]
+            
+            if not is_active:
+                continue # SKIP INACTIVE MEMBERS
+            
+            # Check if commission exists
+            exists = db.query(BinaryGlobalCommission).filter(
+                BinaryGlobalCommission.user_id == user_id,
+                BinaryGlobalCommission.member_id == descendant_member_id,
+                BinaryGlobalCommission.year == current_year
+            ).first()
+            
+            if not exists:
+                # FIX: Create missing commission
+                new_comm = BinaryGlobalCommission(
+                    user_id=user_id,
+                    member_id=descendant_member_id,
+                    level=level,
+                    commission_amount=commission_rate,
+                    year=current_year,
+                    paid_at=datetime.utcnow()
+                )
+                db.add(new_comm)
+                fixed_count += 1
+                details.append(f"Fixed missing commission from member {descendant_member_id} at level {level} (${commission_rate})")
+    
+    if fixed_count > 0:
+        db.commit()
+        return {"status": "fixed", "count": fixed_count, "details": details}
+    else:
+        return {"status": "ok", "message": "No missing commissions found", "details": []}
+
+@router.delete("/debug-clean-inactive-commissions")
+def debug_clean_inactive_commissions(db: Session = Depends(get_db)):
+    """
+    Removes commissions paid for inactive members (cleanup of previous bug).
+    """
+    from backend.database.models.binary_global import BinaryGlobalMember, BinaryGlobalCommission
+    
+    # Find commissions where member is NOT active
+    bad_commissions = db.query(BinaryGlobalCommission).join(
+        BinaryGlobalMember, BinaryGlobalCommission.member_id == BinaryGlobalMember.id
+    ).filter(BinaryGlobalMember.is_active == False).all()
+    
+    deleted_count = 0
+    details = []
+    
+    for c in bad_commissions:
+        db.delete(c)
+        deleted_count += 1
+        details.append(f"Deleted Comm ID {c.id} for Member {c.member_id} (Inactive)")
+        
+    if deleted_count > 0:
+        db.commit()
+    
+    return {"status": "cleaned", "count": deleted_count, "details": details}
+
+@router.get("/debug-binary-levels/{user_id}")
+
+def debug_binary_levels(user_id: int, db: Session = Depends(get_db)):
+    """
+    Debug endpoint to list members at specific levels (3, 4, 5, 6) 
+    to verify their depth relative to the user.
+    """
+    from backend.database.models.binary_global import BinaryGlobalMember
+    from backend.database.models.user import User
+    
+    root_member = db.query(BinaryGlobalMember).filter(BinaryGlobalMember.user_id == user_id).first()
+    if not root_member:
+        raise HTTPException(status_code=404, detail="User not found in Binary Global")
+    
+    results = {}
+    
+    # Check levels 3, 4, 5, 6
+    for level in [3, 4, 5, 6]:
+        level_members = db.execute(text("""
+            WITH RECURSIVE downline AS (
+                SELECT id, user_id, upline_id, 0 as depth
+                FROM binary_global_members
+                WHERE id = :root_id
+                
+                UNION ALL
+                
+                SELECT m.id, m.user_id, m.upline_id, d.depth + 1
+                FROM binary_global_members m
+                INNER JOIN downline d ON m.upline_id = d.id
+                WHERE d.depth < :target_level
+            )
+            SELECT d.user_id, u.username
+            FROM downline d
+            JOIN users u ON d.user_id = u.id
+            WHERE d.depth = :target_level
+        """), {"root_id": root_member.id, "target_level": level}).fetchall()
+        
+        # Format: "Username (ID)"
+        members_list = [f"{m.username} ({m.user_id})" for m in level_members]
+        results[f"Level {level}"] = members_list
+        
+    return results
+
+
+@router.get("/debug-trace/{username}")
+def debug_trace_upline(username: str, db: Session = Depends(get_db)):
+    """
+    Traces the upline chain from a given username up to the root.
+    Returns the list of ancestors with their depth.
+    """
+    from backend.database.models.binary_global import BinaryGlobalMember
+    from backend.database.models.user import User
+    
+    # Get Target User
+    user = db.query(User).filter(User.username == username).first()
+    if not user:
+        raise HTTPException(status_code=404, detail=f"User {username} not found")
+        
+    member = db.query(BinaryGlobalMember).filter(BinaryGlobalMember.user_id == user.id).first()
+    if not member:
+        raise HTTPException(status_code=404, detail="User not in Binary Global")
+        
+    chain = []
+    current_member = member
+    depth = 0
+    
+    while current_member:
+        # Get username
+        u = db.query(User).filter(User.id == current_member.user_id).first()
+        uname = u.username if u else "Unknown"
+        
+        chain.append({
+            "depth": depth,
+            "user_id": current_member.user_id,
+            "username": uname,
+            "member_id": current_member.id,
+            "upline_id": current_member.upline_id
+        })
+        
+        if not current_member.upline_id:
+            break
+            
+        # Move up
+        current_member = db.query(BinaryGlobalMember).filter(BinaryGlobalMember.id == current_member.upline_id).first()
+        depth += 1
+        
+        if depth > 100: # Safety break
+            break
+            
+    return {"chain": chain}
+
+
+@router.get("/debug-map-users")
+def debug_map_users(db: Session = Depends(get_db)):
+    """
+    Debug endpoint to list IDs for key users to verifying mapping.
+    """
+    from backend.database.models.binary_global import BinaryGlobalMember
+    from backend.database.models.user import User
+    
+    targets = ["admin", "Sembradores", "Gerbraja", "Gerbraja1", "Dianismarcas", "AlexisBM", "Mafecitasilva", "Danicr", "Mercam"]
+    results = []
+    
+    for t in targets:
+        user = db.query(User).filter(User.username == t).first()
+        if not user:
+            results.append({"username": t, "status": "NOT FOUND"})
+            continue
+            
+        mem = db.query(BinaryGlobalMember).filter(BinaryGlobalMember.user_id == user.id).first()
+        
+        results.append({
+            "username": t,
+            "user_id": user.id,
+            "member_id": mem.id if mem else None,
+            "upline_id": mem.upline_id if mem else None
+        })
+        
+    return results
+
+
+
+
+
+

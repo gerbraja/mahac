@@ -213,7 +213,7 @@ export default function Home() {
                 Crear Cuenta Completa →
               </button>
 
-              <p style={{ color: "#64748b", fontSize: "0.75rem", textAlign: "center", marginTop: "1.5rem" }}>
+              <p style={{ color: "#64748b", fontSize: "0.75rem", textAlign: "center", marginTop: "1.5rem", lineHeight: "1.5" }}>
                 Al registrarte, aceptas nuestros{" "}
                 <a
                   href="/terminos-y-condiciones.html"
@@ -223,6 +223,16 @@ export default function Home() {
                 >
                   Términos y Condiciones
                 </a>
+                {" "}y nuestra{" "}
+                <a
+                  href="/documentos/politica_datos.html"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ color: "#3b82f6", textDecoration: "underline", fontWeight: "600" }}
+                >
+                  Política de Datos
+                </a>
+                {" "}(incluyendo cumplimiento RGPD para zona euro).
               </p>
             </div>
           </div>

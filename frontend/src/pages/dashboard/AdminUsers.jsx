@@ -103,6 +103,23 @@ export default function AdminUsers() {
         }
     };
 
+    const handleToggleKYC = async (user) => {
+        const newStatus = !user.is_kyc_verified;
+        if (!window.confirm(`¿Estás seguro de ${newStatus ? 'VERIFICAR' : 'INVALIDAR'} el KYC de ${user.name}?`)) {
+            return;
+        }
+
+        try {
+            await api.put(`/api/admin/users/${user.id}/kyc`, { is_verified: newStatus });
+            setMessage(`KYC ${newStatus ? 'verificado' : 'invalidado'} para ${user.name}`);
+            // Update local state to avoid full reload
+            setUsers(users.map(u => u.id === user.id ? { ...u, is_kyc_verified: newStatus } : u));
+            setTimeout(() => setMessage(''), 3000);
+        } catch (error) {
+            setMessage(error.response?.data?.detail || "Error al cambiar estado KYC");
+        }
+    };
+
     return (
         <div>
             <div className="mb-8">
@@ -158,6 +175,7 @@ export default function AdminUsers() {
                                 <th className="p-4 border-b border-gray-200 font-semibold text-gray-600">Email</th>
                                 <th className="p-4 border-b border-gray-200 font-semibold text-gray-600">Usuario</th>
                                 <th className="p-4 border-b border-gray-200 font-semibold text-gray-600">Documento</th>
+                                <th className="p-4 border-b border-gray-200 font-semibold text-gray-600">KYC</th>
                                 <th className="p-4 border-b border-gray-200 font-semibold text-gray-600">Estado</th>
                                 <th className="p-4 border-b border-gray-200 font-semibold text-gray-600">Acciones</th>
                             </tr>
@@ -183,6 +201,18 @@ export default function AdminUsers() {
                                         <td className="p-4 text-gray-600">{user.email}</td>
                                         <td className="p-4 text-gray-600">{user.username || '-'}</td>
                                         <td className="p-4 text-gray-600">{user.document_id || '-'}</td>
+                                        <td className="p-4">
+                                            <button
+                                                onClick={() => handleToggleKYC(user)}
+                                                className={`px-3 py-1 rounded-full text-xs font-medium border ${user.is_kyc_verified
+                                                    ? 'bg-blue-100 text-blue-800 border-blue-200'
+                                                    : 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200'
+                                                    }`}
+                                                title="Click para cambiar estado"
+                                            >
+                                                {user.is_kyc_verified ? 'Verificado' : 'No Verificado'}
+                                            </button>
+                                        </td>
                                         <td className="p-4">
                                             <span className={`px-3 py-1 rounded-full text-xs font-medium ${user.status === 'active'
                                                 ? 'bg-green-100 text-green-800'

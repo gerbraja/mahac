@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from datetime import datetime, timedelta
 from backend.database.models.binary import BinaryCommission
-from backend.database.models.binary_global import BinaryGlobalMember
+from backend.database.models.binary_global import BinaryGlobalMember, BinaryGlobalCommission
 from backend.database.models.user import User
 from backend.mlm.services.plan_loader import PLANS_DIR, load_plan_from_file
 
@@ -153,21 +153,34 @@ def process_arrival_bonuses(db: Session, new_member: BinaryGlobalMember, plan_fi
             # Check if upline is ACTIVE to receive commission
             # (As per user requirement: "para poder reclamar comisiones debe activarse")
             if upline.is_active:
-                # Create Commission
-                comm = BinaryCommission(
-                    user_id=upline.user_id,
-                    sale_amount=0, # Arrival bonus, no direct sale amount
-                    commission_amount=bonus_amount,
-                    level=level_up,
-                    type="arrival_bonus_global"
-                )
-                db.add(comm)
+                # Create Commission in Correct Table
+                # Check duplicate first just in case
+                exists = db.query(BinaryGlobalCommission).filter(
+                    BinaryGlobalCommission.user_id == upline.user_id,
+                    BinaryGlobalCommission.member_id == new_member.id,
+                    BinaryGlobalCommission.level == level_up,
+                    BinaryGlobalCommission.year == datetime.utcnow().year
+                ).first()
                 
-                # Update Balance
-                user = db.query(User).filter(User.id == upline.user_id).first()
-                if user:
-                    user.available_balance = (user.available_balance or 0.0) + bonus_amount
-                    user.total_earnings = (user.total_earnings or 0.0) + bonus_amount
+                if not exists:
+                    comm = BinaryGlobalCommission(
+                        user_id=upline.user_id,
+                        member_id=new_member.id, # Link to the new member who generated this
+                        level=level_up,
+                        commission_amount=bonus_amount,
+                        year=datetime.utcnow().year,
+                        paid_at=datetime.utcnow()
+                    )
+                    db.add(comm)
+                    
+                # Update Balance (Always add to available balance)
+                # Note: We rely on the Commission record creation to avoid double paying if we ran this idempotently?
+                # Actually, if we re-run this function, we shouldn't add balance again if commission existed.
+                if not exists:
+                    user = db.query(User).filter(User.id == upline.user_id).first()
+                    if user:
+                        user.available_balance = (user.available_balance or 0.0) + bonus_amount
+                        user.total_earnings = (user.total_earnings or 0.0) + bonus_amount
         
         current = upline
         level_up += 1
@@ -244,3 +257,4 @@ def calculate_binary_global_commissions(db: Session, user_id: int, package_amoun
     # TODO: Implement actual distribution logic based on requirements.
     # For example, pay to upline in global tree or pool.
     return []
+

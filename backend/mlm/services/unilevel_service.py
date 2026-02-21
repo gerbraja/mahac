@@ -22,6 +22,8 @@ UNILEVEL_PERCENTAGES = {
     7: 0.07,
 }
 
+
+
 EQUALIZATION_BONUS = 0.50  # 50% of downline commissions awarded to direct sponsor
 
 

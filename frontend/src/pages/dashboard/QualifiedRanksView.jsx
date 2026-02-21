@@ -2,99 +2,139 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../../api/api';
 
 export default function QualifiedRanksView() {
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [achievedRanks, setAchievedRanks] = useState([]);
+    const [currentRankInfo, setCurrentRankInfo] = useState(null);
 
-    // Datos REALES de rangos de calificación - Dinero que se gana por cada Matrix completada
+    // Datos REALES de rangos de calificación - Dinero que se gana por cada Matrix completada + PREMIOS
     const defaultRanks = [
-        { 
-            id: 1, 
-            name: 'Consumidor', 
-            emoji: '👤', 
-            color: 'from-blue-500 to-blue-700', 
+        {
+            id: 1,
+            name: 'Consumidor',
+            emoji: '👤',
+            color: 'from-blue-500 to-blue-700',
             matrix_id: 27,
             earning: '$77',
-            monthly_limit: 14
+            monthly_limit: 14,
+            prize: null
         },
-        { 
-            id: 2, 
-            name: 'Bronce', 
-            emoji: '🥉', 
-            color: 'from-amber-600 to-amber-800', 
+        {
+            id: 2,
+            name: 'Bronce',
+            emoji: '🥉',
+            color: 'from-amber-600 to-amber-800',
             matrix_id: 77,
             earning: '$277',
-            monthly_limit: 10
+            monthly_limit: 10,
+            prize: null
         },
-        { 
-            id: 3, 
-            name: 'Plata', 
-            emoji: '🥈', 
-            color: 'from-gray-400 to-gray-600', 
+        {
+            id: 3,
+            name: 'Plata',
+            emoji: '🥈',
+            color: 'from-gray-400 to-gray-600',
             matrix_id: 277,
             earning: '$877',
-            monthly_limit: 8
+            monthly_limit: 8,
+            prize: '🎁 $127 USD (Compra Productos)'
         },
-        { 
-            id: 4, 
-            name: 'Oro', 
-            emoji: '🥇', 
-            color: 'from-yellow-400 to-yellow-600', 
+        {
+            id: 4,
+            name: 'Oro',
+            emoji: '🥇',
+            color: 'from-yellow-400 to-yellow-600',
             matrix_id: 877,
             earning: '$3,000 ($1,500 USD + $1,500 Crypto)',
             monthly_limit: 7,
-            special: true
+            special: true,
+            prize: '🎁 $500 USD (Compra Productos)'
         },
-        { 
-            id: 5, 
-            name: 'Platino', 
-            emoji: '💎', 
-            color: 'from-blue-300 to-blue-500', 
+        {
+            id: 5,
+            name: 'Platino',
+            emoji: '💎',
+            color: 'from-blue-300 to-blue-500',
             matrix_id: 3000,
             earning: '$9,700 ($4,850 USD + $4,850 Crypto)',
             monthly_limit: 6,
-            special: true
+            special: true,
+            prize: '🎁 $1,700 USD (Compra Productos)'
         },
-        { 
-            id: 6, 
-            name: 'Rubí', 
-            emoji: '💍', 
-            color: 'from-red-600 to-red-800', 
+        {
+            id: 6,
+            name: 'Rubí',
+            emoji: '💍',
+            color: 'from-red-600 to-red-800',
             matrix_id: 9700,
             earning: '$25,000 ($12,500 USD + $12,500 Crypto)',
             monthly_limit: 5,
-            special: true
+            special: true,
+            prize: '✈️ Viaje Nacional x3'
         },
-        { 
-            id: 7, 
-            name: 'Esmeralda', 
-            emoji: '💚', 
-            color: 'from-green-600 to-green-800', 
+        {
+            id: 7,
+            name: 'Esmeralda',
+            emoji: '💚',
+            color: 'from-green-600 to-green-800',
             matrix_id: 30000,
             earning: '$77,000 ($38,500 USD + $38,500 Crypto)',
             monthly_limit: 4,
-            special: true
+            special: true,
+            prize: '🚢 Crucero x4'
         },
-        { 
-            id: 8, 
-            name: 'Diamante', 
-            emoji: '✨', 
-            color: 'from-cyan-400 to-cyan-600', 
+        {
+            id: 8,
+            name: 'Diamante',
+            emoji: '✨',
+            color: 'from-cyan-400 to-cyan-600',
             matrix_id: 100000,
             earning: '$270,000 ($135,000 USD + $135,000 Crypto)',
             monthly_limit: 3,
-            special: true
+            special: true,
+            prize: '🚗 Auto $47k USD + ✈️ Viaje Int.'
         },
-        { 
-            id: 9, 
-            name: 'Diamante Azul', 
-            emoji: '🔷', 
-            color: 'from-indigo-600 to-indigo-800', 
+        {
+            id: 9,
+            name: 'Diamante Azul',
+            emoji: '🔷',
+            color: 'from-indigo-600 to-indigo-800',
             matrix_id: 300000,
-            earning: '$970,000 ($485,000 USD + $485,000 Crypto)',
+            earning: 'Confidencial - Se revelará en seminario de Diamantes',
             monthly_limit: 2,
-            special: true
+            special: true,
+            prize: null
         },
     ];
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const response = await api.get('/api/wallet/summary');
+                const qualifiedData = response.data.earnings_by_source?.qualified_ranks?.bonuses || [];
+                const achievedNames = qualifiedData.map(d => d.rank);
+                setAchievedRanks(achievedNames);
+
+                // Find highest achieved rank
+                let highest = null;
+                // Iterate backwards to find highest
+                for (let i = defaultRanks.length - 1; i >= 0; i--) {
+                    if (achievedNames.includes(defaultRanks[i].name)) {
+                        highest = defaultRanks[i];
+                        break;
+                    }
+                }
+                setCurrentRankInfo(highest);
+
+            } catch (err) {
+                console.error(err);
+                setError('Error cargando rangos');
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchData();
+    }, []);
 
     const formatCurrency = (amount) => {
         return new Intl.NumberFormat('es-CO', {
@@ -104,13 +144,24 @@ export default function QualifiedRanksView() {
         }).format(amount);
     };
 
+    // Determine next rank
+    const nextRankIdx = currentRankInfo
+        ? defaultRanks.findIndex(r => r.name === currentRankInfo.name) + 1
+        : 0;
+    const nextRank = nextRankIdx < defaultRanks.length ? defaultRanks[nextRankIdx] : null;
+
+    // Calculate visualization progress (simplified: based on milestones count)
+    const totalSteps = defaultRanks.length;
+    const currentStep = currentRankInfo ? defaultRanks.findIndex(r => r.name === currentRankInfo.name) + 1 : 0;
+    const progressPercent = (currentStep / totalSteps) * 100;
+
     return (
         <div className="p-6 space-y-8">
             {/* Encabezado */}
             <div>
-                <h2 className="text-4xl font-bold text-gray-800 mb-2">🏆 Rangos de Calificación</h2>
+                <h2 className="text-4xl font-bold text-gray-800 mb-2">🏆 Rangos de Calificación y Premios</h2>
                 <p className="text-gray-600 text-lg">
-                    Cada rango de calificación te permite ganar más dinero por cada Matrix que completes. Sube de rango completando más Matrices en tu estructura. Los rangos superiores (Diamante Rojo+) se muestran cuando califiques a Diamante Azul.
+                    Cada rango de calificación te permite ganar más dinero por Matrix y obtener increíbles Premios en Productos, Viajes y Autos.
                 </p>
             </div>
 
@@ -119,42 +170,53 @@ export default function QualifiedRanksView() {
                 <div className="mb-6">
                     <div className="flex justify-between items-center mb-6">
                         <span className="text-lg font-bold text-gray-800">Tu Progreso en Calificación</span>
-                        <span className="text-2xl font-bold text-gray-600">Consumidor - Ganas $77 por Matrix</span>
+                        <span className="text-2xl font-bold text-gray-600">
+                            {currentRankInfo ? `${currentRankInfo.name} - Ganas ${currentRankInfo.earning} por Matrix` : 'Sin Calificación Aún'}
+                        </span>
                     </div>
-                    
+
                     {/* Barra Visual Principal */}
                     <div className="relative w-full h-14 bg-gray-400 rounded-full overflow-hidden shadow-md mb-4">
                         {/* Relleno de progreso */}
-                        <div 
+                        <div
                             className="absolute h-full bg-gradient-to-r from-purple-600 via-pink-500 to-purple-700 transition-all duration-500 flex items-center"
-                            style={{width: '0%'}}
+                            style={{ width: `${Math.max(5, progressPercent)}%` }}
                         >
                             <div className="absolute right-2 top-1/2 transform -translate-y-1/2 w-6 h-6 bg-white rounded-full shadow-lg border-2 border-purple-600"></div>
                         </div>
-                        
+
                         {/* Indicador de progreso */}
                         <div className="absolute inset-0 flex items-center pl-4 text-white font-bold drop-shadow-lg">
-                            <span className="text-sm">Rango: Consumidor | Ganancia: $77 por Matrix</span>
+                            <span className="text-sm">Rango: {currentRankInfo ? currentRankInfo.name : 'Inicial'} | Ganancia: {currentRankInfo ? currentRankInfo.earning : '$0'} por Matrix</span>
                         </div>
                     </div>
 
                     {/* Etiquetas de Rangos Debajo - Grid responsivo */}
-                    <div className="grid grid-cols-5 lg:grid-cols-15 gap-1 text-center text-xs font-semibold mt-4">
-                        {defaultRanks.map((rank, idx) => (
-                            <div key={idx} className="flex flex-col items-center">
-                                <div className="text-lg mb-1">{rank.emoji}</div>
-                                <span className="text-gray-800 text-xs truncate">{rank.name.split(' ')[0]}</span>
-                                <span className="text-gray-600 text-xs font-bold text-purple-700">{rank.earning}</span>
-                            </div>
-                        ))}
+                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-9 gap-2 text-center text-xs font-semibold mt-4">
+                        {defaultRanks.map((rank, idx) => {
+                            const isAchieved = achievedRanks.includes(rank.name);
+                            return (
+                                <div key={idx} className={`flex flex-col items-center p-1 rounded-lg transition-colors ${isAchieved ? 'bg-purple-200 border border-purple-400' : 'hover:bg-white/50'}`}>
+                                    <div className="text-lg mb-1">{rank.emoji}</div>
+                                    <span className="text-gray-800 text-xs truncate max-w-full">{rank.name.split(' ')[0]}</span>
+                                    <span className="text-purple-700 text-[10px] sm:text-xs font-bold truncate max-w-full">
+                                        {rank.earning.split(' ')[0]}
+                                    </span>
+                                </div>
+                            );
+                        })}
                     </div>
 
                     {/* Descripción del progreso */}
                     <div className="mt-6 p-4 bg-purple-50 rounded-lg border-2 border-purple-300">
                         <p className="text-sm text-gray-800">
-                            <span className="font-bold">Rango Actual: Consumidor</span><br/>
-                            Ganancia por Matrix: $77 USD<br/>
-                            <span className="text-purple-600 font-semibold">Próximo Rango: Bronce ($277 por Matrix - 77 Matrix IDs)</span>
+                            <span className="font-bold">Rango Actual: {currentRankInfo ? currentRankInfo.name : 'Ninguno'}</span><br />
+                            Ganancia por Matrix: {currentRankInfo ? currentRankInfo.earning : '$0'} USD<br />
+                            <span className="text-purple-600 font-semibold">
+                                {nextRank
+                                    ? `Próximo Rango: ${nextRank.name} (${nextRank.earning} por Matrix - Meta: ${nextRank.matrix_id} Matrix completadas)`
+                                    : '¡Has alcanzado el máximo rango!'}
+                            </span>
                         </p>
                     </div>
                 </div>
@@ -166,7 +228,7 @@ export default function QualifiedRanksView() {
                     {defaultRanks.map((rank, index) => (
                         <div
                             key={rank.id}
-                            className={`bg-gradient-to-br ${rank.color} rounded-2xl shadow-xl p-4 text-white transform transition-all duration-300 hover:scale-105 hover:shadow-2xl`}
+                            className={`bg-gradient-to-br ${rank.color} rounded-2xl shadow-xl p-4 text-white transform transition-all duration-300 hover:scale-105 hover:shadow-2xl flex flex-col`}
                         >
                             {/* Emoji e Índice */}
                             <div className="flex justify-between items-start mb-3">
@@ -183,12 +245,18 @@ export default function QualifiedRanksView() {
                             <div className="w-full h-1 bg-white/20 rounded-full mb-3"></div>
 
                             {/* Requisitos */}
-                            <div className="mb-3 space-y-2">
+                            <div className="mb-3 space-y-2 flex-grow">
                                 <div>
                                     <p className="text-xs opacity-90 mb-1">💰 Ganancia por Matrix</p>
-                                    <p className="text-2xl font-bold">{rank.earning}</p>
+                                    <p className="text-xl font-bold">{rank.earning}</p>
                                 </div>
-                                <div>
+                                {rank.prize && (
+                                    <div className="bg-white/20 p-2 rounded-lg mt-2">
+                                        <p className="text-xs font-bold text-yellow-300 mb-0.5">🏆 PREMIO EXTRA</p>
+                                        <p className="text-sm font-bold leading-tight">{rank.prize}</p>
+                                    </div>
+                                )}
+                                <div className="mt-2">
                                     <p className="text-xs opacity-90 mb-1">📊 Límite</p>
                                     <p className="text-sm font-semibold">
                                         {rank.monthly_limit ? `${rank.monthly_limit}x/mes` : rank.yearly_limit ? `${rank.yearly_limit}x/año` : 'Sin límite'}
@@ -197,7 +265,7 @@ export default function QualifiedRanksView() {
                             </div>
 
                             {/* Badge de estado */}
-                            <div className="mt-3 pt-3 border-t border-white/30 text-center">
+                            <div className="mt-auto pt-3 border-t border-white/30 text-center">
                                 {index === 0 ? (
                                     <span className="inline-block bg-yellow-300 text-gray-800 px-3 py-1 rounded-full text-xs font-bold">✓ Próximo</span>
                                 ) : (
@@ -238,7 +306,7 @@ export default function QualifiedRanksView() {
                         <p className="font-semibold text-purple-700 mb-2">Ejemplo de Progresión de Ganancias:</p>
                         <p>Consumidor ($77) → Bronce ($277) → Plata ($877) → Oro ($3,000 total)</p>
                         <p>Platino ($9,700) → Rubí ($25,000) → Esmeralda ($77,000)</p>
-                        <p>Diamante ($270,000) → Diamante Azul ($970,000)</p>
+                        <p>Diamante ($270,000) → Diamante Azul</p>
                     </div>
                     <div>
                         <p className="font-semibold text-purple-700 mb-2">Límites Mensuales por Rango:</p>
@@ -250,10 +318,9 @@ export default function QualifiedRanksView() {
                         <p>Los rangos superiores (Diamante Rojo en adelante) solo se muestran cuando califiques</p>
                     </div>
                     <div className="bg-orange-50 p-3 rounded-lg border-2 border-orange-300 mt-4">
-                        <p className="font-semibold text-orange-700 mb-2">⚠️ Pago Mixto a partir de Oro:</p>
-                        <p>Cuando califiques a Oro o superior, el 50% de tu ganancia se paga en Dólares USD</p>
-                        <p>El otro 50% se paga en Criptomoneda (según los términos del sistema)</p>
-                        <p>Ejemplo: En Oro ganas $3,000 = $1,500 USD + $1,500 en Crypto</p>
+                        <p className="font-semibold text-orange-700 mb-2">🏆 Premio Adicional por Tu fidelidad:</p>
+                        <p>Por ejemplo: Si ganas $1,500 dólares en Oro, te regalan $1,500 dólares en cripto.</p>
+                        <p>En Platino, si ganas $4,850 dólares, la empresa te obsequia $4,850 en Cripto por tu fidelidad.</p>
                     </div>
                 </div>
             </div>

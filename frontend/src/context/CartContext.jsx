@@ -3,25 +3,44 @@ import { createContext, useContext, useState } from "react";
 const CartContext = createContext();
 
 export const CartProvider = ({ children }) => {
-  const [cart, setCart] = useState([]);
+  // Initialize from localStorage if available
+  const [cart, setCart] = useState(() => {
+    try {
+      const saved = localStorage.getItem('cart_items');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      console.error("Failed to load cart", e);
+      return [];
+    }
+  });
+
+  // Helper to sync with localStorage
+  const updateCart = (newCart) => {
+    setCart(newCart);
+    localStorage.setItem('cart_items', JSON.stringify(newCart));
+  };
 
   const addToCart = (product) => {
-    setCart((prev) => {
-      const exists = prev.find((p) => p.id === product.id);
+    const newCart = (() => {
+      const exists = cart.find((p) => p.id === product.id);
       if (exists) {
-        return prev.map((p) =>
+        return cart.map((p) =>
           p.id === product.id ? { ...p, quantity: p.quantity + 1 } : p
         );
       }
-      return [...prev, { ...product, quantity: 1 }];
-    });
+      return [...cart, { ...product, quantity: 1 }];
+    })();
+    updateCart(newCart);
   };
 
   const removeFromCart = (id) => {
-    setCart((prev) => prev.filter((p) => p.id !== id));
+    const newCart = cart.filter((p) => p.id !== id);
+    updateCart(newCart);
   };
 
-  const clearCart = () => setCart([]);
+  const clearCart = () => {
+    updateCart([]);
+  };
 
   return (
     <CartContext.Provider value={{ cart, addToCart, removeFromCart, clearCart }}>

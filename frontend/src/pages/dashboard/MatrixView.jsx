@@ -17,43 +17,26 @@ const MATRIX_LEVELS = {
 
 const MatrixNode = ({ filled, name, level }) => {
     return (
-        <div style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            margin: '0.5rem'
-        }}>
-            <div style={{
-                width: filled ? '50px' : '50px',
-                height: filled ? '50px' : '50px',
-                borderRadius: '50%',
-                background: filled ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : '#e5e7eb',
-                border: filled ? '3px solid #4f46e5' : '2px dashed #9ca3af',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '1.5rem',
-                boxShadow: filled ? '0 4px 6px rgba(0,0,0,0.1)' : 'none',
-                transition: 'all 0.3s'
-            }}>
+        <div className="flex flex-col items-center m-1 md:m-2">
+            <div className={`
+                flex items-center justify-center 
+                w-10 h-10 md:w-[50px] md:h-[50px] 
+                rounded-full 
+                text-lg md:text-2xl 
+                transition-all duration-300
+                ${filled
+                    ? 'bg-gradient-to-br from-[#667eea] to-[#764ba2] border-[3px] border-indigo-600 shadow-md'
+                    : 'bg-gray-200 border-2 border-dashed border-gray-400'}
+            `}>
                 {filled ? '👤' : ''}
             </div>
             {name && (
-                <div style={{
-                    fontSize: '0.7rem',
-                    color: '#6b7280',
-                    marginTop: '0.25rem',
-                    fontWeight: '600'
-                }}>
+                <div className="text-[0.6rem] md:text-xs text-gray-500 mt-1 font-semibold">
                     {name}
                 </div>
             )}
             {level && (
-                <div style={{
-                    fontSize: '0.65rem',
-                    color: '#9ca3af',
-                    marginTop: '0.1rem'
-                }}>
+                <div className="text-[0.6rem] text-gray-400 mt-0.5">
                     Nivel {level}
                 </div>
             )}
@@ -75,158 +58,97 @@ const MatrixVisual = ({ matrixConfig, statsData = {}, showTitle = true }) => {
     const remaining = 12 - activeMembers; // 12 positions to fill (excluding yourself)
 
     return (
-        <div style={{
-            background: 'white',
-            borderRadius: '1rem',
-            padding: '2rem',
-            boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-            border: `3px solid ${matrixConfig.color}`,
-            minWidth: '400px'
-        }}>
-            {showTitle && (
-                <>
-                    <div style={{
-                        textAlign: 'center',
-                        marginBottom: '1.5rem'
-                    }}>
-                        <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>
+        <div
+            className="bg-white rounded-2xl shadow-sm border-2 overflow-hidden w-full max-w-full"
+            style={{ borderColor: matrixConfig.color }}
+        >
+            <div className="p-4 md:p-8">
+                {showTitle && (
+                    <div className="text-center mb-6">
+                        <div className="text-3xl md:text-4xl mb-2">
                             {matrixConfig.icon}
                         </div>
-                        <h3 style={{
-                            fontSize: '1.5rem',
-                            fontWeight: 'bold',
-                            color: matrixConfig.color,
-                            marginBottom: '0.5rem'
-                        }}>
+                        <h3
+                            className="text-xl md:text-2xl font-bold mb-2"
+                            style={{ color: matrixConfig.color }}
+                        >
                             MATRIX {matrixConfig.name}
                         </h3>
-                        <div style={{
-                            fontSize: '1.25rem',
-                            fontWeight: 'bold',
-                            color: '#10b981',
-                            marginBottom: '0.5rem'
-                        }}>
+                        <div className="text-lg md:text-xl font-bold text-emerald-500 mb-2">
                             Ganancia Total: ${matrixConfig.reward.toLocaleString()} USD
                         </div>
-                        {matrixConfig.rewardCrypto > 0 ? (
-                            <div style={{
-                                display: 'flex',
-                                justifyContent: 'center',
-                                gap: '1rem',
-                                marginTop: '0.75rem'
-                            }}>
-                                <div style={{
-                                    padding: '0.5rem 1rem',
-                                    background: '#dcfce7',
-                                    borderRadius: '0.5rem',
-                                    border: '2px solid #10b981'
-                                }}>
-                                    <div style={{ fontSize: '0.75rem', color: '#065f46', fontWeight: '600' }}>💵 Dólares</div>
-                                    <div style={{ fontSize: '1rem', fontWeight: 'bold', color: '#059669' }}>
+
+                        {matrixConfig.rewardCrypto > 0 && (
+                            <div className="flex flex-wrap justify-center gap-2 md:gap-4 mt-3">
+                                <div className="px-3 py-1.5 bg-emerald-100 rounded-lg border border-emerald-500">
+                                    <div className="text-xs text-emerald-800 font-semibold">💵 Dólares</div>
+                                    <div className="text-sm md:text-base font-bold text-emerald-600">
                                         ${matrixConfig.rewardUSD.toLocaleString()}
                                     </div>
                                 </div>
-                                <div style={{
-                                    padding: '0.5rem 1rem',
-                                    background: '#fef3c7',
-                                    borderRadius: '0.5rem',
-                                    border: '2px solid #f59e0b'
-                                }}>
-                                    <div style={{ fontSize: '0.75rem', color: '#92400e', fontWeight: '600' }}>₿ Cripto</div>
-                                    <div style={{ fontSize: '1rem', fontWeight: 'bold', color: '#d97706' }}>
+                                <div className="px-3 py-1.5 bg-amber-100 rounded-lg border border-amber-500">
+                                    <div className="text-xs text-amber-800 font-semibold">₿ Cripto</div>
+                                    <div className="text-sm md:text-base font-bold text-amber-600">
                                         ${matrixConfig.rewardCrypto.toLocaleString()}
                                     </div>
-                                    <div style={{ fontSize: '0.65rem', color: '#92400e', marginTop: '0.25rem' }}>
+                                    <div className="text-[10px] text-amber-800 mt-1">
                                         🔒 Congelada 210 días
                                     </div>
                                 </div>
                             </div>
-                        ) : null}
+                        )}
                     </div>
-                    <div style={{
-                        background: '#f3f4f6',
-                        padding: '0.75rem',
-                        borderRadius: '0.5rem',
-                        marginBottom: '1.5rem',
-                        textAlign: 'center'
-                    }}>
-                        <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.25rem' }}>
+                )}
+
+                {showTitle && (
+                    <div className="bg-gray-100 p-3 rounded-lg mb-6 text-center">
+                        <div className="text-xs md:text-sm text-gray-500 mb-1">
                             Progreso
                         </div>
-                        <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#1e3a8a' }}>
+                        <div className="text-lg md:text-2xl font-bold text-blue-900">
                             {activeMembers} / 12 posiciones
                         </div>
-                        <div style={{ fontSize: '0.875rem', color: '#ef4444', marginTop: '0.25rem' }}>
+                        <div className="text-xs md:text-sm text-red-500 mt-1 font-medium">
                             {remaining > 0 ? `Faltan ${remaining} para completar` : '✅ ¡Matrix Completada!'}
                         </div>
                     </div>
-                </>
-            )}
+                )}
 
-            {/* Matrix Structure */}
-            <div style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: '1.5rem'
-            }}>
-                {/* Level 1 - You */}
-                <div style={{ textAlign: 'center' }}>
-                    <MatrixNode filled={true} name="TÚ" level={1} />
-                </div>
-
-                {/* Connector Line */}
-                <div style={{
-                    width: '2px',
-                    height: '20px',
-                    background: '#cbd5e1'
-                }}></div>
-
-                {/* Level 2 - 3 positions */}
-                <div>
-                    <div style={{
-                        fontSize: '0.75rem',
-                        color: '#6b7280',
-                        textAlign: 'center',
-                        marginBottom: '0.5rem',
-                        fontWeight: '600'
-                    }}>
-                        NIVEL 2 ({filledLevel2}/{level2})
+                {/* Matrix Structure */}
+                <div className="flex flex-col items-center gap-4 md:gap-6">
+                    {/* Level 1 - You */}
+                    <div className="text-center">
+                        <MatrixNode filled={true} name="TÚ" level={1} />
                     </div>
-                    <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
-                        {[...Array(level2)].map((_, i) => (
-                            <MatrixNode key={`l2-${i}`} filled={i < filledLevel2} />
-                        ))}
-                    </div>
-                </div>
 
-                {/* Connector Line */}
-                <div style={{
-                    width: '2px',
-                    height: '20px',
-                    background: '#cbd5e1'
-                }}></div>
+                    {/* Connector Line */}
+                    <div className="w-0.5 h-4 md:h-6 bg-slate-300"></div>
 
-                {/* Level 3 - 9 positions */}
-                <div>
-                    <div style={{
-                        fontSize: '0.75rem',
-                        color: '#6b7280',
-                        textAlign: 'center',
-                        marginBottom: '0.5rem',
-                        fontWeight: '600'
-                    }}>
-                        NIVEL 3 ({filledLevel3}/{level3})
+                    {/* Level 2 - 3 positions */}
+                    <div className="w-full">
+                        <div className="text-xs text-gray-500 text-center mb-2 font-semibold">
+                            NIVEL 2 ({filledLevel2}/{level2})
+                        </div>
+                        <div className="flex justify-center gap-2 md:gap-4">
+                            {[...Array(level2)].map((_, i) => (
+                                <MatrixNode key={`l2-${i}`} filled={i < filledLevel2} />
+                            ))}
+                        </div>
                     </div>
-                    <div style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(3, 1fr)',
-                        gap: '0.75rem',
-                        justifyItems: 'center'
-                    }}>
-                        {[...Array(level3)].map((_, i) => (
-                            <MatrixNode key={`l3-${i}`} filled={i < filledLevel3} />
-                        ))}
+
+                    {/* Connector Line */}
+                    <div className="w-0.5 h-4 md:h-6 bg-slate-300"></div>
+
+                    {/* Level 3 - 9 positions */}
+                    <div className="w-full">
+                        <div className="text-xs text-gray-500 text-center mb-2 font-semibold">
+                            NIVEL 3 ({filledLevel3}/{level3})
+                        </div>
+                        <div className="grid grid-cols-3 gap-x-2 gap-y-1 md:gap-3 place-items-center">
+                            {[...Array(level3)].map((_, i) => (
+                                <MatrixNode key={`l3-${i}`} filled={i < filledLevel3} />
+                            ))}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -234,15 +156,32 @@ const MatrixVisual = ({ matrixConfig, statsData = {}, showTitle = true }) => {
     );
 };
 
+import { getUserId } from '../../utils/auth';
+
 const MatrixView = () => {
     const [userMatrices, setUserMatrices] = useState({});
     const [matrixStats, setMatrixStats] = useState({});
     const [loading, setLoading] = useState(true);
-    const userId = parseInt(localStorage.getItem('userId') || '1', 10);
+    const [userId, setUserId] = useState(null);
 
     useEffect(() => {
-        fetchUserMatrices();
+        const initUser = async () => {
+            try {
+                const id = await getUserId();
+                setUserId(id);
+            } catch (error) {
+                console.error("Error getting user ID:", error);
+                setLoading(false);
+            }
+        };
+        initUser();
     }, []);
+
+    useEffect(() => {
+        if (userId) {
+            fetchUserMatrices();
+        }
+    }, [userId]);
 
     const fetchUserMatrices = async () => {
         setLoading(true);
@@ -252,9 +191,6 @@ const MatrixView = () => {
                 api.get(`/api/forced-matrix/status/${userId}`),
                 api.get(`/api/forced-matrix/stats/${userId}`)
             ]);
-
-            console.log('Matrix Status:', statusRes.data);
-            console.log('Matrix Stats:', statsRes.data);
 
             // Transform status data for display
             const matrixData = {};
@@ -284,61 +220,39 @@ const MatrixView = () => {
 
     if (loading) {
         return (
-            <div style={{
-                padding: '2rem',
-                textAlign: 'center',
-                fontSize: '1.25rem',
-                color: '#6b7280'
-            }}>
+            <div className="p-8 text-center text-xl text-gray-500">
                 Cargando matrices...
             </div>
         );
     }
 
     return (
-        <div style={{ padding: '2rem', background: '#f9fafb', minHeight: '100vh' }}>
+        <div className="p-4 md:p-8 bg-gray-50 min-h-screen">
             {/* Header */}
-            <div style={{ marginBottom: '3rem', textAlign: 'center' }}>
-                <h1 style={{
-                    fontSize: '2.5rem',
-                    fontWeight: 'bold',
-                    color: '#1e3a8a',
-                    marginBottom: '0.5rem'
-                }}>
+            <div className="mb-8 md:mb-12 text-center">
+                <h1 className="text-3xl md:text-4xl font-bold text-blue-900 mb-2">
                     🌳 Mis Matrices 3x3
                 </h1>
-                <p style={{ color: '#6b7280', fontSize: '1.125rem' }}>
+                <p className="text-gray-500 text-base md:text-lg px-4">
                     Sistema de Matrix Cerrada - Completa cada nivel para ganar recompensas
                 </p>
             </div>
 
             {/* Info Box */}
-            <div style={{
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                color: 'white',
-                padding: '1.5rem',
-                borderRadius: '1rem',
-                marginBottom: '3rem',
-                boxShadow: '0 10px 15px rgba(0,0,0,0.1)'
-            }}>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '0.75rem' }}>
+            <div className="bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white p-6 rounded-2xl mb-8 md:mb-12 shadow-lg">
+                <h3 className="text-lg md:text-xl font-bold mb-3">
                     📚 ¿Cómo funcionan las Matrices?
                 </h3>
-                <ul style={{ listStyle: 'none', padding: 0 }}>
-                    <li style={{ marginBottom: '0.5rem' }}>✓ Cada matriz tiene 12 posiciones (3 en nivel 2, 9 en nivel 3)</li>
-                    <li style={{ marginBottom: '0.5rem' }}>✓ Invitas personas que se activan con paquetes de inicio</li>
-                    <li style={{ marginBottom: '0.5rem' }}>✓ Al completar los 12 espacios, recibes la recompensa completa</li>
+                <ul className="space-y-2 text-sm md:text-base">
+                    <li>✓ Cada matriz tiene 12 posiciones (3 en nivel 2, 9 en nivel 3)</li>
+                    <li>✓ Invitas personas que se activan con paquetes de inicio</li>
+                    <li>✓ Al completar los 12 espacios, recibes la recompensa completa</li>
                     <li>✓ Puedes tener múltiples reentradas en cada matriz</li>
                 </ul>
             </div>
 
             {/* Main 4 Matrices - Grid */}
-            <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(2, 1fr)',
-                gap: '2rem',
-                marginBottom: '3rem'
-            }}>
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 md:gap-8 mb-8 md:mb-12">
                 {[1, 2, 3, 4].map(matrixId => {
                     const config = MATRIX_LEVELS[matrixId];
                     const statsData = matrixStats.matrices?.[matrixId] || {};
@@ -355,34 +269,24 @@ const MatrixView = () => {
             </div>
 
             {/* Additional Matrices Summary */}
-            <div style={{
-                background: 'white',
-                borderRadius: '1rem',
-                padding: '2rem',
-                boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
-            }}>
-                <h3 style={{
-                    fontSize: '1.5rem',
-                    fontWeight: 'bold',
-                    color: '#1e3a8a',
-                    marginBottom: '1.5rem'
-                }}>
+            <div className="bg-white rounded-2xl shadow-sm p-4 md:p-8 overflow-hidden">
+                <h3 className="text-xl md:text-2xl font-bold text-blue-900 mb-6">
                     📊 Resumen Completo de Todas las Matrices
                 </h3>
 
-                <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '900px' }}>
-                        <thead style={{ background: '#1e3a8a' }}>
+                <div className="overflow-x-auto">
+                    <table className="w-full border-collapse min-w-[900px]">
+                        <thead className="bg-blue-900 text-white">
                             <tr>
-                                <th style={{ padding: '1rem', textAlign: 'left', color: 'white', borderBottom: '2px solid #3b82f6' }}>Matriz</th>
-                                <th style={{ padding: '1rem', textAlign: 'center', color: 'white', borderBottom: '2px solid #3b82f6' }}>Nivel</th>
-                                <th style={{ padding: '1rem', textAlign: 'center', color: 'white', borderBottom: '2px solid #3b82f6' }}>Recompensa Total</th>
-                                <th style={{ padding: '1rem', textAlign: 'center', color: 'white', borderBottom: '2px solid #3b82f6' }}>💵 Dólares</th>
-                                <th style={{ padding: '1rem', textAlign: 'center', color: 'white', borderBottom: '2px solid #3b82f6' }}>₿ Cripto</th>
-                                <th style={{ padding: '1rem', textAlign: 'center', color: 'white', borderBottom: '2px solid #3b82f6' }}>🔄 Ciclos Mes</th>
-                                <th style={{ padding: '1rem', textAlign: 'center', color: 'white', borderBottom: '2px solid #3b82f6' }}>Reentradas</th>
-                                <th style={{ padding: '1rem', textAlign: 'center', color: 'white', borderBottom: '2px solid #3b82f6' }}>Completadas</th>
-                                <th style={{ padding: '1rem', textAlign: 'center', color: 'white', borderBottom: '2px solid #3b82f6' }}>Total Ganado</th>
+                                <th className="p-4 text-left border-b-2 border-blue-500">Matriz</th>
+                                <th className="p-4 text-center border-b-2 border-blue-500">Nivel</th>
+                                <th className="p-4 text-center border-b-2 border-blue-500">Recompensa Total</th>
+                                <th className="p-4 text-center border-b-2 border-blue-500">💵 Dólares</th>
+                                <th className="p-4 text-center border-b-2 border-blue-500">₿ Cripto</th>
+                                <th className="p-4 text-center border-b-2 border-blue-500">🔄 Ciclos Mes</th>
+                                <th className="p-4 text-center border-b-2 border-blue-500">Miembros Activos</th>
+                                <th className="p-4 text-center border-b-2 border-blue-500">Completadas</th>
+                                <th className="p-4 text-center border-b-2 border-blue-500">Total Ganado</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -396,110 +300,92 @@ const MatrixView = () => {
                                 const totalEarned = (statsData.total_earned_usd || 0) + (statsData.total_earned_crypto || 0);
                                 const activeMembers = statsData.active_members || 0;
 
-                                // Placeholder for monthly cycles (backend doesn't track this yet)
+                                // Placeholder for monthly cycles
                                 const monthlyCycles = 0;
                                 const remainingCycles = Math.max(0, config.monthlyLimit - monthlyCycles);
 
                                 return (
-                                    <tr key={matrixId} style={{
-                                        borderBottom: '1px solid #e5e7eb',
-                                        background: index % 2 === 0 ? 'white' : '#f9fafb'
-                                    }}>
-                                        <td style={{ padding: '1rem' }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                                <span style={{ fontSize: '1.75rem' }}>{config.icon}</span>
+                                    <tr key={matrixId} className={`border-b border-gray-200 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+                                        <td className="p-4">
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-2xl md:text-3xl">{config.icon}</span>
                                                 <div>
-                                                    <div style={{ fontWeight: '700', fontSize: '1rem', color: config.color }}>
+                                                    <div
+                                                        className="font-bold text-base"
+                                                        style={{ color: config.color }}
+                                                    >
                                                         {config.name}
                                                     </div>
-                                                    <div style={{ fontSize: '0.75rem', color: isActive ? '#10b981' : '#ef4444' }}>
+                                                    <div className={`text-xs ${isActive ? 'text-emerald-500' : 'text-red-500'}`}>
                                                         {isActive ? '✓ Activa' : '✗ No Registrado'}
                                                     </div>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td style={{ padding: '1rem', textAlign: 'center', fontWeight: '600' }}>
+                                        <td className="p-4 text-center font-semibold">
                                             Nivel {matrixId}
                                         </td>
-                                        <td style={{ padding: '1rem', textAlign: 'center', fontWeight: 'bold', color: '#10b981', fontSize: '1rem' }}>
+                                        <td className="p-4 text-center font-bold text-emerald-500">
                                             ${config.reward.toLocaleString()} USD
                                         </td>
-                                        <td style={{ padding: '1rem', textAlign: 'center', fontWeight: '600', color: '#059669' }}>
-                                            {config.rewardCrypto > 0 ? `$${config.rewardUSD.toLocaleString()}` : `$${config.rewardUSD.toLocaleString()}`}
+                                        <td className="p-4 text-center font-semibold text-emerald-600">
+                                            ${config.rewardUSD.toLocaleString()}
                                         </td>
-                                        <td style={{ padding: '1rem', textAlign: 'center', fontWeight: '600', color: '#d97706' }}>
+                                        <td className="p-4 text-center font-semibold text-amber-600">
                                             {config.rewardCrypto > 0 ? (
                                                 <div>
                                                     <div>${config.rewardCrypto.toLocaleString()}</div>
-                                                    <div style={{ fontSize: '0.65rem', color: '#92400e', marginTop: '0.25rem' }}>
+                                                    <div className="text-[10px] text-amber-800 mt-1">
                                                         🔒 210 días
                                                     </div>
                                                 </div>
                                             ) : '-'}
                                         </td>
-                                        <td style={{ padding: '1rem', textAlign: 'center' }}>
-                                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.25rem' }}>
-                                                <div style={{
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: '0.5rem',
-                                                    padding: '0.5rem 0.75rem',
-                                                    borderRadius: '0.5rem',
-                                                    background: monthlyCycles >= config.monthlyLimit ? '#fee2e2' : '#dbeafe',
-                                                    border: `2px solid ${monthlyCycles >= config.monthlyLimit ? '#dc2626' : '#3b82f6'}`
-                                                }}>
-                                                    <span style={{
-                                                        fontWeight: 'bold',
-                                                        fontSize: '1.125rem',
-                                                        color: monthlyCycles >= config.monthlyLimit ? '#dc2626' : '#1e40af'
-                                                    }}>
-                                                        {monthlyCycles}/{config.monthlyLimit}
-                                                    </span>
+                                        <td className="p-4 text-center">
+                                            <div className="flex flex-col items-center gap-1">
+                                                <div className={`
+                                                    px-3 py-2 rounded-lg border-2 font-bold text-lg
+                                                    ${monthlyCycles >= config.monthlyLimit
+                                                        ? 'bg-red-100 border-red-600 text-red-600'
+                                                        : 'bg-blue-100 border-blue-500 text-blue-800'}
+                                                `}>
+                                                    {monthlyCycles}/{config.monthlyLimit}
                                                 </div>
                                                 {remainingCycles > 0 ? (
-                                                    <div style={{ fontSize: '0.7rem', color: '#059669', fontWeight: '600' }}>
+                                                    <div className="text-[10px] text-emerald-600 font-bold">
                                                         ✅ Faltan {remainingCycles}
                                                     </div>
                                                 ) : (
-                                                    <div style={{ fontSize: '0.7rem', color: '#dc2626', fontWeight: '600' }}>
+                                                    <div className="text-[10px] text-red-600 font-bold">
                                                         ⚠️ Límite alcanzado
                                                     </div>
                                                 )}
                                             </div>
                                         </td>
-                                        <td style={{ padding: '1rem', textAlign: 'center', fontWeight: '600', color: '#3b82f6', fontSize: '1.125rem' }}>
+                                        <td className="p-4 text-center font-semibold text-blue-500 text-lg">
                                             {activeMembers}
                                         </td>
-                                        <td style={{ padding: '1rem', textAlign: 'center' }}>
-                                            <span style={{
-                                                padding: '0.5rem 1rem',
-                                                borderRadius: '9999px',
-                                                background: cyclesCompleted > 0 ? '#d1fae5' : '#f3f4f6',
-                                                color: cyclesCompleted > 0 ? '#065f46' : '#6b7280',
-                                                fontWeight: '700',
-                                                fontSize: '1rem'
-                                            }}>
+                                        <td className="p-4 text-center">
+                                            <span className={`
+                                                px-4 py-2 rounded-full font-bold text-base
+                                                ${cyclesCompleted > 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-500'}
+                                            `}>
                                                 {cyclesCompleted}
                                             </span>
                                         </td>
-                                        <td style={{ padding: '1rem', textAlign: 'center', fontWeight: 'bold', fontSize: '1.125rem' }}>
-                                            <span style={{ color: totalEarned > 0 ? '#10b981' : '#6b7280' }}>
+                                        <td className="p-4 text-center font-bold text-lg">
+                                            <span className={totalEarned > 0 ? 'text-emerald-500' : 'text-gray-500'}>
                                                 ${totalEarned.toLocaleString()} USD
                                             </span>
                                         </td>
                                     </tr>
                                 );
                             })}
-                            <tr style={{
-                                background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
-                                color: 'white',
-                                fontWeight: 'bold',
-                                fontSize: '1.25rem'
-                            }}>
-                                <td colSpan="8" style={{ padding: '1.5rem', textAlign: 'right' }}>
+                            <tr className="bg-gradient-to-r from-blue-900 to-blue-500 text-white font-bold text-lg md:text-xl">
+                                <td colSpan="8" className="p-6 text-right">
                                     💰 TOTAL ACUMULADO DE TODAS LAS MATRICES:
                                 </td>
-                                <td style={{ padding: '1.5rem', textAlign: 'center', fontSize: '1.75rem' }}>
+                                <td className="p-6 text-center text-2xl md:text-3xl">
                                     ${(matrixStats.total_earned_usd || 0).toLocaleString()} USD
                                 </td>
                             </tr>
@@ -508,75 +394,57 @@ const MatrixView = () => {
                 </div>
 
                 {/* Legend */}
-                <div style={{
-                    marginTop: '2rem',
-                    padding: '1.5rem',
-                    background: '#f3f4f6',
-                    borderRadius: '0.75rem',
-                    borderLeft: '4px solid #3b82f6'
-                }}>
-                    <h4 style={{ fontWeight: 'bold', color: '#1e3a8a', marginBottom: '0.75rem' }}>
+                <div className="mt-8 p-6 bg-gray-100 rounded-xl border-l-4 border-blue-500">
+                    <h4 className="font-bold text-blue-900 mb-3">
                         📝 Nota:
                     </h4>
-                    <ul style={{ listStyle: 'none', padding: 0, color: '#4b5563' }}>
-                        <li style={{ marginBottom: '0.5rem' }}>• <strong>Ciclos Mes:</strong> Muestra cuántas veces has completado esta matriz en el mes actual y cuántas puedes hacer según el límite mensual</li>
-                        <li style={{ marginBottom: '0.5rem' }}>• <strong>Reentradas:</strong> Número de veces que has vuelto a entrar en esta matriz</li>
-                        <li style={{ marginBottom: '0.5rem' }}>• <strong>Completadas:</strong> Matrices que has llenado completamente (12/12 posiciones)</li>
+                    <ul className="space-y-2 text-gray-600 text-sm md:text-base">
+                        <li>• <strong>Ciclos Mes:</strong> Muestra cuántas veces has completado esta matriz en el mes actual</li>
+                        <li>• <strong>Miembros Activos:</strong> Número de personas activas en tu matriz actual (Meta: 12)</li>
+                        <li>• <strong>Completadas:</strong> Matrices que has llenado completamente (12/12 posiciones)</li>
                         <li>• <strong>Total Ganado:</strong> Suma de todas las recompensas obtenidas en esta matriz</li>
                     </ul>
                 </div>
 
                 {/* Crypto Information */}
-                <div style={{
-                    marginTop: '1.5rem',
-                    padding: '2rem',
-                    background: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)',
-                    borderRadius: '1rem',
-                    color: 'white',
-                    boxShadow: '0 10px 15px rgba(0,0,0,0.1)'
-                }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
-                        <div style={{ fontSize: '3rem' }}>₿</div>
-                        <div>
-                            <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '0.25rem' }}>
+                <div className="mt-8 p-4 md:p-8 bg-gradient-to-br from-amber-400 to-amber-500 rounded-2xl text-white shadow-lg overflow-hidden">
+                    <div className="flex items-center gap-3 md:gap-4 mb-4 md:mb-6">
+                        <div className="text-4xl md:text-5xl">₿</div>
+                        <div className="min-w-0">
+                            <h3 className="text-xl md:text-2xl font-bold leading-tight">
                                 Sistema de Criptomonedas
                             </h3>
-                            <p style={{ fontSize: '0.875rem', opacity: 0.9 }}>
+                            <p className="opacity-90 text-sm md:text-base mt-1">
                                 Información importante sobre tus recompensas en cripto
                             </p>
                         </div>
                     </div>
 
-                    <div style={{
-                        background: 'rgba(255,255,255,0.15)',
-                        padding: '1.5rem',
-                        borderRadius: '0.75rem',
-                        backdropFilter: 'blur(10px)'
-                    }}>
-                        <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                            <li style={{ marginBottom: '1rem', display: 'flex', alignItems: 'start', gap: '0.75rem' }}>
-                                <span style={{ fontSize: '1.5rem' }}>🔒</span>
-                                <div>
+                    <div className="bg-white/10 p-4 md:p-6 rounded-xl backdrop-blur-sm">
+                        <ul className="space-y-4">
+                            <li className="flex gap-3 items-start">
+                                <span className="text-xl md:text-2xl shrink-0 mt-0.5">🔒</span>
+                                <div className="text-sm md:text-base">
                                     <strong>Periodo de Congelamiento:</strong> Las criptomonedas quedan congeladas por <strong>210 días</strong> desde la fecha en que las ganas.
                                 </div>
                             </li>
-                            <li style={{ marginBottom: '1rem', display: 'flex', alignItems: 'start', gap: '0.75rem' }}>
-                                <span style={{ fontSize: '1.5rem' }}>⏱️</span>
-                                <div>
+                            <li className="flex gap-3 items-start">
+                                <span className="text-xl md:text-2xl shrink-0 mt-0.5">⏱️</span>
+                                <div className="text-sm md:text-base">
                                     <strong>Contador Regresivo:</strong> Verás un contador en tiempo real mostrando cuántos días faltan para que tus criptos estén disponibles.
                                 </div>
                             </li>
-                            <li style={{ marginBottom: '1rem', display: 'flex', alignItems: 'start', gap: '0.75rem' }}>
-                                <span style={{ fontSize: '1.5rem' }}>💰</span>
-                                <div>
-                                    <strong>Valor del Token:</strong> Cada token de cripto = <strong>$100 USD</strong>
+                            <li className="flex gap-3 items-start">
+                                <span className="text-xl md:text-2xl shrink-0 mt-0.5">💰</span>
+                                <div className="text-sm md:text-base">
+                                    <strong>Valor del Token:</strong> Cada token de cripto = <strong>$1 USD</strong>
                                 </div>
                             </li>
-                            <li style={{ marginBottom: '1rem', display: 'flex', alignItems: 'start', gap: '0.75rem' }}>
-                                <span style={{ fontSize: '1.5rem' }}>✅</span>
-                                <div>
+                            <li className="flex gap-3 items-start">
+                                <span className="text-xl md:text-2xl shrink-0 mt-0.5">✅</span>
+                                <div className="text-sm md:text-base">
                                     <strong>Después de 210 días puedes:</strong>
-                                    <ul style={{ marginTop: '0.5rem', paddingLeft: '1.5rem' }}>
+                                    <ul className="list-disc pl-5 mt-1 space-y-1">
                                         <li>Convertir a efectivo dentro de la plataforma</li>
                                         <li>Transferir a Binance para vender</li>
                                     </ul>
@@ -585,14 +453,7 @@ const MatrixView = () => {
                         </ul>
                     </div>
 
-                    <div style={{
-                        marginTop: '1rem',
-                        padding: '1rem',
-                        background: 'rgba(255,255,255,0.1)',
-                        borderRadius: '0.5rem',
-                        fontSize: '0.875rem',
-                        textAlign: 'center'
-                    }}>
+                    <div className="mt-4 p-4 bg-white/10 rounded-lg text-center text-sm">
                         💡 <strong>Tip:</strong> Consulta la sección "💰 Billetera" para ver el detalle de tus criptos congeladas y disponibles
                     </div>
                 </div>

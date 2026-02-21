@@ -159,11 +159,10 @@ const SecurityView = () => {
 
             {/* General Message */}
             {message && (
-                <div className={`rounded-lg p-4 ${
-                    messageType === 'success' 
-                        ? 'bg-green-50 border border-green-200 text-green-800' 
+                <div className={`rounded-lg p-4 ${messageType === 'success'
+                        ? 'bg-green-50 border border-green-200 text-green-800'
                         : 'bg-red-50 border border-red-200 text-red-800'
-                }`}>
+                    }`}>
                     {message}
                 </div>
             )}
@@ -234,9 +233,9 @@ const SecurityView = () => {
             {/* Set Transaction PIN */}
             <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
                 <div className="mb-6">
-                    <h2 className="text-2xl font-bold text-gray-800 mb-2">🔑 Clave de Transacciones</h2>
+                    <h2 className="text-2xl font-bold text-gray-800 mb-2">🔑 Clave de Transacciones (PIN)</h2>
                     <p className="text-gray-600">
-                        Configura una clave numérica para proteger tus compras, retiros y otras transacciones que involucren activos
+                        Configura un PIN numérico de 6 dígitos para proteger tus retiros y compras.
                     </p>
                 </div>
 
@@ -247,62 +246,68 @@ const SecurityView = () => {
                     <ul className="text-sm text-blue-800 mt-2 ml-4 space-y-1">
                         <li>• Compras de productos con saldo disponible</li>
                         <li>• Retiro de dinero de la billetera al banco</li>
-                        <li>• Cualquier transacción que requiera sacar activos de la plataforma</li>
                     </ul>
                 </div>
 
                 <form onSubmit={handleSetTransactionPin} className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                            Contraseña de Acceso
+                    <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-100 mb-4">
+                        <label className="block text-sm font-bold text-gray-800 mb-2">
+                            Paso 1: Tu Contraseña de Inicio de Sesión
                         </label>
+                        <p className="text-xs text-gray-600 mb-2">
+                            Para tu seguridad, ingresa la contraseña con la que inicias sesión en la página (NO es una clave anterior).
+                        </p>
                         <input
                             type="password"
                             name="current_password"
                             value={transactionPin.current_password}
                             onChange={handleTransactionPinChange}
-                            placeholder="Ingresa tu contraseña de acceso"
+                            placeholder="Tu contraseña de acceso principal"
                             required
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
                         />
                     </div>
 
-                    <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                            Clave de Transacciones (Números)
-                        </label>
-                        <input
-                            type="password"
-                            name="transaction_pin"
-                            value={transactionPin.transaction_pin}
-                            onChange={handleTransactionPinChange}
-                            placeholder="6 dígitos (ej: 123456)"
-                            required
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                Paso 2: Nueva Clave (PIN)
+                            </label>
+                            <input
+                                type="password"
+                                name="transaction_pin"
+                                value={transactionPin.transaction_pin}
+                                onChange={handleTransactionPinChange}
+                                placeholder="6 dígitos (ej: 123456)"
+                                required
+                                maxLength={6}
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                        </div>
 
-                    <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                            Confirmar Clave de Transacciones
-                        </label>
-                        <input
-                            type="password"
-                            name="confirm_pin"
-                            value={transactionPin.confirm_pin}
-                            onChange={handleTransactionPinChange}
-                            placeholder="Repite la clave de transacciones"
-                            required
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                Confirmar Nueva Clave
+                            </label>
+                            <input
+                                type="password"
+                                name="confirm_pin"
+                                value={transactionPin.confirm_pin}
+                                onChange={handleTransactionPinChange}
+                                placeholder="Repite los 6 dígitos"
+                                required
+                                maxLength={6}
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                        </div>
                     </div>
 
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-300 font-semibold disabled:opacity-50"
+                        className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-300 font-bold text-lg disabled:opacity-50 shadow-md mt-4"
                     >
-                        {loading ? 'Configurando...' : '🔑 Configurar Clave de Transacciones'}
+                        {loading ? 'Configurando...' : '💾 Guardar Clave de Transacciones'}
                     </button>
                 </form>
             </div>

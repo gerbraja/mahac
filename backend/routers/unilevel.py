@@ -61,7 +61,31 @@ def get_unilevel_status(user_id: int, db: Session = Depends(get_db)):
     ).first()
     
     if not member:
-        return {"status": "not_registered", "user_id": user_id}
+        # SELF-HEALING: Auto-register if missing
+        try:
+            user = db.query(User).filter(User.id == user_id).first()
+            if not user:
+                return {"status": "not_registered", "user_id": user_id}
+                
+            # Find sponsor's unilevel node
+            sponsor_id = user.referred_by_id
+            uni_sponsor = None
+            if sponsor_id:
+                uni_sponsor = db.query(UnilevelMember).filter(UnilevelMember.user_id == sponsor_id).first()
+            
+            new_uni = UnilevelMember(
+                user_id=user.id,
+                sponsor_id=uni_sponsor.id if uni_sponsor else None,
+                level=(uni_sponsor.level + 1) if uni_sponsor else 1
+            )
+            db.add(new_uni)
+            db.commit()
+            db.refresh(new_uni)
+            member = new_uni
+            # Continue to return active status below...
+        except Exception as e:
+            print(f"Error auto-registering Unilevel: {e}")
+            return {"status": "not_registered", "user_id": user_id}
     
     # Get sponsor info
     sponsor_info = None
@@ -183,24 +207,36 @@ def get_unilevel_stats(user_id: int, db: Session = Depends(get_db)):
         UnilevelCommission.type == 'unilevel'
     ).scalar() or 0
     
+    # Helper function to get members at specific level depth
+    def get_members_at_level(sponsor_member_id, target_level, current_level=1):
+        """Get all members at a specific level depth"""
+        if current_level == target_level:
+            # We've reached the target level, return these members
+            return db.query(UnilevelMember).filter(
+                UnilevelMember.sponsor_id == sponsor_member_id
+            ).all()
+        elif current_level < target_level:
+            # Go deeper
+            members = []
+            direct_members = db.query(UnilevelMember).filter(
+                UnilevelMember.sponsor_id == sponsor_member_id
+            ).all()
+            for direct_member in direct_members:
+                members.extend(get_members_at_level(direct_member.id, target_level, current_level + 1))
+            return members
+        else:
+            return []
+    
     # Get stats by level
     levels_stats = {}
     for level_num in range(1, 8):
-        # Count actual members at this level (direct downline only for level 1)
-        if level_num == 1:
-            # Direct downline: members whose sponsor is this user's member record
-            members_at_level = db.query(UnilevelMember).filter(
-                UnilevelMember.sponsor_id == member.id
-            ).all()
-        else:
-            # For other levels, we need to traverse the tree
-            # For simplicity, we'll use the commission records as a proxy
-            members_at_level = []
+        # Get actual members at this level by traversing the tree
+        members_at_level = get_members_at_level(member.id, level_num)
         
         # Count active members at this level
         active_at_level = 0
-        for member in members_at_level:
-            user_obj = db.query(User).filter(User.id == member.user_id).first()
+        for member_obj in members_at_level:
+            user_obj = db.query(User).filter(User.id == member_obj.user_id).first()
             if user_obj and user_obj.status == 'active':
                 active_at_level += 1
         

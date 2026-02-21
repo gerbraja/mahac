@@ -97,7 +97,7 @@ def process_global_pool(db: Session):
     """
     from backend.database.models.order import Order
     from backend.database.models.qualified_rank import QualifiedRank, UserQualifiedRank
-    from backend.database.models.global_pool import GlobalPoolCommission
+    # from backend.database.models.global_pool import GlobalPoolCommission
     from backend.database.models.user import User
     from sqlalchemy import func
     from datetime import datetime, timedelta

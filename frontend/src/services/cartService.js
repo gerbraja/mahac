@@ -1,5 +1,5 @@
 // Frontend cart service (simple fetch wrappers)
-const API_URL = "http://127.0.0.1:8000/cart";
+const API_URL = `${import.meta.env.VITE_API_BASE || 'https://mlm-backend-s52yictoyq-rj.a.run.app'}/cart`;
 
 export const getCart = async (token) => {
   const res = await fetch(API_URL, {

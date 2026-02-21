@@ -7,6 +7,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, text
 from backend.database.connection import get_db
 from backend.database.models.matrix import MatrixMember, MatrixCommission
+from backend.database.models.forced_matrix import ForcedMatrixMember
+from backend.database.models.user import User
 from backend.mlm.services.matrix_service import MatrixService
 from datetime import datetime
 from typing import Optional
@@ -161,3 +163,32 @@ def get_forced_matrix_stats(user_id: int, db: Session = Depends(get_db)):
 
     return stats
 
+@router.get("/debug-matrix-state-v2")
+def debug_matrix_state_v2(key: str, db: Session = Depends(get_db)):
+    if key != "secure_debug_2025":
+        return {"error": "Invalid key"}
+    
+    try:
+        users = db.query(User).all()
+        user_map = {u.id: u.username for u in users}
+        
+        members = db.query(MatrixMember).all()
+        data = []
+        for m in members:
+            data.append({
+                "id": m.id,
+                "user_id": m.user_id,
+                "created_at": str(m.created_at),
+                "username": user_map.get(m.user_id, "Unknown"),
+                "upline_id": m.upline_id, # MatrixMember uses upline_id, not parent_id
+                "matrix_id": m.matrix_id,
+                "position": m.position
+            })
+            
+        return {
+            "count": len(members),
+            "members": data,
+            "all_users": [{"id": u.id, "username": u.username, "sponsor": u.referred_by_id} for u in users]
+        }
+    except Exception as e:
+        return {"error": str(e), "type": type(e).__name__}

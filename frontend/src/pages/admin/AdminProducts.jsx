@@ -40,15 +40,33 @@ const SimpleAdmin = () => {
         stock: 0,
         weight_grams: 500,
         image_url: '',
-        is_activation: false
+        is_activation: false,
+        direct_bonus_pv: 0,
+        cost_price: 0,
+        tei_pv: 0,
+        tax_rate: 0,
+        public_price: 0,
+        sku: '',
+        supplier_id: ''
     });
+    const [suppliers, setSuppliers] = useState([]);
     const [editingId, setEditingId] = useState(null);
     const [message, setMessage] = useState('');
 
     useEffect(() => {
         fetchProducts();
         fetchCategories();
+        fetchSuppliers();
     }, []);
+
+    const fetchSuppliers = async () => {
+        try {
+            const res = await api.get('/api/suppliers/');
+            setSuppliers(res.data);
+        } catch (error) {
+            console.error("Error fetching suppliers");
+        }
+    };
 
     const fetchCategories = async () => {
         try {
@@ -97,7 +115,14 @@ const SimpleAdmin = () => {
                 weight_grams: formData.weight_grams === '' || formData.weight_grams === null ? 500 : Math.round(Number(formData.weight_grams)),
                 price_usd: Number(formData.price_usd),
                 pv: Math.round(Number(formData.pv)), // PV must be an integer
-                stock: Math.round(Number(formData.stock)) // Stock must be an integer
+                direct_bonus_pv: Math.round(Number(formData.direct_bonus_pv)),
+                tei_pv: Math.round(Number(formData.tei_pv)),
+                stock: Math.round(Number(formData.stock)), // Stock must be an integer
+                cost_price: Number(formData.cost_price),
+                tax_rate: Number(formData.tax_rate),
+                public_price: Number(formData.public_price),
+                sku: formData.sku,
+                supplier_id: formData.supplier_id ? Number(formData.supplier_id) : null
             };
 
             if (editingId) {
@@ -108,7 +133,8 @@ const SimpleAdmin = () => {
                 setMessage('Producto creado exitosamente');
             }
             setFormData({
-                name: '', description: '', category: '', price_usd: 0, price_local: 0, pv: 0, stock: 0, weight_grams: 500, image_url: '', is_activation: false
+                name: '', description: '', category: '', price_usd: 0, price_local: 0, pv: 0, direct_bonus_pv: 0, stock: 0, weight_grams: 500, image_url: '', is_activation: false,
+                cost_price: 0, tei_pv: 0, tax_rate: 0, public_price: 0, sku: '', supplier_id: ''
             });
             setEditingId(null);
             fetchProducts();
@@ -146,6 +172,41 @@ const SimpleAdmin = () => {
             <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '2rem', color: '#1e3a8a' }}>
                 Gestión de Productos
             </h2>
+
+            <div style={{ marginBottom: '2rem' }}>
+                <button
+                    onClick={async () => {
+                        try {
+                            const response = await api.get('/api/products/template', { responseType: 'blob' });
+                            const url = window.URL.createObjectURL(new Blob([response.data]));
+                            const link = document.createElement('a');
+                            link.href = url;
+                            link.setAttribute('download', 'plantilla_productos.csv');
+                            document.body.appendChild(link);
+                            link.click();
+                            link.parentNode.removeChild(link);
+                        } catch (error) {
+                            console.error("Error downloading template", error);
+                            setMessage('Error al descargar la plantilla');
+                        }
+                    }}
+                    style={{
+                        background: '#10b981',
+                        color: 'white',
+                        padding: '0.75rem 1rem',
+                        borderRadius: '0.25rem',
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontWeight: 'bold',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        width: 'fit-content'
+                    }}
+                >
+                    📥 Descargar Plantilla CSV (Carga Masiva)
+                </button>
+            </div>
 
             {message && (
                 <div style={{
@@ -202,7 +263,7 @@ const SimpleAdmin = () => {
                     onChange={handleChange}
                     placeholder="Descripción del producto"
                     style={{ padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.25rem', gridColumn: 'span 2', fontFamily: 'Arial' }}
-                    rows="3"
+                    rows="30"
                 />
                 <input
                     type="number"
@@ -230,6 +291,15 @@ const SimpleAdmin = () => {
                     onChange={handleChange}
                     placeholder="Puntos de Volumen (PV)"
                     step="0.01"
+                    style={{ padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.25rem' }}
+                />
+                <input
+                    type="number"
+                    name="direct_bonus_pv"
+                    value={formData.direct_bonus_pv}
+                    onChange={handleChange}
+                    placeholder="Bono Directo (PV)"
+                    step="1"
                     style={{ padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.25rem' }}
                 />
                 <input
@@ -286,7 +356,8 @@ const SimpleAdmin = () => {
                         onClick={() => {
                             setEditingId(null);
                             setFormData({
-                                name: '', description: '', category: '', price_usd: 0, price_local: 0, pv: 0, stock: 0, weight_grams: 500, image_url: '', is_activation: false
+                                name: '', description: '', category: '', price_usd: 0, price_local: 0, pv: 0, direct_bonus_pv: 0, stock: 0, weight_grams: 500, image_url: '', is_activation: false,
+                                cost_price: 0, tei_pv: 0, tax_rate: 0, public_price: 0, sku: '', supplier_id: ''
                             });
                         }}
                         style={{
