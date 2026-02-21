@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from ..database.connection import get_db
 from ..database.models.user import User
 from ..database.models.compliance_record import ComplianceRecord
-from ..routers.auth import get_current_user
+from ..utils.auth import get_current_user
 from ..services.kyc_ai_service import validate_documents_with_gemini
 import logging
 import json

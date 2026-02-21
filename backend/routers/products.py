@@ -140,6 +140,17 @@ def delete_product(
     product = db.query(ProductModel).filter(ProductModel.id == product_id).first()
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
+    
+    # Check if product has existing order items (FK constraint protection)
+    from ..database.models.order_item import OrderItem
+    has_orders = db.query(OrderItem).filter(OrderItem.product_id == product_id).first()
+    
+    if has_orders:
+        # Mark as inactive instead of deleting to preserve referential integrity
+        product.active = False
+        db.commit()
+        return {"message": "Product marked as inactive (has existing orders, cannot delete)"}
+    
     db.delete(product)
     db.commit()
     return {"message": "Product deleted successfully"}
