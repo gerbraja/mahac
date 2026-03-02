@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { api } from '../../api/api';
+import { useAdmin } from '../../context/AdminContext';
 
 const SimpleAdmin = () => {
+    const { globalCountry } = useAdmin();
     // Categorías predefinidas como fallback
     const DEFAULT_CATEGORIES = [
         'Ropa y Accesorios',
@@ -57,7 +59,7 @@ const SimpleAdmin = () => {
         fetchProducts();
         fetchCategories();
         fetchSuppliers();
-    }, []);
+    }, [globalCountry]);
 
     const fetchSuppliers = async () => {
         try {
@@ -91,7 +93,10 @@ const SimpleAdmin = () => {
 
     const fetchProducts = async () => {
         try {
-            const res = await api.get('/api/products/');
+            const queryParams = new URLSearchParams();
+            if (globalCountry && globalCountry !== 'Todos') queryParams.append('country', globalCountry);
+
+            const res = await api.get(`/api/products/?${queryParams.toString()}`);
             setProducts(res.data);
         } catch (error) {
             console.error("Error fetching products", error);

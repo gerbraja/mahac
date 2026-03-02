@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 
 from backend.database.connection import get_db
 from backend.database.models.pickup_point import PickupPoint
@@ -11,10 +11,18 @@ router = APIRouter(prefix="/api/pickup-points", tags=["Pickup Points"])
 
 # PUBLIC: List active points
 @router.get("/", response_model=List[PickupPointOut])
-def list_pickup_points(active_only: bool = True, db: Session = Depends(get_db)):
+def list_pickup_points(
+    active_only: bool = True, 
+    country: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
     query = db.query(PickupPoint)
     if active_only:
         query = query.filter(PickupPoint.active == True)
+        
+    if country and country != 'Todos':
+        query = query.filter(PickupPoint.country == country)
+        
     return query.all()
 
 # ADMIN: Create

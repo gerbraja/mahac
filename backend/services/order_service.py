@@ -24,9 +24,33 @@ def create_order(db: Session, payload: OrderCreate, current_user):
         # Assuming price_local is COP
         subtotal_cop = item.quantity * (product.price_local or 0.0)
         
+        # --- Discount Logic for Package Upgrades ---
+        # If user is active and has Franquicia 1, and is buying an activation package level >= 2
+        discount_applied_cop = 0.0
+        if current_user and getattr(current_user, 'status', '') == 'active':
+            user_level = getattr(current_user, 'package_level', 0)
+            if user_level == 1 and product.is_activation and getattr(product, 'package_level', 0) >= 2:
+                # Subtract cost of Franquicia 1: $287,000 COP
+                # In backend/upgrade.py, Franquicia 1 is priced at 257000? Let's use user requirement $287,000 for display or rely on 257000 if that was real.
+                # Actually, the user requirement mentions 287000 in prompt. Let's use 287000.
+                discount_amount_cop = 287000.0
+                if subtotal_cop >= discount_amount_cop:
+                    subtotal_cop -= discount_amount_cop
+                    discount_applied_cop = discount_amount_cop
+                else:
+                    discount_applied_cop = subtotal_cop
+                    subtotal_cop = 0.0
+
         # Fallback: If product has no USD price, convert from COP
         if subtotal_usd <= 0 and subtotal_cop > 0:
              subtotal_usd = subtotal_cop / 3800.0
+        elif discount_applied_cop > 0:
+             # proportionally reduce USD price
+             # calculate original COP
+             original_cop = subtotal_cop + discount_applied_cop
+             if original_cop > 0:
+                 discount_ratio = discount_applied_cop / original_cop
+                 subtotal_usd -= (subtotal_usd * discount_ratio)
 
         subtotal_pv = item.quantity * product.pv
 

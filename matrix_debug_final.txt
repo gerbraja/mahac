@@ -1,0 +1,55 @@
+Total Users: 18
+
+User: Sembradores (ID: 1)
+  - No Matrix Memberships
+
+User: L1_A (ID: 2)
+  - No Matrix Memberships
+
+User: L1_B (ID: 3)
+  - No Matrix Memberships
+
+User: L2_0 (ID: 4)
+  - No Matrix Memberships
+
+User: L2_1 (ID: 5)
+  - No Matrix Memberships
+
+User: L2_2 (ID: 6)
+  - No Matrix Memberships
+
+User: L2_3 (ID: 7)
+  - No Matrix Memberships
+
+User: NewUser_L3 (ID: 8)
+  - No Matrix Memberships
+
+User: NewUser_L3_2 (ID: 9)
+  - No Matrix Memberships
+
+User: sponsor_universal (ID: 10)
+  - No Matrix Memberships
+
+User: user_universal_7449 (ID: 11)
+  - No Matrix Memberships
+
+User: user_universal_5093 (ID: 12)
+  - No Matrix Memberships
+
+User: sponsor_uni_40745 (ID: 13)
+  - No Matrix Memberships
+
+User: user_universal_2215 (ID: 14)
+  - No Matrix Memberships
+
+User: sponsor_uni_42983 (ID: 15)
+  - No Matrix Memberships
+
+User: user_universal_5383 (ID: 16)
+  - No Matrix Memberships
+
+User: sponsor_uni_41275 (ID: 17)
+  - No Matrix Memberships
+
+User: user_universal_2165 (ID: 18)
+  - No Matrix Memberships

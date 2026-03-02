@@ -1,6 +1,7 @@
 
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
 from sqlalchemy.orm import Session
+from typing import Optional
 from ..database.connection import get_db
 from ..database.models.user import User
 from ..database.models.compliance_record import ComplianceRecord
@@ -124,14 +125,23 @@ def get_kyc_status(current_user: User = Depends(get_current_user), db: Session =
 # --- ADMIN ENDPOINTS ---
 
 @router.get("/admin/records")
-def get_all_compliance_records(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def get_all_compliance_records(
+    country: Optional[str] = None,
+    current_user: User = Depends(get_current_user), 
+    db: Session = Depends(get_db)
+):
     """
     Admin Only: List all compliance records with user details.
     """
     if not current_user.is_admin:
         raise HTTPException(status_code=403, detail="Not authorized")
         
-    records = db.query(ComplianceRecord).join(User).all()
+    query = db.query(ComplianceRecord).join(User)
+    
+    if country and country != 'Todos':
+        query = query.filter(User.country == country)
+        
+    records = query.all()
     
     result = []
     for r in records:

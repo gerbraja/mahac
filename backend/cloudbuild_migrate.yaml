@@ -1,0 +1,9 @@
+# cloudbuild_migrate.yaml
+steps:
+  - name: 'python:3.10-slim'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        pip install psycopg2-binary
+        python execute_migration.py

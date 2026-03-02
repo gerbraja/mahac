@@ -1,0 +1,28 @@
+steps:
+  # 1. Install dependencies
+  - name: 'node:18'
+    entrypoint: npm
+    args: ['install']
+
+  # 2. Build for production
+  # We hardcode the API URL here to be absolutely safe
+  - name: 'node:18'
+    entrypoint: npm
+    args: ['run', 'build']
+    env:
+      - 'VITE_API_BASE=https://api.tuempresainternacional.com'
+
+  # 3. Upload to GCS Bucket
+  # -m = multi-threaded/parallel (faster)
+  # -r = recursive
+  # -d = delete extraneous files in destination (clean sync)
+  - name: 'gcr.io/cloud-builders/gsutil'
+    args: ['-m', 'rsync', '-r', '-d', 'dist', 'gs://tuempresainternacional-frontend']
+
+  # 4. Configure website serving (Main page and 404 error page)
+  - name: 'gcr.io/cloud-builders/gsutil'
+    args: ['web', 'set', '-m', 'index.html', '-e', 'index.html', 'gs://tuempresainternacional-frontend']
+
+  # 5. Set Cache-Control to ensure updates are seen quickly (1 hour cache)
+  - name: 'gcr.io/cloud-builders/gsutil'
+    args: ['-m', 'setmeta', '-h', 'Cache-Control:public, max-age=3600', 'gs://tuempresainternacional-frontend/**/*.html']

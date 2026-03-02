@@ -6,8 +6,10 @@ import { useNavigate } from 'react-router-dom';
 
 const StoreView = () => {
     const [products, setProducts] = useState([]);
+    const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const [selectedProduct, setSelectedProduct] = useState(null);
+    const [showBanner, setShowBanner] = useState(true);
     const { addToCart, cart } = useCart();
     const navigate = useNavigate();
 
@@ -15,29 +17,133 @@ const StoreView = () => {
     const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
     useEffect(() => {
-        const fetchProducts = async () => {
+        const fetchData = async () => {
             try {
-                // Assuming router is mounted at /api/products
-                const response = await api.get(`/api/products/?_t=${new Date().getTime()}`);
-                setProducts(response.data);
+                const [productsRes, userRes] = await Promise.all([
+                    api.get(`/api/products/?_t=${new Date().getTime()}`),
+                    api.get('/auth/me').catch(() => ({ data: null }))
+                ]);
+
+                let fetchedProducts = productsRes.data;
+                const fetchedUser = userRes.data;
+
+                // Process Upgrade Pricing
+                if (fetchedUser && fetchedUser.status === 'active' && fetchedUser.package_level === 1) {
+                    fetchedProducts = fetchedProducts.map(p => {
+                        if (p.is_activation && p.package_level >= 2) {
+                            return {
+                                ...p,
+                                price_local: Math.max(0, (p.price_local || 0) - 287000),
+                                original_price_local: p.price_local,
+                                is_upgrade: true
+                            };
+                        }
+                        return p;
+                    });
+                }
+
+                setProducts(fetchedProducts);
+                setUser(fetchedUser);
             } catch (error) {
-                console.error("Error fetching products:", error);
+                console.error("Error fetching data:", error);
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchProducts();
+        fetchData();
     }, []);
 
     if (loading) return <div className="p-8 text-center">Cargando productos...</div>;
 
-    const starterPackages = products.filter(p => p.is_activation);
+    // Filter Starter Packages based on User Level
+    let starterPackages = [];
+
+    if (user) {
+        if (user.status === 'pre-affiliate') {
+            // Pre-affiliate sees all packages
+            starterPackages = products.filter(p => p.is_activation);
+        } else if (user.package_level === 1) {
+            // Level 1 sees ONLY upgrades (which are Level 2+ packages)
+            starterPackages = products.filter(p => p.is_activation && p.package_level >= 2);
+        } else if (user.package_level >= 2) {
+            // Level 2+ sees NO packages
+            starterPackages = [];
+        } else {
+            // Fallback (e.g. active but level 0? show all just in case)
+            starterPackages = products.filter(p => p.is_activation);
+        }
+    } else {
+        // Not logged in? Show all (or none, depending on global logic, but usually all)
+        starterPackages = products.filter(p => p.is_activation);
+    }
+
     const regularProducts = products.filter(p => !p.is_activation);
 
     return (
         <div className="p-6 relative" style={{ maxWidth: '100%', width: '100%' }}>
-            <h1 className="text-3xl font-bold text-blue-900 mb-8">Centro Comercial TEI</h1>
+            <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-4 gap-4">
+                <h1 className="text-3xl font-bold text-blue-900">Centro Comercial TEI</h1>
+                {user && (
+                    <div className="flex items-center">
+                        <span className={`px-4 py-2 rounded-full font-bold text-sm shadow-sm border ${user.status === 'pre-affiliate' ? 'bg-gray-100 text-gray-600 border-gray-300' :
+                            user.package_level >= 2 ? 'bg-purple-100 text-purple-800 border-purple-200' :
+                                user.package_level === 1 ? 'bg-blue-100 text-blue-800 border-blue-200' :
+                                    'bg-green-100 text-green-800 border-green-200'
+                            }`}>
+                            {user.status === 'pre-affiliate' ? '⚪ Pre-afiliado (Gratuito)' :
+                                user.package_level >= 2 ? '🏅 Activo Paquete de Productos' :
+                                    user.package_level === 1 ? '🎖️ Activo Franquicia Digital 1' :
+                                        '🟢 Activo'}
+                        </span>
+                    </div>
+                )}
+            </div>
+
+            {/* ─── Aviso Importante ─── */}
+            {showBanner && (
+                <div style={{
+                    background: 'linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)',
+                    border: '1px solid #fb923c',
+                    borderLeft: '5px solid #f97316',
+                    borderRadius: '0.75rem',
+                    padding: '0.875rem 1.25rem',
+                    marginBottom: '1.5rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '0.75rem',
+                    boxShadow: '0 2px 8px rgba(249,115,22,0.15)'
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: 1 }}>
+                        <span style={{ fontSize: '1.5rem', flexShrink: 0 }}>📅</span>
+                        <div>
+                            <p style={{ margin: 0, fontWeight: '700', color: '#c2410c', fontSize: '0.95rem' }}>
+                                Aviso Importante — Pedidos de Vestuario y Calzado
+                            </p>
+                            <p style={{ margin: '0.15rem 0 0', color: '#9a3412', fontSize: '0.875rem' }}>
+                                Los pedidos de vestuario y calzado están habilitados <strong>únicamente los lunes</strong>. Gracias por tu comprensión. 🙏
+                            </p>
+                        </div>
+                    </div>
+                    <button
+                        onClick={() => setShowBanner(false)}
+                        style={{
+                            background: 'transparent',
+                            border: 'none',
+                            cursor: 'pointer',
+                            color: '#f97316',
+                            fontSize: '1.2rem',
+                            lineHeight: 1,
+                            padding: '0.25rem',
+                            flexShrink: 0
+                        }}
+                        title="Cerrar aviso"
+                    >
+                        ✕
+                    </button>
+                </div>
+            )}
 
             {/* Floating Cart Button */}
             <motion.button
@@ -58,7 +164,7 @@ const StoreView = () => {
             {starterPackages.length > 0 && (
                 <div className="mb-12">
                     <h2 className="text-2xl font-bold text-blue-800 mb-4 flex items-center gap-2">
-                        🚀 Paquetes de Inicio <span className="text-sm font-normal text-gray-500">(Requerido para activación)</span>
+                        🚀 Paquetes de Inicio / Avance <span className="text-sm font-normal text-gray-500">(Requerido para activación o mejora)</span>
                     </h2>
                     <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3 w-full">
                         {starterPackages.map(product => (
@@ -131,7 +237,10 @@ const ProductCard = ({ product, addToCart, isSpecial, onClick }) => {
                 ) : (
                     <span className={`text-6xl ${isSpecial ? 'text-white' : 'text-gray-400'}`}>{isSpecial ? '💎' : '📦'}</span>
                 )}
-                {isSpecial && (
+                {isSpecial && product.is_upgrade && (
+                    <span className="absolute top-2 right-2 bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full font-bold">Avance de Paquete</span>
+                )}
+                {isSpecial && !product.is_upgrade && (
                     <span className="absolute top-2 right-2 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full font-bold">Activación</span>
                 )}
 
@@ -155,7 +264,12 @@ const ProductCard = ({ product, addToCart, isSpecial, onClick }) => {
 
                 {/* Price and PV */}
                 <div className="flex justify-between items-center mb-3">
-                    <p className="text-xl font-bold text-green-600">${product.price_local?.toLocaleString()} COP</p>
+                    <div>
+                        <p className="text-xl font-bold text-green-600">${product.price_local?.toLocaleString()} COP</p>
+                        {product.is_upgrade && (
+                            <p className="text-xs text-gray-400 line-through">${product.original_price_local?.toLocaleString()} COP</p>
+                        )}
+                    </div>
                     <p className="text-sm font-bold text-blue-600">💎 {product.pv} PV</p>
                 </div>
 
@@ -222,19 +336,30 @@ const ProductDetailsModal = ({ product, onClose, addToCart }) => {
                     </button>
 
                     <div className="mb-6">
-                        {product.is_activation && (
+                        {product.is_upgrade ? (
+                            <span className="inline-block bg-purple-100 text-purple-800 text-xs px-3 py-1 rounded-full font-bold mb-3">
+                                🚀 Avance de Paquete
+                            </span>
+                        ) : product.is_activation ? (
                             <span className="inline-block bg-blue-100 text-blue-800 text-xs px-3 py-1 rounded-full font-bold mb-3">
                                 🚀 Paquete de Activación
                             </span>
-                        )}
+                        ) : null}
                         <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2 leading-tight">
                             {product.name}
                         </h2>
                         <div className="flex items-center gap-4 mb-4">
-                            <span className="text-3xl font-bold text-green-600">
-                                ${product.price_local?.toLocaleString()} COP
-                            </span>
-                            <span className="bg-blue-50 text-blue-700 px-3 py-1 rounded-lg font-bold text-sm border border-blue-200">
+                            <div className="flex flex-col">
+                                <span className="text-3xl font-bold text-green-600">
+                                    ${product.price_local?.toLocaleString()} COP
+                                </span>
+                                {product.is_upgrade && (
+                                    <span className="text-sm text-gray-400 line-through">
+                                        Precio regular: ${product.original_price_local?.toLocaleString()} COP
+                                    </span>
+                                )}
+                            </div>
+                            <span className="bg-blue-50 text-blue-700 px-3 py-1 rounded-lg font-bold text-sm border border-blue-200 h-fit">
                                 💎 {product.pv} PV
                             </span>
                         </div>

@@ -10,7 +10,7 @@ def deploy_service():
         "--project", "tei-mlm-prod",
         "--allow-unauthenticated",
         "--port", "8000",
-        "--set-env-vars",
+        "--update-env-vars",
         "CLOUD_SQL_CONNECTION_NAME=tei-mlm-prod:southamerica-east1:mlm-db," +
         "DB_USER=postgres," +
         "DB_PASS=AdminPostgres2025," +

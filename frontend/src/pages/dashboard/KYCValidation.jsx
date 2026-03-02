@@ -5,6 +5,29 @@ import { useNavigate } from 'react-router-dom';
 
 // Icons/Flags could be assets. Using emoji for now.
 
+const LATAM_COUNTRIES = [
+    { name: 'Argentina', flag: '🇦🇷' },
+    { name: 'Bolivia', flag: '🇧🇴' },
+    { name: 'Brasil', flag: '🇧🇷' },
+    { name: 'Chile', flag: '🇨🇱' },
+    { name: 'Colombia', flag: '🇨🇴' },
+    { name: 'Costa Rica', flag: '🇨🇷' },
+    { name: 'Cuba', flag: '🇨🇺' },
+    { name: 'Ecuador', flag: '🇪🇨' },
+    { name: 'El Salvador', flag: '🇸🇻' },
+    { name: 'Guatemala', flag: '🇬🇹' },
+    { name: 'Honduras', flag: '🇭🇳' },
+    { name: 'México', flag: '🇲🇽' },
+    { name: 'Nicaragua', flag: '🇳🇮' },
+    { name: 'Panamá', flag: '🇵🇦' },
+    { name: 'Paraguay', flag: '🇵🇾' },
+    { name: 'Perú', flag: '🇵🇪' },
+    { name: 'Puerto Rico', flag: '🇵🇷' },
+    { name: 'Rep. Dominicana', flag: '🇩🇴' },
+    { name: 'Uruguay', flag: '🇺🇾' },
+    { name: 'Venezuela', flag: '🇻🇪' }
+];
+
 const KYCValidation = () => {
     const [step, setStep] = useState(1); // 1: Country, 2: Form
     const [country, setCountry] = useState(null);
@@ -115,10 +138,15 @@ const KYCValidation = () => {
         return (
             <div className="p-8 max-w-5xl mx-auto">
                 <h1 className="text-3xl font-bold text-center mb-8">Selecciona tu País</h1>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <CountryCard name="Colombia" flag="🇨🇴" onClick={() => handleCountrySelect({ name: 'Colombia' })} />
-                    <CountryCard name="Panamá" flag="🇵🇦" onClick={() => handleCountrySelect({ name: 'Panama' })} />
-                    <CountryCard name="Rep. Dominicana" flag="🇩🇴" onClick={() => handleCountrySelect({ name: 'Republica Dominicana' })} />
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                    {LATAM_COUNTRIES.map((c) => (
+                        <CountryCard
+                            key={c.name}
+                            name={c.name}
+                            flag={c.flag}
+                            onClick={() => handleCountrySelect({ name: c.name })}
+                        />
+                    ))}
                 </div>
             </div>
         );

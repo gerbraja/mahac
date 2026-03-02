@@ -5,7 +5,7 @@ Import the modules here so that `Base.metadata.create_all()` picks them up when
 the application starts. Keep imports minimal to avoid side effects.
 """
 
-from . import user, product, cart
+from . import user, product, cart, supplier, order, order_item, payment_transaction, category, withdrawal
 try:
 	# optional model, may be added later
 	from . import unilevel

@@ -14,7 +14,7 @@ LEVEL_RULES = {
     25: 0.005, 27: 0.005
 }
 
-def find_millionaire_placement(db: Session, sponor_user_id: Optional[int] = None) -> Optional[BinaryMillionaireMember]:
+def find_millionaire_placement(db: Session, sponsor_user_id: Optional[int] = None) -> Optional[BinaryMillionaireMember]:
     """Find the first available spot. 
     If sponsor_user_id is provided, look in sponsor's subtree (Spillover).
     Otherwise, global BFS from root.
@@ -22,14 +22,14 @@ def find_millionaire_placement(db: Session, sponor_user_id: Optional[int] = None
     root_node = None
     
     # 1. Try to find start node based on sponsor
-    if sponor_user_id:
+    if sponsor_user_id:
         # Find sponsor in this tree
-        sponsor_node = db.query(BinaryMillionaireMember).filter(BinaryMillionaireMember.user_id == sponor_user_id).first()
+        sponsor_node = db.query(BinaryMillionaireMember).filter(BinaryMillionaireMember.user_id == sponsor_user_id).first()
         if sponsor_node:
             root_node = sponsor_node
         else:
             # Sponsor not in tree? Walk up the referral chain to find first ancestor in tree
-            current_sponsor_id = sponor_user_id
+            current_sponsor_id = sponsor_user_id
             while current_sponsor_id:
                 # Get user's sponsor from User table
                 user_sponsor = db.query(User).filter(User.id == current_sponsor_id).first()

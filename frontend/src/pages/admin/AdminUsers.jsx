@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { api } from '../../api/api';
+import { useAdmin } from '../../context/AdminContext';
 
 export default function AdminUsers() {
+    const { globalCountry } = useAdmin();
     const [users, setUsers] = useState([]);
     const [countryStats, setCountryStats] = useState([]);
     const [search, setSearch] = useState('');
@@ -13,7 +15,7 @@ export default function AdminUsers() {
     useEffect(() => {
         fetchUsers();
         fetchCountryStats();
-    }, []);
+    }, [globalCountry]);
 
     const fetchCountryStats = async () => {
         try {
@@ -27,8 +29,11 @@ export default function AdminUsers() {
     const fetchUsers = async (searchQuery = '') => {
         setLoading(true);
         try {
-            const params = searchQuery ? `?search=${searchQuery}` : '';
-            const response = await api.get(`/api/admin/users${params}`);
+            const queryParams = new URLSearchParams();
+            if (searchQuery) queryParams.append('search', searchQuery);
+            if (globalCountry && globalCountry !== 'Todos') queryParams.append('country', globalCountry);
+
+            const response = await api.get(`/api/admin/users?${queryParams.toString()}`);
             setUsers(response.data);
             setMessage(''); // Clear any previous error messages
         } catch (error) {

@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../../api/api';
 import SupplierProductsModal from '../../components/suppliers/SupplierProductsModal';
+import { useAdmin } from '../../context/AdminContext';
 
 const AdminSuppliers = () => {
+    const { globalCountry } = useAdmin();
     const [suppliers, setSuppliers] = useState([]);
     const [formData, setFormData] = useState({
         name: '', contact_name: '', email: '', phone: '', address: ''
@@ -16,11 +18,14 @@ const AdminSuppliers = () => {
 
     useEffect(() => {
         fetchSuppliers();
-    }, []);
+    }, [globalCountry]);
 
     const fetchSuppliers = async () => {
         try {
-            const res = await api.get('/api/suppliers/');
+            const queryParams = new URLSearchParams();
+            if (globalCountry && globalCountry !== 'Todos') queryParams.append('country', globalCountry);
+
+            const res = await api.get(`/api/suppliers/?${queryParams.toString()}`);
             setSuppliers(res.data);
         } catch (error) {
             console.error("Error fetching suppliers", error);
@@ -142,11 +147,12 @@ const AdminSuppliers = () => {
                 </table>
             </div>
 
-            <SupplierProductsModal
-                isOpen={modalOpen}
-                onClose={() => setModalOpen(false)}
-                supplier={selectedSupplier}
-            />
+            {modalOpen && selectedSupplier && (
+                <SupplierProductsModal
+                    supplier={selectedSupplier}
+                    onClose={() => { setModalOpen(false); setSelectedSupplier(null); }}
+                />
+            )}
         </div>
     );
 };

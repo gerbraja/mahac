@@ -8,4 +8,5 @@ class PickupPoint(Base):
     name = Column(String(100), nullable=False) # e.g. "Sede Principal Bogotá"
     address = Column(String(200), nullable=False)
     city = Column(String(100), nullable=False)
+    country = Column(String(100), nullable=False, default="Colombia")
     active = Column(Boolean, default=True)

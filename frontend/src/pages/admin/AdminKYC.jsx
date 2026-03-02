@@ -1,19 +1,24 @@
 
 import React, { useState, useEffect } from 'react';
 import { api } from '../../api/api';
+import { useAdmin } from '../../context/AdminContext';
 
 const AdminKYC = () => {
+    const { globalCountry } = useAdmin();
     const [records, setRecords] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedRecord, setSelectedRecord] = useState(null);
 
     useEffect(() => {
         fetchRecords();
-    }, []);
+    }, [globalCountry]);
 
     const fetchRecords = async () => {
         try {
-            const res = await api.get('/api/kyc/admin/records');
+            const queryParams = new URLSearchParams();
+            if (globalCountry && globalCountry !== 'Todos') queryParams.append('country', globalCountry);
+
+            const res = await api.get(`/api/kyc/admin/records?${queryParams.toString()}`);
             setRecords(res.data);
         } catch (error) {
             console.error("Error fetching KYC records", error);

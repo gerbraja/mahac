@@ -1,0 +1,4 @@
+Error: (psycopg2.OperationalError) connection to server on socket "/cloudsql/tei-mlm-prod:southamerica-east1:mlm-db/.s.PGSQL.5432" failed: Invalid argument (0x00002726/10022)
+	Is the server running locally and accepting connections on that socket?
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)

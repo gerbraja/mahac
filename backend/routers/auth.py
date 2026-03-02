@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional
@@ -75,9 +76,10 @@ def register(data: RegisterData, background_tasks: BackgroundTasks, db: Session 
             raise HTTPException(status_code=400, detail="El código de referido es OBLIGATORIO")
 
         # Verify referrer exists
+        ref_trimmed = data.referral_code.strip()
         referer = db.query(UserModel).filter(
-            (UserModel.username == data.referral_code) |
-            (UserModel.referral_code == data.referral_code)
+            (func.lower(func.trim(UserModel.username)) == func.lower(ref_trimmed)) |
+            (func.lower(func.trim(UserModel.referral_code)) == func.lower(ref_trimmed))
         ).first()
 
         if not referer:
@@ -250,9 +252,10 @@ def register(data: RegisterData, background_tasks: BackgroundTasks, db: Session 
 @router.get("/verify-referral/{username}")
 def verify_referral_code(username: str, db: Session = Depends(get_db)):
     """Verify if a username/referral code is valid and return the referrer's info."""
+    username_trimmed = username.strip()
     user = db.query(UserModel).filter(
-        (UserModel.username == username) |
-        (UserModel.referral_code == username)
+        (func.lower(func.trim(UserModel.username)) == func.lower(username_trimmed)) |
+        (func.lower(func.trim(UserModel.referral_code)) == func.lower(username_trimmed))
     ).first()
     
     if user:
@@ -312,11 +315,10 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         "full_address": user.address,
         "city": user.city,
         "province": user.province,
-        "province": user.province,
         "postal_code": user.postal_code,
         "created_at": user.created_at,
-        "created_at": user.created_at,
         "crypto_wallet_address": user.crypto_wallet,
+        "package_level": user.package_level,
         "rank": _get_user_honor_rank(db, user.id)
     }
 
@@ -458,6 +460,8 @@ def get_current_user_info(current_user: UserModel = Depends(get_current_user_obj
         "has_transaction_pin": bool(current_user.transaction_pin),
         "bank_balance": current_user.bank_balance or 0.0,
         "available_balance": current_user.available_balance or 0.0,
+        "package_level": current_user.package_level,
+        "status": current_user.status,
         "rank": _get_user_honor_rank(db, current_user.id)
     }
 

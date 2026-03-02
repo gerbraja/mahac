@@ -1,0 +1,7 @@
+(sqlite3.OperationalError) no such column: orders.guest_info
+[SQL: SELECT orders.id AS orders_id, orders.user_id AS orders_user_id, orders.guest_info AS orders_guest_info, orders.total_usd AS orders_total_usd, orders.total_cop AS orders_total_cop, orders.total_pv AS orders_total_pv, orders.shipping_address AS orders_shipping_address, orders.status AS orders_status, orders.payment_method AS orders_payment_method, orders.tracking_number AS orders_tracking_number, orders.created_at AS orders_created_at, orders.payment_confirmed_at AS orders_payment_confirmed_at, orders.shipped_at AS orders_shipped_at, orders.completed_at AS orders_completed_at 
+FROM orders 
+WHERE orders.status IN (?, ?, ?, ?)
+ LIMIT ? OFFSET ?]
+[parameters: ('pagado', 'paid', 'shipped', 'delivered', 10, 0)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)

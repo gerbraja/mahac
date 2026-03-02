@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { api } from '../../api/api';
+import { useAdmin } from '../../context/AdminContext';
 
 export default function AdminSponsorshipCommissions() {
+    const { globalCountry } = useAdmin();
     const [commissions, setCommissions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('all'); // all, pending, paid
@@ -9,13 +11,16 @@ export default function AdminSponsorshipCommissions() {
 
     useEffect(() => {
         fetchCommissions();
-    }, [filter]);
+    }, [filter, globalCountry]);
 
     const fetchCommissions = async () => {
         setLoading(true);
         try {
-            const params = filter !== 'all' ? `?status=${filter}` : '';
-            const response = await api.get(`/api/admin/sponsorship-commissions${params}`);
+            const queryParams = new URLSearchParams();
+            if (filter !== 'all') queryParams.append('status', filter);
+            if (globalCountry && globalCountry !== 'Todos') queryParams.append('country', globalCountry);
+
+            const response = await api.get(`/api/admin/sponsorship-commissions?${queryParams.toString()}`);
             setCommissions(response.data);
         } catch (error) {
             console.error('Error fetching commissions:', error);
@@ -57,11 +62,11 @@ export default function AdminSponsorshipCommissions() {
             </div>
 
             {/* Statistics Cards */}
-            <div style={{ 
-                display: 'grid', 
-                gridTemplateColumns: 'repeat(3, 1fr)', 
-                gap: '1.5rem', 
-                marginBottom: '2rem' 
+            <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(3, 1fr)',
+                gap: '1.5rem',
+                marginBottom: '2rem'
             }}>
                 <div style={{
                     background: 'white',
@@ -119,9 +124,9 @@ export default function AdminSponsorshipCommissions() {
             </div>
 
             {/* Filter Tabs */}
-            <div style={{ 
-                display: 'flex', 
-                gap: '0.5rem', 
+            <div style={{
+                display: 'flex',
+                gap: '0.5rem',
                 marginBottom: '1.5rem',
                 borderBottom: '2px solid #e5e7eb'
             }}>
@@ -217,15 +222,15 @@ export default function AdminSponsorshipCommissions() {
                                             borderRadius: '9999px',
                                             fontSize: '0.75rem',
                                             fontWeight: '600',
-                                            background: 
-                                                comm.status === 'paid' ? '#d1fae5' : 
-                                                comm.status === 'pending' ? '#fef3c7' : '#fee2e2',
-                                            color: 
-                                                comm.status === 'paid' ? '#065f46' : 
-                                                comm.status === 'pending' ? '#92400e' : '#dc2626'
+                                            background:
+                                                comm.status === 'paid' ? '#d1fae5' :
+                                                    comm.status === 'pending' ? '#fef3c7' : '#fee2e2',
+                                            color:
+                                                comm.status === 'paid' ? '#065f46' :
+                                                    comm.status === 'pending' ? '#92400e' : '#dc2626'
                                         }}>
-                                            {comm.status === 'paid' ? '✓ Pagada' : 
-                                             comm.status === 'pending' ? '⏳ Pendiente' : '✗ Cancelada'}
+                                            {comm.status === 'paid' ? '✓ Pagada' :
+                                                comm.status === 'pending' ? '⏳ Pendiente' : '✗ Cancelada'}
                                         </span>
                                     </td>
                                     <td style={{ padding: '1rem', fontSize: '0.875rem', color: '#6b7280' }}>

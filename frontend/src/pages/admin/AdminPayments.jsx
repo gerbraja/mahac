@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { api } from '../../api/api';
+import { useAdmin } from '../../context/AdminContext';
 
 export default function AdminPayments() {
+    const { globalCountry } = useAdmin();
     const [payments, setPayments] = useState([]);
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState('');
@@ -10,12 +12,15 @@ export default function AdminPayments() {
 
     useEffect(() => {
         fetchPayments();
-    }, []);
+    }, [globalCountry]);
 
     const fetchPayments = async () => {
         setLoading(true);
         try {
-            const response = await api.get('/api/admin/pending-payments');
+            const queryParams = new URLSearchParams();
+            if (globalCountry && globalCountry !== 'Todos') queryParams.append('country', globalCountry);
+
+            const response = await api.get(`/api/admin/pending-payments?${queryParams.toString()}`);
             setPayments(response.data);
         } catch (error) {
             console.error('Error fetching payments:', error);

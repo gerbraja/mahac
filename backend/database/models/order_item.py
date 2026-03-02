@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, ForeignKey
+from sqlalchemy import Column, Integer, String, Float, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 from backend.database.connection import Base
 
@@ -14,6 +14,9 @@ class OrderItem(Base):
     subtotal_usd = Column(Float, nullable=False, default=0.0)
     subtotal_cop = Column(Float, nullable=False, default=0.0)
     subtotal_pv = Column(Float, nullable=False, default=0.0)
+    
+    # Tracking supplier/manufacturer orders
+    is_ordered_from_supplier = Column(Boolean, default=False, nullable=False)
 
     order = relationship("Order", back_populates="items")
     product = relationship("backend.database.models.product.Product")

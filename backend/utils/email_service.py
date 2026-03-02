@@ -26,7 +26,11 @@ async def send_welcome_email(to_email: str, username: str, full_name: str, refer
         # Create message
         message = MIMEMultipart("alternative")
         message["Subject"] = "¡Bienvenido a Tienda Virtual TEI! 🚀"
-        message["From"] = "Bienvenida TEI <bienvenida@tuempresainternacional.com>"
+        
+        # Use alias for the "From" address if configured (e.g. soporte@ authenticating but sending as bienvenida@)
+        alias_email = "bienvenida@tuempresainternacional.com"
+        message["From"] = f"Bienvenida TEI <{alias_email}>"
+        
         message["To"] = to_email
 
         # Email Body (HTML)
@@ -91,7 +95,11 @@ async def send_order_invoice_email(order_data: dict, user_email: str):
 
         message = MIMEMultipart("alternative")
         message["Subject"] = f"¡Tu pedido #{order_data['id']} ha sido enviado! 📦"
-        message["From"] = "Facturación TEI <facturacion@tuempresainternacional.com>"
+        
+        # Use alias for invoice emails
+        alias_email = "facturacion@tuempresainternacional.com"
+        message["From"] = f"Facturación TEI <{alias_email}>"
+        
         message["To"] = user_email
 
         # Format items list

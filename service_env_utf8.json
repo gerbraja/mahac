@@ -1,0 +1,142 @@
+﻿{
+  "apiVersion": "serving.knative.dev/v1",
+  "kind": "Service",
+  "metadata": {
+    "annotations": {
+      "run.googleapis.com/build-enable-automatic-updates": "false",
+      "run.googleapis.com/build-id": "39d060b8-cf27-4a2a-a75d-a5789cf8ad3a",
+      "run.googleapis.com/build-image-uri": "southamerica-east1-docker.pkg.dev/tei-mlm-prod/cloud-run-source-deploy/mlm-backend",
+      "run.googleapis.com/build-name": "projects/679747463414/locations/southamerica-east1/builds/39d060b8-cf27-4a2a-a75d-a5789cf8ad3a",
+      "run.googleapis.com/build-source-location": "gs://run-sources-tei-mlm-prod-southamerica-east1/services/mlm-backend/1765938015.170759-e9734636c33e413b86e58ea2dc8e66bc.zip#1765938016785373",
+      "run.googleapis.com/client-name": "gcloud",
+      "run.googleapis.com/client-version": "549.0.0",
+      "run.googleapis.com/ingress": "all",
+      "run.googleapis.com/ingress-status": "all",
+      "run.googleapis.com/operation-id": "313adca8-3e92-45bb-b14b-d3a2495f296c",
+      "run.googleapis.com/urls": "[\"https://mlm-backend-679747463414.southamerica-east1.run.app\",\"https://mlm-backend-s52yictoyq-rj.a.run.app\"]",
+      "serving.knative.dev/creator": "gerbraja@gmail.com",
+      "serving.knative.dev/lastModifier": "gerbraja@gmail.com"
+    },
+    "creationTimestamp": "2025-12-14T17:52:58.869048Z",
+    "generation": 49,
+    "labels": {
+      "cloud.googleapis.com/location": "southamerica-east1",
+      "run.googleapis.com/satisfiesPzs": "true"
+    },
+    "name": "mlm-backend",
+    "namespace": "679747463414",
+    "resourceVersion": "AAZGHIRG90g",
+    "selfLink": "/apis/serving.knative.dev/v1/namespaces/679747463414/services/mlm-backend",
+    "uid": "4b78e53d-057b-48ba-b685-9c9735067401"
+  },
+  "spec": {
+    "template": {
+      "metadata": {
+        "annotations": {
+          "autoscaling.knative.dev/maxScale": "3",
+          "run.googleapis.com/client-name": "gcloud",
+          "run.googleapis.com/client-version": "549.0.0",
+          "run.googleapis.com/cloudsql-instances": "tei-mlm-prod:southamerica-east1:mlm-db",
+          "run.googleapis.com/startup-cpu-boost": "true"
+        },
+        "labels": {
+          "client.knative.dev/nonce": "rgxingeygk",
+          "run.googleapis.com/startupProbeType": "Default"
+        }
+      },
+      "spec": {
+        "containerConcurrency": 80,
+        "containers": [
+          {
+            "env": [
+              {
+                "name": "CLOUD_SQL_CONNECTION_NAME",
+                "value": "tei-mlm-prod:southamerica-east1:mlm-db"
+              },
+              {
+                "name": "DB_USER",
+                "value": "postgres"
+              },
+              {
+                "name": "DB_PASS",
+                "value": "AdminTei2025!"
+              },
+              {
+                "name": "DB_NAME",
+                "value": "tiendavirtual"
+              }
+            ],
+            "image": "southamerica-east1-docker.pkg.dev/tei-mlm-prod/cloud-run-source-deploy/mlm-backend@sha256:3bbe59699eca910e59983ee50f7806d28c1f2af4dfafcb5ca9ff8d9b878a6104",
+            "ports": [
+              {
+                "containerPort": 8000,
+                "name": "http1"
+              }
+            ],
+            "resources": {
+              "limits": {
+                "cpu": "1000m",
+                "memory": "512Mi"
+              }
+            },
+            "startupProbe": {
+              "failureThreshold": 1,
+              "periodSeconds": 240,
+              "tcpSocket": {
+                "port": 8000
+              },
+              "timeoutSeconds": 240
+            }
+          }
+        ],
+        "serviceAccountName": "679747463414-compute@developer.gserviceaccount.com",
+        "timeoutSeconds": 300
+      }
+    },
+    "traffic": [
+      {
+        "latestRevision": true,
+        "percent": 100
+      }
+    ]
+  },
+  "status": {
+    "address": {
+      "url": "https://mlm-backend-s52yictoyq-rj.a.run.app"
+    },
+    "conditions": [
+      {
+        "lastTransitionTime": "2025-12-17T02:22:32.511873Z",
+        "message": "The user-provided container failed to start and listen on the port defined provided by the PORT=8000 environment variable within the allocated timeout. This can happen when the container port is misconfigured or if the timeout is too short. The health check timeout can be extended. Logs for this revision might contain more information.\n\nLogs URL: https://console.cloud.google.com/logs/viewer?project=tei-mlm-prod&resource=cloud_run_revision/service_name/mlm-backend/revision_name/mlm-backend-00049-82j&advancedFilter=resource.type%3D%22cloud_run_revision%22%0Aresource.labels.service_name%3D%22mlm-backend%22%0Aresource.labels.revision_name%3D%22mlm-backend-00049-82j%22 \nFor more troubleshooting guidance, see https://cloud.google.com/run/docs/troubleshooting#container-failed-to-start",
+        "reason": "HealthCheckContainerError",
+        "status": "False",
+        "type": "Ready"
+      },
+      {
+        "lastTransitionTime": "2025-12-17T02:22:32.431132Z",
+        "message": "The user-provided container failed to start and listen on the port defined provided by the PORT=8000 environment variable within the allocated timeout. This can happen when the container port is misconfigured or if the timeout is too short. The health check timeout can be extended. Logs for this revision might contain more information.\n\nLogs URL: https://console.cloud.google.com/logs/viewer?project=tei-mlm-prod&resource=cloud_run_revision/service_name/mlm-backend/revision_name/mlm-backend-00049-82j&advancedFilter=resource.type%3D%22cloud_run_revision%22%0Aresource.labels.service_name%3D%22mlm-backend%22%0Aresource.labels.revision_name%3D%22mlm-backend-00049-82j%22 \nFor more troubleshooting guidance, see https://cloud.google.com/run/docs/troubleshooting#container-failed-to-start",
+        "reason": "HealthCheckContainerError",
+        "status": "False",
+        "type": "ConfigurationsReady"
+      },
+      {
+        "lastTransitionTime": "2025-12-17T02:22:32.511873Z",
+        "message": "The user-provided container failed to start and listen on the port defined provided by the PORT=8000 environment variable within the allocated timeout. This can happen when the container port is misconfigured or if the timeout is too short. The health check timeout can be extended. Logs for this revision might contain more information.\n\nLogs URL: https://console.cloud.google.com/logs/viewer?project=tei-mlm-prod&resource=cloud_run_revision/service_name/mlm-backend/revision_name/mlm-backend-00049-82j&advancedFilter=resource.type%3D%22cloud_run_revision%22%0Aresource.labels.service_name%3D%22mlm-backend%22%0Aresource.labels.revision_name%3D%22mlm-backend-00049-82j%22 \nFor more troubleshooting guidance, see https://cloud.google.com/run/docs/troubleshooting#container-failed-to-start",
+        "reason": "HealthCheckContainerError",
+        "status": "False",
+        "type": "RoutesReady"
+      }
+    ],
+    "latestCreatedRevisionName": "mlm-backend-00049-82j",
+    "latestReadyRevisionName": "mlm-backend-00044-nj4",
+    "observedGeneration": 49,
+    "traffic": [
+      {
+        "latestRevision": true,
+        "percent": 100,
+        "revisionName": "mlm-backend-00044-nj4"
+      }
+    ],
+    "url": "https://mlm-backend-s52yictoyq-rj.a.run.app"
+  }
+}

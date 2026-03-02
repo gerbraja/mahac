@@ -2,11 +2,12 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
 import csv
 import io
-from typing import List
+from typing import List, Optional
 from sqlalchemy.orm import Session
 from ..database.connection import get_db
 from ..database.models.product import Product as ProductModel
-from ..schemas.product import Product as ProductSchema, ProductCreate
+from ..database.models.supplier import Supplier
+from ..schemas.product import Product as ProductSchema, ProductCreate, ProductBase, ProductUpdate
 from ..routers.auth import get_current_user_object
 from ..database.models.user import User
 
@@ -95,15 +96,49 @@ def create_product(
 @router.get("/", response_model=List[ProductSchema])
 def list_products(
     supplier_id: int = None,
+    include_inactive: bool = False,
+    country: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
-    query = db.query(ProductModel).filter(ProductModel.active == True)
+    query = db.query(ProductModel)
     
+    # Cuando se filtra por proveedor, mostramos todos los estados (activo+suspendido)
+    # para que el admin pueda gestionarlos. En el catálogo público solo activos.
     if supplier_id is not None:
         query = query.filter(ProductModel.supplier_id == supplier_id)
+    elif not include_inactive:
+        query = query.filter(ProductModel.active == True)
         
-    products = query.all()
+    if country and country != 'Todos':
+        query = query.join(Supplier, ProductModel.supplier_id == Supplier.id).filter(Supplier.country == country)
+        
+    products = query.order_by(ProductModel.created_at.desc()).all()
     return products
+
+@router.post("/fix-images-batch")
+def fix_images_batch(db: Session = Depends(get_db)):
+    """Endpoint temporal para actualizar imágenes de productos específicos."""
+    updates = {
+        "bon-21022": "https://storage.googleapis.com/tuempresainternacional-assets/images/REF-bon-21022-vestido-deportivo-verde-hilo-acanalado.png",
+        "bon-21023": "https://storage.googleapis.com/tuempresainternacional-assets/images/bon-21023.png",
+        "bon-21024": "https://storage.googleapis.com/tuempresainternacional-assets/images/bon-21024.png",
+        "bon-21025": "https://storage.googleapis.com/tuempresainternacional-assets/images/bon-21025.png",
+        "bon-21026": "https://storage.googleapis.com/tuempresainternacional-assets/images/bon-21026.png",
+        "bon-21027": "https://storage.googleapis.com/tuempresainternacional-assets/images/bon-21027.png",
+        "bon-21028": "https://storage.googleapis.com/tuempresainternacional-assets/images/bon-21028.png"
+    }
+    
+    results = []
+    for sku, url in updates.items():
+        product = db.query(ProductModel).filter(ProductModel.sku == sku).first()
+        if product:
+            product.image_url = url
+            results.append(f"Actualizado {sku}")
+        else:
+            results.append(f"No encontrado {sku}")
+    
+    db.commit()
+    return {"results": results}
 
 @router.get("/{product_id}", response_model=ProductSchema)
 def get_product(product_id: int, db: Session = Depends(get_db)):
@@ -116,7 +151,7 @@ def get_product(product_id: int, db: Session = Depends(get_db)):
 @router.put("/{product_id}", response_model=ProductSchema)
 def update_product(
     product_id: int, 
-    prod: ProductCreate, 
+    prod: ProductUpdate, 
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_admin_user)
 ):
@@ -124,8 +159,11 @@ def update_product(
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
 
-    for key, value in prod.dict().items():
-        setattr(product, key, value)
+    # exclude_unset=True: solo actualiza los campos que el cliente envió explícitamente
+    update_data = prod.dict(exclude_unset=True)
+    for key, value in update_data.items():
+        if hasattr(product, key):
+            setattr(product, key, value)  # Aplica tal como viene (incluso False, 0, None)
     db.commit()
     db.refresh(product)
     return product

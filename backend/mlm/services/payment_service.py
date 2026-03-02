@@ -32,18 +32,14 @@ def process_post_payment_commissions(db: Session, user_id: int, total_pv: int, i
         if is_activation:
              # FULL ACTIVATION
              process_activation(
-                 db, user_id, float(total_cop), pv=total_pv, 
-                 distribute_commissions=True, 
-                 is_standard_package=True
+                 db, user_id, float(total_cop), pv=total_pv
              )
         else:
             # CONSUMER ACTIVATION (Generic)
             # Only trigger status update & reg check if PV > 0
              if total_pv > 0:
                  process_activation(
-                     db, user_id, float(total_cop), pv=total_pv,
-                     distribute_commissions=True,
-                     is_standard_package=False 
+                     db, user_id, float(total_cop), pv=total_pv
                  )
     except Exception as e:
         print(f"❌ Error in process_activation call: {e}")

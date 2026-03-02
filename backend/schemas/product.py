@@ -24,10 +24,36 @@ class ProductBase(BaseModel):
     public_price: Optional[float] = None
     sku: Optional[str] = None
     supplier_id: Optional[int] = None
+    package_level: int = 0
+    active: Optional[bool] = None  # None = no change; True = activo; False = suspendido
 
 
 class ProductCreate(ProductBase):
     pass
+
+
+class ProductUpdate(BaseModel):
+    """Schema para actualizaciones parciales — todos los campos son opcionales."""
+    name: Optional[str] = None
+    description: Optional[str] = None
+    category: Optional[str] = None
+    price_usd: Optional[float] = None
+    price_eur: Optional[float] = None
+    price_local: Optional[float] = None
+    pv: Optional[int] = None
+    direct_bonus_pv: Optional[int] = None
+    stock: Optional[int] = None
+    weight_grams: Optional[int] = None
+    is_activation: Optional[bool] = None
+    image_url: Optional[str] = None
+    cost_price: Optional[float] = None
+    tei_pv: Optional[int] = None
+    tax_rate: Optional[float] = None
+    public_price: Optional[float] = None
+    sku: Optional[str] = None
+    supplier_id: Optional[int] = None
+    package_level: Optional[int] = None
+    active: Optional[bool] = None
 
 
 class Product(ProductBase):

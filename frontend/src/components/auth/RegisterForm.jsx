@@ -34,11 +34,29 @@ export default function RegisterForm({ referralCode = "", onSuccess = null, onBa
     const [selectedStateCode, setSelectedStateCode] = useState("");
 
     // Extraer solo el username si referralCode es una URL completa
-    const extractedReferral = referralCode
-        ? (referralCode.includes('?ref=') || referralCode.includes('&ref='))
-            ? new URLSearchParams(referralCode.split('?')[1] || '').get('ref') || referralCode
-            : referralCode
-        : '';
+    const getExtractedReferral = (code) => {
+        if (!code) return "";
+
+        // Handle URL with query parameter (?ref=...)
+        if (code.includes('?ref=') || code.includes('&ref=')) {
+            try {
+                const search = code.split('?')[1] || '';
+                return (new URLSearchParams(search).get('ref') || code).trim();
+            } catch (e) { return code.trim(); }
+        }
+
+        // Handle URL structure like .../usuario/username
+        if (code.includes('/usuario/')) {
+            try {
+                const parts = code.split('/usuario/');
+                return (parts[parts.length - 1].split(/[?#]/)[0] || code).trim();
+            } catch (e) { return code.trim(); }
+        }
+
+        return code.trim();
+    };
+
+    const extractedReferral = getExtractedReferral(referralCode);
 
     // Pre-fill referral code from prop
     useEffect(() => {
@@ -98,7 +116,15 @@ export default function RegisterForm({ referralCode = "", onSuccess = null, onBa
         setMessage("");
 
         try {
-            const response = await api.post("/auth/register", formData);
+            // Trim referral code and other sensitive fields
+            const dataToSubmit = {
+                ...formData,
+                referral_code: formData.referral_code?.trim(),
+                username: formData.username?.trim(),
+                email: formData.email?.trim()
+            };
+
+            const response = await api.post("/auth/register", dataToSubmit);
 
             setMessage(`¡Registro Exitoso! 🎉 Tu link de referido: ${window.location.origin}${response.data.referral_link}`);
 

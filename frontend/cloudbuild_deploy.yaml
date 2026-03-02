@@ -1,0 +1,29 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [
+      'build',
+      '-t', 'gcr.io/$PROJECT_ID/mlm-frontend',
+      '--build-arg', 'VITE_API_BASE=$_VITE_API_BASE',
+      '.'
+    ]
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/mlm-frontend']
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'mlm-frontend'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/mlm-frontend'
+      - '--region'
+      - 'southamerica-east1'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+
+images:
+  - 'gcr.io/$PROJECT_ID/mlm-frontend'
+    
+substitutions:
+  _VITE_API_BASE: 'https://api.tuempresainternacional.com'

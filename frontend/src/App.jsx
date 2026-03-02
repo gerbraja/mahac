@@ -43,7 +43,12 @@ import AdminOrders from './components/AdminOrders';
 import AdminPickupPoints from './pages/admin/AdminPickupPoints';
 import AdminKYC from './pages/admin/AdminKYC';
 import AdminSuppliers from './pages/admin/AdminSuppliers';
+import AdminSupplierOrders from './pages/admin/AdminSupplierOrders';
+import AdminReports from './pages/admin/AdminReports';
+import AdminCountryStats from './pages/admin/AdminCountryStats';
+import AdminTaxes from './pages/admin/AdminTaxes';
 import RequireAdmin from './components/auth/RequireAdmin';
+import { AdminProvider } from './context/AdminContext';
 
 // Component to capture username from URL and redirect to home with ref parameter
 function ReferralRedirect() {
@@ -123,7 +128,9 @@ export default function App() {
         {/* Admin Routes */}
         <Route path="/admin" element={
           <RequireAdmin>
-            <AdminLayout />
+            <AdminProvider>
+              <AdminLayout />
+            </AdminProvider>
           </RequireAdmin>
         }>
           <Route index element={<AdminDashboardPage />} />
@@ -138,7 +145,10 @@ export default function App() {
           <Route path="pickup-points" element={<AdminPickupPoints />} />
           <Route path="kyc" element={<AdminKYC />} />
           <Route path="suppliers" element={<AdminSuppliers />} />
-          <Route path="reports" element={<div><h2>Reportes</h2><p>Próximamente...</p></div>} />
+          <Route path="supplier-orders" element={<AdminSupplierOrders />} />
+          <Route path="reports" element={<AdminReports />} />
+          <Route path="country-stats" element={<AdminCountryStats />} />
+          <Route path="taxes" element={<AdminTaxes />} />
         </Route>
 
         {/* User Dashboard Routes */}

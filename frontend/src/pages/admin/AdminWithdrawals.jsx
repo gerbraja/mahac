@@ -1,8 +1,10 @@
 
 import { useState, useEffect } from 'react';
 import { api } from '../../api/api';
+import { useAdmin } from '../../context/AdminContext';
 
 export default function AdminWithdrawals() {
+    const { globalCountry } = useAdmin();
     const [requests, setRequests] = useState([]);
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState('');
@@ -12,12 +14,15 @@ export default function AdminWithdrawals() {
 
     useEffect(() => {
         fetchRequests();
-    }, [activeTab]);
+    }, [activeTab, globalCountry]);
 
     const fetchRequests = async () => {
         setLoading(true);
         try {
-            const response = await api.get(`/api/admin/withdrawals?status=${activeTab}`);
+            const queryParams = new URLSearchParams({ status: activeTab });
+            if (globalCountry && globalCountry !== 'Todos') queryParams.append('country', globalCountry);
+
+            const response = await api.get(`/api/admin/withdrawals?${queryParams.toString()}`);
             setRequests(response.data);
         } catch (error) {
             console.error('Error fetching withdrawals:', error);

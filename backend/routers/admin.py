@@ -21,6 +21,135 @@ def get_current_admin_user(current_user: User = Depends(get_current_user_object)
         )
     return current_user
 
+# --- Supplier / Manufacturer Orders ---
+from backend.database.models.order import Order
+from backend.database.models.order_item import OrderItem
+from backend.database.models.product import Product
+from backend.database.models.supplier import Supplier
+
+@router.get("/supplier-orders")
+def get_supplier_orders(
+    country: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user)
+):
+    """
+    Get all product orders that haven't been sent to the manufacturer/supplier yet.
+    Groups by supplier and aggregates quantities.
+    """
+    print("[SUPPLIER_ORDERS] Endpoint called by user:", current_user.email, flush=True)
+    try:
+        # Find all paid orders
+        query = db.query(Order).filter(Order.status.in_(["pagado", "paid", "shipped", "delivered"]))
+        
+        # Filtro Global por País (haciendo JOIN implícito con User)
+        if country and country != 'Todos':
+            query = query.join(User, Order.user_id == User.id).filter(User.country == country)
+            
+        paid_orders = query.all()
+        paid_order_ids = [o.id for o in paid_orders]
+        
+        print(f"[SUPPLIER_ORDERS] Found {len(paid_order_ids)} paid orders", flush=True)
+        
+        if not paid_order_ids:
+            return []
+            
+        # Get all items for these orders that are NOT yet ordered from supplier
+        print("[SUPPLIER_ORDERS] Querying pending order items...", flush=True)
+        from sqlalchemy.orm import joinedload
+        pending_items = (
+            db.query(OrderItem)
+            .options(joinedload(OrderItem.product).joinedload(Product.supplier))
+            .filter(
+                OrderItem.order_id.in_(paid_order_ids),
+                OrderItem.is_ordered_from_supplier == False
+            )
+            .all()
+        )
+        print(f"[SUPPLIER_ORDERS] Found {len(pending_items)} pending order items", flush=True)
+    except Exception as e:
+        print(f"[SUPPLIER_ORDERS] ERROR: {e}", flush=True)
+        raise e
+        
+    # Aggregate by supplier and then by product
+    # Format: { supplier_id: { "supplier_name": str, "products": { product_id: { details + qty } } } }
+    suppliers_data = {}
+    
+    for item in pending_items:
+        product = item.product
+        supplier = product.supplier if product else None
+        
+        sup_id = supplier.id if supplier else 0
+        sup_name = supplier.name if supplier else "Sin Proveedor Asignado"
+        
+        if sup_id not in suppliers_data:
+            suppliers_data[sup_id] = {
+                "supplier_id": sup_id,
+                "supplier_name": sup_name,
+                "items": {}
+            }
+            
+        prod_id = product.id
+        if prod_id not in suppliers_data[sup_id]["items"]:
+            suppliers_data[sup_id]["items"][prod_id] = {
+                "product_id": product.id,
+                "product_name": product.name,
+                "sku": product.sku,
+                "image_url": product.image_url,
+                "total_quantity": 0,
+                "order_item_ids": [] # Keep track to archive them later
+            }
+            
+        suppliers_data[sup_id]["items"][prod_id]["total_quantity"] += item.quantity
+        suppliers_data[sup_id]["items"][prod_id]["order_item_ids"].append(item.id)
+        
+    # Convert to array for frontend
+    result = []
+    for sup_id, s_data in suppliers_data.items():
+        products_list = list(s_data["items"].values())
+        if products_list:
+            result.append({
+                "supplier_id": s_data["supplier_id"],
+                "supplier_name": s_data["supplier_name"],
+                "products": products_list
+            })
+            
+    return result
+
+from pydantic import BaseModel
+class ArchiveSupplierOrdersRequest(BaseModel):
+    order_item_ids: list[int]
+
+@router.post("/supplier-orders/archive")
+def archive_supplier_orders(
+    data: ArchiveSupplierOrdersRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user)
+):
+    """
+    Mark specific order items as ordered from the manufacturer (archived from this view).
+    """
+    if not data.order_item_ids:
+        return {"message": "No items provided"}
+        
+    db.query(OrderItem).filter(
+        OrderItem.id.in_(data.order_item_ids)
+    ).update(
+        {"is_ordered_from_supplier": True},
+        synchronize_session=False
+    )
+    db.commit()
+    
+    return {"message": f"{len(data.order_item_ids)} items marked as ordered from supplier"}
+
+
+    if not current_user.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="The user doesn't have enough privileges"
+        )
+    return current_user
+
 @router.post("/users/{user_id}/impersonate")
 def impersonate_user(
     user_id: int,
@@ -96,19 +225,24 @@ from backend.mlm.services.payment_service import process_successful_payment
 
 @router.get("/pending-payments")
 def get_pending_payments(
+    country: Optional[str] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_admin_user)
 ):
     """
     List all pending payment transactions with user details.
     """
-    results = (
+    query = (
         db.query(PaymentTransaction, User)
         .join(Order, PaymentTransaction.order_id == Order.id)
         .join(User, Order.user_id == User.id)
         .filter(PaymentTransaction.status == "pending")
-        .all()
     )
+
+    if country and country != 'Todos':
+        query = query.filter(User.country == country)
+
+    results = query.all()
     
     payments = []
     for tx, user in results:
@@ -186,6 +320,7 @@ class UserUpdateData(BaseModel):
 @router.get("/users")
 def get_users(
     search: Optional[str] = None, 
+    country: Optional[str] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_admin_user)
 ):
@@ -201,6 +336,9 @@ def get_users(
             (User.email.ilike(search_pattern)) |
             (User.username.ilike(search_pattern))
         )
+        
+    if country and country != 'Todos':
+        query = query.filter(User.country == country)
     
     users = query.order_by(User.created_at.desc()).all()
     
@@ -744,6 +882,7 @@ from backend.database.models.sponsorship import SponsorshipCommission
 @router.get("/sponsorship-commissions")
 def get_sponsorship_commissions(
     status: str = None,
+    country: Optional[str] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_admin_user)
 ):
@@ -763,6 +902,9 @@ def get_sponsorship_commissions(
     
     if status:
         query = query.filter(SponsorshipCommission.status == status)
+        
+    if country and country != 'Todos':
+        query = query.filter(User.country == country)
     
     commissions = query.order_by(SponsorshipCommission.created_at.desc()).all()
     
@@ -1091,6 +1233,7 @@ from fastapi import Body
 @router.get("/withdrawals")
 def get_withdrawal_requests(
     status: Optional[str] = None,
+    country: Optional[str] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_admin_user)
 ):
@@ -1108,6 +1251,9 @@ def get_withdrawal_requests(
     
     if status:
         query = query.filter(WithdrawalRequest.status == status)
+        
+    if country and country != 'Todos':
+        query = query.filter(User.country == country)
         
     requests = query.order_by(WithdrawalRequest.created_at.desc()).all()
     

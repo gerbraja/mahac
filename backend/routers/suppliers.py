@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 from ..database.connection import get_db
 from ..database.models.supplier import Supplier
 from ..schemas.supplier import Supplier as SupplierSchema, SupplierCreate, SupplierUpdate
@@ -20,8 +20,17 @@ def create_supplier(supplier: SupplierCreate, db: Session = Depends(get_db)):
     return db_supplier
 
 @router.get("/", response_model=List[SupplierSchema])
-def read_suppliers(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    suppliers = db.query(Supplier).offset(skip).limit(limit).all()
+def read_suppliers(
+    skip: int = 0, 
+    limit: int = 100, 
+    country: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    query = db.query(Supplier)
+    if country and country != 'Todos':
+        query = query.filter(Supplier.country == country)
+        
+    suppliers = query.offset(skip).limit(limit).all()
     return suppliers
 
 @router.get("/{supplier_id}", response_model=SupplierSchema)
