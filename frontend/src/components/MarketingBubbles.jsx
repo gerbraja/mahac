@@ -76,10 +76,10 @@ const MarketingBubbles = () => {
                 const nextBubble = queueRef.current.shift();
                 setCurrentBubble({ ...nextBubble, id: Date.now() });
 
-                // Remove after 5 seconds
+                // Remove after 3 seconds
                 setTimeout(() => {
                     setCurrentBubble(null);
-                }, 5000);
+                }, 3000);
             }
         }, 1000); // Check queue every second
 

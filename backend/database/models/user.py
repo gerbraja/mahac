@@ -13,6 +13,8 @@ class User(Base):
     email = Column(String(255), unique=True, index=True, nullable=True)
     status = Column(String(50), default="pre-affiliate", nullable=True)  # pre-affiliate, active, suspended
     is_admin = Column(Boolean, default=False)
+    admin_role = Column(String(50), default='user', nullable=True)
+    admin_country = Column(String(100), nullable=True)
     
     # Referral system
     referral_code = Column(String(64), unique=True, index=True, nullable=True)

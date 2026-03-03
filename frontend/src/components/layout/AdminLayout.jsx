@@ -6,29 +6,38 @@ export default function AdminLayout() {
     const navigate = useNavigate();
     const location = useLocation();
     const [sidebarOpen, setSidebarOpen] = useState(true);
-    const { globalCountry, setGlobalCountry, countries } = useAdmin();
+    const { globalCountry, setGlobalCountry, countries, isCountryAdmin, isSuperAdmin } = useAdmin();
 
-    const menuItems = [
+    // Rutas exclusivas del Super Admin
+    const superAdminRoutes = ['/admin/country-stats', '/admin/taxes'];
+
+    const allMenuItems = [
         { path: '/admin', label: 'Dashboard', icon: '📊' },
         { path: '/admin/users', label: 'Usuarios', icon: '👥' },
         { path: '/admin/products', label: 'Productos', icon: '📦' },
         { path: '/admin/suppliers', label: 'Proveedores', icon: '🏭' },
         { path: '/admin/supplier-orders', label: 'Pedidos a Fábrica', icon: '🛒' },
         { path: '/admin/payments', label: 'Pagos Pendientes', icon: '💳' },
-        { path: '/admin/kyc', label: 'Validaciones KYC', icon: '🆔' },
+        { path: '/admin/kyc', label: 'Validaciones KYC', icon: '🆆' },
         { path: '/admin/withdrawals', label: 'Retiros', icon: '🏦' },
         { path: '/admin/sponsorship-commissions', label: 'Comisiones Patrocinio', icon: '💰' },
         { path: '/admin/pickup-points', label: 'Puntos de Recogida', icon: '📍' },
         { path: '/admin/reports', label: 'Reportes', icon: '📈' },
         { path: '/admin/country-stats', label: 'Estad. por País', icon: '🗺️' },
-        { path: '/admin/taxes', label: 'Impuestos y Retenciones', icon: '🧾' },
+        { path: '/admin/taxes', label: 'Impuestos y Retenciones', icon: '🧯' },
     ];
+
+    // Hide super-admin-only routes from country admins
+    const menuItems = isCountryAdmin
+        ? allMenuItems.filter(item => !superAdminRoutes.includes(item.path))
+        : allMenuItems;
 
     const isActive = (path) => {
         if (path === '/admin') {
             return location.pathname === '/admin';
         }
         return location.pathname.startsWith(path);
+
     };
 
     return (
@@ -78,13 +87,21 @@ export default function AdminLayout() {
                 {sidebarOpen && (
                     <div style={{ padding: '0.375rem 1.5rem', borderBottom: '1px solid #e5e7eb', background: '#f8fafc' }}>
                         <label className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1 block">Filtro Global:</label>
-                        <select
-                            value={globalCountry}
-                            onChange={(e) => setGlobalCountry(e.target.value)}
-                            className="w-full bg-white border border-gray-300 text-gray-800 text-sm py-1 px-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
-                        >
-                            {countries.map(c => <option key={c} value={c}>{c === 'Todos' ? '🌍 Todos los países' : `📍 ${c}`}</option>)}
-                        </select>
+                        {isCountryAdmin ? (
+                            <div className="w-full bg-gray-100 border border-gray-300 text-gray-700 text-sm py-1 px-2 rounded flex items-center gap-1">
+                                <span>📍</span>
+                                <span className="font-semibold">{globalCountry}</span>
+                                <span className="ml-auto text-gray-400 text-xs">🔒</span>
+                            </div>
+                        ) : (
+                            <select
+                                value={globalCountry}
+                                onChange={(e) => setGlobalCountry(e.target.value)}
+                                className="w-full bg-white border border-gray-300 text-gray-800 text-sm py-1 px-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+                            >
+                                {countries.map(c => <option key={c} value={c}>{c === 'Todos' ? '🌍 Todos los países' : `📍 ${c}`}</option>)}
+                            </select>
+                        )}
                     </div>
                 )}
 

@@ -428,10 +428,12 @@ def login(data: LoginData, db: Session = Depends(get_db)):
             raise HTTPException(status_code=401, detail="Invalid credentials")
         
         
-        # Include is_admin in token for admin panel access
+        # Include is_admin and roles in token for admin panel access
         token = jwt.encode({
             "user_id": user.id,
-            "is_admin": user.is_admin
+            "is_admin": user.is_admin,
+            "admin_role": user.admin_role,
+            "admin_country": user.admin_country
         }, SECRET_KEY, algorithm=ALGORITHM)
         
         print(f"Login successful - Token generated")
@@ -456,6 +458,8 @@ def get_current_user_info(current_user: UserModel = Depends(get_current_user_obj
         "email": current_user.email,
         "name": current_user.name,
         "is_admin": current_user.is_admin,
+        "admin_role": current_user.admin_role,
+        "admin_country": current_user.admin_country,
         "referral_link": f"/usuario/{current_user.username}",
         "has_transaction_pin": bool(current_user.transaction_pin),
         "bank_balance": current_user.bank_balance or 0.0,

@@ -22,6 +22,14 @@ def get_current_admin_user(current_user: User = Depends(get_current_user_object)
         )
     return current_user
 
+def get_superadmin_user(current_user: User = Depends(get_current_admin_user)):
+    if getattr(current_user, 'admin_role', 'user') != 'superadmin':
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This action requires Super Admin privileges"
+        )
+    return current_user
+
 # --- Supplier / Manufacturer Orders ---
 from backend.database.models.order import Order
 from backend.database.models.order_item import OrderItem
@@ -40,6 +48,9 @@ def get_supplier_orders(
     """
     print("[SUPPLIER_ORDERS] Endpoint called by user:", current_user.email, flush=True)
     try:
+        if getattr(current_user, 'admin_role', '') == 'country_admin' and getattr(current_user, 'admin_country', ''):
+            country = current_user.admin_country
+
         # Find all paid orders
         query = db.query(Order).filter(Order.status.in_(["pagado", "paid", "shipped", "delivered"]))
         
@@ -143,19 +154,11 @@ def archive_supplier_orders(
     
     return {"message": f"{len(data.order_item_ids)} items marked as ordered from supplier"}
 
-
-    if not current_user.is_admin:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="The user doesn't have enough privileges"
-        )
-    return current_user
-
 @router.post("/users/{user_id}/impersonate")
 def impersonate_user(
     user_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_admin_user)
+    current_user: User = Depends(get_superadmin_user)
 ):
     """
     Admin: Generate a login token for a specific user to impersonate them.
@@ -190,7 +193,7 @@ def impersonate_user(
 @router.post("/trigger-monthly-closing")
 def trigger_monthly_closing(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_admin_user)
+    current_user: User = Depends(get_superadmin_user)
 ):
     """
     Manually trigger the Monthly Closing process.
@@ -206,7 +209,7 @@ def trigger_monthly_closing(
 @router.post("/trigger-global-pool")
 def trigger_global_pool(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_admin_user)
+    current_user: User = Depends(get_superadmin_user)
 ):
     """
     Manually trigger the Global Pool Distribution.
@@ -239,6 +242,9 @@ def get_pending_payments(
         .join(User, Order.user_id == User.id)
         .filter(PaymentTransaction.status == "pending")
     )
+
+    if getattr(current_user, 'admin_role', '') == 'country_admin' and getattr(current_user, 'admin_country', ''):
+        country = current_user.admin_country
 
     if country and country != 'Todos':
         query = query.filter(User.country == country)
@@ -317,6 +323,8 @@ class UserUpdateData(BaseModel):
     postal_code: Optional[str] = None
     status: Optional[str] = None
     package_level: Optional[int] = None
+    admin_role: Optional[str] = None
+    admin_country: Optional[str] = None
 
 @router.get("/users")
 def get_users(
@@ -330,6 +338,9 @@ def get_users(
     """
     query = db.query(User)
     
+    if getattr(current_user, 'admin_role', '') == 'country_admin' and getattr(current_user, 'admin_country', ''):
+        country = current_user.admin_country
+        
     if search:
         search_pattern = f"%{search}%"
         query = query.filter(
@@ -375,6 +386,14 @@ def update_user(
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+        
+    if getattr(current_user, 'admin_role', '') == 'country_admin' and getattr(current_user, 'admin_country', '') and user.country != current_user.admin_country:
+        raise HTTPException(status_code=403, detail="No tienes permiso para editar usuarios de otros países")
+    
+    # Check if a structural/role field is being changed
+    role_fields_present = (data.status is not None) or (data.package_level is not None)
+    if role_fields_present and getattr(current_user, 'admin_role', '') != 'superadmin':
+        raise HTTPException(status_code=403, detail="Solo los Super Admins pueden modificar el status o nivel de paquete.")
     
     # Update only provided fields
     if data.name is not None:
@@ -401,7 +420,24 @@ def update_user(
         user.status = data.status
     if data.package_level is not None:
         user.package_level = data.package_level
-    
+    # Admin role fields — only super admins can modify these
+    if data.admin_role is not None:
+        if getattr(current_user, 'admin_role', '') != 'superadmin':
+            raise HTTPException(status_code=403, detail="Solo los Super Admins pueden cambiar roles de administrador.")
+        allowed_roles = ['user', 'superadmin', 'country_admin']
+        if data.admin_role not in allowed_roles:
+            raise HTTPException(status_code=400, detail=f"admin_role inválido. Debe ser uno de: {allowed_roles}")
+        user.admin_role = data.admin_role
+        # If demoted to plain user, clear is_admin flag
+        if data.admin_role == 'user':
+            user.is_admin = False
+        else:
+            user.is_admin = True
+    if data.admin_country is not None:
+        if getattr(current_user, 'admin_role', '') != 'superadmin':
+            raise HTTPException(status_code=403, detail="Solo los Super Admins pueden asignar el país de administración.")
+        user.admin_country = data.admin_country if data.admin_country else None
+
     db.commit()
     db.refresh(user)
     
@@ -459,7 +495,7 @@ def delete_user(
 @router.get("/users/stats/countries")
 def get_users_by_country(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_admin_user)
+    current_user: User = Depends(get_superadmin_user)
 ):
     """
     Get total users count grouped by country.
