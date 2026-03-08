@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../api/api';
+import { useAdmin } from '../../context/AdminContext';
 
 export default function AdminDashboard() {
     const navigate = useNavigate();
+    const { globalCountry } = useAdmin();
     const [stats, setStats] = useState({
         totalUsers: '-',
         activeUsers: '-',
@@ -31,17 +33,23 @@ export default function AdminDashboard() {
     useEffect(() => {
         fetchStats();
         fetchActivationPackages();
-    }, []);
+    }, [globalCountry]);
 
     const fetchStats = async () => {
         setLoadingStats(true);
         setStatsError(null);
         try {
+            const queryParams = new URLSearchParams();
+            if (globalCountry && globalCountry !== 'Todos') {
+                queryParams.append('country', globalCountry);
+            }
+            const queryStr = queryParams.toString() ? `?${queryParams.toString()}` : '';
+
             const [usersRes, productsRes, paymentsRes, ordersRes] = await Promise.allSettled([
-                api.get('/api/admin/users'),
+                api.get(`/api/admin/users${queryStr}`),
                 api.get('/api/products/'),
-                api.get('/api/admin/pending-payments'),
-                api.get('/api/orders/')
+                api.get(`/api/admin/pending-payments${queryStr}`),
+                api.get(`/api/orders/${queryStr}`)
             ]);
 
             const newStats = { ...stats };

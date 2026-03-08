@@ -23,13 +23,9 @@ def create_supplier(supplier: SupplierCreate, db: Session = Depends(get_db)):
 def read_suppliers(
     skip: int = 0, 
     limit: int = 100, 
-    country: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
     query = db.query(Supplier)
-    if country and country != 'Todos':
-        query = query.filter(Supplier.country == country)
-        
     suppliers = query.offset(skip).limit(limit).all()
     return suppliers
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import api from '../../api/api';
+import { api } from '../../api/api';
 import { useAdmin } from '../../context/AdminContext';
 
 export default function AdminTaxes() {
@@ -8,25 +8,26 @@ export default function AdminTaxes() {
     const [taxData, setTaxData] = useState([]);
 
     useEffect(() => {
-        // Simulación de carga desde el Backend (Fase 1)
-        setTimeout(() => {
-            const allTaxes = [
-                { id: 1, pais: 'Colombia', ventas: 27000000, tasaIva: '19%', ivaPagar: 5130000, reteFuente: '2.5%', retencionPagar: 675000, estado: 'Pendiente' },
-                { id: 2, pais: 'Ecuador', ventas: 3000000, tasaIva: '15%', ivaPagar: 450000, reteFuente: '0%', retencionPagar: 0, estado: 'Pagado' },
-                { id: 3, pais: 'El Salvador', ventas: 900000, tasaIva: '13%', ivaPagar: 117000, reteFuente: '0%', retencionPagar: 0, estado: 'Pendiente' },
-                { id: 4, pais: 'Panamá', ventas: 2000000, tasaIva: '7%', ivaPagar: 140000, reteFuente: '0%', retencionPagar: 0, estado: 'Pagado' },
-                { id: 5, pais: 'Perú', ventas: 4500000, tasaIva: '18%', ivaPagar: 810000, reteFuente: '0%', retencionPagar: 0, estado: 'Pendiente' },
-                { id: 6, pais: 'Venezuela', ventas: 500000, tasaIva: '16%', ivaPagar: 80000, reteFuente: '0%', retencionPagar: 0, estado: 'Pagado' }
-            ];
+        const fetchTaxes = async () => {
+            setLoading(true);
+            try {
+                // Fetch the taxes from the backend
+                const response = await api.get('/admin/reports/taxes');
+                const allTaxes = response.data || [];
 
-            if (globalCountry === 'Todos') {
-                setTaxData(allTaxes);
-            } else {
-                setTaxData(allTaxes.filter(t => t.pais === globalCountry));
+                // Filter locally by country based on dropdown
+                if (globalCountry === 'Todos') {
+                    setTaxData(allTaxes);
+                } else {
+                    setTaxData(allTaxes.filter(t => t.pais === globalCountry));
+                }
+            } catch (error) {
+                console.error("Error fetching taxes data:", error);
+            } finally {
+                setLoading(false);
             }
-
-            setLoading(false);
-        }, 600);
+        };
+        fetchTaxes();
     }, [globalCountry]);
 
     if (loading) {

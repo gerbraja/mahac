@@ -14,8 +14,8 @@ class Product(Base):
     price_usd = Column(Float, nullable=False)
     price_eur = Column(Float, nullable=True)
     price_local = Column(Float, nullable=True)
-    pv = Column(Integer, default=0) # Points Volume for MLM commissions
-    direct_bonus_pv = Column(Integer, default=0) # Direct Commission (1 PV = $1 USD) to Sponsor
+    pv = Column(Float, default=0) # Points Volume for MLM commissions
+    direct_bonus_pv = Column(Float, default=0) # Direct Commission (1 PV = $1 USD) to Sponsor
     stock = Column(Integer, default=0)
     weight_grams = Column(Integer, default=500)  # Weight in grams for shipping calculation
     is_activation = Column(Boolean, default=False)  # If True, purchasing this activates the user

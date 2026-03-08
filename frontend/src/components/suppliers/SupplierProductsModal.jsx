@@ -18,7 +18,8 @@ const EMPTY_FORM = {
     stock: 0, weight_grams: 500,
     image_url: '', sku: '',
     is_activation: false,
-    supplier_id: null
+    supplier_id: null,
+    tax_rate: 0
 };
 
 const inputStyle = {
@@ -173,10 +174,11 @@ export default function SupplierProductsModal({ supplier, onClose }) {
                 supplier_id: supplier.id,
                 price_usd: Number(formData.price_usd),
                 price_local: formData.price_local === '' ? null : Number(formData.price_local),
-                pv: Math.round(Number(formData.pv)),
-                direct_bonus_pv: Math.round(Number(formData.direct_bonus_pv)),
+                pv: Number(formData.pv),
+                direct_bonus_pv: Number(formData.direct_bonus_pv),
                 stock: Math.round(Number(formData.stock)),
                 weight_grams: formData.weight_grams === '' ? 500 : Math.round(Number(formData.weight_grams)),
+                tax_rate: Number(formData.tax_rate),
             };
             await api.post('/api/products/', payload);
             showMsg('✅ Producto creado y vinculado al proveedor');
@@ -550,10 +552,38 @@ export default function SupplierProductsModal({ supplier, onClose }) {
 
                             {/* Precio COP */}
                             <div>
-                                <label style={labelStyle}>💰 Precio COP (Pesos Colombianos) *</label>
+                                <label style={labelStyle}>💰 Precio Final COP (Pesos Colombianos) *</label>
                                 <input type="number" name="price_local" value={formData.price_local}
                                     onChange={handleChange} placeholder="Ej: 150000" step="100"
                                     style={inputStyle} />
+                            </div>
+
+                            {/* Tasa de IVA */}
+                            <div>
+                                <label style={labelStyle}>🧾 Tasa IVA (DIAN)</label>
+                                <select name="tax_rate" value={formData.tax_rate} onChange={handleChange}
+                                    style={inputStyle}>
+                                    <option value={0}>0% — Exento / No aplica</option>
+                                    <option value={0.05}>5% — Tasa reducida</option>
+                                    <option value={0.19}>19% — Tarifa general</option>
+                                </select>
+                            </div>
+
+                            {/* Calculadora Inversa DIAN */}
+                            <div style={{ gridColumn: 'span 2', background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '0.5rem', padding: '0.85rem' }}>
+                                <div style={{ fontSize: '0.8rem', fontWeight: '700', color: '#0c4a6e', marginBottom: '0.5rem' }}>🧮 Calculadora Inversa DIAN</div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '0.25rem' }}>
+                                    <span style={{ color: '#475569' }}>Precio Final Público:</span>
+                                    <strong>{new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP' }).format(formData.price_local || 0)}</strong>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '0.25rem' }}>
+                                    <span style={{ color: '#475569' }}>Precio Neto (Base Facturación):</span>
+                                    <strong style={{ color: '#16a34a' }}>{new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP' }).format((formData.price_local || 0) / (1 + Number(formData.tax_rate)))}</strong>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', borderTop: '1px solid #bae6fd', paddingTop: '0.4rem' }}>
+                                    <span style={{ color: '#475569' }}>Monto Impuesto ({(Number(formData.tax_rate) * 100).toFixed(0)}%):</span>
+                                    <strong style={{ color: '#dc2626' }}>{new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP' }).format((formData.price_local || 0) - (formData.price_local || 0) / (1 + Number(formData.tax_rate)))}</strong>
+                                </div>
                             </div>
 
                             {/* Precio USD */}
@@ -568,7 +598,7 @@ export default function SupplierProductsModal({ supplier, onClose }) {
                             <div>
                                 <label style={labelStyle}>Puntos de Volumen (PV)</label>
                                 <input type="number" name="pv" value={formData.pv}
-                                    onChange={handleChange} placeholder="Ej: 3" step="1"
+                                    onChange={handleChange} placeholder="Ej: 1.7" step="0.01"
                                     style={inputStyle} />
                             </div>
 
@@ -576,7 +606,7 @@ export default function SupplierProductsModal({ supplier, onClose }) {
                             <div>
                                 <label style={labelStyle}>Bono Directo (PV)</label>
                                 <input type="number" name="direct_bonus_pv" value={formData.direct_bonus_pv}
-                                    onChange={handleChange} placeholder="Ej: 1" step="1"
+                                    onChange={handleChange} placeholder="Ej: 1.3" step="0.01"
                                     style={inputStyle} />
                             </div>
 

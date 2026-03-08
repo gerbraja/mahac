@@ -56,7 +56,7 @@ def get_supplier_orders(
         
         # Filtro Global por País (haciendo JOIN implícito con User)
         if country and country != 'Todos':
-            query = query.join(User, Order.user_id == User.id).filter(User.country == country)
+            query = query.join(User, Order.user_id == User.id).filter(User.country.ilike(f"%{country}%"))
             
         paid_orders = query.all()
         paid_order_ids = [o.id for o in paid_orders]
@@ -247,7 +247,7 @@ def get_pending_payments(
         country = current_user.admin_country
 
     if country and country != 'Todos':
-        query = query.filter(User.country == country)
+        query = query.filter(User.country.ilike(f"%{country}%"))
 
     results = query.all()
     
@@ -350,7 +350,7 @@ def get_users(
         )
         
     if country and country != 'Todos':
-        query = query.filter(User.country == country)
+        query = query.filter(User.country.ilike(f"%{country}%"))
     
     users = query.order_by(User.created_at.desc()).all()
     
@@ -1454,3 +1454,391 @@ def schema_update_emergency(
     db.commit()
     return {"status": "completed", "log": results}
 
+# --- Reports & Analytics (Fase 2) ---
+from dateutil.relativedelta import relativedelta
+from datetime import datetime
+
+@router.get("/reports/network-growth")
+def get_network_growth(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user)
+):
+    """
+    Returns the network growth grouped by month for the last 6 months.
+    - Unilevel: Total users registered in that month.
+    - Binary (Paid): Users who have package_level > 0 registered that month.
+    """
+    results = []
+    
+    # Calculate the last 6 months
+    today = datetime.utcnow()
+    for i in range(5, -1, -1):
+        target_month = today - relativedelta(months=i)
+        start_date = target_month.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        
+        # End date is the first day of the *next* month
+        next_month = start_date + relativedelta(months=1)
+        
+        # Query total registrations for this month (Unilevel growth)
+        unilevel_count = db.query(func.count(User.id)).filter(
+            User.created_at >= start_date,
+            User.created_at < next_month
+        ).scalar() or 0
+        
+        # Query paid registrations (Binary growth)
+        binary_count = db.query(func.count(User.id)).filter(
+            User.created_at >= start_date,
+            User.created_at < next_month,
+            User.package_level > 0
+        ).scalar() or 0
+        
+        month_name = start_date.strftime("%b %Y") # e.g. "Mar 2026"
+        
+        results.append({
+            "name": month_name,
+            "unilevel": unilevel_count,
+            "binaria": binary_count
+        })
+        
+    return {"networkGrowth": results}
+
+@router.get("/reports/dashboard-stats")
+def get_dashboard_stats(db: Session = Depends(get_db), current_user: User = Depends(get_current_admin_user)):
+    now = datetime.utcnow()
+    start_of_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    start_of_last_month = start_of_month - relativedelta(months=1)
+    
+    paid_statuses = ["pagado", "paid", "shipped", "delivered"]
+    
+    # 1. Gross Sales (All Time & This Month)
+    gross_sales = db.query(func.sum(Order.total_cop)).filter(Order.status.in_(paid_statuses)).scalar() or 0.0
+    
+    sales_this_month = db.query(func.sum(Order.total_cop)).filter(
+        Order.status.in_(paid_statuses),
+        Order.created_at >= start_of_month
+    ).scalar() or 0.0
+    
+    sales_last_month = db.query(func.sum(Order.total_cop)).filter(
+        Order.status.in_(paid_statuses),
+        Order.created_at >= start_of_last_month,
+        Order.created_at < start_of_month
+    ).scalar() or 0.0
+    
+    sales_growth = 0
+    if sales_last_month > 0:
+        sales_growth = ((sales_this_month - sales_last_month) / sales_last_month) * 100
+    elif sales_this_month > 0:
+        sales_growth = 100
+        
+    # 2. Commissions (From User.total_earnings in USD -> COP approximated at 4000)
+    total_commissions_usd = db.query(func.sum(User.total_earnings)).scalar() or 0.0
+    commissions_cop = float(total_commissions_usd) * 4000
+    
+    payout_ratio = 0
+    if gross_sales > 0:
+        payout_ratio = (commissions_cop / gross_sales) * 100
+        
+    profit = gross_sales - commissions_cop
+    
+    # 3. New Users
+    new_users = db.query(func.count(User.id)).filter(User.created_at >= start_of_month).scalar() or 0
+    
+    # 4. Active Packages
+    active_packages = db.query(func.count(User.id)).filter(User.package_level > 0).scalar() or 0
+    
+    # 5. Pending Orders
+    from backend.database.models.order_item import OrderItem
+    pending_orders = db.query(func.count(OrderItem.id)).join(Order, OrderItem.order_id == Order.id).filter(
+        OrderItem.is_ordered_from_supplier == False,
+        Order.status.in_(paid_statuses)
+    ).scalar() or 0
+    
+    return {
+        "gross_sales": gross_sales,
+        "sales_growth": round(sales_growth, 1),
+        "commissions": commissions_cop,
+        "payout_ratio": round(payout_ratio, 1),
+        "profit": profit,
+        "new_users": new_users,
+        "active_packages": active_packages,
+        "pending_orders": pending_orders
+    }
+
+@router.get("/reports/income-vs-commissions")
+def get_income_vs_commissions(db: Session = Depends(get_db), current_user: User = Depends(get_current_admin_user)):
+    """ Group paid orders & commissions by month for the last 6 months """
+    results = []
+    now = datetime.utcnow()
+    paid_statuses = ["pagado", "paid", "shipped", "delivered"]
+    
+    from backend.database.models.unilevel import UnilevelCommission
+    from backend.database.models.binary import BinaryCommission
+    from backend.database.models.sponsorship import SponsorshipCommission
+    
+    for i in range(5, -1, -1):
+        target_month = now - relativedelta(months=i)
+        start_date = target_month.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        next_month = start_date + relativedelta(months=1)
+        
+        # Income (Gross Sales in COP)
+        income = db.query(func.sum(Order.total_cop)).filter(
+            Order.status.in_(paid_statuses),
+            Order.created_at >= start_date,
+            Order.created_at < next_month
+        ).scalar() or 0.0
+        
+        # Commissions
+        uni_comm = db.query(func.sum(UnilevelCommission.commission_amount)).filter(
+            UnilevelCommission.created_at >= start_date,
+            UnilevelCommission.created_at < next_month
+        ).scalar() or 0.0
+        
+        bin_comm = db.query(func.sum(BinaryCommission.commission_amount)).filter(
+            BinaryCommission.created_at >= start_date,
+            BinaryCommission.created_at < next_month
+        ).scalar() or 0.0
+        
+        spo_comm = db.query(func.sum(SponsorshipCommission.commission_amount)).filter(
+            SponsorshipCommission.created_at >= start_date,
+            SponsorshipCommission.created_at < next_month
+        ).scalar() or 0.0
+        
+        total_comm_usd = float(uni_comm) + float(bin_comm) + float(spo_comm)
+        commissions_cop = total_comm_usd * 4000
+        
+        # Format month names nicely for frontend
+        month_name = target_month.strftime("%b")
+        if month_name == "Jan": month_name = "Ene"
+        elif month_name == "Apr": month_name = "Abr"
+        elif month_name == "Aug": month_name = "Ago"
+        elif month_name == "Dec": month_name = "Dic"
+        
+        results.append({
+            "name": month_name,
+            "ingresos": income,
+            "comisiones": commissions_cop
+        })
+        
+    return results
+
+@router.get("/reports/active-packages")
+def get_active_packages(db: Session = Depends(get_db), current_user: User = Depends(get_current_admin_user)):
+    packages = db.query(User.package_level, func.count(User.id)).group_by(User.package_level).all()
+    
+    package_names = {
+        0: "Gratuito",
+        1: "Franquicia 1",
+        2: "Franquicia 2",
+        3: "Franquicia 3",
+        4: "Franquicia 4",
+        5: "Franquicia 5"
+    }
+    
+    results = []
+    for level, count in packages:
+        lvl = level or 0
+        name = package_names.get(lvl, f"Nivel {lvl}")
+        results.append({
+            "name": name,
+            "value": count
+        })
+    return results
+
+@router.get("/reports/top-products")
+def get_top_products(db: Session = Depends(get_db), current_user: User = Depends(get_current_admin_user)):
+    paid_statuses = ["pagado", "paid", "shipped", "delivered"]
+    from backend.database.models.order_item import OrderItem
+    top_items = db.query(
+        OrderItem.product_name, 
+        func.sum(OrderItem.quantity).label('total_sold')
+    ).join(Order, OrderItem.order_id == Order.id).filter(
+        Order.status.in_(paid_statuses)
+    ).group_by(OrderItem.product_name).order_by(func.sum(OrderItem.quantity).desc()).limit(3).all()
+    
+    results = []
+    for idx, item in enumerate(top_items):
+        results.append({
+            "id": idx + 1,
+            "name": item.product_name,
+            "sales": f"{item.total_sold} ud."
+        })
+    return results
+
+@router.get("/reports/country-stats")
+def get_country_stats(country: str = "Todos", db: Session = Depends(get_db), current_user: User = Depends(get_current_admin_user)):
+    paid_statuses = ["pagado", "paid", "shipped", "delivered"]
+    
+    # Base queries
+    q_users = db.query(User)
+    q_suppliers = db.query(Supplier) # Suppliers might not have country, returning total
+    q_products = db.query(Product).filter(Product.active == True)
+    
+    # Revenue: sum over paid orders. If filtering by country, join User.
+    q_revenue = db.query(func.sum(Order.total_cop)).filter(Order.status.in_(paid_statuses))
+    if country and country != "Todos":
+        q_revenue = q_revenue.join(User, Order.user_id == User.id).filter(User.country == country)
+    
+    from backend.database.models.unilevel import UnilevelCommission
+    from backend.database.models.binary import BinaryCommission
+    from backend.database.models.sponsorship import SponsorshipCommission
+    from backend.database.models.withdrawal import WithdrawalRequest
+
+    # Commissions paid (in USD, converted to COP)
+    q_unilevel = db.query(func.sum(UnilevelCommission.commission_amount))
+    q_binary = db.query(func.sum(BinaryCommission.commission_amount))
+    q_sponsorship = db.query(func.sum(SponsorshipCommission.commission_amount))
+    
+    if country and country != "Todos":
+        q_users = q_users.filter(User.country == country)
+        q_unilevel = q_unilevel.join(User, UnilevelCommission.user_id == User.id).filter(User.country == country)
+        q_binary = q_binary.join(User, BinaryCommission.user_id == User.id).filter(User.country == country)
+        q_sponsorship = q_sponsorship.join(User, SponsorshipCommission.sponsor_id == User.id).filter(User.country == country)
+
+    # Unpaid Comissions (WithdrawalRequests pending)
+    q_withdrawals = db.query(func.sum(WithdrawalRequest.amount)).filter(WithdrawalRequest.status == "pending")
+    if country and country != "Todos":
+        q_withdrawals = q_withdrawals.join(User, WithdrawalRequest.user_id == User.id).filter(User.country == country)
+
+    total_users = q_users.count()
+    total_companies = q_suppliers.count()
+    total_products = q_products.count()
+    
+    total_revenue = q_revenue.scalar() or 0.0
+    
+    uni_c = q_unilevel.scalar() or 0.0
+    bin_c = q_binary.scalar() or 0.0
+    spo_c = q_sponsorship.scalar() or 0.0
+    total_paid_commusd = float(uni_c) + float(bin_c) + float(spo_c)
+    total_paid_commcop = total_paid_commusd * 4000
+    
+    # Unpaid (in USD)
+    unpaid_usd = q_withdrawals.scalar() or 0.0
+    unpaid_cop = float(unpaid_usd) * 4000
+
+    return {
+        "metrics": {
+            "totalUsers": total_users,
+            "totalCompanies": total_companies,
+            "totalProducts": total_products,
+            "totalRevenue": total_revenue,
+            "paidCommissions": total_paid_commcop,
+            "unpaidCommissions": unpaid_cop
+        }
+    }
+
+@router.get("/reports/country-ranking")
+def get_country_ranking(db: Session = Depends(get_db), current_user: User = Depends(get_current_admin_user)):
+    paid_statuses = ["pagado", "paid", "shipped", "delivered"]
+    
+    # Group users by country to get affiliate count
+    user_counts = db.query(User.country, func.count(User.id).label('afiliados')).group_by(User.country).all()
+    
+    # Group revenue by country
+    revenue_sums = db.query(
+        User.country, 
+        func.sum(Order.total_cop).label('ingresos')
+    ).join(Order, Order.user_id == User.id).filter(
+        Order.status.in_(paid_statuses)
+    ).group_by(User.country).all()
+    
+    # Merge data
+    country_data = {}
+    for c, count in user_counts:
+        c_name = c or 'Sin definir'
+        country_data[c_name] = {"name": c_name, "afiliados": count, "ingresos": 0}
+        
+    for c, rev in revenue_sums:
+        c_name = c or 'Sin definir'
+        if c_name not in country_data:
+            country_data[c_name] = {"name": c_name, "afiliados": 0, "ingresos": 0}
+        country_data[c_name]["ingresos"] = rev or 0
+        
+    # Sort by ingresos desc, take top 5
+    ranked = sorted(country_data.values(), key=lambda x: x["ingresos"], reverse=True)[:5]
+    return ranked
+
+@router.get("/reports/income-local-vs-intl")
+def get_income_local_vs_intl(db: Session = Depends(get_db), current_user: User = Depends(get_current_admin_user)):
+    paid_statuses = ["pagado", "paid", "shipped", "delivered"]
+    
+    total_colombia = db.query(func.sum(Order.total_cop)).join(User, Order.user_id == User.id).filter(
+        Order.status.in_(paid_statuses),
+        User.country == "Colombia"
+    ).scalar() or 0.0
+    
+    total_intl = db.query(func.sum(Order.total_cop)).join(User, Order.user_id == User.id).filter(
+        Order.status.in_(paid_statuses),
+        User.country != "Colombia"
+    ).scalar() or 0.0
+    
+    total_all = float(total_colombia) + float(total_intl)
+    
+    if total_all == 0:
+        return [
+            {"name": "Colombia", "value": 0},
+            {"name": "Internacional", "value": 0}
+        ]
+        
+    pct_colombia = (float(total_colombia) / total_all) * 100
+    pct_intl = (float(total_intl) / total_all) * 100
+    
+    return [
+        {"name": "Colombia", "value": pct_colombia},
+        {"name": "Internacional", "value": pct_intl}
+    ]
+
+@router.get("/reports/taxes")
+def get_taxes(db: Session = Depends(get_db), current_user: User = Depends(get_current_admin_user)):
+    """
+    Returns tax obligations grouped by the purchaser's country.
+    Temporary generic tax map according to Phase 1 setup.
+    """
+    paid_statuses = ["pagado", "paid", "shipped", "delivered"]
+    
+    # 1. Group total sales by the user's country
+    revenue_sums = db.query(
+        User.country, 
+        func.sum(Order.total_cop).label('ventas')
+    ).join(Order, Order.user_id == User.id).filter(
+        Order.status.in_(paid_statuses)
+    ).group_by(User.country).all()
+
+    tax_rules = {
+        "Colombia": {"tasaIva": 0.19, "reteFuente": 0.025, "strIva": "19%", "strRete": "2.5%"},
+        "Ecuador": {"tasaIva": 0.15, "reteFuente": 0.0, "strIva": "15%", "strRete": "0%"},
+        "El Salvador": {"tasaIva": 0.13, "reteFuente": 0.0, "strIva": "13%", "strRete": "0%"},
+        "Panamá": {"tasaIva": 0.07, "reteFuente": 0.0, "strIva": "7%", "strRete": "0%"},
+        "Perú": {"tasaIva": 0.18, "reteFuente": 0.0, "strIva": "18%", "strRete": "0%"},
+        "Venezuela": {"tasaIva": 0.16, "reteFuente": 0.0, "strIva": "16%", "strRete": "0%"},
+    }
+    
+    # Fallback for unknown countries
+    default_rule = {"tasaIva": 0.0, "reteFuente": 0.0, "strIva": "0%", "strRete": "0%"}
+
+    results = []
+    
+    # We will simulate the 'Pagado' or 'Pendiente' status based on if there are sales > 0 
+    # and maybe some random or fixed state for now until real tax-payment tracking is built.
+    
+    for idx, (country, ventas) in enumerate(revenue_sums):
+        c_name = country or "Desconocido"
+        ventas_val = float(ventas or 0)
+        
+        rule = tax_rules.get(c_name, default_rule)
+        iva_pagar = ventas_val * rule["tasaIva"]
+        retencion_pagar = ventas_val * rule["reteFuente"]
+        
+        estado = "Pendiente" if iva_pagar > 0 else "Pagado"
+        
+        results.append({
+            "id": idx + 1,
+            "pais": c_name,
+            "ventas": ventas_val,
+            "tasaIva": rule["strIva"],
+            "ivaPagar": iva_pagar,
+            "reteFuente": rule["strRete"],
+            "retencionPagar": retencion_pagar,
+            "estado": estado
+        })
+        
+    return results

@@ -10,8 +10,8 @@ class ProductBase(BaseModel):
     price_usd: float
     price_eur: Optional[float] = None
     price_local: Optional[float] = None
-    pv: int = 0
-    direct_bonus_pv: int = 0
+    pv: float = 0
+    direct_bonus_pv: float = 0
     stock: int = 0
     weight_grams: int = 500  # Weight in grams
     is_activation: bool = False
@@ -40,8 +40,8 @@ class ProductUpdate(BaseModel):
     price_usd: Optional[float] = None
     price_eur: Optional[float] = None
     price_local: Optional[float] = None
-    pv: Optional[int] = None
-    direct_bonus_pv: Optional[int] = None
+    pv: Optional[float] = None
+    direct_bonus_pv: Optional[float] = None
     stock: Optional[int] = None
     weight_grams: Optional[int] = None
     is_activation: Optional[bool] = None

@@ -119,8 +119,8 @@ const SimpleAdmin = () => {
                 price_eur: formData.price_eur === '' || formData.price_eur === null ? null : Number(formData.price_eur),
                 weight_grams: formData.weight_grams === '' || formData.weight_grams === null ? 500 : Math.round(Number(formData.weight_grams)),
                 price_usd: Number(formData.price_usd),
-                pv: Math.round(Number(formData.pv)), // PV must be an integer
-                direct_bonus_pv: Math.round(Number(formData.direct_bonus_pv)),
+                pv: Number(formData.pv),
+                direct_bonus_pv: Number(formData.direct_bonus_pv),
                 tei_pv: Math.round(Number(formData.tei_pv)),
                 stock: Math.round(Number(formData.stock)), // Stock must be an integer
                 cost_price: Number(formData.cost_price),
@@ -285,10 +285,53 @@ const SimpleAdmin = () => {
                     name="price_local"
                     value={formData.price_local}
                     onChange={handleChange}
-                    placeholder="Precio COP (Pesos Colombianos)"
+                    placeholder="Precio Final COP (Pesos Colombianos)"
                     step="100"
                     style={{ padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.25rem' }}
                 />
+                <select
+                    name="tax_rate"
+                    value={formData.tax_rate}
+                    onChange={handleChange}
+                    style={{ padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.25rem' }}
+                >
+                    <option value={0}>IVA: 0% (Exento)</option>
+                    <option value={0.05}>IVA: 5%</option>
+                    <option value={0.19}>IVA: 19%</option>
+                </select>
+
+                {/* Visual Inverse VAT Calculator Component */}
+                <div style={{
+                    gridColumn: 'span 2',
+                    background: '#f8fafc',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '0.5rem',
+                    padding: '1rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.5rem'
+                }}>
+                    <strong style={{ color: '#0f172a', fontSize: '0.9rem', marginBottom: '0.25rem' }}>🧮 Calculadora Inversa DIAN</strong>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                        <span style={{ color: '#64748b' }}>Precio Final Público:</span>
+                        <span style={{ fontWeight: 'bold' }}>
+                            {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP' }).format(formData.price_local || 0)}
+                        </span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                        <span style={{ color: '#64748b' }}>Precio Neto (Base Facturación):</span>
+                        <span style={{ fontWeight: 'bold', color: '#16a34a' }}>
+                            {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP' }).format((formData.price_local || 0) / (1 + Number(formData.tax_rate)))}
+                        </span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', borderTop: '1px solid #e2e8f0', paddingTop: '0.5rem' }}>
+                        <span style={{ color: '#64748b' }}>Monto Impuesto ({(Number(formData.tax_rate) * 100).toFixed(0)}%):</span>
+                        <span style={{ fontWeight: 'bold', color: '#ef4444' }}>
+                            {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP' }).format((formData.price_local || 0) - ((formData.price_local || 0) / (1 + Number(formData.tax_rate))))}
+                        </span>
+                    </div>
+                </div>
+
                 <input
                     type="number"
                     name="pv"
@@ -304,7 +347,7 @@ const SimpleAdmin = () => {
                     value={formData.direct_bonus_pv}
                     onChange={handleChange}
                     placeholder="Bono Directo (PV)"
-                    step="1"
+                    step="0.01"
                     style={{ padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.25rem' }}
                 />
                 <input
@@ -387,6 +430,7 @@ const SimpleAdmin = () => {
                             <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Nombre</th>
                             <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Categoría</th>
                             <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Precio USD</th>
+                            <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>IVA</th>
                             <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>PV</th>
                             <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Activación</th>
                             <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Acciones</th>
@@ -398,6 +442,9 @@ const SimpleAdmin = () => {
                                 <td style={{ padding: '0.75rem' }}>{p.name}</td>
                                 <td style={{ padding: '0.75rem' }}>{p.category}</td>
                                 <td style={{ padding: '0.75rem' }}>${p.price_usd}</td>
+                                <td style={{ padding: '0.75rem', color: p.tax_rate > 0 ? '#ef4444' : '#10b981', fontWeight: 'bold' }}>
+                                    {p.tax_rate ? `${(p.tax_rate * 100).toFixed(0)}%` : '0%'}
+                                </td>
                                 <td style={{ padding: '0.75rem' }}>{p.pv}</td>
                                 <td style={{ padding: '0.75rem' }}>{p.is_activation ? '✅' : '❌'}</td>
                                 <td style={{ padding: '0.75rem', display: 'flex', gap: '0.5rem' }}>

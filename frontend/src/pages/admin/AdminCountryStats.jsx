@@ -3,7 +3,7 @@ import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
     PieChart, Pie, Cell
 } from 'recharts';
-import api from '../../api/api';
+import { api } from '../../api/api';
 import { useAdmin } from '../../context/AdminContext';
 
 export default function AdminCountryStats() {
@@ -14,37 +14,41 @@ export default function AdminCountryStats() {
     const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
     useEffect(() => {
-        setLoading(true);
-        // Simulación de carga desde el Backend (Fase 1)
-        setTimeout(() => {
-            // Datos variarán mágicamente simulando el cambio de país
-            const factor = globalCountry === 'Todos' ? 1
-                : globalCountry === 'Colombia' ? 0.6
-                    : 0.1; // 60% Colombia, 10% resto
+        const fetchStats = async () => {
+            setLoading(true);
+            try {
+                // Pass globalCountry as query param if needed
+                const params = globalCountry && globalCountry !== 'Todos' ? { country: globalCountry } : {};
 
-            setStatsData({
-                metrics: {
-                    totalUsers: Math.floor(1540 * factor),
-                    totalRevenue: 45000000 * factor,
-                    unpaidCommissions: 12500000 * factor,
-                    paidCommissions: 28000000 * factor,
-                    totalCompanies: Math.floor(25 * factor),
-                    totalProducts: Math.floor(850 * factor)
-                },
-                countryRanking: [
-                    { name: 'Colombia', afiliados: 924, ingresos: 27000000 },
-                    { name: 'México', afiliados: 200, ingresos: 6500000 },
-                    { name: 'Perú', afiliados: 150, ingresos: 4500000 },
-                    { name: 'Ecuador', afiliados: 100, ingresos: 3000000 },
-                    { name: 'España', afiliados: 80, ingresos: 2500000 }
-                ],
-                revenueSplit: [
-                    { name: 'Colombia', value: 60 },
-                    { name: 'Internacional', value: 40 }
-                ]
-            });
-            setLoading(false);
-        }, 800);
+                // Fetch all data in parallel
+                const [statsRes, rankingRes, splitRes] = await Promise.all([
+                    api.get('/admin/reports/country-stats', { params }).catch(() => ({ data: { metrics: {} } })),
+                    api.get('/admin/reports/country-ranking', { params }).catch(() => ({ data: [] })),
+                    api.get('/admin/reports/income-local-vs-intl', { params }).catch(() => ({ data: [] }))
+                ]);
+
+                const m = statsRes.data.metrics || {};
+
+                setStatsData({
+                    metrics: {
+                        totalUsers: m.totalUsers || 0,
+                        totalRevenue: m.totalRevenue || 0,
+                        unpaidCommissions: m.unpaidCommissions || 0,
+                        paidCommissions: m.paidCommissions || 0,
+                        totalCompanies: m.totalCompanies || 0,
+                        totalProducts: m.totalProducts || 0
+                    },
+                    countryRanking: rankingRes.data || [],
+                    revenueSplit: splitRes.data || []
+                });
+            } catch (error) {
+                console.error("Error fetching country stats:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchStats();
     }, [globalCountry]);
 
     if (loading || !statsData) {

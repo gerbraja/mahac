@@ -97,7 +97,6 @@ def create_product(
 def list_products(
     supplier_id: int = None,
     include_inactive: bool = False,
-    country: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
     query = db.query(ProductModel)
@@ -108,9 +107,6 @@ def list_products(
         query = query.filter(ProductModel.supplier_id == supplier_id)
     elif not include_inactive:
         query = query.filter(ProductModel.active == True)
-        
-    if country and country != 'Todos':
-        query = query.join(Supplier, ProductModel.supplier_id == Supplier.id).filter(Supplier.country == country)
         
     products = query.order_by(ProductModel.created_at.desc()).all()
     return products

@@ -23,6 +23,8 @@ export default function AdminPickupPoints() {
     }, [globalCountry]);
 
     const fetchPoints = async () => {
+        setLoading(true);
+        setError('');
         try {
             const queryParams = new URLSearchParams({ active_only: 'false' });
             if (globalCountry && globalCountry !== 'Todos') queryParams.append('country', globalCountry);
@@ -30,7 +32,10 @@ export default function AdminPickupPoints() {
             const res = await api.get(`/api/pickup-points/?${queryParams.toString()}`);
             setPoints(res.data);
         } catch (err) {
-            setError("Error al cargar puntos de recogida");
+            const status = err.response?.status;
+            const detail = err.response?.data?.detail || err.message || 'Error desconocido';
+            setError(`Error al cargar puntos de recogida (HTTP ${status || 'sin respuesta'}): ${detail}`);
+            setPoints([]);
         } finally {
             setLoading(false);
         }
@@ -175,7 +180,17 @@ export default function AdminPickupPoints() {
 
                 {/* List Column */}
                 <div className="space-y-4">
-                    {loading ? <p>Cargando...</p> : (
+                    {loading ? <p>Cargando...</p> : error ? (
+                        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                            <p className="text-red-600 font-medium">⚠️ {error}</p>
+                            <button
+                                onClick={fetchPoints}
+                                className="mt-3 px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                            >
+                                🔄 Reintentar
+                            </button>
+                        </div>
+                    ) : (
                         points.length === 0 ? <p className="text-gray-500">No hay puntos registrados.</p> : (
                             points.map(point => (
                                 <motion.div

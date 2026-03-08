@@ -3,48 +3,57 @@ import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
     LineChart, Line, PieChart, Pie, Cell
 } from 'recharts';
-import api from '../../api/api';
+import { api } from '../../api/api';
 
 export default function AdminReports() {
     const [loading, setLoading] = useState(true);
     const [reportData, setReportData] = useState(null);
+    const [networkGrowth, setNetworkGrowth] = useState([]);
 
     // Colores para gráficos de pastel
     const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
-    // Función para obtener datos verdaderos en la FASE 2
-    // En FASE 1 usaremos mockups para armar el Layout
     useEffect(() => {
-        // Simulando una llamada al backend que implementaremos luego
-        setTimeout(() => {
-            setReportData({
-                metrics: {
-                    totalSales: 45000000,
-                    totalCommissions: 12500000,
-                    netProfit: 32500000,
-                    newUsersThisMonth: 124,
-                    activePackages: 380,
-                    pendingOrders: 15
-                },
-                monthlySales: [
-                    { name: 'Ene', ventas: 4000000, comisiones: 1200000 },
-                    { name: 'Feb', ventas: 6500000, comisiones: 1800000 },
-                    { name: 'Mar', ventas: 2000000, comisiones: 500000 },
-                ],
-                packageDistribution: [
-                    { name: 'Gratuito', value: 400 },
-                    { name: 'Franquicia 1', value: 250 },
-                    { name: 'Franquicia 2', value: 100 },
-                    { name: 'Franquicia 3', value: 30 }
-                ],
-                topProducts: [
-                    { name: 'Zapatos Deportivos', ventas: 120 },
-                    { name: 'Camisa Polo', ventas: 85 },
-                    { name: 'Pantalón Jean', ventas: 60 }
-                ]
-            });
-            setLoading(false);
-        }, 1000);
+        const fetchReports = async () => {
+            try {
+                // Fetch all data in parallel
+                const [networkRes, statsRes, incomeRes, pkgsRes, topRes] = await Promise.all([
+                    api.get('/admin/reports/network-growth').catch(() => ({ data: { networkGrowth: [] } })),
+                    api.get('/admin/reports/dashboard-stats').catch(() => ({ data: {} })),
+                    api.get('/admin/reports/income-vs-commissions').catch(() => ({ data: [] })),
+                    api.get('/admin/reports/active-packages').catch(() => ({ data: [] })),
+                    api.get('/admin/reports/top-products').catch(() => ({ data: [] }))
+                ]);
+
+                if (networkRes.data && networkRes.data.networkGrowth) {
+                    setNetworkGrowth(networkRes.data.networkGrowth.reverse());
+                }
+
+                const s = statsRes.data || {};
+
+                setReportData({
+                    metrics: {
+                        totalSales: s.gross_sales || 0,
+                        salesGrowth: s.sales_growth || 0,
+                        totalCommissions: s.commissions || 0,
+                        payoutRatio: s.payout_ratio || 0,
+                        netProfit: s.profit || 0,
+                        newUsersThisMonth: s.new_users || 0,
+                        activePackages: s.active_packages || 0,
+                        pendingOrders: s.pending_orders || 0
+                    },
+                    monthlySales: incomeRes.data || [],
+                    packageDistribution: pkgsRes.data || [],
+                    topProducts: topRes.data || []
+                });
+            } catch (error) {
+                console.error("Error fetching admin reports", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchReports();
     }, []);
 
     if (loading || !reportData) {
@@ -88,14 +97,14 @@ export default function AdminReports() {
                 <MetricCard
                     title="Ventas Totales Brutas"
                     value={formatCOP(metrics.totalSales)}
-                    subtitle="+15% este mes"
+                    subtitle={`${metrics.salesGrowth >= 0 ? '+' : ''}${metrics.salesGrowth}% este mes`}
                     icon="💰"
                     color="bg-green-100 text-green-800"
                 />
                 <MetricCard
                     title="Comisiones Repartidas"
                     value={formatCOP(metrics.totalCommissions)}
-                    subtitle="Payout rátio: 27%"
+                    subtitle={`Payout rátio: ${metrics.payoutRatio}%`}
                     icon="💸"
                     color="bg-red-100 text-red-800"
                 />
@@ -196,13 +205,28 @@ export default function AdminReports() {
                     </div>
                 </div>
 
-                {/* Próximo gráfico de crecimiento de red */}
-                <div className="bg-white p-6 rounded-lg shadow border border-gray-100 lg:col-span-2 flex items-center justify-center flex-col text-center">
-                    <h2 className="text-lg font-bold text-gray-700 mb-2">Crecimiento de Red Unilevel y Binaria</h2>
-                    <p className="text-gray-500 mb-4">El gráfico de líneas poblacional se implementará en la FASE 2.</p>
-                    <div className="w-full h-48 bg-gray-50 rounded border-2 border-dashed border-gray-200 flex items-center justify-center">
-                        <span className="text-gray-400 text-3xl">📈 Espacio Reservado Fase 2</span>
-                    </div>
+                {/* Gráfico de crecimiento de red (Fase 2 - Implementado) */}
+                <div className="bg-white p-6 rounded-lg shadow border border-gray-100 lg:col-span-2 flex flex-col">
+                    <h2 className="text-lg font-bold text-gray-700 mb-4">Crecimiento de Red Unilevel y Binaria</h2>
+                    {networkGrowth.length > 0 ? (
+                        <div className="flex-1 w-full min-h-[250px]">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <LineChart data={networkGrowth} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                    <XAxis dataKey="name" />
+                                    <YAxis allowDecimals={false} />
+                                    <Tooltip />
+                                    <Legend />
+                                    <Line type="monotone" dataKey="unilevel" name="Registros Unilevel" stroke="#8884d8" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 8 }} />
+                                    <Line type="monotone" dataKey="binaria" name="Pagos Binaria" stroke="#82ca9d" strokeWidth={3} dot={{ r: 4 }} />
+                                </LineChart>
+                            </ResponsiveContainer>
+                        </div>
+                    ) : (
+                        <div className="w-full h-48 bg-gray-50 rounded border-2 border-dashed border-gray-200 flex items-center justify-center">
+                            <span className="text-gray-400 text-lg">No hay datos suficientes</span>
+                        </div>
+                    )}
                 </div>
             </div>
 

@@ -32,7 +32,7 @@ export default function Checkout() {
     useEffect(() => {
         const loadPoints = async () => {
             try {
-                const res = await api.get('/api/pickup-points/');
+                const res = await api.get('/api/pickup-points/?active_only=false');
                 setPickupPoints(res.data);
             } catch (e) {
                 console.error("Failed to load pickup points", e);

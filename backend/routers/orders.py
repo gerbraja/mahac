@@ -62,10 +62,19 @@ def my_orders(db: Session = Depends(get_db), current_user=Depends(get_current_us
     return orders
 
 
+from typing import Optional
+
 @router.get("/", response_model=List[OrderOut])
-def list_orders(db: Session = Depends(get_db)):
+def list_orders(country: Optional[str] = None, db: Session = Depends(get_db)):
     from sqlalchemy.orm import joinedload
-    orders = db.query(Order).options(joinedload(Order.user)).order_by(Order.created_at.desc()).all()
+    from backend.database.models.user import User
+    
+    query = db.query(Order).options(joinedload(Order.user))
+    
+    if country and country != 'Todos':
+        query = query.join(User, Order.user_id == User.id).filter(User.country.ilike(f"%{country}%"))
+        
+    orders = query.order_by(Order.created_at.desc()).all()
     return orders
 
 
