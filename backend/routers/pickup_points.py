@@ -10,17 +10,64 @@ from backend.utils.auth import get_current_user
 
 router = APIRouter(prefix="/api/pickup-points", tags=["Pickup Points"])
 
+# MIGRATION: Add missing columns to pickup_points table
+@router.get("/migrate")
+def migrate_pickup_table(db: Session = Depends(get_db)):
+    """Migration endpoint: adds missing columns (country, active) to pickup_points table."""
+    results = []
+    try:
+        inspector = inspect(engine)
+        columns = [col['name'] for col in inspector.get_columns("pickup_points")]
+        
+        # Add 'country' column if missing
+        if 'country' not in columns:
+            try:
+                db.execute(text("ALTER TABLE pickup_points ADD COLUMN country VARCHAR(100) DEFAULT 'Colombia'"))
+                db.execute(text("UPDATE pickup_points SET country = 'Colombia' WHERE country IS NULL"))
+                db.commit()
+                results.append("✅ Columna 'country' añadida exitosamente")
+            except Exception as e:
+                db.rollback()
+                results.append(f"⚠️ country: {str(e)}")
+        else:
+            results.append("✓ Columna 'country' ya existe")
+
+        # Add 'active' column if missing
+        if 'active' not in columns:
+            try:
+                db.execute(text("ALTER TABLE pickup_points ADD COLUMN active BOOLEAN DEFAULT TRUE"))
+                db.execute(text("UPDATE pickup_points SET active = TRUE WHERE active IS NULL"))
+                db.commit()
+                results.append("✅ Columna 'active' añadida exitosamente")
+            except Exception as e:
+                db.rollback()
+                results.append(f"⚠️ active: {str(e)}")
+        else:
+            # Fix NULL active values
+            db.execute(text("UPDATE pickup_points SET active = TRUE WHERE active IS NULL"))
+            db.commit()
+            results.append("✓ Columna 'active' ya existe, NULLs corregidos")
+
+        # Final column state
+        updated_columns = [col['name'] for col in inspect(engine).get_columns("pickup_points")]
+        return {
+            "status": "OK",
+            "results": results,
+            "columns_now": updated_columns,
+        }
+    except Exception as e:
+        return {"status": "ERROR", "error": str(e), "results": results}
+
 # DIAGNOSTIC: Check table health and fix active=NULL rows
 @router.get("/check")
 def check_pickup_table(db: Session = Depends(get_db)):
-    """Diagnostic endpoint: verifies the pickup_points table exists, fixes active=NULL rows, and returns row count."""
+    """Diagnostic endpoint: runs migration first, then verifies the pickup_points table."""
     try:
         inspector = inspect(engine)
         tables = inspector.get_table_names()
         table_exists = "pickup_points" in tables
 
         if not table_exists:
-            # Try to auto-create the table
             Base.metadata.create_all(bind=engine)
             tables_after = inspect(engine).get_table_names()
             created = "pickup_points" in tables_after
@@ -28,31 +75,21 @@ def check_pickup_table(db: Session = Depends(get_db)):
                 "status": "CREATED" if created else "FAILED",
                 "message": "Tabla no existía, se intentó crear automáticamente.",
                 "created": created,
-                "all_tables": tables_after,
             }
 
-        count = db.query(PickupPoint).count()
         columns = [col['name'] for col in inspector.get_columns("pickup_points")]
-        
-        # Fix rows with active=NULL → set to True
-        null_active = db.query(PickupPoint).filter(PickupPoint.active == None).all()
-        fixed_count = 0
-        for p in null_active:
-            p.active = True
-            fixed_count += 1
-        if fixed_count > 0:
-            db.commit()
+        missing = [c for c in ['id', 'name', 'address', 'city', 'country', 'active'] if c not in columns]
         
         return {
-            "status": "OK",
+            "status": "NEEDS_MIGRATION" if missing else "OK",
             "table_exists": True,
-            "total_rows": count,
             "columns": columns,
-            "null_active_fixed": fixed_count,
-            "message": f"Se corrigieron {fixed_count} punto(s) con active=NULL → True" if fixed_count > 0 else "Todo OK",
+            "missing_columns": missing,
+            "message": f"Faltan columnas: {missing}. Visita /api/pickup-points/migrate para corregir." if missing else "Todo OK",
         }
     except Exception as e:
         return {"status": "ERROR", "error": str(e)}
+
 
 # PUBLIC: List active points
 @router.get("/", response_model=List[PickupPointOut])
