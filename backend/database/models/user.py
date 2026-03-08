@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Date, Boolean
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Date, Boolean, Text
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from ..connection import Base
@@ -26,6 +26,10 @@ class User(Base):
 
     # Security
     transaction_pin = Column(String(255), nullable=True)  # Hashed transaction PIN
+    
+    # Password Reset
+    reset_token = Column(String(128), nullable=True, index=True)  # Token for password recovery
+    reset_token_expires = Column(DateTime, nullable=True)  # Expiration of reset token
 
     # Additional personal information (from complete registration)
     document_id = Column(String(50), nullable=True)  # Documento de identidad

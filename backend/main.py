@@ -486,6 +486,46 @@ def run_migrations(key: str):
     except Exception as e:
         return {"error": str(e), "details": "Failed to run migration"}
 
+
+@app.get("/run-reset-token-migration")
+def run_reset_token_migration(key: str, db: Session = Depends(get_db)):
+    """
+    Adds reset_token and reset_token_expires columns to users table.
+    Safe to run multiple times (checks if columns exist first).
+    """
+    if key != "secure_setup_key_2025":
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    results = []
+    try:
+        # Check existing columns
+        result = db.execute(text("""
+            SELECT column_name FROM information_schema.columns
+            WHERE table_name = 'users'
+              AND column_name IN ('reset_token', 'reset_token_expires')
+        """))
+        existing = [row[0] for row in result.fetchall()]
+
+        if "reset_token" not in existing:
+            db.execute(text("ALTER TABLE users ADD COLUMN reset_token VARCHAR(128)"))
+            results.append("✅ Columna 'reset_token' agregada.")
+        else:
+            results.append("ℹ️ Columna 'reset_token' ya existía.")
+
+        if "reset_token_expires" not in existing:
+            db.execute(text("ALTER TABLE users ADD COLUMN reset_token_expires TIMESTAMP"))
+            results.append("✅ Columna 'reset_token_expires' agregada.")
+        else:
+            results.append("ℹ️ Columna 'reset_token_expires' ya existía.")
+
+        db.commit()
+        return {"status": "ok", "results": results}
+
+    except Exception as e:
+        db.rollback()
+        return {"status": "error", "error": str(e)}
+
+
 @app.get("/fix-limpiap")
 def fix_limpiap(key: str, mode: str = "inspect", db: Session = Depends(get_db)):
     from sqlalchemy import func

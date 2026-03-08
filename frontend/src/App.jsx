@@ -17,6 +17,7 @@ import SecurityView from './pages/dashboard/SecurityView';
 import StoreView from './pages/dashboard/StoreView';
 import DashboardHome from './pages/dashboard/DashboardHome';
 import Login from './pages/Login';
+import ResetPassword from './pages/ResetPassword';
 import Opportunity from './pages/Opportunity';
 import Personal from './pages/Personal';
 import OrderConfirmation from './pages/OrderConfirmation';
@@ -123,6 +124,7 @@ export default function App() {
         <Route path="/complete-registration" element={<CompleteRegistration />} />
         <Route path="/cart" element={<CartPage />} />
         <Route path="/checkout" element={<Checkout />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/order-confirmation/:orderId" element={<OrderConfirmation />} />
 
         {/* Admin Routes */}

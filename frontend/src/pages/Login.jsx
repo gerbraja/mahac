@@ -7,13 +7,12 @@ import CompleteRegistration from './CompleteRegistration';
 export default function Login() {
     const navigate = useNavigate();
     const location = useLocation();
-    const [view, setView] = useState(location.state?.view || 'login'); // Default view or from state
-    const [formData, setFormData] = useState({
-        username: '',
-        password: ''
-    });
+    const [view, setView] = useState(location.state?.view || 'login');
+    const [formData, setFormData] = useState({ username: '', password: '' });
+    const [forgotEmail, setForgotEmail] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [successMsg, setSuccessMsg] = useState('');
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -25,17 +24,14 @@ export default function Login() {
         setError('');
 
         try {
-            // Login endpoint expects JSON
             const response = await api.post('/auth/login', {
                 username: formData.username,
                 password: formData.password
             });
 
-            // Store token
             const newToken = response.data.access_token;
             localStorage.setItem('access_token', newToken);
 
-            // Fetch user data generally (non-blocking for redirect)
             try {
                 const userResponse = await api.get('/auth/me');
                 localStorage.setItem('userId', userResponse.data.id);
@@ -43,16 +39,13 @@ export default function Login() {
                 console.warn("Could not fetch user info immediately, but proceeding.", err);
             }
 
-            // Always check for return path functionality
             const returnTo = localStorage.getItem('returnTo');
             if (returnTo) {
-                console.log("Redirecting to saved path:", returnTo);
                 localStorage.removeItem('returnTo');
                 navigate(returnTo);
                 return;
             }
 
-            // Default: Redirect based on user role (if we have role info, otherwise dashboard)
             try {
                 const tokenPayload = JSON.parse(atob(response.data.access_token.split('.')[1]));
                 if (tokenPayload.is_admin) {
@@ -71,6 +64,43 @@ export default function Login() {
         }
     };
 
+    const handleForgotPassword = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        setError('');
+        setSuccessMsg('');
+
+        try {
+            await api.post('/auth/forgot-password', { email: forgotEmail });
+            setSuccessMsg('Si el correo existe en nuestro sistema, recibirás un enlace en breve. Revisa también tu carpeta de spam.');
+            setForgotEmail('');
+        } catch (err) {
+            setError('Ocurrió un error. Por favor intenta de nuevo.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const inputStyle = {
+        width: '100%',
+        padding: '0.75rem',
+        borderRadius: '0.5rem',
+        border: '2px solid rgba(59, 130, 246, 0.3)',
+        outline: 'none',
+        fontSize: '1rem',
+        boxSizing: 'border-box'
+    };
+
+    const pageStyle = {
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '2rem'
+    };
+
+    // ── Complete Registration View ─────────────────────────────────────────────
     if (view === 'complete-registration') {
         return (
             <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)', padding: '2rem' }}>
@@ -78,23 +108,15 @@ export default function Login() {
                     <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
                         <TeiLogo size="medium" showSubtitle={true} />
                     </div>
-
                     <CompleteRegistration />
-
                     <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
                         <p style={{ color: 'white', marginBottom: '0.5rem' }}>¿Ya eres un afiliado activo?</p>
                         <button
                             onClick={() => setView('login')}
                             style={{
-                                background: 'white',
-                                border: 'none',
-                                color: '#1e3a8a',
-                                padding: '0.5rem 1rem',
-                                borderRadius: '0.5rem',
-                                fontWeight: 'bold',
-                                cursor: 'pointer',
-                                fontSize: '1rem',
-                                boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+                                background: 'white', border: 'none', color: '#1e3a8a',
+                                padding: '0.5rem 1rem', borderRadius: '0.5rem', fontWeight: 'bold',
+                                cursor: 'pointer', fontSize: '1rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
                             }}
                         >
                             Iniciar Sesión Aquí
@@ -105,8 +127,97 @@ export default function Login() {
         );
     }
 
+    // ── Forgot Password View ──────────────────────────────────────────────────
+    if (view === 'forgot-password') {
+        return (
+            <div style={pageStyle}>
+                <div style={{ maxWidth: '400px', width: '100%' }}>
+                    <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+                        <TeiLogo size="medium" showSubtitle={true} />
+                    </div>
+
+                    <div style={{ background: 'white', borderRadius: '1rem', padding: '2rem', boxShadow: '0 8px 32px rgba(0,0,0,0.1)' }}>
+                        <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+                            <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>🔑</div>
+                            <h2 style={{ color: '#1e3a8a', fontSize: '1.4rem', fontWeight: 'bold', margin: 0 }}>
+                                ¿Olvidaste tu contraseña?
+                            </h2>
+                            <p style={{ color: '#6b7280', fontSize: '0.875rem', marginTop: '0.5rem' }}>
+                                Ingresa tu correo y te enviaremos un enlace para restablecerla.
+                            </p>
+                        </div>
+
+                        {successMsg ? (
+                            <div style={{
+                                padding: '1rem', borderRadius: '0.5rem',
+                                background: 'rgba(34, 197, 94, 0.1)', border: '1px solid rgba(34, 197, 94, 0.3)',
+                                color: '#15803d', fontSize: '0.875rem', textAlign: 'center'
+                            }}>
+                                ✅ {successMsg}
+                            </div>
+                        ) : (
+                            <form onSubmit={handleForgotPassword} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                <div>
+                                    <label style={{ display: 'block', color: '#1e3a8a', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.5rem' }}>
+                                        Correo electrónico
+                                    </label>
+                                    <input
+                                        type="email"
+                                        value={forgotEmail}
+                                        onChange={(e) => setForgotEmail(e.target.value)}
+                                        required
+                                        style={inputStyle}
+                                        placeholder="tu@correo.com"
+                                    />
+                                </div>
+
+                                {error && (
+                                    <div style={{
+                                        padding: '0.75rem', borderRadius: '0.5rem',
+                                        background: 'rgba(239, 68, 68, 0.1)', color: '#dc2626',
+                                        fontSize: '0.875rem', border: '1px solid rgba(239, 68, 68, 0.3)'
+                                    }}>
+                                        {error}
+                                    </div>
+                                )}
+
+                                <button
+                                    type="submit"
+                                    disabled={loading}
+                                    style={{
+                                        width: '100%', padding: '0.875rem', borderRadius: '0.5rem',
+                                        background: loading ? '#9ca3af' : 'linear-gradient(to right, #3b82f6, #1e40af)',
+                                        color: 'white', border: 'none', fontSize: '1rem',
+                                        fontWeight: 'bold', cursor: loading ? 'not-allowed' : 'pointer',
+                                        transition: 'all 0.3s'
+                                    }}
+                                >
+                                    {loading ? 'Enviando...' : 'Enviar enlace de recuperación'}
+                                </button>
+                            </form>
+                        )}
+
+                        <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
+                            <button
+                                onClick={() => { setView('login'); setError(''); setSuccessMsg(''); }}
+                                style={{
+                                    background: 'transparent', border: 'none',
+                                    color: '#3b82f6', cursor: 'pointer',
+                                    textDecoration: 'underline', fontSize: '0.875rem'
+                                }}
+                            >
+                                ← Volver al Login
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // ── Login View (default) ──────────────────────────────────────────────────
     return (
-        <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
+        <div style={pageStyle}>
             <div style={{ maxWidth: '400px', width: '100%' }}>
                 <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
                     <TeiLogo size="medium" showSubtitle={true} />
@@ -128,14 +239,7 @@ export default function Login() {
                                 value={formData.username}
                                 onChange={handleChange}
                                 required
-                                style={{
-                                    width: '100%',
-                                    padding: '0.75rem',
-                                    borderRadius: '0.5rem',
-                                    border: '2px solid rgba(59, 130, 246, 0.3)',
-                                    outline: 'none',
-                                    fontSize: '1rem'
-                                }}
+                                style={inputStyle}
                                 placeholder="admin"
                             />
                         </div>
@@ -150,26 +254,16 @@ export default function Login() {
                                 value={formData.password}
                                 onChange={handleChange}
                                 required
-                                style={{
-                                    width: '100%',
-                                    padding: '0.75rem',
-                                    borderRadius: '0.5rem',
-                                    border: '2px solid rgba(59, 130, 246, 0.3)',
-                                    outline: 'none',
-                                    fontSize: '1rem'
-                                }}
+                                style={inputStyle}
                                 placeholder="••••••••"
                             />
                         </div>
 
                         {error && (
                             <div style={{
-                                padding: '0.75rem',
-                                borderRadius: '0.5rem',
-                                background: 'rgba(239, 68, 68, 0.1)',
-                                color: '#dc2626',
-                                fontSize: '0.875rem',
-                                border: '1px solid rgba(239, 68, 68, 0.3)'
+                                padding: '0.75rem', borderRadius: '0.5rem',
+                                background: 'rgba(239, 68, 68, 0.1)', color: '#dc2626',
+                                fontSize: '0.875rem', border: '1px solid rgba(239, 68, 68, 0.3)'
                             }}>
                                 {error}
                             </div>
@@ -179,15 +273,10 @@ export default function Login() {
                             type="submit"
                             disabled={loading}
                             style={{
-                                width: '100%',
-                                padding: '0.875rem',
-                                borderRadius: '0.5rem',
+                                width: '100%', padding: '0.875rem', borderRadius: '0.5rem',
                                 background: loading ? '#9ca3af' : 'linear-gradient(to right, #3b82f6, #1e40af)',
-                                color: 'white',
-                                border: 'none',
-                                fontSize: '1rem',
-                                fontWeight: 'bold',
-                                cursor: loading ? 'not-allowed' : 'pointer',
+                                color: 'white', border: 'none', fontSize: '1rem',
+                                fontWeight: 'bold', cursor: loading ? 'not-allowed' : 'pointer',
                                 transition: 'all 0.3s'
                             }}
                         >
@@ -195,16 +284,24 @@ export default function Login() {
                         </button>
                     </form>
 
-                    <div style={{ marginTop: '1.5rem', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <div style={{ marginTop: '1.5rem', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                        <button
+                            onClick={() => { setView('forgot-password'); setError(''); }}
+                            style={{
+                                background: 'transparent', border: 'none',
+                                color: '#3b82f6', cursor: 'pointer',
+                                textDecoration: 'underline', fontSize: '0.875rem'
+                            }}
+                        >
+                            ¿Olvidaste tu contraseña?
+                        </button>
+
                         <button
                             onClick={() => setView('complete-registration')}
                             style={{
-                                background: 'transparent',
-                                border: 'none',
-                                color: '#3b82f6',
-                                cursor: 'pointer',
-                                textDecoration: 'underline',
-                                fontSize: '0.875rem'
+                                background: 'transparent', border: 'none',
+                                color: '#3b82f6', cursor: 'pointer',
+                                textDecoration: 'underline', fontSize: '0.875rem'
                             }}
                         >
                             ¿Eres pre-afiliado? Completa tu registro aquí
@@ -213,11 +310,8 @@ export default function Login() {
                         <button
                             onClick={() => navigate('/')}
                             style={{
-                                background: 'transparent',
-                                border: 'none',
-                                color: '#6b7280',
-                                cursor: 'pointer',
-                                fontSize: '0.875rem'
+                                background: 'transparent', border: 'none',
+                                color: '#6b7280', cursor: 'pointer', fontSize: '0.875rem'
                             }}
                         >
                             ← Volver al inicio

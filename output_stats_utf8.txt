@@ -1,0 +1,42 @@
+
+==================================================
+User: AlexisBM
+==================================================
+
+--- BINARY GLOBAL ---
+Position: #7
+Left: 10, Right: 5, Total: 15
+Total Earnings: 1.0
+
+--- BINARY MILLIONAIRE ---
+Position: #6
+Left: 4, Right: 5, Total: 9
+Total PV: 6.0, Total Earnings: 0.18
+
+==================================================
+User: Mercam
+==================================================
+
+--- BINARY GLOBAL ---
+Position: #8
+Left: 4, Right: 5, Total: 9
+Total Earnings: 0.0
+
+--- BINARY MILLIONAIRE ---
+Position: #12
+Left: 2, Right: 2, Total: 4
+Total PV: 3.0, Total Earnings: 0.09
+
+==================================================
+User: Gerbraja1
+==================================================
+
+--- BINARY GLOBAL ---
+Position: #4
+Left: 37, Right: 5, Total: 42
+Total Earnings: 4.0
+
+--- BINARY MILLIONAIRE ---
+Position: #4
+Left: 28, Right: 3, Total: 31
+Total PV: 31.0, Total Earnings: 0.9299999999999998

@@ -6,7 +6,7 @@ from typing import Optional
 from argon2 import PasswordHasher
 from jose import jwt
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from ..database.connection import get_db
 from ..database.models.user import User as UserModel
@@ -556,8 +556,94 @@ def set_transaction_pin(data: SetTransactionPinData, current_user: UserModel = D
         return {"message": "Clave de transacción configurada exitosamente"}
     except Exception as e:
         db.rollback()
-        print(f"Error setting transaction PIN: {str(e)}")
+        print(f"Error setting transaction PIN: {str(e)}\")")
         raise HTTPException(
             status_code=500,
             detail="Error al configurar la clave de transacción. Por favor intenta de nuevo."
         )
+
+
+# ==================== PASSWORD RECOVERY ====================
+import secrets
+from ..utils.email_service import send_password_reset_email
+
+FRONTEND_URL = os.getenv("FRONTEND_URL", "https://tiendavirtualtei.com")
+
+
+class ForgotPasswordData(BaseModel):
+    email: str
+
+
+class ResetPasswordData(BaseModel):
+    token: str
+    new_password: str
+
+
+@router.post("/forgot-password")
+def forgot_password(data: ForgotPasswordData, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    """
+    Request a password reset. Always returns success to avoid revealing
+    whether an email is registered (security best practice).
+    """
+    try:
+        user = db.query(UserModel).filter(UserModel.email == data.email.strip().lower()).first()
+
+        if user:
+            # Generate secure token and set expiration (1 hour)
+            token = secrets.token_urlsafe(48)
+            user.reset_token = token
+            user.reset_token_expires = datetime.utcnow() + timedelta(hours=1)
+
+            db.commit()
+
+            reset_link = f"{FRONTEND_URL}/reset-password?token={token}"
+            background_tasks.add_task(send_password_reset_email, to_email=user.email, reset_link=reset_link)
+            print(f"✅ Password reset token generated for user {user.email}")
+        else:
+            print(f"ℹ️ Forgot-password requested for non-existing email: {data.email}")
+
+    except Exception as e:
+        print(f"Error in forgot_password: {e}")
+        # Still return success to not leak info
+
+    # Always return the same message
+    return {"message": "Si el correo existe en nuestro sistema, recibirás un enlace de recuperación en breve."}
+
+
+@router.post("/reset-password")
+def reset_password(data: ResetPasswordData, db: Session = Depends(get_db)):
+    """Reset password using a valid, non-expired token."""
+    # Find user by token
+    user = db.query(UserModel).filter(UserModel.reset_token == data.token).first()
+
+    if not user or not user.reset_token_expires:
+        raise HTTPException(status_code=400, detail="El enlace de recuperación es inválido o ya fue utilizado.")
+
+    # Check expiration
+    if datetime.utcnow() > user.reset_token_expires:
+        raise HTTPException(status_code=400, detail="El enlace de recuperación ha expirado. Solicita uno nuevo.")
+
+    # Validate new password
+    if len(data.new_password) < 6:
+        raise HTTPException(status_code=400, detail="La contraseña debe tener al menos 6 caracteres.")
+
+    if len(data.new_password) > 72:
+        raise HTTPException(status_code=400, detail="La contraseña es demasiado larga. Máximo 72 caracteres.")
+
+    # Hash and save new password, clear token
+    try:
+        hashed = pwd_context.hash(data.new_password)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail="Error al procesar la contraseña. Intenta con otra.")
+
+    user.password = hashed
+    user.reset_token = None
+    user.reset_token_expires = None
+
+    try:
+        db.commit()
+        return {"message": "¡Contraseña restablecida con éxito! Ya puedes iniciar sesión."}
+    except Exception as e:
+        db.rollback()
+        print(f"Error in reset_password: {e}")
+        raise HTTPException(status_code=500, detail="Error al guardar la nueva contraseña. Intenta de nuevo.")

@@ -185,3 +185,85 @@ async def send_order_invoice_email(order_data: dict, user_email: str):
 
     except Exception as e:
         logger.error(f"❌ Failed to send invoice email to {user_email}: {str(e)}")
+
+
+async def send_password_reset_email(to_email: str, reset_link: str):
+    """
+    Sends a password reset email with a secure link.
+    Designed to be run as a background task.
+    """
+    try:
+        sender_email = os.getenv("EMAIL_SENDER")
+        password = os.getenv("EMAIL_PASSWORD")
+
+        if not sender_email or not password:
+            logger.warning("⚠️ Email credentials not found. Password reset email was not sent.")
+            return
+
+        message = MIMEMultipart("alternative")
+        message["Subject"] = "🔑 Recuperación de contraseña - Centro Comercial TEI"
+        alias_email = "soporte@tuempresainternacional.com"
+        message["From"] = f"Soporte TEI <{alias_email}>"
+        message["To"] = to_email
+
+        html = f"""
+        <html>
+          <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; background-color: #f3f4f6; margin: 0; padding: 20px;">
+            <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+
+              <div style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 30px; text-align: center; color: white;">
+                <div style="font-size: 48px; margin-bottom: 10px;">🔑</div>
+                <h1 style="margin: 0; font-size: 24px;">Recuperación de Contraseña</h1>
+                <p style="margin: 8px 0 0; opacity: 0.9; font-size: 14px;">Centro Comercial Virtual TEI</p>
+              </div>
+
+              <div style="padding: 35px 30px;">
+                <p style="font-size: 16px;">Hola,</p>
+                <p>Recibimos una solicitud para restablecer la contraseña de tu cuenta. Haz clic en el botón a continuación para crear una nueva contraseña:</p>
+
+                <div style="text-align: center; margin: 30px 0;">
+                  <a href="{reset_link}"
+                     style="background: linear-gradient(to right, #3b82f6, #1e40af); color: white; padding: 14px 32px;
+                            text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;
+                            display: inline-block; box-shadow: 0 4px 6px rgba(59,130,246,0.3);">
+                    Restablecer mi Contraseña
+                  </a>
+                </div>
+
+                <div style="background-color: #fef3c7; border: 1px solid #fbbf24; border-radius: 8px; padding: 15px; margin: 20px 0;">
+                  <p style="margin: 0; color: #92400e; font-size: 14px;">
+                    ⏰ <strong>Este enlace expira en 1 hora.</strong><br>
+                    Si no solicitaste este cambio, ignora este correo. Tu contraseña no será modificada.
+                  </p>
+                </div>
+
+                <p style="font-size: 13px; color: #6b7280;">
+                  Si el botón no funciona, copia y pega este enlace en tu navegador:<br>
+                  <a href="{reset_link}" style="color: #3b82f6; word-break: break-all;">{reset_link}</a>
+                </p>
+              </div>
+
+              <div style="background-color: #1f2937; padding: 20px; text-align: center; color: #9ca3af; font-size: 12px;">
+                <p style="margin: 0;">© {datetime.now().year} Centro Comercial Virtual TEI. Todos los derechos reservados.</p>
+                <p style="margin: 5px 0 0;">Esta empresa es de Dios y para su Gloria.</p>
+              </div>
+            </div>
+          </body>
+        </html>
+        """
+
+        part = MIMEText(html, "html")
+        message.attach(part)
+
+        smtp_server = os.getenv("SMTP_SERVER", "smtp.gmail.com")
+        smtp_port = int(os.getenv("SMTP_PORT", "587"))
+
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
+            server.starttls()
+            server.login(sender_email, password)
+            server.sendmail(sender_email, to_email, message.as_string())
+
+        logger.info(f"✅ Password reset email sent successfully to {to_email}")
+
+    except Exception as e:
+        logger.error(f"❌ Failed to send password reset email to {to_email}: {str(e)}")
