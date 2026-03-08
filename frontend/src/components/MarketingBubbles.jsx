@@ -69,19 +69,19 @@ const MarketingBubbles = () => {
         };
     }, []);
 
-    // Process queue
+    // Process queue - show one bubble every 60 seconds
     useEffect(() => {
         const interval = setInterval(() => {
             if (!currentBubble && queueRef.current.length > 0) {
                 const nextBubble = queueRef.current.shift();
                 setCurrentBubble({ ...nextBubble, id: Date.now() });
 
-                // Remove after 3 seconds
+                // Remove after 5 seconds
                 setTimeout(() => {
                     setCurrentBubble(null);
                 }, 3000);
             }
-        }, 1000); // Check queue every second
+        }, 60000); // Check queue every 60 seconds (1 minute between bubbles)
 
         return () => clearInterval(interval);
     }, [currentBubble]);
