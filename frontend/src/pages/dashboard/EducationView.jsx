@@ -23,7 +23,7 @@ const EducationView = () => {
                             Descubre el ecosistema completo de TEI y cómo construir tu libertad financiera.
                         </p>
                         <Link to="/opportunity" className="block w-full text-center bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 px-4 rounded-lg hover:scale-105 transition-transform font-bold shadow-lg">
-                            🚀 Tu Libertad Financiera
+                            🚀 Tu Página de Captura
                         </Link>
                     </div>
                 </div>

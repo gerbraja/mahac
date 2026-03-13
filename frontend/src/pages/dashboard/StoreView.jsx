@@ -82,6 +82,67 @@ const StoreView = () => {
 
     return (
         <div className="p-6 relative" style={{ maxWidth: '100%', width: '100%' }}>
+            {/* ─── Ruta hacia la Libertad Financiera ─── */}
+            <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                style={{
+                    background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)',
+                    borderRadius: '1.5rem',
+                    padding: '2.5rem 2rem',
+                    marginBottom: '2rem',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    boxShadow: '0 10px 40px rgba(30, 58, 138, 0.3)'
+                }}
+            >
+                <div style={{ position: 'absolute', top: '-10%', right: '-5%', width: '30%', height: '120%', background: 'rgba(255,255,255,0.05)', borderRadius: '50%', filter: 'blur(40px)' }}></div>
+                <div style={{ position: 'absolute', bottom: '-20%', left: '0', width: '25%', height: '100%', background: 'rgba(59, 130, 246, 0.15)', borderRadius: '50%', filter: 'blur(50px)' }}></div>
+
+                <div className="relative z-10 text-center mb-10">
+                    <h2 style={{
+                        color: '#fff',
+                        fontSize: '2rem',
+                        fontWeight: '900',
+                        marginBottom: '1rem',
+                        letterSpacing: '-1px',
+                        textShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                    }}>
+                        📈 Tu Ruta hacia la Libertad Financiera en TEI
+                    </h2>
+                    <p style={{ color: '#bfdbfe', fontSize: '1.1rem', maxWidth: '850px', margin: '0 auto', lineHeight: '1.6', fontWeight: '500' }}>
+                        Hemos diseñado un sistema donde ganar dinero es inevitable, sin importar cómo decidas empezar. Conoce tus beneficios según tu nivel de actividad:
+                    </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10">
+                    <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/10 hover:bg-white/[0.15] transition-all flex flex-col items-center text-center group">
+                        <div style={{ fontSize: '2.5rem', background: 'white', width: '60px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '20px', marginBottom: '1.25rem', boxShadow: '0 8px 20px rgba(0,0,0,0.15)', transition: 'transform 0.3s' }} className="group-hover:scale-110">🤝</div>
+                        <h3 className="text-white font-bold text-lg mb-3">1. El Poder de Compartir</h3>
+                        <p className="text-blue-100 text-sm leading-relaxed">
+                            <strong>¡Comienza Gratis!</strong> No necesitas comprar para ganar. Al crear tu cuenta gratis hoy, ya recibes <strong>Bono de Inicio Rápido</strong> por cada compra de tus invitados.
+                        </p>
+                    </div>
+
+                    <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/25 hover:bg-white/[0.15] transition-all flex flex-col items-center text-center ring-2 ring-blue-400 shadow-2xl shadow-blue-900/40 relative group">
+                        <div style={{ position: 'absolute', top: '-14px', background: '#3b82f6', color: 'white', fontSize: '11px', fontWeight: '900', padding: '4px 14px', borderRadius: '99px', textTransform: 'uppercase', boxShadow: '0 4px 10px rgba(0,0,0,0.2)' }}>Recomendado</div>
+                        <div style={{ fontSize: '2.5rem', background: 'white', width: '60px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '20px', marginBottom: '1.25rem', boxShadow: '0 8px 20px rgba(0,0,0,0.15)', transition: 'transform 0.3s' }} className="group-hover:scale-110">⚡</div>
+                        <h3 className="text-white font-bold text-lg mb-3">2. Activación Inteligente</h3>
+                        <p className="text-blue-100 text-sm leading-relaxed">
+                            Al comprar cualquier producto, activas la <strong>Red Unilevel</strong> y la <strong>Red Binaria Millonaria</strong>, acumulando volumen y ganancias globales.
+                        </p>
+                    </div>
+
+                    <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/10 hover:bg-white/[0.15] transition-all flex flex-col items-center text-center group">
+                        <div style={{ fontSize: '2.5rem', background: 'white', width: '60px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '20px', marginBottom: '1.25rem', boxShadow: '0 8px 20px rgba(0,0,0,0.15)', transition: 'transform 0.3s' }} className="group-hover:scale-110">🚀</div>
+                        <h3 className="text-white font-bold text-lg mb-3">3. Activación Total</h3>
+                        <p className="text-blue-100 text-sm leading-relaxed">
+                            Adquiere un Paquete de Activación y habilita los <strong>4 Planes de Compensación</strong> simultáneamente, abriendo los bonos más agresivos de la compañía.
+                        </p>
+                    </div>
+                </div>
+            </motion.div>
+
             <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-4 gap-4">
                 <h1 className="text-3xl font-bold text-blue-900">Centro Comercial TEI</h1>
                 {user && (
@@ -296,99 +357,73 @@ const ProductDetailsModal = ({ product, onClose, addToCart }) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
             onClick={onClose}
         >
             <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
+                initial={{ scale: 0.95, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.9, opacity: 0 }}
-                className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto overflow-x-hidden flex flex-col md:flex-row"
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col"
                 onClick={(e) => e.stopPropagation()}
             >
-                {/* Image Section */}
-                <div className="w-full md:w-1/2 bg-gray-50 p-8 flex items-center justify-center relative">
-                    <button
-                        onClick={onClose}
-                        className="absolute top-4 left-4 md:hidden bg-white/80 p-2 rounded-full shadow-md text-gray-600"
-                    >
-                        ✕
-                    </button>
-
-                    {product.image_url ? (
-                        <img
-                            src={product.image_url}
-                            alt={product.name}
-                            className="max-h-[300px] md:max-h-[500px] object-contain drop-shadow-lg"
-                        />
-                    ) : (
-                        <span className="text-8xl text-gray-300">📦</span>
-                    )}
-                </div>
-
-                {/* Details Section */}
-                <div className="w-full md:w-1/2 p-6 md:p-10 flex flex-col relative">
-                    <button
-                        onClick={onClose}
-                        className="absolute top-6 right-6 hidden md:block text-gray-400 hover:text-gray-600 transition-colors text-2xl"
-                    >
-                        ✕
-                    </button>
-
-                    <div className="mb-6">
-                        {product.is_upgrade ? (
-                            <span className="inline-block bg-purple-100 text-purple-800 text-xs px-3 py-1 rounded-full font-bold mb-3">
-                                🚀 Avance de Paquete
+                {/* Cabezal Ultra-Compacto */}
+                <div className="px-4 py-2 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+                    <div className="flex items-center gap-2 overflow-hidden">
+                        {product.is_activation && (
+                            <span className="bg-blue-600 text-white text-[10px] px-1.5 py-0.5 rounded font-black shrink-0">
+                                🚀
                             </span>
-                        ) : product.is_activation ? (
-                            <span className="inline-block bg-blue-100 text-blue-800 text-xs px-3 py-1 rounded-full font-bold mb-3">
-                                🚀 Paquete de Activación
-                            </span>
-                        ) : null}
-                        <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2 leading-tight">
+                        )}
+                        <h2 className="text-sm font-bold text-gray-800 truncate">
                             {product.name}
                         </h2>
-                        <div className="flex items-center gap-4 mb-4">
-                            <div className="flex flex-col">
-                                <span className="text-3xl font-bold text-green-600">
-                                    ${product.price_local?.toLocaleString()} COP
-                                </span>
-                                {product.is_upgrade && (
-                                    <span className="text-sm text-gray-400 line-through">
-                                        Precio regular: ${product.original_price_local?.toLocaleString()} COP
-                                    </span>
-                                )}
-                            </div>
-                            <span className="bg-blue-50 text-blue-700 px-3 py-1 rounded-lg font-bold text-sm border border-blue-200 h-fit">
+                    </div>
+                    <div className="flex items-center gap-3 shrink-0 ml-4">
+                        <div className="text-right">
+                            <span className="text-sm font-black text-green-600 block leading-none">
+                                ${product.price_local?.toLocaleString()}
+                            </span>
+                            <span className="text-[10px] font-bold text-blue-500">
                                 💎 {product.pv} PV
                             </span>
                         </div>
+                        <button onClick={onClose} className="text-gray-400 hover:text-gray-600 p-1">✕</button>
                     </div>
+                </div>
 
-                    <div className="prose prose-blue flex-1 overflow-y-auto mb-8 pr-2 custom-scrollbar">
-                        <h3 className="text-sm uppercase tracking-wide text-gray-500 font-bold mb-2">Descripción</h3>
-                        <p className="text-gray-700 leading-relaxed whitespace-pre-line text-lg">
-                            {product.description || "No hay descripción detallada disponible para este producto."}
+                <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+                    {/* Imagen Lateral Pequeña (Opcional en móvil) */}
+                    {product.image_url && (
+                        <div className="hidden md:flex w-1/3 bg-gray-50 items-center justify-center p-4 border-r border-gray-50">
+                            <img
+                                src={product.image_url}
+                                alt={product.name}
+                                className="max-h-48 object-contain mix-blend-multiply"
+                            />
+                        </div>
+                    )}
+
+                    {/* Área de Descripción Expandida */}
+                    <div className="flex-1 p-5 overflow-y-auto custom-scrollbar bg-white">
+                        <h3 className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">Descripción del Producto</h3>
+                        <p className="text-gray-700 leading-relaxed whitespace-pre-line text-[13.5px]">
+                            {product.description}
                         </p>
                     </div>
+                </div>
 
-                    <div className="pt-4 border-t border-gray-100 mt-auto">
-                        <button
-                            onClick={() => {
-                                addToCart(product);
-                                onClose();
-                            }}
-                            className="w-full py-4 rounded-xl font-bold text-lg shadow-lg transform transition active:scale-95 flex items-center justify-center gap-2 bg-gray-900 hover:bg-gray-800 text-white"
-                        >
-                            <span>🛒</span> Agregar al Carrito
-                        </button>
-                        <button
-                            onClick={onClose}
-                            className="w-full mt-3 py-3 text-gray-500 hover:text-gray-700 font-medium"
-                        >
-                            Seguir Viendo
-                        </button>
-                    </div>
+                {/* Pie con Botón Angosto */}
+                <div className="p-3 border-t border-gray-50 bg-gray-50/30 flex justify-center">
+                    <button
+                        onClick={() => {
+                            addToCart(product);
+                            onClose();
+                        }}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-10 py-2 rounded-full font-bold text-xs transition-all shadow-md active:scale-95 flex items-center gap-2"
+                    >
+                        <span>🛒</span> Agregar al Carrito
+                    </button>
                 </div>
             </motion.div>
         </motion.div>

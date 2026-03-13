@@ -1,11 +1,16 @@
-import React from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import RegisterForm from '../components/auth/RegisterForm';
 
 const Opportunity = () => {
   const [searchParams] = useSearchParams();
   const refCode = searchParams.get('ref') || '';
+  const [activeFaq, setActiveFaq] = useState(null);
+
+  const scrollToRegister = () => {
+    document.getElementById('register-section')?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   // ID del video de YouTube (Cambiar este valor por el ID de tu video)
   const youtubeVideoId = "cKP6tLMuOjw";
@@ -24,29 +29,100 @@ const Opportunity = () => {
           alt="Tu Libertad Financiera"
           className="absolute inset-0 w-full h-full object-cover z-0"
         />
-        <div className="absolute inset-0 bg-black/50 z-0"></div>
+        <div className="absolute inset-0 bg-black/65 backdrop-blur-[2px] z-0"></div>
 
         <div className="container mx-auto px-4 z-10 text-center">
           <motion.h1
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.8 }}
-            className="text-5xl md:text-7xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400"
+            className="text-5xl md:text-7xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400 drop-shadow-[0_4px_4px_rgba(0,0,0,0.5)]"
           >
             Tu Empresa Internacional
           </motion.h1>
           <motion.p
             {...fadeIn}
             transition={{ delay: 0.2 }}
-            className="text-xl md:text-2xl text-gray-300 mb-10 max-w-3xl mx-auto"
+            className="text-xl md:text-2xl text-white font-semibold mb-10 max-w-4xl mx-auto drop-shadow-[0_2px_4px_rgba(0,0,0,1)] px-4 leading-relaxed tracking-wide"
           >
             Eliminamos los intermediarios. ¿Te gustaría comprar directamente de las fabricas y Generar dinero por Recomendar? Imagine miles de Fabricas globales desde Electrodomésticos, vestuario, alta moda, tecnología, movilidad, etc. - Enviando sus productos directamente a la puerta de Tu Hogar.
           </motion.p>
 
+          <motion.button
+            onClick={scrollToRegister}
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.4, duration: 0.5 }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="bg-gradient-to-r from-blue-500 to-purple-600 text-white font-bold py-4 px-10 rounded-full text-xl shadow-[0_0_20px_rgba(59,130,246,0.5)] border border-blue-400/30 backdrop-blur-sm transition-all animate-pulse"
+          >
+            🛡️ Reservar mi Posición GRATIS Ahora
+          </motion.button>
         </div>
       </section>
 
-      {/* PRODUCT LINES */}
+      {/* EL ANCLA DE TU ÉXITO: SALUD */}
+      <section className="py-20 bg-white text-slate-900 border-b border-gray-100">
+        <div className="container mx-auto px-4">
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8 }}
+              viewport={{ once: true }}
+            >
+              <h2 className="text-3xl md:text-5xl font-bold mb-6 text-slate-900 leading-tight">
+                El Ancla de tu Éxito: <span className="text-emerald-600">Salud Real y Tangible</span>
+              </h2>
+              <h3 className="text-2xl font-semibold text-emerald-700 mb-4 flex items-center gap-2">
+                🌿 Nuestra Riqueza se Basa en Bienestar Físico Exento de Impuestos
+              </h3>
+              <p className="text-lg text-gray-700 mb-6 leading-relaxed">
+                Antes de hablar de dólares, hablemos de lo más importante: tu salud. TEI no es un modelo vacío; es el puente hacia productos de altísima calidad que tú y tu familia ya necesitan, pero sin los intermediarios que los hacen costosos.
+              </p>
+              
+              <div className="space-y-4 mb-8">
+                <div className="flex gap-4 p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
+                  <span className="text-3xl">✨</span>
+                  <div>
+                    <h4 className="font-bold text-emerald-800">Resveratrol con Colágeno</h4>
+                    <p className="text-sm text-emerald-700">Tu aliado diario contra el envejecimiento celular, formulado para una absorción óptima.</p>
+                  </div>
+                </div>
+                <div className="flex gap-4 p-4 bg-blue-50 rounded-2xl border border-blue-100">
+                  <span className="text-3xl">🍎</span>
+                  <div>
+                    <h4 className="font-bold text-blue-800">Alimentos Saludables</h4>
+                    <p className="text-sm text-blue-700">Una selección de nutrición para que cada peso que inviertas en ti se transforme 100% en bienestar. No te olvides que con nosotros obtienes todo lo que necesitas en tu hogar.</p>
+                  </div>
+                </div>
+              </div>
+              
+              <p className="text-xl font-bold text-slate-800 italic border-l-4 border-emerald-500 pl-4">
+                TEI es el único ecosistema donde tu consumo inteligente es la base de tu riqueza.
+              </p>
+            </motion.div>
+            
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.8 }}
+              viewport={{ once: true }}
+              className="relative"
+            >
+              <div className="absolute inset-0 bg-emerald-500/10 blur-3xl rounded-full"></div>
+              <img 
+                src="https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&q=80&w=1000" 
+                alt="Bienestar y Salud" 
+                className="relative z-10 rounded-3xl shadow-2xl border-8 border-white"
+              />
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* PRODUCT LINES / ECOSYSTEM */}
       <section className="py-20 bg-slate-800">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
@@ -54,7 +130,6 @@ const Opportunity = () => {
             <p className="text-gray-400 text-lg">Más que un negocio, un estilo de vida.</p>
           </div>
 
-          {/* Video Full Width */}
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             whileInView={{ opacity: 1, scale: 1 }}
@@ -89,7 +164,7 @@ const Opportunity = () => {
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-yellow-400 to-orange-500">
-              Plan de Compensación Híbrido
+              Plan de Compensación Híbrido Sostenible
             </h2>
             <p className="text-gray-300 text-lg max-w-2xl mx-auto">
               Hemos diseñado el sistema más agresivo y sostenible del mercado.
@@ -110,8 +185,8 @@ const Opportunity = () => {
               <div className="flex gap-4">
                 <div className="w-12 h-12 rounded-full bg-purple-600 flex items-center justify-center font-bold text-xl shrink-0">2</div>
                 <div>
-                  <h4 className="text-xl font-bold text-white mb-2">Binario Global</h4>
-                  <p className="text-gray-400">Construye dos equipos y gana por los niveles impares de las dos Piernas hasta el nivel 21.</p>
+                  <h4 className="text-xl font-bold text-white mb-2">Apalancamiento de Equipo Global</h4>
+                  <p className="text-gray-400">Benefíciate del crecimiento de la red internacional que cae debajo de ti.</p>
                 </div>
               </div>
 
@@ -119,7 +194,7 @@ const Opportunity = () => {
                 <div className="w-12 h-12 rounded-full bg-emerald-600 flex items-center justify-center font-bold text-xl shrink-0">3</div>
                 <div>
                   <h4 className="text-xl font-bold text-white mb-2">Matrices Forzadas</h4>
-                  <p className="text-gray-400">Nuestro sistema inteligente coloca personas debajo de ti automáticamente, ayudándote a capitalizar más rápido.</p>
+                  <p className="text-gray-400">Pequeños equipos, ganancias rápidas.</p>
                 </div>
               </div>
 
@@ -127,18 +202,17 @@ const Opportunity = () => {
                 <div className="w-12 h-12 rounded-full bg-orange-600 flex items-center justify-center font-bold text-xl shrink-0">4</div>
                 <div>
                   <h4 className="text-xl font-bold text-white mb-2">Bonos de Rango y Honor</h4>
-                  <p className="text-gray-400">Premios de lujo, viajes y bonos en efectivo al alcanzar metas de liderazgo. Desde Silver hasta Diamond Elite.</p>
+                  <p className="text-gray-400">Premios de lujo, viajes y bonos en efectivo. Desde Silver hasta Diamond Elite.</p>
                 </div>
               </div>
             </div>
 
             <div className="relative">
-              {/* Abstract visual representation of the network */}
               <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 blur-3xl opacity-20 rounded-full"></div>
               <div className="relative bg-slate-800 p-8 rounded-3xl border border-slate-600 shadow-2xl">
                 <div className="text-center mb-8">
                   <span className="text-6xl">🚀</span>
-                  <h3 className="text-2xl font-bold mt-4">Potencial de Ganancias</h3>
+                  <h3 className="text-2xl font-bold mt-4">Ejemplos de Proyección Matemática</h3>
                 </div>
                 <div className="space-y-4">
                   <div className="flex justify-between items-center p-4 bg-slate-700 rounded-lg">
@@ -155,86 +229,13 @@ const Opportunity = () => {
                   </div>
                 </div>
                 <div className="mt-8 text-center">
-                  <p className="text-sm text-gray-500 italic">*Resultados basados en esfuerzo y dedicación.</p>
+                  <p className="text-sm text-gray-500 italic">*Las cifras presentadas son ejemplos matemáticos del plan de compensación y no constituyen una promesa ni garantía de ingresos fijos. El éxito en este negocio depende 100% del liderazgo, las ventas efectivas y el esfuerzo del distribuidor independiente.</p>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* DETAILED COMPENSATION BREAKDOWN */}
           <div className="mt-24 space-y-24">
-
-            {/* Unilevel Section */}
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              viewport={{ once: true }}
-              className="bg-slate-800/50 rounded-3xl p-8 md:p-12 border border-slate-700 backdrop-blur-sm"
-            >
-              <div className="text-center mb-12">
-                <span className="text-4xl mb-4 block">🌳</span>
-                <h3 className="text-3xl md:text-4xl font-bold text-white mb-4">Red Unilevel</h3>
-                <p className="text-xl text-blue-300">Ganancias recurrentes de tu equipo personal</p>
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-12">
-                <div className="space-y-8">
-                  <div className="bg-slate-700/50 p-6 rounded-xl border-l-4 border-green-500">
-                    <h4 className="text-xl font-bold text-white mb-2">🎯 7 Niveles de Profundidad</h4>
-                    <p className="text-gray-300">Ganas comisiones de hasta 7 niveles de profundidad en tu red. Cada nivel tiene su propio porcentaje de comisión.</p>
-                  </div>
-                  <div className="bg-slate-700/50 p-6 rounded-xl border-l-4 border-blue-500">
-                    <h4 className="text-xl font-bold text-white mb-2">💎 Total 27% Distribuido</h4>
-                    <p className="text-gray-300">El sistema distribuye un total de 27% en comisiones:</p>
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {[1, 2, 2, 4, 5, 6, 7].map((percent, idx) => (
-                        <span key={idx} className="bg-blue-600/30 px-3 py-1 rounded-full text-sm font-bold text-blue-200">
-                          Nivel {idx + 1}: {percent}%
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="bg-slate-700/50 p-6 rounded-xl border-l-4 border-purple-500">
-                    <h4 className="text-xl font-bold text-white mb-2">⚡ Comisiones Automáticas</h4>
-                    <p className="text-gray-300">Cada vez que alguien en tu red hace una compra, automáticamente recibes tu comisión según el nivel.</p>
-                  </div>
-                </div>
-
-                <div className="bg-gradient-to-br from-indigo-900/50 to-purple-900/50 p-8 rounded-2xl border border-indigo-500/30">
-                  <div className="text-center mb-6">
-                    <span className="text-3xl mb-2 block">🎁</span>
-                    <h4 className="text-2xl font-bold text-white">Bono de Igualación</h4>
-                    <p className="text-indigo-200 text-sm">(Matching Bonus)</p>
-                  </div>
-
-                  <div className="space-y-6">
-                    <div>
-                      <h5 className="font-bold text-white mb-2">¿Qué es?</h5>
-                      <p className="text-gray-300 text-sm">Es un bono adicional del <span className="text-yellow-400 font-bold">50%</span> de todas las comisiones que generan tus patrocinados directos (Nivel 1).</p>
-                    </div>
-                    <div>
-                      <h5 className="font-bold text-white mb-2">¿Cómo funciona?</h5>
-                      <p className="text-gray-300 text-sm">Cuando un patrocinado directo tuyo gana comisiones Unilevel, tú recibes la mitad de eso EXTRA.</p>
-                    </div>
-                    <div className="bg-slate-900/50 p-4 rounded-lg mt-4">
-                      <p className="text-sm text-gray-400 mb-2 font-semibold">Ejemplo Práctico:</p>
-                      <ul className="space-y-2 text-sm">
-                        <li className="flex items-center gap-2">
-                          <span className="text-green-400">✓</span>
-                          <span className="text-gray-300">Tu directo Pedro gana $100</span>
-                        </li>
-                        <li className="flex items-center gap-2">
-                          <span className="text-green-400">✓</span>
-                          <span className="text-yellow-400 font-bold">Tú recibes $50 extra</span>
-                        </li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-
             {/* Global Binary Section */}
             <motion.div
               initial={{ opacity: 0, y: 30 }}
@@ -252,73 +253,19 @@ const Opportunity = () => {
                   "¿Te gustaría que el mundo entero trabajara para llenar tu cuenta bancaria mientras duermes?"
                 </p>
 
-                <div className="text-left space-y-12 max-w-4xl mx-auto">
-                  {/* Introduction */}
-                  <div className="prose prose-invert max-w-none">
-                    <p className="text-lg text-gray-300 leading-relaxed">
+                <div className="text-left space-y-12 max-w-4xl mx-auto font-light">
+                  <div className="prose prose-invert max-w-none text-center">
+                    <p className="text-lg text-gray-300 leading-relaxed font-light">
                       Imagina esto por un momento: Alrededor del mundo, miles de personas están buscando Ingresos Adicionales y libertad financiera justo ahora.
                       <span className="text-white font-semibold"> Cada vez que alguien se registra, el sistema busca un lugar vacío. Ese lugar podría estar debajo de ti.</span>
                     </p>
-                    <p className="text-lg text-gray-300 mt-4 leading-relaxed">
-                      Te presento el Binario Global de <span className="text-blue-400 font-bold">TU EMPRESA INTERNACIONAL</span>, el único sistema donde no estás solo, sino apalancado por una maquinaria internacional que no se detiene.
-                    </p>
                   </div>
 
-                  {/* Key Benefits Grid */}
-                  <div className="grid md:grid-cols-3 gap-6">
-                    <div className="bg-slate-800 p-6 rounded-xl hover:bg-slate-750 transition-colors">
-                      <div className="text-3xl mb-4">💎</div>
-                      <h4 className="text-lg font-bold text-white mb-2">Posicionamiento de Élite</h4>
-                      <p className="text-sm text-gray-400">
-                        Entra hoy a "Costo Cero". Tu posición es un activo que gana valor cada minuto, capitalizando el crecimiento global.
-                      </p>
-                    </div>
-                    <div className="bg-slate-800 p-6 rounded-xl hover:bg-slate-750 transition-colors">
-                      <div className="text-3xl mb-4">🌊</div>
-                      <h4 className="text-lg font-bold text-white mb-2">El Poder del "Derrame"</h4>
-                      <p className="text-sm text-gray-400">
-                        Personas de otros países que no conoces caerán debajo de ti simplemente por haber llegado primero.
-                      </p>
-                    </div>
-                    <div className="bg-slate-800 p-6 rounded-xl hover:bg-slate-750 transition-colors">
-                      <div className="text-3xl mb-4">🚀</div>
-                      <h4 className="text-lg font-bold text-white mb-2">Cobras por Todo</h4>
-                      <p className="text-sm text-gray-400">
-                        Rompemos las reglas: aquí cobras por AMBAS piernas. Hasta el nivel 21 de profundidad.
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Clock / Urgency Section */}
-                  <div className="bg-orange-900/20 border border-orange-500/30 rounded-2xl p-8 flex flex-col md:flex-row gap-8 items-center">
-                    <div className="shrink-0 text-center md:text-left">
-                      <div className="text-5xl mb-2">⏳</div>
-                      <h4 className="text-xl font-bold text-orange-400">Tu Ventaja Competitiva</h4>
-                    </div>
-                    <div className="space-y-4 flex-1">
-                      <div className="flex items-start gap-3">
-                        <span className="bg-orange-500/20 text-orange-300 px-2 py-1 rounded text-xs font-bold mt-1">GRATIS</span>
-                        <div>
-                          <h5 className="font-bold text-white">37 Días de Gracia</h5>
-                          <p className="text-sm text-gray-400">Periodo de prueba para observar cómo crece tu equipo sin haber comprado aún.</p>
-                        </div>
-                      </div>
-                      <div className="flex items-start gap-3">
-                        <span className="bg-green-500/20 text-green-300 px-2 py-1 rounded text-xs font-bold mt-1">ACTIVO</span>
-                        <div>
-                          <h5 className="font-bold text-white">367 Días de Ganancias</h5>
-                          <p className="text-sm text-gray-400">Al activarte, aseguras un año entero de comisiones automáticas.</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Cinema Analogy */}
-                  <div className="bg-blue-900/20 rounded-2xl p-8 border border-blue-500/30">
+                  <div className="bg-blue-900/20 rounded-2xl p-8 border border-blue-500/30 font-light">
                     <h4 className="text-2xl font-bold text-white mb-4 flex items-center gap-3">
                       <span>🎬</span> La Analogía del "Cine Inteligente"
                     </h4>
-                    <p className="text-gray-300 italic mb-4">
+                    <p className="text-gray-300 italic mb-4 font-light">
                       "Imagina que entras a un estreno mundial. Llegas temprano y apartas tu asiento gratis. El cine se llena con gente de todo el mundo. Por haber llegado primero, recibes una parte de lo que pagaron los que entraron después."
                     </p>
                     <p className="font-bold text-white text-center text-lg">
@@ -326,214 +273,150 @@ const Opportunity = () => {
                     </p>
                   </div>
 
-                  {/* Action Steps */}
-                  <div className="space-y-4">
-                    <h4 className="text-center text-2xl font-bold text-white mb-6">Tu Plan de Acción (Cero Riesgo)</h4>
-                    <div className="grid md:grid-cols-3 gap-4 text-center">
-                      <div className="bg-slate-800 p-4 rounded-lg">
-                        <div className="bg-blue-600 w-8 h-8 rounded-full flex items-center justify-center mx-auto mb-3 font-bold">1</div>
-                        <h5 className="font-bold text-white">Regístrate (Gratis)</h5>
-                        <p className="text-xs text-gray-400 mt-2">Asegura tu "Posición Global" ahora.</p>
-                      </div>
-                      <div className="bg-slate-800 p-4 rounded-lg">
-                        <div className="bg-blue-600 w-8 h-8 rounded-full flex items-center justify-center mx-auto mb-3 font-bold">2</div>
-                        <h5 className="font-bold text-white">Mira el Crecimiento</h5>
-                        <p className="text-xs text-gray-400 mt-2">Observa el sistema trabajar.</p>
-                      </div>
-                      <div className="bg-slate-800 p-4 rounded-lg">
-                        <div className="bg-blue-600 w-8 h-8 rounded-full flex items-center justify-center mx-auto mb-3 font-bold">3</div>
-                        <h5 className="font-bold text-white">Actívate y Cobra</h5>
-                        <p className="text-xs text-gray-400 mt-2">Prepárate para un año de ingresos.</p>
-                      </div>
-                    </div>
+                  <div className="mt-12 text-center">
+                    <motion.button
+                      onClick={scrollToRegister}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="bg-gradient-to-r from-orange-500 to-yellow-500 text-white font-bold py-4 px-10 rounded-full text-xl shadow-lg transition-all"
+                    >
+                      🛡️ Reservar mi Posición GRATIS Ahora
+                    </motion.button>
                   </div>
-
                 </div>
               </div>
             </motion.div>
 
-            {/* Forced Matrix Section */}
+            {/* Matrices Simplified */}
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
               viewport={{ once: true }}
-              className="bg-slate-800/80 rounded-3xl p-8 md:p-12 border border-emerald-500/30 relative overflow-hidden"
+              className="bg-slate-800/80 rounded-3xl p-8 md:p-12 border border-emerald-500/30 relative overflow-hidden text-center"
             >
               <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl -mr-32 -mt-32"></div>
 
-              <div className="text-center mb-12 relative z-10">
-                <span className="text-4xl mb-4 block">🏗️</span>
-                <h3 className="text-3xl md:text-4xl font-bold text-white mb-4">Matrices Forzadas</h3>
-                <p className="text-xl text-emerald-300">Equipos pequeños, Ganancias rápidas</p>
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-12 items-center">
-                <div className="space-y-6">
-                  <div className="bg-slate-900/50 p-6 rounded-xl border border-slate-700">
-                    <h4 className="text-xl font-bold text-white mb-2">¿Qué es una Matriz?</h4>
-                    <p className="text-gray-300 text-sm mb-4">
-                      Imagina que eres el capitán de un pequeño equipo. Tu "misión" es llenar un equipo de tan solo <span className="text-emerald-400 font-bold">12 personas</span>.
-                    </p>
-                    <div className="bg-slate-800 p-3 rounded text-sm text-center font-mono text-emerald-200">
-                      Tú (1) + Nivel 1 (3) + Nivel 2 (9) = 12 Personas
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <h4 className="text-lg font-bold text-white">🚀 ¿Cómo funciona el ciclo?</h4>
-                    <ol className="space-y-4">
-                      <li className="flex gap-3">
-                        <span className="bg-emerald-600 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 mt-1">1</span>
-                        <div>
-                          <strong className="text-white block">Llenas tu equipo</strong>
-                          <span className="text-sm text-gray-400">Invitas a 3, y ellos invitan a sus 3.</span>
-                        </div>
-                      </li>
-                      <li className="flex gap-3">
-                        <span className="bg-emerald-600 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 mt-1">2</span>
-                        <div>
-                          <strong className="text-white block">¡Ciclas y Cobras! 💰</strong>
-                          <span className="text-sm text-gray-400">Al entrar la persona #12, el sistema te paga inmediatamente (de $77 a $970,000 USD).</span>
-                        </div>
-                      </li>
-                      <li className="flex gap-3">
-                        <span className="bg-emerald-600 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 mt-1">3</span>
-                        <div>
-                          <strong className="text-white block">Evolucionas</strong>
-                          <span className="text-sm text-gray-400">Re-entras para volver a cobrar o Asciendes al siguiente nivel gratis.</span>
-                        </div>
-                      </li>
-                    </ol>
-                  </div>
-                </div>
-
-                <div className="bg-slate-900/80 p-8 rounded-2xl border border-emerald-500/20">
-                  <h4 className="text-xl font-bold text-white mb-6 text-center">🏆 Los 9 Niveles de Juego</h4>
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center bg-slate-800 p-3 rounded border-l-4 border-gray-400">
-                      <span className="text-sm text-gray-300">Consumidor</span>
-                      <span className="font-bold text-emerald-400">$77 USD</span>
-                    </div>
-                    <div className="flex justify-between items-center bg-slate-800 p-3 rounded border-l-4 border-orange-400">
-                      <span className="text-sm text-gray-300">Bronce</span>
-                      <span className="font-bold text-emerald-400">$277 USD</span>
-                    </div>
-                    <div className="flex justify-between items-center bg-slate-800 p-3 rounded border-l-4 border-gray-300">
-                      <span className="text-sm text-gray-300">Plata</span>
-                      <span className="font-bold text-emerald-400">$877 USD</span>
-                    </div>
-                    <div className="flex justify-between items-center bg-slate-800 p-3 rounded border-l-4 border-yellow-400 relative overflow-hidden">
-                      <div className="absolute inset-0 bg-yellow-400/10 animate-pulse"></div>
-                      <span className="text-sm text-white font-bold relative z-10">Oro</span>
-                      <span className="font-bold text-yellow-300 relative z-10">$1,500 USD + Cripto</span>
-                    </div>
-                    <div className="text-center text-xs text-gray-500 mt-2">
-                      ... hasta Diamante Azul ($970k USD)
-                    </div>
-                  </div>
-
-                  <div className="mt-6 bg-emerald-900/30 p-4 rounded-xl">
-                    <p className="text-emerald-200 text-sm italic text-center">
-                      "Es como llenar un autobús de 12 pasajeros. Cuando se llena, te paga y te da boleto gratis para el siguiente viaje."
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Millionaire Binary Section */}
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              viewport={{ once: true }}
-              className="bg-gradient-to-tr from-slate-900 to-blue-900 rounded-3xl p-8 md:p-16 border border-blue-500/30 text-center relative overflow-hidden"
-            >
-              <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20"></div>
-
-              <div className="relative z-10 max-w-4xl mx-auto">
-                <span className="text-5xl mb-6 block">💎</span>
-                <h3 className="text-3xl md:text-5xl font-bold text-white mb-6">Red Binaria Millonaria</h3>
-                <p className="text-xl text-blue-200 mb-12">Construcción de Riqueza a Largo Plazo</p>
-
-                <div className="grid md:grid-cols-2 gap-12 text-left mb-12">
-                  <div>
-                    <h4 className="text-2xl font-bold text-white mb-4">¿Por qué es diferente?</h4>
-                    <p className="text-gray-300 mb-6">
-                      A diferencia de las matrices (dinero rápido), este es un plan de <span className="text-blue-400 font-bold">Profundidad Extrema</span>.
-                    </p>
-                    <div className="space-y-4">
-                      <div className="flex items-start gap-4">
-                        <div className="bg-blue-600/20 p-2 rounded-lg text-2xl">🌲</div>
-                        <div>
-                          <h5 className="font-bold text-white">Profundidad Nivel 27</h5>
-                          <p className="text-sm text-gray-400">Imagina un árbol genealógico gigante. Cobras de millones de personas.</p>
-                        </div>
-                      </div>
-                      <div className="flex items-start gap-4">
-                        <div className="bg-blue-600/20 p-2 rounded-lg text-2xl">⚖️</div>
-                        <div>
-                          <h5 className="font-bold text-white">Niveles Impares</h5>
-                          <p className="text-sm text-gray-400">Te paga en los niveles 1, 3, 5... hasta el 27. ¡No tienes que llenar líneas completas!</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700">
-                    <h4 className="text-lg font-bold text-white mb-4">Datos Clave</h4>
-                    <ul className="space-y-3 text-sm text-gray-300">
-                      <li className="flex justify-between border-b border-slate-700 pb-2">
-                        <span>Valor Punto (PV)</span>
-                        <span className="text-blue-400 font-bold">$4,500 COP</span>
-                      </li>
-                      <li className="flex justify-between border-b border-slate-700 pb-2">
-                        <span>Estructura</span>
-                        <span className="text-blue-400 font-bold">Binaria (2x2)</span>
-                      </li>
-                      <li className="flex justify-between border-b border-slate-700 pb-2">
-                        <span>Tipo de Ingreso</span>
-                        <span className="text-blue-400 font-bold">Residual / Pasivo</span>
-                      </li>
-                    </ul>
-                    <div className="mt-6">
-                      <p className="text-xs text-gray-400 text-center mb-2">Potencial de Crecimiento</p>
-                      <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
-                        <div className="h-full bg-gradient-to-r from-blue-400 to-purple-600 w-3/4"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-blue-600/10 p-8 rounded-2xl border border-blue-500/20">
-                  <h4 className="text-2xl font-bold text-white mb-4">💡 Resumen para Visionarios</h4>
-                  <p className="text-lg text-blue-100 italic">
-                    "Las Matrices son para el día a día. El Binario Millonario es para tu jubilación. Construyes una vez, y cobras de una profundidad donde caben millones de personas."
+              <span className="text-4xl mb-4 block">🏗️</span>
+              <h3 className="text-3xl md:text-4xl font-bold text-white mb-4">Matrices Forzadas</h3>
+              <p className="text-xl text-emerald-300 mb-8 font-semibold">Pequeños equipos, ganancias rápidas</p>
+              
+              <div className="max-w-3xl mx-auto">
+                <p className="text-lg text-gray-300 leading-relaxed mb-8">
+                  Nuestro sistema inteligente de matrices permite que equipos compactos generen resultados extraordinarios de forma cíclica. Es la herramienta perfecta para capitalizar tu negocio mientras construyes tu visión a largo plazo.
+                </p>
+                <div className="bg-emerald-900/30 p-6 rounded-2xl border border-emerald-500/20">
+                  <p className="text-emerald-200 text-lg italic">
+                    "Es como llenar un autobús de 12 pasajeros. Cuando se llena, te paga y te da un boleto gratis para el siguiente viaje."
                   </p>
                 </div>
               </div>
             </motion.div>
 
+            {/* MISSION SECTION */}
+            <motion.section
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              transition={{ duration: 1 }}
+              viewport={{ once: true }}
+              className="py-24 bg-white text-slate-900 rounded-3xl"
+            >
+              <div className="container mx-auto px-4 max-w-4xl text-center">
+                <span className="text-blue-600 font-bold tracking-widest uppercase text-sm mb-4 block">Nuestra Razón de Ser</span>
+                <h2 className="text-4xl md:text-5xl font-bold mb-8 leading-tight text-slate-900">
+                  🌍 Creemos en la <span className="text-blue-600">Gran Revolución de las Personas Felices</span>
+                </h2>
+                
+                <div className="space-y-6 text-lg text-gray-700 leading-relaxed text-left md:text-center">
+                  <p>
+                    TEI no nació para ser una empresa más, nació para desafiar el sistema tradicional. Nos dimos cuenta de una gran injusticia: el 99% de las personas trabaja duro para que el 1% de los intermediarios se quede con la riqueza. Y lo que es peor, el sistema tradicional no enseña a las personas cómo generar su propia libertad.
+                  </p>
+                  <p className="font-semibold text-slate-900 border-l-4 md:border-l-0 md:border-b-4 border-blue-500 pl-4 md:pl-0 md:pb-4 inline-block">
+                    Nuestra misión es simple pero poderosa: Eliminar los intermediarios para entregarte a ti el 100% del control de tu consumo y de tus ingresos.
+                  </p>
+                  <p>
+                    Creemos firmemente en el poder de la economía colaborativa y en el mercadeo en red legal como la herramienta más potente para democratizar la riqueza.
+                  </p>
+                  <p>
+                    Nuestra meta es crear una revolución de personas felices, libres y saludables, donde cada miembro ayude a otros a generar un segundo ingreso.
+                  </p>
+                </div>
+              </div>
+            </motion.section>
+
+            {/* FAQ SECTION */}
+            <section className="py-24 bg-slate-900/50 rounded-3xl border border-slate-800">
+              <div className="container mx-auto px-4 max-w-3xl">
+                <div className="text-center mb-16">
+                  <h2 className="text-3xl md:text-5xl font-bold text-white mb-4">🛡️ Tus Dudas Resueltas</h2>
+                  <p className="text-blue-300 text-lg">Seguridad y Claridad Total</p>
+                </div>
+
+                <div className="space-y-4">
+                  {[
+                    {
+                      q: "¿TEI es una pirámide?",
+                      a: "No. Somos una empresa legalmente constituida en Colombia como TU EMPRESA INTERNACIONAL S.A.S. (TEI S.A.S.), regida y vigilada bajo la Ley 1700 de 2013 (Ley de Multinivel). Nuestras comisiones provienen exclusivamente de la venta real de productos tangibles y educación, no de la simple entrada de personas. Cumplimos con todos los requisitos fiscales de la DIAN."
+                    },
+                    {
+                      q: "¿Tengo que pagar para unirme a TEI?",
+                      a: "No. El registro inicial es 100% GRATIS. Esto te permite asegurar tu posición en el Binario Global y observar cómo crece la red por derrame. Luego, tú eliges cómo activarte."
+                    },
+                    {
+                      q: "¿Cuándo y cómo recibo mi dinero?",
+                      a: "¡Por Bre-B, o transferencia Bancaria directo a tu banco! Pagamos comisiones los días 10, 20 y 30 de cada mes. El dinero llega al instante a la cuenta bancaria de tu elección en pesos colombianos."
+                    },
+                    {
+                      q: "¿Autoconsumo obligatorio?",
+                      a: "No de manera obligatoria. TEI cree en el consumo inteligente. Tú eres libre de comprar tus productos cuando los necesites."
+                    },
+                    {
+                      q: "¿La educación tiene costo?",
+                      a: "La capacitación corporativa es gratuita. Nuestra Academia de Liderazgo Marketing Digital Élite tiene un costo de $287.000 COP, que queda como abono para tus futuros productos físicos."
+                    }
+                  ].map((item, idx) => (
+                    <div key={idx} className="bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden">
+                      <button
+                        onClick={() => setActiveFaq(activeFaq === idx ? null : idx)}
+                        className="w-full flex items-center justify-between p-6 text-left hover:bg-slate-700 transition-colors"
+                      >
+                        <span className="text-lg font-bold text-white">{item.q}</span>
+                        <span className={`text-2xl text-blue-400 transition-transform ${activeFaq === idx ? 'rotate-45' : ''}`}>+</span>
+                      </button>
+                      <motion.div
+                        initial={false}
+                        animate={{ height: activeFaq === idx ? 'auto' : 0, opacity: activeFaq === idx ? 1 : 0 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="p-6 pt-0 text-gray-300 leading-relaxed border-t border-slate-700/50">
+                          {item.a}
+                        </div>
+                      </motion.div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
           </div>
         </div>
       </section>
 
-      {/* CTA SECTION */}
-      <section className="py-24 bg-blue-900 relative overflow-hidden">
-        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
-        <div className="container mx-auto px-4 text-center relative z-10">
-          <h2 className="text-4xl md:text-6xl font-bold mb-8 text-white">¿Estás listo para cambiar tu vida?</h2>
-          <p className="text-xl text-blue-100 mb-10 max-w-2xl mx-auto">
-            La oportunidad perfecta en el momento perfecto. No dejes pasar el tren de la economía digital.
-          </p>
-
-          {/* Registration Form directly on page */}
-          <div className="max-w-2xl mx-auto">
+      {/* REGISTRATION SECTION */}
+      <section id="register-section" className="py-24 bg-blue-900 relative">
+        <div className="container mx-auto px-4 text-center">
+          <h2 className="text-4xl md:text-6xl font-bold mb-8 text-white">¿Estás listo para tu nueva vida?</h2>
+          <div className="max-w-2xl mx-auto bg-white p-8 rounded-3xl shadow-2xl text-slate-900 border border-white/20 backdrop-blur-sm">
             <RegisterForm referralCode={refCode} />
+            <p className="mt-6 text-gray-500 text-sm italic">
+              He leído y acepto los Términos y Condiciones, incluyendo las políticas de privacidad, tratamiento de datos y la Tasa Cambiaria Fija de $4.500 COP/USD.
+            </p>
+            <button 
+              onClick={() => document.querySelector('form')?.requestSubmit()}
+              className="mt-8 bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-12 rounded-full text-xl shadow-xl transition-all w-full"
+            >
+              ✅ Crear Cuenta Completar →
+            </button>
           </div>
-
-          <p className="mt-6 text-blue-200 text-sm">Registro 100% Seguro • Acceso Inmediato</p>
         </div>
       </section>
 
