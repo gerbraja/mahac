@@ -12,6 +12,8 @@ import BinaryMillionaireView from './pages/dashboard/BinaryMillionaireView';
 import UnilevelView from './pages/dashboard/UnilevelView';
 import DirectsView from './pages/dashboard/DirectsView';
 import EducationView from './pages/dashboard/EducationView';
+import DigitalMarketingCourse from './pages/dashboard/DigitalMarketingCourse';
+import NetworkBuildingCourse from './pages/dashboard/NetworkBuildingCourse';
 import PersonalView from './pages/dashboard/PersonalView';
 import SecurityView from './pages/dashboard/SecurityView';
 import StoreView from './pages/dashboard/StoreView';
@@ -159,6 +161,8 @@ export default function App() {
           <Route path="store" element={<StoreView />} />
           <Route path="wallet" element={<WalletView />} />
           <Route path="education" element={<EducationView />} />
+          <Route path="education/marketing" element={<DigitalMarketingCourse />} />
+          <Route path="education/network" element={<NetworkBuildingCourse />} />
           <Route path="personal" element={<PersonalView />} />
           <Route path="security" element={<SecurityView />} />
           <Route path="orders" element={<UserOrders />} />

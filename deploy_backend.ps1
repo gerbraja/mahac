@@ -40,10 +40,7 @@ Write-Host "Building and deploying backend..." -ForegroundColor Cyan
     --source . `
     --region $REGION `
     --allow-unauthenticated `
-    --set-env-vars="CLOUD_SQL_CONNECTION_NAME=$CONNECTION_NAME" `
-    --set-env-vars="DB_USER=postgres" `
-    --set-env-vars="DB_PASS=$DB_PASSWORD_PLAIN" `
-    --set-env-vars="DB_NAME=$DB_NAME" `
+    --update-env-vars="CLOUD_SQL_CONNECTION_NAME=$CONNECTION_NAME,DB_USER=postgres,DB_PASS=$DB_PASSWORD_PLAIN,DB_NAME=$DB_NAME" `
     --add-cloudsql-instances=$CONNECTION_NAME `
     --port=8000
 

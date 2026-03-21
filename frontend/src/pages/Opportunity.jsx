@@ -62,65 +62,6 @@ const Opportunity = () => {
         </div>
       </section>
 
-      {/* EL ANCLA DE TU ÉXITO: SALUD */}
-      <section className="py-20 bg-white text-slate-900 border-b border-gray-100">
-        <div className="container mx-auto px-4">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            <motion.div
-              initial={{ opacity: 0, x: -30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8 }}
-              viewport={{ once: true }}
-            >
-              <h2 className="text-3xl md:text-5xl font-bold mb-6 text-slate-900 leading-tight">
-                El Ancla de tu Éxito: <span className="text-emerald-600">Salud Real y Tangible</span>
-              </h2>
-              <h3 className="text-2xl font-semibold text-emerald-700 mb-4 flex items-center gap-2">
-                🌿 Nuestra Riqueza se Basa en Bienestar Físico Exento de Impuestos
-              </h3>
-              <p className="text-lg text-gray-700 mb-6 leading-relaxed">
-                Antes de hablar de dólares, hablemos de lo más importante: tu salud. TEI no es un modelo vacío; es el puente hacia productos de altísima calidad que tú y tu familia ya necesitan, pero sin los intermediarios que los hacen costosos.
-              </p>
-              
-              <div className="space-y-4 mb-8">
-                <div className="flex gap-4 p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
-                  <span className="text-3xl">✨</span>
-                  <div>
-                    <h4 className="font-bold text-emerald-800">Resveratrol con Colágeno</h4>
-                    <p className="text-sm text-emerald-700">Tu aliado diario contra el envejecimiento celular, formulado para una absorción óptima.</p>
-                  </div>
-                </div>
-                <div className="flex gap-4 p-4 bg-blue-50 rounded-2xl border border-blue-100">
-                  <span className="text-3xl">🍎</span>
-                  <div>
-                    <h4 className="font-bold text-blue-800">Alimentos Saludables</h4>
-                    <p className="text-sm text-blue-700">Una selección de nutrición para que cada peso que inviertas en ti se transforme 100% en bienestar. No te olvides que con nosotros obtienes todo lo que necesitas en tu hogar.</p>
-                  </div>
-                </div>
-              </div>
-              
-              <p className="text-xl font-bold text-slate-800 italic border-l-4 border-emerald-500 pl-4">
-                TEI es el único ecosistema donde tu consumo inteligente es la base de tu riqueza.
-              </p>
-            </motion.div>
-            
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.8 }}
-              viewport={{ once: true }}
-              className="relative"
-            >
-              <div className="absolute inset-0 bg-emerald-500/10 blur-3xl rounded-full"></div>
-              <img 
-                src="https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&q=80&w=1000" 
-                alt="Bienestar y Salud" 
-                className="relative z-10 rounded-3xl shadow-2xl border-8 border-white"
-              />
-            </motion.div>
-          </div>
-        </div>
-      </section>
 
       {/* PRODUCT LINES / ECOSYSTEM */}
       <section className="py-20 bg-slate-800">
@@ -255,9 +196,8 @@ const Opportunity = () => {
 
                 <div className="text-left space-y-12 max-w-4xl mx-auto font-light">
                   <div className="prose prose-invert max-w-none text-center">
-                    <p className="text-lg text-gray-300 leading-relaxed font-light">
-                      Imagina esto por un momento: Alrededor del mundo, miles de personas están buscando Ingresos Adicionales y libertad financiera justo ahora.
-                      <span className="text-white font-semibold"> Cada vez que alguien se registra, el sistema busca un lugar vacío. Ese lugar podría estar debajo de ti.</span>
+                    <p className="text-xl text-gray-300 leading-relaxed font-light">
+                      🚀 "Olvída todo lo que creías saber sobre las redes de mercadeo. Tu Empresa Internacional (TEI) no vino a participar en la industria, vino a reescribir sus reglas. Nos adelantamos al futuro fusionando el e-commerce de productos reales con un plan de compensación inquebrantable. <span className="text-white font-semibold">Esta es la evolución definitiva donde por fin, el poder y la riqueza regresan a tus manos.</span>"
                     </p>
                   </div>
 
@@ -327,18 +267,15 @@ const Opportunity = () => {
                   🌍 Creemos en la <span className="text-blue-600">Gran Revolución de las Personas Felices</span>
                 </h2>
                 
-                <div className="space-y-6 text-lg text-gray-700 leading-relaxed text-left md:text-center">
-                  <p>
-                    TEI no nació para ser una empresa más, nació para desafiar el sistema tradicional. Nos dimos cuenta de una gran injusticia: el 99% de las personas trabaja duro para que el 1% de los intermediarios se quede con la riqueza. Y lo que es peor, el sistema tradicional no enseña a las personas cómo generar su propia libertad.
-                  </p>
+                <div className="space-y-6 text-xl text-gray-700 leading-relaxed text-left md:text-center">
                   <p className="font-semibold text-slate-900 border-l-4 md:border-l-0 md:border-b-4 border-blue-500 pl-4 md:pl-0 md:pb-4 inline-block">
-                    Nuestra misión es simple pero poderosa: Eliminar los intermediarios para entregarte a ti el 100% del control de tu consumo y de tus ingresos.
+                    🏛️ Bienvenido a la nueva era del emprendimiento.
                   </p>
                   <p>
-                    Creemos firmemente en el poder de la economía colaborativa y en el mercadeo en red legal como la herramienta más potente para democratizar la riqueza.
+                    Tu Empresa Internacional (TEI) tomó lo mejor del network marketing, eliminó sus fallas y se adelantó décadas hacia el futuro.
                   </p>
-                  <p>
-                    Nuestra meta es crear una revolución de personas felices, libres y saludables, donde cada miembro ayude a otros a generar un segundo ingreso.
+                  <p className="font-medium text-slate-800">
+                    Hemos Construido una Maquinaria Legal, Tecnológica y Humana Tan Poderosa, que Va a Revolucionar Para Siempre la Forma en que el Mundo Genera Ingresos Desde Casa.
                   </p>
                 </div>
               </div>

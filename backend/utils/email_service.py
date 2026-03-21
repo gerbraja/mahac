@@ -9,7 +9,7 @@ from datetime import datetime
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-async def send_welcome_email(to_email: str, username: str, full_name: str, referral_link: str):
+def send_welcome_email(to_email: str, username: str, full_name: str, referral_link: str):
     """
     Sends a welcome email to a new user using Gmail SMTP.
     This function is designed to be run as a background task.
@@ -54,7 +54,7 @@ async def send_welcome_email(to_email: str, username: str, full_name: str, refer
                 <p>Estás a un paso de comenzar a generar ingresos. Explora tu oficina virtual y completa tu perfil para comenzar.</p>
                 
                 <div style="text-align: center; margin-top: 30px;">
-                  <a href="https://tiendavirtualtei.com/login" style="background-color: #4F46E5; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;">Ingresar a mi Cuenta</a>
+                  <a href="https://tuempresainternacional.com/login" style="background-color: #4F46E5; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;">Ingresar a mi Cuenta</a>
                 </div>
               </div>
               <div style="background-color: #f3f4f6; padding: 15px; text-align: center; font-size: 12px; color: #666;">
@@ -81,7 +81,7 @@ async def send_welcome_email(to_email: str, username: str, full_name: str, refer
     except Exception as e:
         logger.error(f"❌ Failed to send welcome email to {to_email}: {str(e)}")
 
-async def send_order_invoice_email(order_data: dict, user_email: str):
+def send_order_invoice_email(order_data: dict, user_email: str):
     """
     Sends an invoice/shipping confirmation email.
     """
@@ -187,7 +187,7 @@ async def send_order_invoice_email(order_data: dict, user_email: str):
         logger.error(f"❌ Failed to send invoice email to {user_email}: {str(e)}")
 
 
-async def send_password_reset_email(to_email: str, reset_link: str):
+def send_password_reset_email(to_email: str, reset_link: str):
     """
     Sends a password reset email with a secure link.
     Designed to be run as a background task.
@@ -259,11 +259,15 @@ async def send_password_reset_email(to_email: str, reset_link: str):
         smtp_port = int(os.getenv("SMTP_PORT", "587"))
 
         with smtplib.SMTP(smtp_server, smtp_port) as server:
+            server.set_debuglevel(1) # Added debug level to see SMTP conversation
             server.starttls()
-            server.login(sender_email, password)
+            # Remove spaces from password if user copy-pasted with spaces
+            clean_password = password.replace(" ", "")
+            server.login(sender_email, clean_password)
             server.sendmail(sender_email, to_email, message.as_string())
 
-        logger.info(f"✅ Password reset email sent successfully to {to_email}")
+        print(f"✅ Password reset email sent successfully to {to_email}", flush=True)
 
     except Exception as e:
-        logger.error(f"❌ Failed to send password reset email to {to_email}: {str(e)}")
+        print(f"❌ Failed to send password reset email to {to_email}: {str(e)}", flush=True)
+

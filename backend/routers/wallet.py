@@ -18,13 +18,72 @@ from backend.database.models.matrix import MatrixCommission
 from backend.database.models.withdrawal import WithdrawalRequest
 # from backend.database.models.forced_matrix import MatrixReward
 from backend.database.models.special_bonuses import SpecialBonus, TravelBonus, BonusType, BonusStatus
+from backend.database.models.withholding import WithholdingTaxConfig, WithholdingRecord
 from pydantic import BaseModel
 from typing import Optional
 from datetime import date
 
 router = APIRouter(prefix="/wallet", tags=["Wallet"])
 
-# ... (omitted check_duplicates) ...
+
+def _apply_withholding(db: Session, user: User, gross_amount: float, release_type: str, today_year: int) -> float:
+    """
+    Calculate and record withholding taxes (ReteFuente + ReteICA) for Colombian users.
+    Returns the net amount after deductions.
+    """
+    country = (user.country or '').strip()
+    city = (user.city or '').strip()
+    is_colombia = 'colombia' in country.lower()
+
+    if not is_colombia or gross_amount <= 0:
+        return gross_amount
+
+    # 1. ReteFuente (national — applies to all Colombia)
+    retefuente_cfg = db.query(WithholdingTaxConfig).filter(
+        WithholdingTaxConfig.country == 'Colombia',
+        WithholdingTaxConfig.city == None,
+        WithholdingTaxConfig.tax_type == 'retefuente',
+        WithholdingTaxConfig.active == True
+    ).first()
+    retefuente_pct = retefuente_cfg.percentage if retefuente_cfg else 6.0
+    retefuente_amount = round(gross_amount * retefuente_pct / 100, 4)
+
+    # 2. ReteICA (municipal — only if city matches a config)
+    reteica_pct = 0.0
+    reteica_amount = 0.0
+    if city:
+        reteica_cfg = db.query(WithholdingTaxConfig).filter(
+            WithholdingTaxConfig.country == 'Colombia',
+            WithholdingTaxConfig.city.ilike(city),
+            WithholdingTaxConfig.tax_type == 'reteica',
+            WithholdingTaxConfig.active == True
+        ).first()
+        if reteica_cfg:
+            reteica_pct = reteica_cfg.percentage
+            reteica_amount = round(gross_amount * reteica_pct / 100, 4)
+
+    total_withheld = round(retefuente_amount + reteica_amount, 4)
+    net_amount = round(gross_amount - total_withheld, 4)
+
+    # Save record
+    record = WithholdingRecord(
+        user_id=user.id,
+        country=country,
+        city=city or None,
+        fiscal_year=today_year,
+        release_type=release_type,
+        gross_amount=gross_amount,
+        retefuente_pct=retefuente_pct,
+        retefuente_amount=retefuente_amount,
+        reteica_pct=reteica_pct,
+        reteica_amount=reteica_amount,
+        total_withheld=total_withheld,
+        net_amount=net_amount
+    )
+    db.add(record)
+    print(f"[WITHHOLDING] User {user.id} ({country}/{city}): gross={gross_amount:.4f} retefuente={retefuente_amount:.4f} reteica={reteica_amount:.4f} net={net_amount:.4f}", flush=True)
+    return net_amount
+
 
 @router.get("/check-duplicates")
 def check_duplicates(key: str, fix: bool = False, db: Session = Depends(get_db)):
@@ -111,7 +170,7 @@ def get_wallet_summary(db: Session = Depends(get_db), user: User = Depends(get_c
             if pending_matrix > 0:
                 user.bank_balance = (user.bank_balance or 0.0) + pending_matrix
                 user.released_matrix = (user.released_matrix or 0.0) + pending_matrix
-                user.available_balance -= pending_matrix 
+                user.available_balance -= pending_matrix
                 if user.available_balance < 0: user.available_balance = 0
                 auto_release_made = True
 
@@ -412,7 +471,9 @@ def get_wallet_summary(db: Session = Depends(get_db), user: User = Depends(get_c
 
     return {
         "available_balance": user.available_balance or 0,
-        "bank_balance": user.bank_balance or 0,
+        "bank_balance": user.bank_balance or 0,          # 🟡 Caja Fuerte
+        "verified_balance": user.verified_balance or 0,  # 🟢 Banco (requiere KYC + $50)
+        "is_kyc_verified": user.is_kyc_verified or False,
         "purchase_balance": user.purchase_balance or 0,
         "crypto_balance": user.crypto_balance or 0,
         "frozen_crypto_balance": frozen_sum,
@@ -778,6 +839,66 @@ class WithdrawalCreate(BaseModel):
     amount: float
     payment_info: str
 
+
+# ==========================================
+# TRANSFERENCIA CAJA FUERTE → BANCO
+# ==========================================
+
+BANK_TRANSFER_MINIMUM_USD = 50.0  # Mínimo para transferir al Banco
+
+@router.post("/transfer-to-bank")
+def transfer_to_bank(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Transfiere el saldo de Caja Fuerte (bank_balance) al Banco (verified_balance).
+    Requisitos:
+      1. KYC aprobado (is_kyc_verified = True)
+      2. bank_balance >= $50 USD
+    Las retenciones (ReteFuente + ReteICA) se aplican aquí.
+    """
+    from fastapi import HTTPException
+
+    # 1. Check KYC
+    if not current_user.is_kyc_verified:
+        raise HTTPException(
+            status_code=400,
+            detail="Debes completar y tener aprobado tu KYC antes de usar el Banco."
+        )
+
+    gross = round(current_user.bank_balance or 0.0, 4)
+
+    # 2. Check minimum
+    if gross < BANK_TRANSFER_MINIMUM_USD:
+        raise HTTPException(
+            status_code=400,
+            detail=f"El saldo en Caja Fuerte debe ser de al menos ${BANK_TRANSFER_MINIMUM_USD:.0f} USD para transferir al Banco. "
+                   f"Tu saldo actual es ${gross:.2f} USD."
+        )
+
+    # 3. Apply withholding (ReteFuente + ReteICA)
+    today_year = datetime.now().year
+    net_amount = _apply_withholding(db, current_user, gross, 'vault_to_bank', today_year)
+
+    # 4. Move funds
+    current_user.bank_balance = 0.0
+    current_user.verified_balance = round((current_user.verified_balance or 0.0) + net_amount, 4)
+
+    db.commit()
+    db.refresh(current_user)
+
+    withheld = round(gross - net_amount, 4)
+
+    return {
+        "message": "✅ Fondos transferidos al Banco exitosamente.",
+        "gross_amount": gross,
+        "withheld": withheld,
+        "net_transferred": net_amount,
+        "new_verified_balance": current_user.verified_balance,
+    }
+
+
 @router.get("/release-status")
 def get_release_status(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """
@@ -1090,4 +1211,109 @@ def run_product_migration(db: Session = Depends(get_db), current_user=Depends(ge
              return {"message": "Column already exists"}
         raise HTTPException(status_code=500, detail=str(e))
 
+
+# ==========================================
+# RETENCIÓN EN LA FUENTE — ENDPOINTS USUARIO
+# ==========================================
+
+@router.get("/withholding/history")
+def get_withholding_history(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Returns the full withholding deduction history for the current user."""
+    records = db.query(WithholdingRecord).filter(
+        WithholdingRecord.user_id == current_user.id
+    ).order_by(WithholdingRecord.created_at.desc()).all()
+
+    return [
+        {
+            "id": r.id,
+            "fiscal_year": r.fiscal_year,
+            "release_type": r.release_type,
+            "gross_amount": r.gross_amount,
+            "retefuente_pct": r.retefuente_pct,
+            "retefuente_amount": r.retefuente_amount,
+            "reteica_pct": r.reteica_pct,
+            "reteica_amount": r.reteica_amount,
+            "total_withheld": r.total_withheld,
+            "net_amount": r.net_amount,
+            "city": r.city,
+            "country": r.country,
+            "date": r.created_at,
+        }
+        for r in records
+    ]
+
+
+@router.get("/withholding/certificate/{year}")
+def get_withholding_certificate(
+    year: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Returns the annual withholding summary for the user.
+    Available from January of the following fiscal year.
+    Used by the frontend to render the downloadable certificate.
+    """
+    from datetime import datetime
+    current_year = datetime.now().year
+
+    # Certificate only available for completed fiscal years
+    if year >= current_year:
+        from fastapi import HTTPException
+        raise HTTPException(
+            status_code=400,
+            detail=f"El certificado del año {year} estará disponible a partir de enero del {year + 1}."
+        )
+
+    records = db.query(WithholdingRecord).filter(
+        WithholdingRecord.user_id == current_user.id,
+        WithholdingRecord.fiscal_year == year
+    ).order_by(WithholdingRecord.created_at.asc()).all()
+
+    total_gross = sum(r.gross_amount for r in records)
+    total_retefuente = sum(r.retefuente_amount for r in records)
+    total_reteica = sum(r.reteica_amount for r in records)
+    total_withheld = sum(r.total_withheld for r in records)
+    total_net = sum(r.net_amount for r in records)
+
+    return {
+        "fiscal_year": year,
+        "user": {
+            "id": current_user.id,
+            "name": current_user.name,
+            "document_id": current_user.document_id,
+            "email": current_user.email,
+            "country": current_user.country,
+            "city": current_user.city,
+        },
+        "company": {
+            "name": "TEI S.A.S. — Tu Empresa Internacional",
+            "nit": "En trámite",
+            "address": "Colombia",
+        },
+        "summary": {
+            "total_gross_income": round(total_gross, 2),
+            "total_retefuente": round(total_retefuente, 2),
+            "total_reteica": round(total_reteica, 2),
+            "total_withheld": round(total_withheld, 2),
+            "total_net_received": round(total_net, 2),
+        },
+        "transactions": [
+            {
+                "date": r.created_at,
+                "release_type": r.release_type,
+                "gross_amount": r.gross_amount,
+                "retefuente_pct": r.retefuente_pct,
+                "retefuente_amount": r.retefuente_amount,
+                "reteica_pct": r.reteica_pct,
+                "reteica_amount": r.reteica_amount,
+                "net_amount": r.net_amount,
+            }
+            for r in records
+        ],
+        "generated_at": datetime.now().isoformat(),
+    }
 

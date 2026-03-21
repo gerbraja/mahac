@@ -45,18 +45,22 @@ const EducationView = () => {
                 </div>
 
                 {/* Curso 3 */}
-                <div className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-                    <div className="bg-gradient-to-r from-purple-500 to-purple-600 p-6">
-                        <div className="text-white text-4xl mb-2">🌳</div>
-                        <h3 className="text-white font-bold text-xl">Construyendo tu Red</h3>
+                <div className="bg-white rounded-xl shadow-lg flex flex-col overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 border border-purple-100">
+                    <div className="h-40 relative bg-purple-900 overflow-hidden group">
+                        <img src="/course_assets/network_building_cover.png" alt="Construyendo tu Red" className="w-full h-full object-cover opacity-85 group-hover:scale-105 transition-transform duration-500" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-purple-900/90 via-purple-900/40 to-transparent flex flex-col justify-end p-6">
+                            <h3 className="text-white font-bold text-xl drop-shadow-md flex items-center gap-2">
+                                <span>🌳</span> Construyendo tu Red
+                            </h3>
+                        </div>
                     </div>
-                    <div className="p-6">
-                        <p className="text-gray-600 mb-4">
+                    <div className="p-6 flex-1 flex flex-col">
+                        <p className="text-gray-600 mb-6 flex-1">
                             Estrategias para reclutar, duplicar y construir una red sólida y rentable.
                         </p>
-                        <button className="w-full bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 transition-colors">
+                        <Link to="/dashboard/education/network" className="block w-full text-center bg-purple-600 text-white py-3 px-4 rounded-lg hover:bg-purple-700 hover:shadow-lg transition-all font-bold group-hover:bg-purple-700">
                             Comenzar Curso
-                        </button>
+                        </Link>
                     </div>
                 </div>
 
@@ -70,9 +74,9 @@ const EducationView = () => {
                         <p className="text-gray-600 mb-4">
                             Aprende a usar redes sociales y marketing digital para hacer crecer tu negocio.
                         </p>
-                        <button className="w-full bg-orange-600 text-white py-2 px-4 rounded-lg hover:bg-orange-700 transition-colors">
+                        <Link to="/dashboard/education/marketing" className="block w-full text-center bg-orange-600 text-white py-2 px-4 rounded-lg hover:bg-orange-700 transition-colors font-semibold">
                             Comenzar Curso
-                        </button>
+                        </Link>
                     </div>
                 </div>
 

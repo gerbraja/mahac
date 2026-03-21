@@ -67,6 +67,9 @@ def register(data: RegisterData, background_tasks: BackgroundTasks, db: Session 
             raise HTTPException(status_code=400, detail="El correo ya está registrado")
 
         # Check username uniqueness
+        if " " in data.username:
+            raise HTTPException(status_code=400, detail="El nombre de usuario no puede contener espacios")
+            
         existing_username = db.query(UserModel).filter(UserModel.username == data.username).first()
         if existing_username:
             raise HTTPException(status_code=400, detail="Este nombre de usuario ya está en uso")
@@ -213,14 +216,13 @@ def register(data: RegisterData, background_tasks: BackgroundTasks, db: Session 
         
         # Send Welcome Email (Background Task)
         # We pass necessary info so we don't rely on DB objects inside async task (avoid detachment issues)
-        referral_link_url = f"https://tiendavirtualtei.com/usuario/{new_user.username}"
-        background_tasks.add_task(
-            send_welcome_email,
+        referral_link_url = f"https://tuempresainternacional.com/usuario/{new_user.username}"
+        send_welcome_email(
             to_email=new_user.email,
             username=new_user.username,
             full_name=new_user.name,
             referral_link=referral_link_url
-        )
+        ) # Sync call
 
         # Generate token for auto-login
         token = jwt.encode({"user_id": new_user.id}, SECRET_KEY, algorithm=ALGORITHM)
@@ -567,7 +569,7 @@ def set_transaction_pin(data: SetTransactionPinData, current_user: UserModel = D
 import secrets
 from ..utils.email_service import send_password_reset_email
 
-FRONTEND_URL = os.getenv("FRONTEND_URL", "https://tiendavirtualtei.com")
+FRONTEND_URL = os.getenv("FRONTEND_URL", "https://tuempresainternacional.com")
 
 
 class ForgotPasswordData(BaseModel):
@@ -586,7 +588,9 @@ def forgot_password(data: ForgotPasswordData, background_tasks: BackgroundTasks,
     whether an email is registered (security best practice).
     """
     try:
-        user = db.query(UserModel).filter(UserModel.email == data.email.strip().lower()).first()
+        email_to_search = data.email.strip().lower()
+        print(f"FORGOT-PASSWORD: Búsqueda de email '{email_to_search}'")
+        user = db.query(UserModel).filter(func.lower(func.trim(UserModel.email)) == email_to_search).first()
 
         if user:
             # Generate secure token and set expiration (1 hour)
@@ -597,13 +601,13 @@ def forgot_password(data: ForgotPasswordData, background_tasks: BackgroundTasks,
             db.commit()
 
             reset_link = f"{FRONTEND_URL}/reset-password?token={token}"
-            background_tasks.add_task(send_password_reset_email, to_email=user.email, reset_link=reset_link)
+            send_password_reset_email(to_email=user.email, reset_link=reset_link) # Sync direct call
             print(f"✅ Password reset token generated for user {user.email}")
         else:
             print(f"ℹ️ Forgot-password requested for non-existing email: {data.email}")
 
     except Exception as e:
-        print(f"Error in forgot_password: {e}")
+        import traceback; print(f"❌ Error in forgot_password: {type(e).__name__}: {str(e)}", flush=True); traceback.print_exc()
         # Still return success to not leak info
 
     # Always return the same message

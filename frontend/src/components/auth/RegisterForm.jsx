@@ -116,6 +116,13 @@ export default function RegisterForm({ referralCode = "", onSuccess = null, onBa
         setMessage("");
 
         try {
+            // Validar que el username no tenga espacios
+            if (formData.username.includes(" ")) {
+                setMessage("El nombre de usuario no puede contener espacios");
+                setLoading(false);
+                return;
+            }
+
             // Trim referral code and other sensitive fields
             const dataToSubmit = {
                 ...formData,

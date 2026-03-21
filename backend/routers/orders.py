@@ -182,7 +182,7 @@ async def update_order_status(
                     } for item in order.items
                 ]
             }
-            background_tasks.add_task(send_order_invoice_email, order_data, user.email)
+            send_order_invoice_email(order_data, user.email) # Sync call
 
     # TRIGGER: Distribute commissions (Centralized Logic)
     if payload.status in ["pendiente_envio", "enviado", "completado"] and old_status == "reservado":

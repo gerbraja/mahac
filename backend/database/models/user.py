@@ -50,10 +50,11 @@ class User(Base):
     available_balance = Column(Float, default=0.0)
     
     # New Bank Model Columns
-    bank_balance = Column(Float, default=0.0)
+    bank_balance = Column(Float, default=0.0)        # 🟡 Caja Fuerte
     released_matrix = Column(Float, default=0.0)
     released_millionaire = Column(Float, default=0.0)
     released_general = Column(Float, default=0.0)
+    verified_balance = Column(Float, default=0.0)    # 🟢 Nuevo Banco (requiere KYC + $50)
     
     # KYC / Verification
     is_kyc_verified = Column(Boolean, default=False)

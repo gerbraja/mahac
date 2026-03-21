@@ -20,22 +20,16 @@ def get_public_stats(db: Session = Depends(get_db)):
     - total_countries: Number of unique countries
     """
     try:
-        # Count active members (users with status 'active')
-        total_members = db.query(func.count(User.id)).filter(
-            User.status == 'active'
-        ).scalar() or 0
+        # Count ALL registered users (not just active ones)
+        total_members = db.query(func.count(User.id)).scalar() or 0
         
-        # Sum all user total_earnings as proxy for total commissions
-        # Only for ACTIVE users as requested
-        total_commissions = db.query(func.sum(User.total_earnings)).filter(
-            User.status == 'active'
-        ).scalar() or 0.0
+        # Sum total_earnings of ALL registered users (all can earn commissions)
+        total_commissions = db.query(func.sum(User.total_earnings)).scalar() or 0.0
         
-        # Count unique countries
+        # Count unique countries from ALL registered users
         total_countries = db.query(func.count(distinct(User.country))).filter(
             User.country.isnot(None),
-            User.country != '',
-            User.status == 'active'  # Only count countries with active members
+            User.country != ''
         ).scalar() or 0
         
         return {

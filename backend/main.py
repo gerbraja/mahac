@@ -526,6 +526,107 @@ def run_reset_token_migration(key: str, db: Session = Depends(get_db)):
         return {"status": "error", "error": str(e)}
 
 
+@app.get("/run-withholding-migration")
+def run_withholding_migration(key: str, db: Session = Depends(get_db)):
+    """
+    Creates withholding_tax_configs and withholding_records tables
+    and seeds default Colombian tax rates.
+    Safe to run multiple times.
+    """
+    if key != "secure_setup_key_2025":
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    results = []
+    try:
+        # Create withholding_tax_configs
+        db.execute(text("""
+            CREATE TABLE IF NOT EXISTS withholding_tax_configs (
+                id SERIAL PRIMARY KEY,
+                country VARCHAR(100) NOT NULL,
+                city VARCHAR(100),
+                tax_type VARCHAR(20) NOT NULL,
+                percentage FLOAT NOT NULL,
+                active BOOLEAN DEFAULT TRUE,
+                created_at TIMESTAMP DEFAULT NOW()
+            )
+        """))
+        results.append("✅ Tabla withholding_tax_configs lista.")
+
+        # Create withholding_records
+        db.execute(text("""
+            CREATE TABLE IF NOT EXISTS withholding_records (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER NOT NULL,
+                country VARCHAR(100),
+                city VARCHAR(100),
+                fiscal_year INTEGER NOT NULL,
+                release_type VARCHAR(30) NOT NULL,
+                gross_amount FLOAT NOT NULL,
+                retefuente_pct FLOAT DEFAULT 0.0,
+                retefuente_amount FLOAT DEFAULT 0.0,
+                reteica_pct FLOAT DEFAULT 0.0,
+                reteica_amount FLOAT DEFAULT 0.0,
+                total_withheld FLOAT DEFAULT 0.0,
+                net_amount FLOAT NOT NULL,
+                created_at TIMESTAMP DEFAULT NOW()
+            )
+        """))
+        results.append("✅ Tabla withholding_records lista.")
+
+        # Seed defaults if not already present
+        count_result = db.execute(text("SELECT COUNT(*) FROM withholding_tax_configs WHERE country = 'Colombia'"))
+        count = count_result.scalar()
+
+        if count == 0:
+            defaults = [
+                ("Colombia", None,           "retefuente", 6.0),
+                ("Colombia", "Bogotá",       "reteica",    0.966),
+                ("Colombia", "Medellín",     "reteica",    0.7),
+                ("Colombia", "Cali",         "reteica",    1.0),
+                ("Colombia", "Barranquilla", "reteica",    0.7),
+                ("Colombia", "Neiva",        "reteica",    0.7),
+                ("Colombia", "Pereira",      "reteica",    0.7),
+                ("Colombia", "Bucaramanga",  "reteica",    0.7),
+                ("Colombia", "Cartagena",    "reteica",    1.0),
+                ("Colombia", "Manizales",    "reteica",    0.7),
+                ("Colombia", "Armenia",      "reteica",    0.7),
+            ]
+            for country, city, tax_type, pct in defaults:
+                db.execute(text(
+                    "INSERT INTO withholding_tax_configs (country, city, tax_type, percentage) VALUES (:c, :ci, :t, :p)"
+                ), {"c": country, "ci": city, "t": tax_type, "p": pct})
+            results.append(f"✅ {len(defaults)} tasas por defecto insertadas.")
+        else:
+            results.append("ℹ️ Tasas ya estaban sembradas.")
+
+        db.commit()
+        return {"status": "ok", "results": results}
+
+    except Exception as e:
+        db.rollback()
+        return {"status": "error", "error": str(e)}
+
+
+@app.get("/run-verified-balance-migration")
+def run_verified_balance_migration(key: str, db: Session = Depends(get_db)):
+    """Adds verified_balance column to users table (new Banco level)."""
+    if key != "secure_setup_key_2025":
+        raise HTTPException(status_code=403, detail="Forbidden")
+    try:
+        result = db.execute(text("""
+            SELECT column_name FROM information_schema.columns
+            WHERE table_name = 'users' AND column_name = 'verified_balance'
+        """))
+        if result.fetchone():
+            return {"status": "ok", "results": ["ℹ️ Columna 'verified_balance' ya existía."]}
+        db.execute(text("ALTER TABLE users ADD COLUMN verified_balance FLOAT DEFAULT 0.0"))
+        db.commit()
+        return {"status": "ok", "results": ["✅ Columna 'verified_balance' agregada."]}
+    except Exception as e:
+        db.rollback()
+        return {"status": "error", "error": str(e)}
+
+
 @app.get("/fix-limpiap")
 def fix_limpiap(key: str, mode: str = "inspect", db: Session = Depends(get_db)):
     from sqlalchemy import func
