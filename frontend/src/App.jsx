@@ -31,6 +31,8 @@ import UserOrders from './components/UserOrders';
 import UpgradePackage from './pages/dashboard/UpgradePackage';
 import KYCValidation from './pages/dashboard/KYCValidation';
 
+const SupplierInventory = React.lazy(() => import('./pages/SupplierInventory'));
+
 
 // Admin imports
 import AdminLayout from './components/layout/AdminLayout';
@@ -128,6 +130,7 @@ export default function App() {
         <Route path="/checkout" element={<Checkout />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/order-confirmation/:orderId" element={<OrderConfirmation />} />
+        <Route path="/supplier-inventory/:token" element={<React.Suspense fallback={<div>Cargando...</div>}><SupplierInventory /></React.Suspense>} />
 
         {/* Admin Routes */}
         <Route path="/admin" element={

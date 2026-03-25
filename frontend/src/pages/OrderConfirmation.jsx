@@ -61,7 +61,7 @@ const OrderConfirmation = () => {
             }
             setShowWalletModal(true);
         } else if (paymentMethod === 'bank' || paymentMethod === 'binance' || order.payment_method === 'binance') {
-            alert("Por favor envía el comprobante por WhatsApp para confirmar tu pago. Tu pedido ha sido registrado correctamente.");
+            alert("Por favor envía el comprobante al correo ventas@tuempresainternacional.com para confirmar tu pago. Tu pedido ha sido registrado correctamente.");
             navigate('/dashboard/orders');
         } else {
             // For other methods, we might redirect or show a success message for now
@@ -165,6 +165,11 @@ const OrderConfirmation = () => {
                                             <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-xl">📦</div>
                                             <div>
                                                 <p className="font-bold text-gray-800">{item.product_name}</p>
+                                                {item.selected_options && (
+                                                    <p className="text-xs text-blue-600 font-semibold mb-1">
+                                                        Opción: {Object.entries(JSON.parse(item.selected_options)).map(([k, v]) => `${k}: ${v}`).join(', ')}
+                                                    </p>
+                                                )}
                                                 <p className="text-sm text-gray-500">Cantidad: {item.quantity}</p>
                                             </div>
                                         </div>
@@ -245,7 +250,7 @@ const OrderConfirmation = () => {
                                         <p className="text-center font-bold">Escanea el QR para pagar</p>
                                         <p className="text-xs text-center text-gray-500 mt-1">Aceptamos USDT, BTC, ETH.</p>
 
-                                        <p className="mt-2 text-xs text-blue-600 font-bold text-center">⚠️ Envía el comprobante por WhatsApp.</p>
+                                        <p className="mt-2 text-xs text-blue-600 font-bold text-center">⚠️ Envía el comprobante al correo: ventas@tuempresainternacional.com.</p>
                                     </div>
                                 </div>
                             </label>
@@ -268,10 +273,10 @@ const OrderConfirmation = () => {
                                     <div className="mt-2 text-sm text-gray-700 bg-white p-3 rounded border border-gray-200">
                                         <p><strong>Banco:</strong> Bancolombia</p>
                                         <p><strong>Tipo:</strong> Cuenta de Ahorros</p>
-                                        <p><strong>Número:</strong> 10083093825</p>
+                                        <p><strong>Número:</strong> 28500005672</p>
                                         <p><strong>Titular:</strong> Tu Empresa Internacional S.A.S</p>
-                                        <p><strong>NIT:</strong> 000000</p>
-                                        <p className="mt-2 text-xs text-blue-600 font-bold">⚠️ Debes enviar el comprobante por WhatsApp para confirmar tu pedido.</p>
+                                        <p><strong>NIT:</strong> 902045325</p>
+                                        <p className="mt-2 text-xs text-blue-600 font-bold">⚠️ Debes enviar el comprobante al correo: ventas@tuempresainternacional.com para confirmar tu pedido.</p>
                                     </div>
                                 </div>
                             </label>

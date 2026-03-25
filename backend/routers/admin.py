@@ -102,18 +102,22 @@ def get_supplier_orders(
             }
             
         prod_id = product.id
-        if prod_id not in suppliers_data[sup_id]["items"]:
-            suppliers_data[sup_id]["items"][prod_id] = {
+        options_key = item.selected_options or ""
+        group_key = f"{prod_id}_{options_key}"
+        
+        if group_key not in suppliers_data[sup_id]["items"]:
+            suppliers_data[sup_id]["items"][group_key] = {
                 "product_id": product.id,
                 "product_name": product.name,
+                "selected_options": item.selected_options,
                 "sku": product.sku,
                 "image_url": product.image_url,
                 "total_quantity": 0,
                 "order_item_ids": [] # Keep track to archive them later
             }
             
-        suppliers_data[sup_id]["items"][prod_id]["total_quantity"] += item.quantity
-        suppliers_data[sup_id]["items"][prod_id]["order_item_ids"].append(item.id)
+        suppliers_data[sup_id]["items"][group_key]["total_quantity"] += item.quantity
+        suppliers_data[sup_id]["items"][group_key]["order_item_ids"].append(item.id)
         
     # Convert to array for frontend
     result = []
@@ -325,6 +329,11 @@ class UserUpdateData(BaseModel):
     package_level: Optional[int] = None
     admin_role: Optional[str] = None
     admin_country: Optional[str] = None
+    
+    # Facturación Electrónica DIAN
+    document_type: Optional[str] = None
+    company_name: Optional[str] = None
+    tax_regime: Optional[str] = None
 
 @router.get("/users")
 def get_users(
@@ -420,6 +429,15 @@ def update_user(
         user.status = data.status
     if data.package_level is not None:
         user.package_level = data.package_level
+        
+    # Facturación Electrónica DIAN
+    if data.document_type is not None:
+        user.document_type = data.document_type
+    if data.company_name is not None:
+        user.company_name = data.company_name
+    if data.tax_regime is not None:
+        user.tax_regime = data.tax_regime
+        
     # Admin role fields — only super admins can modify these
     if data.admin_role is not None:
         if getattr(current_user, 'admin_role', '') != 'superadmin':

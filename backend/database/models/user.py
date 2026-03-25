@@ -44,6 +44,11 @@ class User(Base):
     postal_code = Column(String(20), nullable=True)  # Código postal
     country = Column(String(100), nullable=True)  # País (del registro)
 
+    # Facturación Electrónica DIAN
+    document_type = Column(String(50), nullable=True) # CC, CE, NIT, PPT
+    company_name = Column(String(255), nullable=True) # Razón social para NIT
+    tax_regime = Column(String(100), nullable=True) # Responsabilidad fiscal
+
     # Earnings fields for commission payouts
     monthly_earnings = Column(Float, default=0.0)
     total_earnings = Column(Float, default=0.0)

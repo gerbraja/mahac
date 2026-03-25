@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { api } from "../api/api";
 
 export default function Cart() {
-  const { cart, removeFromCart, clearCart } = useCart();
+  const { cart, removeFromCart, clearCart, updateItemOptions } = useCart();
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -60,6 +60,74 @@ export default function Cart() {
     navigate('/checkout');
   };
 
+  // Check if any cart item requires options but they are not selected
+  const hasMissingOptions = cart.some(item => {
+    if (!item.options) return false;
+    try {
+      const parsedOptions = JSON.parse(item.options);
+      if (Object.keys(parsedOptions).length === 0) return false;
+      
+      if (!item.selected_options) return true;
+      const currentSelections = JSON.parse(item.selected_options);
+      for (const k of Object.keys(parsedOptions)) {
+        if (!currentSelections[k] || currentSelections[k] === "") return true;
+      }
+      return false;
+    } catch (e) {
+      // If we can't parse options, assume it's valid
+      return false;
+    }
+  });
+
+  const renderOptions = (item) => {
+    if (!item.options) return null;
+    let parsedOptions;
+    try {
+      parsedOptions = JSON.parse(item.options);
+    } catch (e) {
+      return null;
+    }
+    
+    if (Object.keys(parsedOptions).length === 0) return null;
+  
+    let currentSelections = {};
+    if (item.selected_options) {
+      try {
+        currentSelections = JSON.parse(item.selected_options);
+      } catch(e) {}
+    }
+  
+    const handleOptionChange = (optionName, value) => {
+      const newSelections = { ...currentSelections, [optionName]: value };
+      updateItemOptions(item.unique_cart_id || item.id, JSON.stringify(newSelections));
+    };
+  
+    return (
+      <div className="mt-2 space-y-2">
+        {Object.entries(parsedOptions).map(([optName, optValues]) => {
+          const valuesArray = typeof optValues === 'string' ? optValues.split(',').map(v => v.trim()) : optValues;
+          const currentVal = currentSelections[optName] || "";
+          const isMissing = !currentVal;
+          
+          return (
+            <div key={optName} className="flex flex-col">
+              <label className="text-xs font-bold text-gray-700">{optName} {isMissing && <span className="text-red-500">* (Requerido)</span>}</label>
+              <select
+                value={currentVal}
+                onChange={(e) => handleOptionChange(optName, e.target.value)}
+                className={`text-sm p-1 max-w-[200px] border rounded ${isMissing ? 'border-red-500 bg-red-50' : 'border-gray-300'}`}
+              >
+                <option value="">-- Seleccionar --</option>
+                {valuesArray.map(val => (
+                  <option key={val} value={val}>{val}</option>
+                ))}
+              </select>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
 
   if (cart.length === 0) {
     return (
@@ -108,7 +176,7 @@ export default function Cart() {
               <h2 className="text-xl font-bold text-gray-800 mb-4">Productos</h2>
               <div className="space-y-4">
                 {cart.map((item) => (
-                  <div key={item.id} className="flex items-center gap-4 p-4 border border-gray-200 rounded-lg">
+                  <div key={item.unique_cart_id || item.id} className="flex items-center gap-4 p-4 border border-gray-200 rounded-lg">
                     <div className="w-20 h-20 bg-gray-200 rounded flex items-center justify-center overflow-hidden">
                       {item.image_url ? (
                         <img
@@ -130,7 +198,14 @@ export default function Cart() {
                     </div>
                     <div className="flex-1">
                       <h3 className="font-bold text-gray-800">{item.name}</h3>
-                      <p className="text-sm text-gray-600">{item.description?.substring(0, 60)}...</p>
+                      {item.options ? (
+                        renderOptions(item)
+                      ) : item.selected_options && (
+                        <p className="text-sm font-semibold text-blue-600 mb-1">
+                          Opción: {Object.entries(JSON.parse(item.selected_options)).map(([k, v]) => `${k}: ${v}`).join(', ')}
+                        </p>
+                      )}
+                      <p className="text-sm text-gray-600 mt-2">{item.description?.substring(0, 60)}...</p>
                       <div className="flex gap-4 mt-2 text-sm">
                         <span className="text-green-600 font-bold text-base">${item.price_local?.toLocaleString()} COP</span>
                         <span className="text-gray-500">PV: {item.pv}</span>
@@ -140,7 +215,7 @@ export default function Cart() {
                     <div className="text-right">
                       <p className="font-bold text-lg text-green-600">${(item.price_local * item.quantity).toLocaleString()} COP</p>
                       <button
-                        onClick={() => removeFromCart(item.id)}
+                        onClick={() => removeFromCart(item.unique_cart_id || item.id)}
                         className="mt-2 text-red-600 hover:text-red-800 text-sm font-medium"
                       >
                         🗑️ Eliminar
@@ -262,12 +337,18 @@ export default function Cart() {
 
               <button
                 onClick={handleCheckout}
-                disabled={loading}
-                className={`w-full py-4 rounded-lg font-bold text-white text-lg transition ${loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'
+                disabled={loading || hasMissingOptions}
+                className={`w-full py-4 rounded-lg font-bold text-white text-lg transition ${loading || hasMissingOptions ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'
                   }`}
               >
                 {loading ? '⏳ Procesando...' : '✅ Proceder al Pago'}
               </button>
+
+              {hasMissingOptions && (
+                <p className="text-red-600 text-sm font-bold text-center mt-2">
+                  ⚠️ Selecciona las variantes requeridas (Ej. Talla/Litros) de tus productos para continuar.
+                </p>
+              )}
 
               <button
                 onClick={() => navigate('/dashboard/store')}

@@ -13,6 +13,17 @@ class Supplier(Base):
     phone = Column(String, nullable=True)
     address = Column(String, nullable=True)
     active = Column(Boolean, default=True)
+    
+    # Facturación Electrónica DIAN
+    document_type = Column(String, nullable=True) # NIT, CC
+    document_number = Column(String, nullable=True) # Número de documento
+    tax_regime = Column(String, nullable=True) # Régimen Simple, Responsable IVA, etc.
+    city = Column(String, nullable=True) # Ciudad
+    country = Column(String, default="Colombia") # País
+    
+    # Portal Autónomo de Proveedores
+    inventory_token = Column(String(255), unique=True, nullable=True, index=True) # Magic Link Token
+    
     created_at = Column(DateTime, default=datetime.utcnow)
     
     # Relationship with Products

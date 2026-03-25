@@ -49,7 +49,11 @@ const SimpleAdmin = () => {
         tax_rate: 0,
         public_price: 0,
         sku: '',
-        supplier_id: ''
+        supplier_id: '',
+        dian_code: '',
+        tax_type: 'IVA',
+        options_name: '',
+        options_values: ''
     });
     const [suppliers, setSuppliers] = useState([]);
     const [editingId, setEditingId] = useState(null);
@@ -127,7 +131,12 @@ const SimpleAdmin = () => {
                 tax_rate: Number(formData.tax_rate),
                 public_price: Number(formData.public_price),
                 sku: formData.sku,
-                supplier_id: formData.supplier_id ? Number(formData.supplier_id) : null
+                supplier_id: formData.supplier_id ? Number(formData.supplier_id) : null,
+                dian_code: formData.dian_code,
+                tax_type: formData.tax_type,
+                options: formData.options_name && formData.options_values 
+                    ? JSON.stringify({ [formData.options_name.trim()]: formData.options_values.split(',').map(v => v.trim()).filter(v => v) })
+                    : null
             };
 
             if (editingId) {
@@ -139,7 +148,7 @@ const SimpleAdmin = () => {
             }
             setFormData({
                 name: '', description: '', category: '', price_usd: 0, price_local: 0, pv: 0, direct_bonus_pv: 0, stock: 0, weight_grams: 500, image_url: '', is_activation: false,
-                cost_price: 0, tei_pv: 0, tax_rate: 0, public_price: 0, sku: '', supplier_id: ''
+                cost_price: 0, tei_pv: 0, tax_rate: 0, public_price: 0, sku: '', supplier_id: '', dian_code: '', tax_type: 'IVA', options_name: '', options_values: ''
             });
             setEditingId(null);
             fetchProducts();
@@ -153,7 +162,26 @@ const SimpleAdmin = () => {
     };
 
     const handleEdit = (product) => {
-        setFormData(product);
+        let optName = '';
+        let optVals = '';
+        if (product.options) {
+            try {
+                const optObj = JSON.parse(product.options);
+                const key = Object.keys(optObj)[0];
+                if (key) {
+                    optName = key;
+                    optVals = optObj[key].join(', ');
+                }
+            } catch (e) {
+                console.error("Error parsing options", e);
+            }
+        }
+    
+        setFormData({
+            ...product,
+            options_name: optName,
+            options_values: optVals
+        });
         setEditingId(product.id);
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
@@ -300,6 +328,69 @@ const SimpleAdmin = () => {
                     <option value={0.19}>IVA: 19%</option>
                 </select>
 
+                <select
+                    name="tax_type"
+                    value={formData.tax_type}
+                    onChange={handleChange}
+                    style={{ padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.25rem' }}
+                >
+                    <option value="IVA">Tipo Impuesto: IVA</option>
+                    <option value="INC">Tipo Impuesto: INC</option>
+                    <option value="Exento">Tipo Impuesto: Exento</option>
+                </select>
+                
+                <input
+                    name="dian_code"
+                    value={formData.dian_code}
+                    onChange={handleChange}
+                    placeholder="Código DIAN"
+                    style={{ padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.25rem' }}
+                />
+
+                {/* Section for Product Options/Variants */}
+                <div style={{
+                    gridColumn: 'span 2',
+                    background: '#f0fdf4',
+                    border: '1px solid #bbf7d0',
+                    borderRadius: '0.5rem',
+                    padding: '1rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.5rem'
+                }}>
+                    <strong style={{ color: '#166534', fontSize: '1rem', marginBottom: '0.25rem' }}>👕 Opciones/Variantes del Producto (Opcional)</strong>
+                    <p style={{ color: '#15803d', fontSize: '0.85rem', margin: 0 }}>
+                        Permite al cliente elegir una variante antes de comprar (ej. Talla, Capacidad, Color). 
+                        No necesitas subir fotos por cada variante.
+                    </p>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1rem', marginTop: '0.5rem' }}>
+                        <input
+                            name="options_name"
+                            value={formData.options_name}
+                            onChange={handleChange}
+                            placeholder="Nombre Opción (Ej: Talla)"
+                            style={{ padding: '0.5rem', border: '1px solid #86efac', borderRadius: '0.25rem' }}
+                        />
+                        <input
+                            name="options_values"
+                            value={formData.options_values}
+                            onChange={handleChange}
+                            placeholder="Valores separados por coma (Ej: S, M, L, XL)"
+                            style={{ padding: '0.5rem', border: '1px solid #86efac', borderRadius: '0.25rem' }}
+                        />
+                    </div>
+                    {formData.options_name && formData.options_values && (
+                        <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                            <span style={{ fontSize: '0.85rem', color: '#166534', fontWeight: 'bold' }}>Vista previa ({formData.options_name}):</span>
+                            {formData.options_values.split(',').map(v => v.trim()).filter(v => v).map((val, idx) => (
+                                <span key={idx} style={{ background: '#bbf7d0', color: '#166534', padding: '0.2rem 0.5rem', borderRadius: '1rem', fontSize: '0.75rem', fontWeight: 'bold' }}>
+                                    {val}
+                                </span>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
                 {/* Visual Inverse VAT Calculator Component */}
                 <div style={{
                     gridColumn: 'span 2',
@@ -405,7 +496,7 @@ const SimpleAdmin = () => {
                             setEditingId(null);
                             setFormData({
                                 name: '', description: '', category: '', price_usd: 0, price_local: 0, pv: 0, direct_bonus_pv: 0, stock: 0, weight_grams: 500, image_url: '', is_activation: false,
-                                cost_price: 0, tei_pv: 0, tax_rate: 0, public_price: 0, sku: '', supplier_id: ''
+                                cost_price: 0, tei_pv: 0, tax_rate: 0, public_price: 0, sku: '', supplier_id: '', dian_code: '', tax_type: 'IVA', options_name: '', options_values: ''
                             });
                         }}
                         style={{
@@ -429,24 +520,42 @@ const SimpleAdmin = () => {
                         <tr>
                             <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Nombre</th>
                             <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Categoría</th>
+                            <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Variantes</th>
                             <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Precio USD</th>
                             <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>IVA</th>
                             <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>PV</th>
-                            <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Activación</th>
                             <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {products.map(p => (
+                        {products.map(p => {
+                            let variantsStr = "Ninguna";
+                            let variantsColor = "#9ca3af";
+                            if (p.options) {
+                                try {
+                                    const parsed = JSON.parse(p.options);
+                                    if (Object.keys(parsed).length > 0) {
+                                        const key = Object.keys(parsed)[0];
+                                        variantsStr = `${key}: ${parsed[key].join(', ')}`;
+                                        variantsColor = "#3b82f6";
+                                    }
+                                } catch(e) {}
+                            }
+                            return (
                             <tr key={p.id} style={{ borderBottom: '1px solid #e5e7eb' }}>
-                                <td style={{ padding: '0.75rem' }}>{p.name}</td>
-                                <td style={{ padding: '0.75rem' }}>{p.category}</td>
+                                <td style={{ padding: '0.75rem' }}>
+                                    {p.name}
+                                    {p.is_activation && <span style={{ marginLeft: '0.5rem' }} title="Paquete de Activación">✅</span>}
+                                </td>
+                                <td style={{ padding: '0.75rem', fontSize: '0.85rem' }}>{p.category}</td>
+                                <td style={{ padding: '0.75rem', fontSize: '0.85rem', color: variantsColor, fontWeight: variantsStr !== 'Ninguna' ? 'bold' : 'normal' }}>
+                                    {variantsStr}
+                                </td>
                                 <td style={{ padding: '0.75rem' }}>${p.price_usd}</td>
-                                <td style={{ padding: '0.75rem', color: p.tax_rate > 0 ? '#ef4444' : '#10b981', fontWeight: 'bold' }}>
+                                <td style={{ padding: '0.75rem', fontSize: '0.85rem', color: p.tax_rate > 0 ? '#ef4444' : '#10b981', fontWeight: 'bold' }}>
                                     {p.tax_rate ? `${(p.tax_rate * 100).toFixed(0)}%` : '0%'}
                                 </td>
                                 <td style={{ padding: '0.75rem' }}>{p.pv}</td>
-                                <td style={{ padding: '0.75rem' }}>{p.is_activation ? '✅' : '❌'}</td>
                                 <td style={{ padding: '0.75rem', display: 'flex', gap: '0.5rem' }}>
                                     <button
                                         onClick={() => handleEdit(p)}
@@ -476,7 +585,7 @@ const SimpleAdmin = () => {
                                     </button>
                                 </td>
                             </tr>
-                        ))}
+                        )})}
                     </tbody>
                 </table>
                 {products.length === 0 && (

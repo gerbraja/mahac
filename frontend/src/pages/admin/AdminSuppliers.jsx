@@ -7,7 +7,8 @@ const AdminSuppliers = () => {
     const { globalCountry } = useAdmin();
     const [suppliers, setSuppliers] = useState([]);
     const [formData, setFormData] = useState({
-        name: '', contact_name: '', email: '', phone: '', address: ''
+        name: '', contact_name: '', email: '', phone: '', address: '',
+        document_type: 'NIT', document_number: '', tax_regime: 'Responsable de IVA', city: '', country: 'Colombia'
     });
     const [editingId, setEditingId] = useState(null);
     const [message, setMessage] = useState('');
@@ -46,7 +47,10 @@ const AdminSuppliers = () => {
                 await api.post('/api/suppliers/', formData);
                 setMessage('Proveedor creado exitosamente');
             }
-            setFormData({ name: '', contact_name: '', email: '', phone: '', address: '' });
+            setFormData({ 
+                name: '', contact_name: '', email: '', phone: '', address: '',
+                document_type: 'NIT', document_number: '', tax_regime: 'Responsable de IVA', city: '', country: 'Colombia'
+            });
             setEditingId(null);
             fetchSuppliers();
             setTimeout(() => setMessage(''), 3000);
@@ -76,6 +80,27 @@ const AdminSuppliers = () => {
     const handleOpenProducts = (supplier) => {
         setSelectedSupplier(supplier);
         setModalOpen(true);
+    };
+
+    const handleGenerateLink = async (supplierId) => {
+        if (!window.confirm("¿Seguro que deseas generar o regenerar un Enlace Mágico para este proveedor? El enlace anterior dejará de funcionar.")) return;
+        
+        try {
+            const res = await api.post(`/api/suppliers/${supplierId}/generate-token`);
+            const token = res.data.inventory_token;
+            // Build the absolute URL for the portal
+            const portalUrl = `${window.location.origin}/supplier-inventory/${token}`;
+            
+            // Try to copy to clipboard
+            await navigator.clipboard.writeText(portalUrl);
+            alert(`¡Enlace copiado al portapapeles!\n\nEnvíale este enlace al proveedor:\n${portalUrl}`);
+            
+            // Refresh list to potentially show that a link exists
+            fetchSuppliers();
+        } catch (error) {
+            console.error("Error generating token", error);
+            setMessage('Error al generar el enlace mágico.');
+        }
     };
 
     return (
@@ -111,6 +136,24 @@ const AdminSuppliers = () => {
                 <input name="phone" value={formData.phone} onChange={handleChange} placeholder="Teléfono" style={inputStyle} />
                 <input name="address" value={formData.address} onChange={handleChange} placeholder="Dirección" style={{ ...inputStyle, gridColumn: 'span 2' }} />
 
+                <div style={{ gridColumn: 'span 2', fontWeight: 'bold', color: '#1e3a8a', marginTop: '1rem' }}>
+                    Información Fiscal (DIAN)
+                </div>
+                <select name="document_type" value={formData.document_type || 'NIT'} onChange={handleChange} style={inputStyle}>
+                    <option value="NIT">NIT</option>
+                    <option value="CC">Cédula de Ciudadanía (CC)</option>
+                    <option value="CE">Cédula de Extranjería (CE)</option>
+                </select>
+                <input name="document_number" value={formData.document_number || ''} onChange={handleChange} placeholder="Número de Documento" style={inputStyle} />
+                <select name="tax_regime" value={formData.tax_regime || 'Responsable de IVA'} onChange={handleChange} style={{ ...inputStyle, gridColumn: 'span 2' }}>
+                    <option value="Responsable de IVA">Responsable de IVA</option>
+                    <option value="No Responsable de IVA">No Responsable de IVA</option>
+                    <option value="Régimen Simple">Régimen Simple de Tributación</option>
+                    <option value="Gran Contribuyente">Gran Contribuyente</option>
+                </select>
+                <input name="city" value={formData.city || ''} onChange={handleChange} placeholder="Ciudad" style={inputStyle} />
+                <input name="country" value={formData.country || 'Colombia'} onChange={handleChange} placeholder="País" style={inputStyle} />
+                
                 <button type="submit" style={buttonStyle}>
                     {editingId ? 'Actualizar' : 'Crear'}
                 </button>
@@ -137,6 +180,7 @@ const AdminSuppliers = () => {
                                 <td style={tdStyle}>{s.email}</td>
                                 <td style={tdStyle}>{s.phone}</td>
                                 <td style={tdStyle}>
+                                    <button onClick={() => handleGenerateLink(s.id)} style={magicLinkBtnStyle} title="Generar link para que el proveedor actualice su propio inventario.">🔗 Link Inventario</button>
                                     <button onClick={() => handleOpenProducts(s)} style={productsBtnStyle}>📦 Productos</button>
                                     <button onClick={() => handleEdit(s)} style={editBtnStyle}>Editar</button>
                                     <button onClick={() => handleDelete(s.id)} style={delBtnStyle}>Eliminar</button>
@@ -161,6 +205,7 @@ const inputStyle = { padding: '0.5rem', border: '1px solid #d1d5db', borderRadiu
 const buttonStyle = { gridColumn: 'span 2', background: '#3b82f6', color: 'white', padding: '0.75rem', borderRadius: '0.25rem', border: 'none', cursor: 'pointer', fontWeight: 'bold' };
 const thStyle = { padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #e5e7eb' };
 const tdStyle = { padding: '0.75rem' };
+const magicLinkBtnStyle = { marginRight: '0.5rem', background: '#ec4899', color: 'white', padding: '0.25rem 0.75rem', borderRadius: '0.25rem', border: 'none', cursor: 'pointer', fontWeight: 'bold' };
 const productsBtnStyle = { marginRight: '0.5rem', background: '#8b5cf6', color: 'white', padding: '0.25rem 0.75rem', borderRadius: '0.25rem', border: 'none', cursor: 'pointer' };
 const editBtnStyle = { marginRight: '0.5rem', background: '#3b82f6', color: 'white', padding: '0.25rem 0.75rem', borderRadius: '0.25rem', border: 'none', cursor: 'pointer' };
 const delBtnStyle = { background: '#ef4444', color: 'white', padding: '0.25rem 0.75rem', borderRadius: '0.25rem', border: 'none', cursor: 'pointer' };

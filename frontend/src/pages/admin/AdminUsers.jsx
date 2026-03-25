@@ -73,7 +73,10 @@ export default function AdminUsers() {
             status: user.status || 'pre-affiliate',
             package_level: user.package_level || 0,
             admin_role: user.admin_role || 'user',
-            admin_country: user.admin_country || ''
+            admin_country: user.admin_country || '',
+            document_type: user.document_type || 'CC',
+            company_name: user.company_name || '',
+            tax_regime: user.tax_regime || 'Régimen Simple'
         });
     };
 
@@ -521,6 +524,50 @@ Email: ${user.email}
                                         borderRadius: '0.5rem'
                                     }}
                                 />
+                            </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', background: '#f8fafc', padding: '1rem', borderRadius: '0.5rem', border: '1px solid #e2e8f0' }}>
+                                <div style={{ gridColumn: 'span 2', fontWeight: 'bold', color: '#1e3a8a', marginBottom: '0.5rem' }}>
+                                    Información Fiscal (DIAN)
+                                </div>
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', color: '#374151' }}>
+                                        Tipo Documento
+                                    </label>
+                                    <select
+                                        value={formData.document_type}
+                                        onChange={(e) => setFormData({ ...formData, document_type: e.target.value })}
+                                        style={{ width: '100%', padding: '0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem' }}
+                                    >
+                                        <option value="CC">CC</option>
+                                        <option value="CE">CE</option>
+                                        <option value="NIT">NIT</option>
+                                        <option value="PPT">PPT</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', color: '#374151' }}>
+                                        Razón Social (Si es NIT)
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={formData.company_name}
+                                        onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
+                                        style={{ width: '100%', padding: '0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem' }}
+                                    />
+                                </div>
+                                <div style={{ gridColumn: 'span 2' }}>
+                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', color: '#374151' }}>
+                                        Régimen (Responsabilidad Fiscal)
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={formData.tax_regime}
+                                        onChange={(e) => setFormData({ ...formData, tax_regime: e.target.value })}
+                                        placeholder="Ej: Régimen Simple, Responsable de IVA"
+                                        style={{ width: '100%', padding: '0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem' }}
+                                    />
+                                </div>
                             </div>
 
                             <div>

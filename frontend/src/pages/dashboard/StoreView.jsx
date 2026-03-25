@@ -335,22 +335,66 @@ const ProductCard = ({ product, addToCart, isSpecial, onClick }) => {
                 </div>
 
                 {/* Add to Cart Button */}
-                <button
-                    onClick={() => addToCart(product)}
-                    className={`w-full py-2 rounded-lg font-bold transition-colors ${isSpecial
-                        ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                        : 'bg-gray-900 hover:bg-gray-800 text-white'
-                        }`}
-                >
-                    Agregar al Carrito
-                </button>
+                {product.options ? (
+                    <button
+                        onClick={onClick}
+                        className={`w-full py-2 rounded-lg font-bold transition-colors ${isSpecial
+                            ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                            : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                            }`}
+                    >
+                        Seleccionar Opciones
+                    </button>
+                ) : (
+                    <button
+                        onClick={() => addToCart(product)}
+                        disabled={product.stock <= 0}
+                        className={`w-full py-2 rounded-lg font-bold transition-colors ${
+                            product.stock <= 0 ? 'bg-gray-400 cursor-not-allowed text-white' :
+                            isSpecial
+                            ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                            : 'bg-gray-900 hover:bg-gray-800 text-white'
+                            }`}
+                    >
+                        {product.stock <= 0 ? 'Agotado' : 'Agregar al Carrito'}
+                    </button>
+                )}
             </div>
         </motion.div>
     );
 };
 
 const ProductDetailsModal = ({ product, onClose, addToCart }) => {
+    const [selectedOptions, setSelectedOptions] = useState({});
+    
     if (!product) return null;
+
+    let parsedOptions = null;
+    let variantStock = null;
+    if (product.options) {
+        try { parsedOptions = JSON.parse(product.options); } catch (e) {}
+    }
+    if (product.variant_stock) {
+        try { variantStock = JSON.parse(product.variant_stock); } catch (e) {}
+    }
+
+    const isOptionsComplete = () => {
+        if (!parsedOptions) return true;
+        return Object.keys(parsedOptions).every((key) => selectedOptions[key]);
+    };
+
+    const getAvailableStock = () => {
+        if (!parsedOptions || !variantStock) return product.stock;
+        const optionKey = Object.keys(parsedOptions)[0];
+        const selectedValue = selectedOptions[optionKey];
+        if (selectedValue && variantStock[selectedValue] !== undefined) {
+            return variantStock[selectedValue];
+        }
+        return product.stock;
+    };
+
+    const availableStock = getAvailableStock();
+    const isOutOfStock = availableStock <= 0;
 
     return (
         <motion.div
@@ -364,7 +408,7 @@ const ProductDetailsModal = ({ product, onClose, addToCart }) => {
                 initial={{ scale: 0.95, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.95, opacity: 0 }}
-                className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col"
+                className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Cabezal Ultra-Compacto */}
@@ -405,24 +449,61 @@ const ProductDetailsModal = ({ product, onClose, addToCart }) => {
                     )}
 
                     {/* Área de Descripción Expandida */}
-                    <div className="flex-1 p-5 overflow-y-auto custom-scrollbar bg-white">
+                    <div className="flex-1 p-5 overflow-y-auto custom-scrollbar bg-white flex flex-col">
                         <h3 className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">Descripción del Producto</h3>
-                        <p className="text-gray-700 leading-relaxed whitespace-pre-line text-[13.5px]">
+                        <p className="text-gray-700 leading-relaxed whitespace-pre-line text-[13.5px] mb-4">
                             {product.description}
                         </p>
+                        
+                        {/* Area de Variantes */}
+                        {parsedOptions && (
+                            <div className="mt-auto pt-4 border-t border-gray-100">
+                                <h3 className="text-sm font-bold text-gray-800 mb-2">Selecciona tus opciones:</h3>
+                                {Object.keys(parsedOptions).map((optionName) => (
+                                    <div key={optionName} className="mb-3">
+                                        <label className="block text-xs font-semibold text-gray-600 mb-1">{optionName}</label>
+                                        <select
+                                            value={selectedOptions[optionName] || ""}
+                                            onChange={(e) => setSelectedOptions({ ...selectedOptions, [optionName]: e.target.value })}
+                                            className="w-full p-2 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none"
+                                        >
+                                            <option value="">Selecciona {optionName}</option>
+                                            {parsedOptions[optionName].map((val) => (
+                                                <option key={val} value={val}>
+                                                    {val}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        
+                        {/* Escasez/Urgency */}
+                        {isOptionsComplete() && !isOutOfStock && availableStock <= 7 && availableStock > 0 && (
+                            <div className="mt-2 text-red-600 font-bold text-sm bg-red-50 p-2 rounded-lg border border-red-100 animate-pulse text-center">
+                                🔥 ¡Rápido, solo quedan {availableStock} unidades disponibles!
+                            </div>
+                        )}
                     </div>
                 </div>
 
                 {/* Pie con Botón Angosto */}
                 <div className="p-3 border-t border-gray-50 bg-gray-50/30 flex justify-center">
                     <button
+                        disabled={!isOptionsComplete() || isOutOfStock}
                         onClick={() => {
-                            addToCart(product);
+                            const optionsStr = Object.keys(selectedOptions).length > 0 ? JSON.stringify(selectedOptions) : null;
+                            addToCart(product, optionsStr);
                             onClose();
                         }}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-10 py-2 rounded-full font-bold text-xs transition-all shadow-md active:scale-95 flex items-center gap-2"
+                        className={`px-10 py-2 rounded-full font-bold text-xs transition-all shadow-md flex items-center gap-2 ${
+                            !isOptionsComplete() ? 'bg-gray-300 text-gray-500 cursor-not-allowed' :
+                            isOutOfStock ? 'bg-red-500 text-white cursor-not-allowed' :
+                            'bg-blue-600 hover:bg-blue-700 text-white active:scale-95'
+                        }`}
                     >
-                        <span>🛒</span> Agregar al Carrito
+                        <span>🛒</span> {isOutOfStock ? 'Producto Agotado' : (!isOptionsComplete() ? 'Selecciona una talla' : 'Agregar al Carrito')}
                     </button>
                 </div>
             </motion.div>

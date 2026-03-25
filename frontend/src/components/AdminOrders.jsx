@@ -164,7 +164,10 @@ const AdminOrders = () => {
                                 ${order.items.map(item => `
                                     <tr>
                                         <td style="text-align: center;"><div class="checkbox"></div></td>
-                                        <td>${item.product_name}</td>
+                                        <td>
+                                            ${item.product_name}
+                                            ${item.selected_options ? '<br><small style="color: blue;">Opción: ' + Object.entries(JSON.parse(item.selected_options)).map(arr => arr[0] + ': ' + arr[1]).join(', ') + '</small>' : ''}
+                                        </td>
                                         <td style="text-align: center; font-weight: bold; font-size: 1.2em;">${item.quantity}</td>
                                     </tr>
                                 `).join('')}
@@ -628,6 +631,11 @@ const AdminOrders = () => {
                                             <div key={item.id} className="flex justify-between p-2 bg-gray-50 rounded">
                                                 <div>
                                                     <p className="font-medium">{item.product_name}</p>
+                                                    {item.selected_options && (
+                                                        <p className="text-sm font-semibold text-blue-600 mb-1">
+                                                            Opción: {Object.entries(JSON.parse(item.selected_options)).map(([k, v]) => `${k}: ${v}`).join(', ')}
+                                                        </p>
+                                                    )}
                                                     <p className="text-sm text-gray-600">Cantidad: {item.quantity}</p>
                                                 </div>
                                                 <div className="text-right">
@@ -795,7 +803,10 @@ const handlePrintRemision = (order) => {
                     ${order.items.map(item => `
                         <tr>
                             <td style="text-align: center;"><div class="checkbox"></div></td>
-                            <td>${item.product_name}</td>
+                            <td>
+                                ${item.product_name}
+                                ${item.selected_options ? '<br><small style="color: blue;">Opción: ' + Object.entries(JSON.parse(item.selected_options)).map(arr => arr[0] + ': ' + arr[1]).join(', ') + '</small>' : ''}
+                            </td>
                             <td style="text-align: center; font-weight: bold; font-size: 1.2em;">${item.quantity}</td>
                         </tr>
                     `).join('')}

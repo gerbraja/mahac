@@ -17,6 +17,21 @@ def create_order(db: Session, payload: OrderCreate, current_user):
         product = db.query(Product).filter(Product.id == item.product_id, Product.active == True).first()
         if not product:
             raise ValueError(f"Product {item.product_id} not found")
+            
+        # Variant explicit stock check
+        if getattr(item, 'selected_options', None) and product.variant_stock:
+            try:
+                sel_opt = json.loads(item.selected_options)
+                var_stock = json.loads(product.variant_stock)
+                if sel_opt:
+                    key = list(sel_opt.keys())[0]
+                    chosen_variant = sel_opt[key]
+                    if chosen_variant in var_stock:
+                        if var_stock[chosen_variant] < item.quantity:
+                            raise ValueError(f"Stock insuficiente para {product.name} (Talla: {chosen_variant})")
+            except Exception:
+                pass
+                
         if product.stock < item.quantity:
             raise ValueError(f"Insufficient stock for {product.name}")
 
@@ -63,7 +78,8 @@ def create_order(db: Session, payload: OrderCreate, current_user):
             "quantity": item.quantity,
             "subtotal_usd": subtotal_usd,
             "subtotal_cop": subtotal_cop,
-            "subtotal_pv": subtotal_pv
+            "subtotal_pv": subtotal_pv,
+            "selected_options": getattr(item, 'selected_options', None)
         })
 
     # Determine user_id (registered) or None (guest)
@@ -108,10 +124,26 @@ def create_order(db: Session, payload: OrderCreate, current_user):
             quantity=it["quantity"],
             subtotal_usd=it["subtotal_usd"],
             subtotal_cop=it["subtotal_cop"],
-            subtotal_pv=it["subtotal_pv"]
+            subtotal_pv=it["subtotal_pv"],
+            selected_options=it.get("selected_options")
         )
         db.add(oi)
         it["product"].stock -= it["quantity"]
+        
+        # Deduct from variant_stock if applicable
+        if it.get("selected_options") and it["product"].variant_stock:
+            try:
+                sel_opt = json.loads(it["selected_options"])
+                var_stock = json.loads(it["product"].variant_stock)
+                if sel_opt:
+                    key = list(sel_opt.keys())[0]
+                    chosen_variant = sel_opt[key]
+                    if chosen_variant in var_stock:
+                        var_stock[chosen_variant] = max(0, var_stock[chosen_variant] - it["quantity"])
+                        it["product"].variant_stock = json.dumps(var_stock)
+            except Exception:
+                pass
+                
         db.add(it["product"])
 
     db.commit()

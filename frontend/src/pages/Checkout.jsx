@@ -319,7 +319,7 @@ export default function Checkout() {
                                 />
                                 <div className="flex-1">
                                     <span className="font-bold block">🏦 Transferencia Bancaria (Bancolombia)</span>
-                                    <span className="text-xs text-gray-500">Envía comprobante por WhatsApp. No requiere cuenta inmediata.</span>
+                                    <span className="text-xs text-gray-500">Envía comprobante al correo: ventas@tuempresainternacional.com. No requiere cuenta inmediata.</span>
                                 </div>
                             </label>
 
@@ -335,7 +335,7 @@ export default function Checkout() {
                                 />
                                 <div className="flex-1">
                                     <span className="font-bold block">🔶 Binance Pay / Cripto</span>
-                                    <span className="text-xs text-gray-500">Paga con USDT/BTC. Escanea el QR.</span>
+                                    <span className="text-xs text-gray-500">Paga con USDT/BTC. Envía comprobante al correo: ventas@tuempresainternacional.com.</span>
                                 </div>
                             </label>
 

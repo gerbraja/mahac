@@ -24,7 +24,14 @@ export default function OrderDetails() {
         <h4 className="font-medium">Items</h4>
         <ul>
           {order.items.map(i => (
-            <li key={i.id}>{i.product_name} x{i.quantity} — ${i.subtotal_usd.toFixed(2)}</li>
+            <li key={i.id} className="mb-2">
+              <span className="font-semibold">{i.product_name}</span> x{i.quantity} — ${i.subtotal_usd.toFixed(2)}
+              {i.selected_options && (
+                <div className="text-xs text-blue-600 ml-4">
+                  Opción: {Object.entries(JSON.parse(i.selected_options)).map(([k, v]) => `${k}: ${v}`).join(', ')}
+                </div>
+              )}
+            </li>
           ))}
         </ul>
       </div>

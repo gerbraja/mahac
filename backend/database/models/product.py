@@ -30,6 +30,16 @@ class Product(Base):
     public_price = Column(Float, nullable=True) # Precio Publico
     sku = Column(String, nullable=True) # Referencia
     
+    # Facturación Electrónica DIAN
+    dian_code = Column(String, nullable=True) # Código estándar/barras DIAN
+    tax_type = Column(String, default="IVA") # Tipo de impuesto (IVA, INC, Exento)
+    
+    # Opciones/Variantes de Producto (Ej: {"Talla": ["S", "M", "L"]})
+    options = Column(String, nullable=True)
+    
+    # Stock individual por cada variante (Ej: {"S": 10, "M": 3, "L": 0})
+    variant_stock = Column(String, nullable=True)
+    
     # Relationship with Supplier
     supplier_id = Column(Integer, ForeignKey("suppliers.id"), nullable=True)
     supplier = relationship("Supplier", back_populates="products")

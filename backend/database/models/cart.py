@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, ForeignKey
+from sqlalchemy import Column, Integer, ForeignKey, String
 from sqlalchemy.orm import relationship
 from ..connection import Base
 
@@ -10,6 +10,9 @@ class Cart(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     product_id = Column(Integer, ForeignKey("products.id"), nullable=False)
     quantity = Column(Integer, default=1)
+    
+    # JSON string of selected variant values (Ej: '{"Talla": "M"}')
+    selected_options = Column(String, nullable=True)
 
     # Simple relationships; do not require back_populates in other models
     user = relationship("User")

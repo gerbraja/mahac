@@ -156,6 +156,12 @@ const AdminSupplierOrders = () => {
                                                     {product.product_name}
                                                 </h3>
 
+                                                {product.selected_options && (
+                                                    <p className="text-sm font-semibold text-blue-600 mb-2">
+                                                        Opción: {Object.entries(JSON.parse(product.selected_options)).map(([k, v]) => `${k}: ${v}`).join(', ')}
+                                                    </p>
+                                                )}
+
                                                 {product.sku && (
                                                     <p className="text-xs text-gray-500 mb-3">Ref: {product.sku}</p>
                                                 )}

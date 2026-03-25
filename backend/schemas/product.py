@@ -10,21 +10,29 @@ class ProductBase(BaseModel):
     price_usd: float
     price_eur: Optional[float] = None
     price_local: Optional[float] = None
-    pv: float = 0
-    direct_bonus_pv: float = 0
-    stock: int = 0
-    weight_grams: int = 500  # Weight in grams
-    is_activation: bool = False
+    pv: Optional[float] = 0
+    direct_bonus_pv: Optional[float] = 0
+    stock: Optional[int] = 0
+    weight_grams: Optional[int] = 500  # Weight in grams
+    is_activation: Optional[bool] = False
     image_url: Optional[str] = None  # URL of product image
     
     # New Fields
     cost_price: Optional[float] = None
-    tei_pv: int = 0
-    tax_rate: float = 0.0
+    tei_pv: Optional[int] = 0
+    tax_rate: Optional[float] = 0.0
     public_price: Optional[float] = None
     sku: Optional[str] = None
     supplier_id: Optional[int] = None
-    package_level: int = 0
+    package_level: Optional[int] = 0
+    
+    # Facturación Electrónica DIAN
+    dian_code: Optional[str] = None
+    tax_type: Optional[str] = "IVA"
+    
+    options: Optional[str] = None # JSON string for product attributes
+    variant_stock: Optional[str] = None # JSON string for stock per variant
+    
     active: Optional[bool] = None  # None = no change; True = activo; False = suspendido
 
 
@@ -53,6 +61,14 @@ class ProductUpdate(BaseModel):
     sku: Optional[str] = None
     supplier_id: Optional[int] = None
     package_level: Optional[int] = None
+    
+    # Facturación Electrónica DIAN
+    dian_code: Optional[str] = None
+    tax_type: Optional[str] = None
+    
+    options: Optional[str] = None
+    variant_stock: Optional[str] = None
+    
     active: Optional[bool] = None
 
 

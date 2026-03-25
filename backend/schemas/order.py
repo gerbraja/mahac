@@ -6,6 +6,7 @@ from datetime import datetime
 class OrderItemCreate(BaseModel):
     product_id: int
     quantity: int
+    selected_options: Optional[str] = None
 
 
 class GuestInfo(BaseModel):
@@ -45,6 +46,7 @@ class OrderItemOut(BaseModel):
     subtotal_usd: float
     subtotal_cop: float
     subtotal_pv: float
+    selected_options: Optional[str] = None
 
     class Config:
         orm_mode = True

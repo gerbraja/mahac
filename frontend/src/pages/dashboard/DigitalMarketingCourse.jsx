@@ -63,7 +63,7 @@ const DigitalMarketingCourse = () => {
     <div className="flex flex-col md:flex-row min-h-screen bg-slate-50 gap-6 p-4">
       
       {/* Sidebar - Course Outline */}
-      <div className="w-full md:w-80 bg-white shadow-xl rounded-2xl overflow-hidden flex-shrink-0 border border-slate-100 flex flex-col h-[calc(100vh-8rem)] sticky top-24">
+      <div className="w-full md:w-80 bg-white shadow-xl rounded-2xl overflow-hidden flex-shrink-0 border border-slate-100 flex flex-col md:h-[calc(100vh-8rem)] md:sticky md:top-24">
         <div className="p-6 bg-gradient-to-r from-orange-500 to-red-500 text-white">
           <h2 className="text-2xl font-bold mb-2">📱 Marketing Digital Elite</h2>
           <div className="w-full bg-white/20 rounded-full h-2 mb-2">

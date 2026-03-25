@@ -261,6 +261,11 @@ const UserOrders = () => {
                                 <div key={item.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                                     <div>
                                         <p className="font-medium">{item.product_name}</p>
+                                        {item.selected_options && (
+                                            <p className="text-xs font-semibold text-blue-600 mb-1">
+                                                Opción: {Object.entries(JSON.parse(item.selected_options)).map(([k, v]) => `${k}: ${v}`).join(', ')}
+                                            </p>
+                                        )}
                                         <p className="text-sm text-gray-600">Cantidad: {item.quantity}</p>
                                     </div>
                                     <div className="text-right">

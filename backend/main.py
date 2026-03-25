@@ -626,6 +626,50 @@ def run_verified_balance_migration(key: str, db: Session = Depends(get_db)):
         db.rollback()
         return {"status": "error", "error": str(e)}
 
+@app.get("/run-dian-inventory-migration")
+def run_dian_inventory_migration(key: str, db: Session = Depends(get_db)):
+    """Adds DIAN and Supplier Portal fields to Postgres."""
+    if key != "secure_setup_key_2025":
+        raise HTTPException(status_code=403, detail="Forbidden")
+    results = []
+    try:
+        def add_column_if_not_exists(table, column, datatype):
+            res = db.execute(text(f"SELECT column_name FROM information_schema.columns WHERE table_name = '{table}' AND column_name = '{column}'"))
+            if not res.fetchone():
+                db.execute(text(f"ALTER TABLE {table} ADD COLUMN {column} {datatype}"))
+                results.append(f"✅ Added {column} to {table}")
+            else:
+                results.append(f"ℹ️ {column} already in {table}")
+                
+        # PostgreSQL datatypes
+        add_column_if_not_exists("products", "dian_code", "VARCHAR(255)")
+        add_column_if_not_exists("products", "tax_type", "VARCHAR(50)")
+        add_column_if_not_exists("products", "supplier_id", "INTEGER")
+        add_column_if_not_exists("products", "cost_price", "FLOAT")
+        add_column_if_not_exists("products", "tei_pv", "INTEGER DEFAULT 0")
+        add_column_if_not_exists("products", "tax_rate", "FLOAT DEFAULT 0.0")
+        add_column_if_not_exists("products", "public_price", "FLOAT")
+        add_column_if_not_exists("products", "sku", "VARCHAR(255)")
+        add_column_if_not_exists("products", "weight_grams", "INTEGER DEFAULT 500")
+        
+        add_column_if_not_exists("users", "document_type", "VARCHAR(50)")
+        add_column_if_not_exists("users", "company_name", "VARCHAR(255)")
+        add_column_if_not_exists("users", "tax_regime", "VARCHAR(100)")
+        
+        add_column_if_not_exists("suppliers", "document_type", "VARCHAR(50)")
+        add_column_if_not_exists("suppliers", "document_number", "VARCHAR(255)")
+        add_column_if_not_exists("suppliers", "tax_regime", "VARCHAR(100)")
+        add_column_if_not_exists("suppliers", "city", "VARCHAR(255)")
+        add_column_if_not_exists("suppliers", "country", "VARCHAR(255) DEFAULT 'Colombia'")
+        
+        add_column_if_not_exists("suppliers", "inventory_token", "VARCHAR(255) UNIQUE")
+        
+        db.commit()
+        return {"status": "ok", "results": results}
+    except Exception as e:
+        db.rollback()
+        return {"status": "error", "error": str(e)}
+
 
 @app.get("/fix-limpiap")
 def fix_limpiap(key: str, mode: str = "inspect", db: Session = Depends(get_db)):
