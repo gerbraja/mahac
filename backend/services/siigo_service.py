@@ -18,10 +18,10 @@ from typing import Optional
 import httpx
 from sqlalchemy.orm import Session
 
-from backend.database.models.order import Order
-from backend.database.models.user import User
-from backend.database.models.siigo_log import SiigoLog
-from backend.utils.dian_math import unit_price_cop, invoice_total_from_items, validate_totals
+from database.models.order import Order
+from database.models.user import User
+from database.models.siigo_log import SiigoLog
+from utils.dian_math import unit_price_cop, invoice_total_from_items, validate_totals
 
 logger = logging.getLogger(__name__)
 
