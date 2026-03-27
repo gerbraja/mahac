@@ -32,3 +32,7 @@ try:
 except Exception:
     pass
 
+try:
+    from . import siigo_log
+except Exception:
+    pass
