@@ -121,6 +121,11 @@ print("DEBUG: [MAIN] Importing orders router...", flush=True)
 from backend.routers import orders
 app.include_router(orders.router)
 
+print("DEBUG: [MAIN] Importing shipping router...", flush=True)
+# Shipping router
+from backend.routers import shipping
+app.include_router(shipping.router)
+
 print("DEBUG: [MAIN] Importing auth router...", flush=True)
 # Auth router (registration and login)
 app.include_router(auth.router)
@@ -185,6 +190,11 @@ print("DEBUG: [MAIN] Importing suppliers router...", flush=True)
 # Suppliers Router
 from backend.routers import suppliers
 app.include_router(suppliers.router, prefix="/api")
+
+print("DEBUG: [MAIN] Importing logistics router...", flush=True)
+# Logistics / Consolidated Shipping Router
+from backend.routers import logistics
+app.include_router(logistics.router)
 
 print("DEBUG: [MAIN] All routers imported. Startup complete.", flush=True)
 
@@ -626,6 +636,107 @@ def run_verified_balance_migration(key: str, db: Session = Depends(get_db)):
         db.rollback()
         return {"status": "error", "error": str(e)}
 
+@app.get("/run-orders-migration")
+def run_orders_migration(key: str, db: Session = Depends(get_db)):
+    """
+    Agrega columnas faltantes a la tabla 'orders' en producción.
+    Necesario después del despliegue del sistema de fletes Inter Rapidísimo.
+    """
+    if key != "secure_setup_key_2025":
+        raise HTTPException(status_code=403, detail="Forbidden")
+    results = []
+    try:
+        cols_orders = [
+            ("shipping_cost_base",  "FLOAT DEFAULT 0.0"),
+            ("shipping_tax_amount", "FLOAT DEFAULT 0.0"),
+            ("shipping_type",       "VARCHAR(50) DEFAULT 'delivery'"),
+            ("pickup_point_id",     "INTEGER"),
+            ("batch_id",            "INTEGER"),
+            ("siigo_invoice_id",    "VARCHAR(100)"),
+            ("cufe",                "VARCHAR(255)"),
+            ("siigo_status",        "VARCHAR(50)"),
+            ("siigo_invoice_pdf_url", "VARCHAR(512)"),
+            ("shipping_label_pdf_url", "VARCHAR(512)"),
+            ("tracking_number",     "VARCHAR(100)"),
+            ("payment_confirmed_at","TIMESTAMP"),
+            ("shipped_at",          "TIMESTAMP"),
+            ("completed_at",        "TIMESTAMP"),
+        ]
+        for col, col_type in cols_orders:
+            try:
+                db.execute(text(f"ALTER TABLE orders ADD COLUMN IF NOT EXISTS {col} {col_type}"))
+                results.append(f"✅ orders.{col}")
+            except Exception as e:
+                results.append(f"ℹ️ orders.{col}: {str(e)[:60]}")
+
+        # También asegurarse que guest_info existe
+        try:
+            db.execute(text("ALTER TABLE orders ADD COLUMN IF NOT EXISTS guest_info TEXT"))
+            results.append("✅ orders.guest_info")
+        except Exception as e:
+            results.append(f"ℹ️ orders.guest_info: {str(e)[:60]}")
+
+        # user_id nullable
+        try:
+            db.execute(text("ALTER TABLE orders ALTER COLUMN user_id DROP NOT NULL"))
+            results.append("✅ orders.user_id -> nullable")
+        except Exception as e:
+            results.append(f"ℹ️ orders.user_id nullable: {str(e)[:60]}")
+
+        db.commit()
+        return {"status": "ok", "results": results}
+    except Exception as e:
+        db.rollback()
+        return {"status": "error", "error": str(e)}
+
+
+@app.get("/run-product-reviews-migration")
+def run_product_reviews_migration(key: str, db: Session = Depends(get_db)):
+    """
+    Agrega columnas de rating a 'products' y crea la tabla 'product_reviews'.
+    """
+    if key != "secure_setup_key_2025":
+        raise HTTPException(status_code=403, detail="Forbidden")
+    
+    results = []
+    try:
+        # Check products columns
+        res = db.execute(text("""
+            SELECT column_name FROM information_schema.columns 
+            WHERE table_name = 'products' AND column_name IN ('average_rating', 'rating_count')
+        """))
+        existing = [row[0] for row in res.fetchall()]
+        
+        if 'average_rating' not in existing:
+            db.execute(text("ALTER TABLE products ADD COLUMN average_rating FLOAT DEFAULT 0.0"))
+            results.append("✅ Columna 'average_rating' agregada a 'products'.")
+        
+        if 'rating_count' not in existing:
+            db.execute(text("ALTER TABLE products ADD COLUMN rating_count INTEGER DEFAULT 0"))
+            results.append("✅ Columna 'rating_count' agregada a 'products'.")
+            
+        # Create product_reviews table
+        db.execute(text("""
+            CREATE TABLE IF NOT EXISTS product_reviews (
+                id SERIAL PRIMARY KEY,
+                product_id INTEGER NOT NULL REFERENCES products(id),
+                user_id INTEGER NOT NULL REFERENCES users(id),
+                order_item_id INTEGER NOT NULL REFERENCES order_items(id),
+                rating INTEGER NOT NULL,
+                comment VARCHAR(500),
+                created_at TIMESTAMP DEFAULT NOW(),
+                CONSTRAINT uix_user_order_item_review UNIQUE (user_id, order_item_id)
+            )
+        """))
+        results.append("✅ Tabla 'product_reviews' lista.")
+        
+        db.commit()
+        return {"status": "ok", "results": results}
+    except Exception as e:
+        db.rollback()
+        return {"status": "error", "error": str(e)}
+
+
 @app.get("/run-dian-inventory-migration")
 def run_dian_inventory_migration(key: str, db: Session = Depends(get_db)):
     """Adds DIAN and Supplier Portal fields to Postgres."""
@@ -816,4 +927,130 @@ def fix_limpiap(key: str, mode: str = "inspect", db: Session = Depends(get_db)):
     #     # ... logic commented out for safety ...
     # ]
     return output
+
+
+@app.get("/seed-tejidos-fenix")
+def seed_tejidos_fenix(key: str, db: Session = Depends(get_db)):
+    """
+    Crea el proveedor 'Tejidos Fenix' y registra 56 productos con sus
+    imagenes en Google Cloud Storage. Seguro para ejecutar multiples veces
+    (detecta SKUs existentes y los actualiza en lugar de duplicar).
+    """
+    if key != "secure_setup_key_2025":
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    from backend.database.models.product import Product
+    from backend.database.models.supplier import Supplier
+
+    GCS_BASE = "https://storage.googleapis.com/tuempresainternacional-assets/images"
+
+    PRODUCTS = [
+        {"sku": "100",  "name": "Capa Top Verde Hilo",            "image": "100-capa-top-verde-hilo.png",          "category": "Capas y Tops"},
+        {"sku": "101",  "name": "Capa Top Azul Hilo",             "image": "101-capa-top-azul-hilo.png",           "category": "Capas y Tops"},
+        {"sku": "102",  "name": "Capa Top Blanco Claro Hilo",     "image": "102-capa-top-blancoc-hilo.png",        "category": "Capas y Tops"},
+        {"sku": "103",  "name": "Capa Top Blanco Marfil Hilo",    "image": "103-capa-top-blancom-hilo.png",        "category": "Capas y Tops"},
+        {"sku": "104",  "name": "Capa Top Cafe Medio Hilo",       "image": "104-capa-top-cafem-hilo.png",          "category": "Capas y Tops"},
+        {"sku": "105",  "name": "Capa Top Blanco Crema Hilo",     "image": "105-capa-top-blancocr-hilo.png",       "category": "Capas y Tops"},
+        {"sku": "106",  "name": "Capa Top Azul Claro Hilo",       "image": "106-capa-top-azulc-hilo.png",          "category": "Capas y Tops"},
+        {"sku": "107",  "name": "Buso Fendix Manga Corta Hilo",   "image": "107-buso-fendix-mnc-hilo.png",         "category": "Busos"},
+        {"sku": "108",  "name": "Buso Franjas Manga Corta Hilo",  "image": "108-buso-franjas-mnc-hilo.png",        "category": "Busos"},
+        {"sku": "109",  "name": "Abrigo con Pelusa Hilo",         "image": "109-abrigo-con-pelusa-hilo.png",       "category": "Abrigos"},
+        {"sku": "110",  "name": "Buso Blanco Hilo",               "image": "110-buso-blanco-hilo.png",             "category": "Busos"},
+        {"sku": "111",  "name": "Buso Oversize Hilo",             "image": "111-buso-overside-hilo.png",           "category": "Busos"},
+        {"sku": "112",  "name": "Buso Rosa Hilo",                 "image": "112-buso-rosa-hilo.png",               "category": "Busos"},
+        {"sku": "113",  "name": "Blusa Violeta Hilo",             "image": "113-blusa-violet-hilo.png",            "category": "Blusas"},
+        {"sku": "114",  "name": "Buso Azul Hilo",                 "image": "114-buso-azul-hilo.png",               "category": "Busos"},
+        {"sku": "115",  "name": "Buso Negro Hilo",                "image": "115-buso-negro-hilo.png",              "category": "Busos"},
+        {"sku": "116",  "name": "Buso Cafe Hilo",                 "image": "116-buso-cafe-hilo.png",               "category": "Busos"},
+        {"sku": "117",  "name": "Buso Azul Tejido Hilo",          "image": "117-buso-azul-hilo.png",               "category": "Busos"},
+        {"sku": "118",  "name": "Buso Beige Hilo",                "image": "118-buso-beish-hilo.png",              "category": "Busos"},
+        {"sku": "119",  "name": "Chaleco Cerezas Hilo",           "image": "119-chaleco-cerezas-hilo.png",         "category": "Chalecos"},
+        {"sku": "120",  "name": "Chaleco Blanco Hilo",            "image": "120-chaleco-blanco-hilo.png",          "category": "Chalecos"},
+        {"sku": "121",  "name": "Saco Blanco Globo Hilo",         "image": "121-saco-blanco-globo-hilo.png",       "category": "Sacos"},
+        {"sku": "122",  "name": "Saco Azul Huellitas Perro Hilo", "image": "122-saco-azul-hperro-hilo.png",        "category": "Sacos"},
+        {"sku": "123",  "name": "Saco Blanco Sombrero Hilo",      "image": "123-saco-blanco-sombrero-hilo.png",    "category": "Sacos"},
+        {"sku": "124",  "name": "Saco Blanco Estrellas Hilo",     "image": "124-saco-blanco-estrellas-hilo.png",   "category": "Sacos"},
+        {"sku": "125",  "name": "Saco Cafe Huellas Gato Hilo",    "image": "125-saco-cafe-hgato-hilo.png",         "category": "Sacos"},
+        {"sku": "126",  "name": "Saco Blanco Mariquita Hilo",     "image": "126-saco-blanco-mariquita-hilo.png",   "category": "Sacos"},
+        {"sku": "127",  "name": "Saco Blanco Abeja Hilo",         "image": "127-saco-blanco-abeja-hilo.png",       "category": "Sacos"},
+        {"sku": "128",  "name": "Saco Blanco Huellitas G Hilo",   "image": "128-saco-blanco-huellitasg-hilo.png",  "category": "Sacos"},
+        {"sku": "129",  "name": "Saco Amarillo Conejo Hilo",      "image": "129-saco-amarillo-conejo-hilo.png",    "category": "Sacos"},
+        {"sku": "130",  "name": "Saco Cafe Aves Hilo",            "image": "130-saco-cafe-aves-hilo.png",          "category": "Sacos"},
+        {"sku": "131",  "name": "Saco Rojo Girasol Hilo",         "image": "131-saco-rojp-girasol-hilo.png",       "category": "Sacos"},
+        {"sku": "132",  "name": "Saco Cafe Corazones Hilo",       "image": "132-saco-cafe-corazones-hilo.png",     "category": "Sacos"},
+        {"sku": "133",  "name": "Saco Negro Fresas Hilo",         "image": "133-saco-negro-fresas-hilo.png",       "category": "Sacos"},
+        {"sku": "134",  "name": "Saco Blanco Zanahorias Hilo",    "image": "134-saco-blanco-zanahorias-hilo.png",  "category": "Sacos"},
+        {"sku": "135",  "name": "Saco Blanco Munecos Hilo",       "image": "135-saco-blanco-menecos-hilo.png",     "category": "Sacos"},
+        {"sku": "136",  "name": "Saco Blanco Cerezas 3D Hilo",    "image": "136-saco-blanco-cerezas3d-hilo.png",   "category": "Sacos"},
+        {"sku": "137",  "name": "Saco Negro Cerezas Hilo",        "image": "137-saco-negro-cerezas-hilo.png",      "category": "Sacos"},
+        {"sku": "138",  "name": "Saco Blanco Mariposas Hilo",     "image": "138-saco-blanco-mariposas-hilo.png",   "category": "Sacos"},
+        {"sku": "139",  "name": "Saco Blanco Monos Hilo",         "image": "139-saco-blanco-monos-hilo.png",       "category": "Sacos"},
+        {"sku": "140",  "name": "Conjunto New Azul Hilo",         "image": "140-conjunto-new-azul-hilo.png",       "category": "Conjuntos"},
+        {"sku": "141",  "name": "Conjunto Campesina Hilo",        "image": "141-conjunto-campesina-hilo.png",      "category": "Conjuntos"},
+        {"sku": "142",  "name": "Conjunto Franjas Hilo",          "image": "142-conjunto-franjas-hilo.png",        "category": "Conjuntos"},
+        {"sku": "143",  "name": "Vestido Peluche Hilo",           "image": "143-vestido-peluche-hilo.png",         "category": "Vestidos"},
+        {"sku": "144",  "name": "Conjunto Burbuja Hilo",          "image": "144-conjunto-burbuja-hilo.png",        "category": "Conjuntos"},
+        {"sku": "145",  "name": "Conjunto Chic Negro Hilo",       "image": "145-conjunto-chicnegro-hilo.png",      "category": "Conjuntos"},
+        {"sku": "146",  "name": "Vestido Chaleco Hilo",           "image": "146-vestido-chaleco-hilo.png",         "category": "Vestidos"},
+        {"sku": "147",  "name": "Set Estilo Sirena Hilo",         "image": "147-set-estilo-sirena-hilo.png",       "category": "Conjuntos"},
+        {"sku": "148",  "name": "Conjunto Largo Cruzado Hilo",    "image": "148-conjunto-largo-cruzado-hilo.png",  "category": "Conjuntos"},
+        {"sku": "149",  "name": "Conjunto Largo Unicolor Hilo",   "image": "149-conjunto-largo-unic-hilo.png",     "category": "Conjuntos"},
+        {"sku": "150",  "name": "Conjunto Colmena Hilo",          "image": "150-conjunto-colmena-hilo.png",        "category": "Conjuntos"},
+        {"sku": "151",  "name": "Vestido Media Luna Hilo",        "image": "151-vestido-media-luna-hilo.png",      "category": "Vestidos"},
+        {"sku": "152",  "name": "Vestido Colmena Largo Hilo",     "image": "152-vestido-colmena-largo-hilo.png",   "category": "Vestidos"},
+        {"sku": "153",  "name": "Vestido Unicolor Largo Hilo",    "image": "153-vestido-unicolor-largo-hilo.png",  "category": "Vestidos"},
+        {"sku": "154",  "name": "Vestido Franjas Hilo",           "image": "154-vestido-franjas-hilo.png",         "category": "Vestidos"},
+        {"sku": "154b", "name": "Vestido Chaleco Largo Hilo",     "image": "154b-vestido-chaleco-hilo.png",        "category": "Vestidos"},
+    ]
+
+    results = []
+    try:
+        # 1. Crear o recuperar proveedor
+        supplier = db.query(Supplier).filter(Supplier.name == "Tejidos Fenix").first()
+        if not supplier:
+            supplier = Supplier(name="Tejidos Fenix", contact_name="Tejidos Fenix", country="Colombia", active=True)
+            db.add(supplier)
+            db.flush()
+            results.append(f"Proveedor creado: Tejidos Fenix (id={supplier.id})")
+        else:
+            results.append(f"Proveedor existente: Tejidos Fenix (id={supplier.id})")
+
+        created = 0
+        updated = 0
+        for p in PRODUCTS:
+            image_url = f"{GCS_BASE}/{p['image']}"
+            existing = db.query(Product).filter(Product.sku == p["sku"]).first()
+            if existing:
+                existing.name        = p["name"]
+                existing.image_url   = image_url
+                existing.category    = p["category"]
+                existing.supplier_id = supplier.id
+                existing.active      = True
+                updated += 1
+            else:
+                nuevo = Product(
+                    sku=p["sku"], name=p["name"],
+                    description=f"Tejido artesanal - {p['name']}",
+                    category=p["category"],
+                    price_usd=0.0, price_local=0.0, pv=0,
+                    direct_bonus_pv=0, stock=0, weight_grams=300,
+                    image_url=image_url, supplier_id=supplier.id,
+                    is_activation=False, is_upgrade=False, active=True,
+                    cost_price=0.0, tei_pv=0, tax_rate=0.0,
+                    public_price=0.0, package_level=0,
+                    shipping_class="normal", unit_measurement="Unidad", tax_type="IVA",
+                )
+                db.add(nuevo)
+                created += 1
+
+        db.commit()
+        results.append(f"Productos creados: {created}")
+        results.append(f"Productos actualizados: {updated}")
+        results.append(f"Total procesados: {created + updated} / {len(PRODUCTS)}")
+        return {"status": "ok", "supplier_id": supplier.id, "results": results}
+
+    except Exception as e:
+        db.rollback()
+        return {"status": "error", "error": str(e)}
+
 
