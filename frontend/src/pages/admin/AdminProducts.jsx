@@ -43,6 +43,7 @@ const SimpleAdmin = () => {
         weight_grams: 500,
         image_url: '',
         is_activation: false,
+        is_upgrade: false,
         direct_bonus_pv: 0,
         cost_price: 0,
         tei_pv: 0,
@@ -50,10 +51,11 @@ const SimpleAdmin = () => {
         public_price: 0,
         sku: '',
         supplier_id: '',
+        package_level: 0,
         dian_code: '',
         tax_type: 'IVA',
-        options_name: '',
-        options_values: ''
+        options_list: [],
+        shipping_class: 'normal'
     });
     const [suppliers, setSuppliers] = useState([]);
     const [editingId, setEditingId] = useState(null);
@@ -113,6 +115,22 @@ const SimpleAdmin = () => {
         setFormData({ ...formData, [e.target.name]: value });
     };
 
+    // --- Gestión de variantes dinámicas ---
+    const handleOptionChange = (index, field, value) => {
+        const updated = [...formData.options_list];
+        updated[index] = { ...updated[index], [field]: value };
+        setFormData({ ...formData, options_list: updated });
+    };
+
+    const addOption = () => {
+        setFormData({ ...formData, options_list: [...formData.options_list, { name: '', values: '' }] });
+    };
+
+    const removeOption = (index) => {
+        const updated = formData.options_list.filter((_, i) => i !== index);
+        setFormData({ ...formData, options_list: updated });
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
@@ -132,11 +150,21 @@ const SimpleAdmin = () => {
                 public_price: Number(formData.public_price),
                 sku: formData.sku,
                 supplier_id: formData.supplier_id ? Number(formData.supplier_id) : null,
+                package_level: Number(formData.package_level || 0),
                 dian_code: formData.dian_code,
                 tax_type: formData.tax_type,
-                options: formData.options_name && formData.options_values 
-                    ? JSON.stringify({ [formData.options_name.trim()]: formData.options_values.split(',').map(v => v.trim()).filter(v => v) })
-                    : null
+                options: formData.options_list && formData.options_list.length > 0
+                    ? (() => {
+                        const obj = {};
+                        formData.options_list.forEach(opt => {
+                            if (opt.name.trim() && opt.values.trim()) {
+                                obj[opt.name.trim()] = opt.values.split(',').map(v => v.trim()).filter(v => v);
+                            }
+                        });
+                        return Object.keys(obj).length > 0 ? JSON.stringify(obj) : null;
+                    })()
+                    : null,
+                shipping_class: formData.shipping_class || 'normal'
             };
 
             if (editingId) {
@@ -147,8 +175,7 @@ const SimpleAdmin = () => {
                 setMessage('Producto creado exitosamente');
             }
             setFormData({
-                name: '', description: '', category: '', price_usd: 0, price_local: 0, pv: 0, direct_bonus_pv: 0, stock: 0, weight_grams: 500, image_url: '', is_activation: false,
-                cost_price: 0, tei_pv: 0, tax_rate: 0, public_price: 0, sku: '', supplier_id: '', dian_code: '', tax_type: 'IVA', options_name: '', options_values: ''
+                cost_price: 0, tei_pv: 0, tax_rate: 0, public_price: 0, sku: '', supplier_id: '', package_level: 0, dian_code: '', tax_type: 'IVA', options_list: [], shipping_class: 'normal'
             });
             setEditingId(null);
             fetchProducts();
@@ -162,16 +189,14 @@ const SimpleAdmin = () => {
     };
 
     const handleEdit = (product) => {
-        let optName = '';
-        let optVals = '';
+        let optionsList = [];
         if (product.options) {
             try {
                 const optObj = JSON.parse(product.options);
-                const key = Object.keys(optObj)[0];
-                if (key) {
-                    optName = key;
-                    optVals = optObj[key].join(', ');
-                }
+                optionsList = Object.keys(optObj).map(key => ({
+                    name: key,
+                    values: optObj[key].join(', ')
+                }));
             } catch (e) {
                 console.error("Error parsing options", e);
             }
@@ -179,8 +204,7 @@ const SimpleAdmin = () => {
     
         setFormData({
             ...product,
-            options_name: optName,
-            options_values: optVals
+            options_list: optionsList
         });
         setEditingId(product.id);
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -356,39 +380,95 @@ const SimpleAdmin = () => {
                     padding: '1rem',
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '0.5rem'
+                    gap: '0.75rem'
                 }}>
-                    <strong style={{ color: '#166534', fontSize: '1rem', marginBottom: '0.25rem' }}>👕 Opciones/Variantes del Producto (Opcional)</strong>
-                    <p style={{ color: '#15803d', fontSize: '0.85rem', margin: 0 }}>
-                        Permite al cliente elegir una variante antes de comprar (ej. Talla, Capacidad, Color). 
-                        No necesitas subir fotos por cada variante.
-                    </p>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1rem', marginTop: '0.5rem' }}>
-                        <input
-                            name="options_name"
-                            value={formData.options_name}
-                            onChange={handleChange}
-                            placeholder="Nombre Opción (Ej: Talla)"
-                            style={{ padding: '0.5rem', border: '1px solid #86efac', borderRadius: '0.25rem' }}
-                        />
-                        <input
-                            name="options_values"
-                            value={formData.options_values}
-                            onChange={handleChange}
-                            placeholder="Valores separados por coma (Ej: S, M, L, XL)"
-                            style={{ padding: '0.5rem', border: '1px solid #86efac', borderRadius: '0.25rem' }}
-                        />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <strong style={{ color: '#166534', fontSize: '1rem' }}>👕 Opciones/Variantes del Producto (Opcional)</strong>
+                        <button
+                            type="button"
+                            onClick={addOption}
+                            style={{
+                                background: '#16a34a', color: 'white',
+                                border: 'none', borderRadius: '0.4rem',
+                                padding: '0.35rem 0.9rem', cursor: 'pointer',
+                                fontWeight: 'bold', fontSize: '0.9rem',
+                                display: 'flex', alignItems: 'center', gap: '0.3rem'
+                            }}
+                        >
+                            ＋ Añadir Variante
+                        </button>
                     </div>
-                    {formData.options_name && formData.options_values && (
-                        <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                            <span style={{ fontSize: '0.85rem', color: '#166534', fontWeight: 'bold' }}>Vista previa ({formData.options_name}):</span>
-                            {formData.options_values.split(',').map(v => v.trim()).filter(v => v).map((val, idx) => (
-                                <span key={idx} style={{ background: '#bbf7d0', color: '#166534', padding: '0.2rem 0.5rem', borderRadius: '1rem', fontSize: '0.75rem', fontWeight: 'bold' }}>
-                                    {val}
-                                </span>
-                            ))}
-                        </div>
+                    <p style={{ color: '#15803d', fontSize: '0.82rem', margin: 0 }}>
+                        Agrega las variantes que necesites: <strong>Color</strong>, <strong>Talla</strong>, etc.
+                        El cliente podrá elegir cada opción antes de comprar.
+                    </p>
+
+                    {formData.options_list.length === 0 && (
+                        <p style={{ color: '#86efac', fontSize: '0.82rem', fontStyle: 'italic', margin: 0 }}>
+                            Sin variantes. Haz clic en "＋ Añadir Variante" para agregar Color, Talla, u otras opciones.
+                        </p>
                     )}
+
+                    {formData.options_list.map((opt, index) => (
+                        <div key={index} style={{
+                            background: 'white',
+                            border: '1px solid #86efac',
+                            borderRadius: '0.4rem',
+                            padding: '0.75rem',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '0.5rem'
+                        }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'space-between' }}>
+                                <span style={{ fontSize: '0.8rem', fontWeight: 'bold', color: '#166534' }}>
+                                    Variante #{index + 1}
+                                </span>
+                                <button
+                                    type="button"
+                                    onClick={() => removeOption(index)}
+                                    title="Eliminar esta variante"
+                                    style={{
+                                        background: '#fee2e2', color: '#dc2626',
+                                        border: '1px solid #fca5a5', borderRadius: '0.3rem',
+                                        padding: '0.2rem 0.6rem', cursor: 'pointer',
+                                        fontWeight: 'bold', fontSize: '0.85rem'
+                                    }}
+                                >
+                                    ✕ Eliminar
+                                </button>
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '0.75rem' }}>
+                                <input
+                                    value={opt.name}
+                                    onChange={e => handleOptionChange(index, 'name', e.target.value)}
+                                    placeholder="Nombre (Ej: Color, Talla)"
+                                    style={{ padding: '0.5rem', border: '1px solid #86efac', borderRadius: '0.25rem', outline: 'none' }}
+                                />
+                                <input
+                                    value={opt.values}
+                                    onChange={e => handleOptionChange(index, 'values', e.target.value)}
+                                    placeholder="Valores separados por coma (Ej: 1-Rojo, 2-Azul, 3-Verde)"
+                                    style={{ padding: '0.5rem', border: '1px solid #86efac', borderRadius: '0.25rem', outline: 'none' }}
+                                />
+                            </div>
+                            {opt.name && opt.values && (
+                                <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                                    <span style={{ fontSize: '0.8rem', color: '#166534', fontWeight: 'bold' }}>
+                                        {opt.name}:
+                                    </span>
+                                    {opt.values.split(',').map(v => v.trim()).filter(v => v).map((val, i) => (
+                                        <span key={i} style={{
+                                            background: '#bbf7d0', color: '#166534',
+                                            padding: '0.15rem 0.5rem', borderRadius: '1rem',
+                                            fontSize: '0.75rem', fontWeight: 'bold'
+                                        }}>
+                                            {val}
+                                        </span>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    ))}
                 </div>
 
                 {/* Visual Inverse VAT Calculator Component */}
@@ -465,15 +545,60 @@ const SimpleAdmin = () => {
                     placeholder="URL de la imagen del producto"
                     style={{ padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.25rem' }}
                 />
-                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', gridColumn: 'span 2' }}>
-                    <input
-                        type="checkbox"
-                        name="is_activation"
-                        checked={formData.is_activation}
+                <div style={{ display: 'flex', gap: '1rem', gridColumn: 'span 2' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <input
+                            type="checkbox"
+                            name="is_activation"
+                            checked={formData.is_activation}
+                            onChange={handleChange}
+                        />
+                        <span>¿Es un Paquete de Activación?</span>
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <input
+                            type="checkbox"
+                            name="is_upgrade"
+                            checked={formData.is_upgrade}
+                            onChange={handleChange}
+                        />
+                        <span>¿Es un Paquete de Avance (Upgrade)?</span>
+                    </label>
+                </div>
+                
+                <div style={{ gridColumn: 'span 2', display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                    <label style={{ fontWeight: 'bold', color: '#1e3a8a' }}>Nivel de Franquicia que otorga este paquete:</label>
+                    <select
+                        name="package_level"
+                        value={formData.package_level}
                         onChange={handleChange}
-                    />
-                    <span>¿Es un Paquete de Activación?</span>
-                </label>
+                        style={{ padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.25rem' }}
+                    >
+                        <option value={0}>0 - No otorga Franquicia (Producto Normal)</option>
+                        <option value={1}>1 - Franquicia Nivel 1 (FDI 1)</option>
+                        <option value={2}>2 - Franquicia Nivel 2 (FDI 2 / Upgrade)</option>
+                        <option value={3}>3 - Franquicia Nivel 3</option>
+                    </select>
+                </div>
+
+                {/* Opciones de Flete */}
+                <div style={{ gridColumn: 'span 2', padding: '1rem', background: '#eff6ff', borderRadius: '0.5rem', border: '1px solid #bfdbfe' }}>
+                    <strong style={{ display: 'block', marginBottom: '0.5rem', color: '#1e3a8a' }}>🚚 Clase de Envío (Política de Flete)</strong>
+                    <select
+                        name="shipping_class"
+                        value={formData.shipping_class || 'normal'}
+                        onChange={handleChange}
+                        style={{ padding: '0.5rem', border: '1px solid #93c5fd', borderRadius: '0.25rem', width: '100%', outline: 'none' }}
+                    >
+                        <option value="normal">Normal (El cliente paga flete completo)</option>
+                        <option value="subsidized">Subsidiado (Cubre máximo $17.700. Ej: Zapatos, Ropa.)</option>
+                        <option value="free">Totalmente Gratis (100% cubierto. Ej: Lavadoras o Envío Local)</option>
+                    </select>
+                    <p style={{ margin: '0.5rem 0 0', fontSize: '0.85rem', color: '#3b82f6' }}>
+                        Nota: Si el valor de la orden pasa el umbral de Envío Gratis ($490.000), se otorgará de igual forma el Subsidio de $17.700 a todo el conjunto.
+                    </p>
+                </div>
+
                 <button
                     type="submit"
                     style={{
@@ -495,8 +620,8 @@ const SimpleAdmin = () => {
                         onClick={() => {
                             setEditingId(null);
                             setFormData({
-                                name: '', description: '', category: '', price_usd: 0, price_local: 0, pv: 0, direct_bonus_pv: 0, stock: 0, weight_grams: 500, image_url: '', is_activation: false,
-                                cost_price: 0, tei_pv: 0, tax_rate: 0, public_price: 0, sku: '', supplier_id: '', dian_code: '', tax_type: 'IVA', options_name: '', options_values: ''
+                                name: '', description: '', category: '', price_usd: 0, price_local: 0, pv: 0, direct_bonus_pv: 0, stock: 0, weight_grams: 500, image_url: '', is_activation: false, is_upgrade: false,
+                                cost_price: 0, tei_pv: 0, tax_rate: 0, public_price: 0, sku: '', supplier_id: '', package_level: 0, dian_code: '', tax_type: 'IVA', options_list: []
                             });
                         }}
                         style={{
@@ -529,16 +654,14 @@ const SimpleAdmin = () => {
                     </thead>
                     <tbody>
                         {products.map(p => {
-                            let variantsStr = "Ninguna";
-                            let variantsColor = "#9ca3af";
+                            let variantsList = [];
                             if (p.options) {
                                 try {
                                     const parsed = JSON.parse(p.options);
-                                    if (Object.keys(parsed).length > 0) {
-                                        const key = Object.keys(parsed)[0];
-                                        variantsStr = `${key}: ${parsed[key].join(', ')}`;
-                                        variantsColor = "#3b82f6";
-                                    }
+                                    variantsList = Object.keys(parsed).map(key => ({
+                                        name: key,
+                                        values: parsed[key]
+                                    }));
                                 } catch(e) {}
                             }
                             return (
@@ -546,10 +669,18 @@ const SimpleAdmin = () => {
                                 <td style={{ padding: '0.75rem' }}>
                                     {p.name}
                                     {p.is_activation && <span style={{ marginLeft: '0.5rem' }} title="Paquete de Activación">✅</span>}
+                                    {p.is_upgrade && <span style={{ marginLeft: '0.5rem' }} title="Paquete de Avance (Upgrade)">⬆️</span>}
                                 </td>
                                 <td style={{ padding: '0.75rem', fontSize: '0.85rem' }}>{p.category}</td>
-                                <td style={{ padding: '0.75rem', fontSize: '0.85rem', color: variantsColor, fontWeight: variantsStr !== 'Ninguna' ? 'bold' : 'normal' }}>
-                                    {variantsStr}
+                                <td style={{ padding: '0.75rem', fontSize: '0.85rem' }}>
+                                    {variantsList.length === 0
+                                        ? <span style={{ color: '#9ca3af' }}>Ninguna</span>
+                                        : variantsList.map((v, vi) => (
+                                            <div key={vi} style={{ color: '#3b82f6', fontWeight: 'bold', lineHeight: '1.4' }}>
+                                                {v.name}: {v.values.join(', ')}
+                                            </div>
+                                        ))
+                                    }
                                 </td>
                                 <td style={{ padding: '0.75rem' }}>${p.price_usd}</td>
                                 <td style={{ padding: '0.75rem', fontSize: '0.85rem', color: p.tax_rate > 0 ? '#ef4444' : '#10b981', fontWeight: 'bold' }}>
