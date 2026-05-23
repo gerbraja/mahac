@@ -1028,7 +1028,7 @@ IMPORTANTE: LEA DETENIDAMENTE EL PRESENTE CONTRATO DE ADHESIÓN. AL DILIGENCIAR 
 
 LAS PARTES:
 
-LA COMPAÑÍA: TU EMPRESA INTERNACIONAL S.A.S., sociedad comercial domiciliada en Medellín.
+LA COMPAÑÍA: TU EMPRESA INTERNACIONAL S.A.S. (identificada con NIT 902045325-4), sociedad comercial domiciliada en Medellín.
 
 EL VENDEDOR INDEPENDIENTE (USTED): La persona natural o jurídica que diligencia el formulario de registro electrónico, cuyos datos se consideran veraces y fidedignos para todos los efectos legales.
 
