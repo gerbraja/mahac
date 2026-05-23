@@ -21,6 +21,13 @@ export default function AdminDashboard() {
     const [activationResult, setActivationResult] = useState(null);
     const [activationPackages, setActivationPackages] = useState([]);
     const [loadingPackages, setLoadingPackages] = useState(false);
+    
+    // Manual Bonus State
+    const [showManualBonusModal, setShowManualBonusModal] = useState(false);
+    const [manualBonusData, setManualBonusData] = useState({ sponsorId: '', newMemberId: '', amount: '' });
+    const [applyingBonus, setApplyingBonus] = useState(false);
+    const [manualBonusResult, setManualBonusResult] = useState(null);
+
     // User search state
     const [searchTerm, setSearchTerm] = useState('');
     const [searchResults, setSearchResults] = useState([]);
@@ -39,55 +46,30 @@ export default function AdminDashboard() {
         setLoadingStats(true);
         setStatsError(null);
         try {
+            // ✅ Una sola llamada al backend, filtrada correctamente por país
             const queryParams = new URLSearchParams();
             if (globalCountry && globalCountry !== 'Todos') {
                 queryParams.append('country', globalCountry);
             }
             const queryStr = queryParams.toString() ? `?${queryParams.toString()}` : '';
 
-            const [usersRes, productsRes, paymentsRes, ordersRes] = await Promise.allSettled([
-                api.get(`/api/admin/users${queryStr}`),
-                api.get('/api/products/'),
-                api.get(`/api/admin/pending-payments${queryStr}`),
-                api.get(`/api/orders/${queryStr}`)
-            ]);
+            const res = await api.get(`/api/admin/dashboard-stats${queryStr}`);
+            const data = res.data;
 
-            const newStats = { ...stats };
+            setStats({
+                totalUsers:       data.total_users,
+                activeUsers:      data.active_users,
+                totalProducts:    data.total_products,
+                pendingPayments:  data.pending_payments,
+                pendingShipments: data.pending_shipments,
+            });
 
-            if (usersRes.status === 'fulfilled') {
-                const users = usersRes.value.data;
-                setAllUsers(users); // Save users for lookup
-                newStats.totalUsers = users.length;
-                newStats.activeUsers = users.filter(u => u.status === 'active').length;
-            } else {
-                console.error("Error fetching users for stats:", usersRes.reason);
-            }
+            // recent_orders ya viene del backend con nombre del cliente
+            setPendingOrders(data.recent_orders || []);
 
-            if (productsRes.status === 'fulfilled') {
-                newStats.totalProducts = productsRes.value.data.length;
-            } else {
-                console.error("Error fetching products for stats:", productsRes.reason);
-            }
-
-            if (paymentsRes.status === 'fulfilled') {
-                newStats.pendingPayments = paymentsRes.value.data.length;
-            } else {
-                console.error("Error fetching payments for stats:", paymentsRes.reason);
-            }
-
-            if (ordersRes.status === 'fulfilled') {
-                const orders = ordersRes.value.data;
-                const pending = orders.filter(o => o.status === 'pendiente_envio');
-                newStats.pendingShipments = pending.length;
-                setPendingOrders(pending);
-            } else {
-                console.error("Error fetching orders for stats:", ordersRes.reason);
-            }
-
-            setStats(newStats);
         } catch (error) {
-            console.error("Error fetching stats:", error);
-            setStatsError("Error loading statistics");
+            console.error("Error fetching dashboard stats:", error);
+            setStatsError("Error al cargar estadísticas. Intenta refrescar.");
         } finally {
             setLoadingStats(false);
         }
@@ -230,10 +212,15 @@ export default function AdminDashboard() {
     const fetchActivationPackages = async () => {
         setLoadingPackages(true);
         try {
-            const response = await api.get('/api/products/');
-            const packages = response.data.filter(p => p.is_activation === true);
+            // ✅ Filtramos por país para que solo aparezcan paquetes del país activo
+            const queryParams = new URLSearchParams();
+            if (globalCountry && globalCountry !== 'Todos') {
+                queryParams.append('country', globalCountry);
+            }
+            const queryStr = queryParams.toString() ? `?${queryParams.toString()}` : '';
+            const response = await api.get(`/api/products/${queryStr}`);
+            const packages = response.data.filter(p => p.is_activation === true || p.is_upgrade === true);
             setActivationPackages(packages);
-            // Select first package by default
             if (packages.length > 0) {
                 setActivationData(prev => ({ ...prev, selectedPackage: packages[0].id }));
             }
@@ -287,7 +274,7 @@ export default function AdminDashboard() {
         try {
             const response = await api.post('/api/admin/activate-user', {
                 user_id: parseInt(userIdToActivate),
-                package_amount: selectedPkg.price_usd
+                package_id: selectedPkg.id
             });
 
             setActivationResult({
@@ -305,6 +292,45 @@ export default function AdminDashboard() {
             });
         } finally {
             setActivating(false);
+        }
+    };
+
+    const handleApplyManualBonus = async () => {
+        if (!manualBonusData.sponsorId || !manualBonusData.newMemberId || !manualBonusData.amount) {
+            alert('Por favor completa todos los campos.');
+            return;
+        }
+
+        const confirm1 = window.confirm(`¿Estás seguro de que deseas abonar $${manualBonusData.amount} USD al patrocinador ID ${manualBonusData.sponsorId}? Esta acción no se puede deshacer de forma automática.`);
+        if (!confirm1) return;
+
+        const confirm2 = window.confirm(`⚠️ CONFIRMACIÓN FINAL: Recuerda que por seguridad, solo puedes hacer esto UNA VEZ AL MES por patrocinador. ¿Aplicar definitivamente?`);
+        if (!confirm2) return;
+
+        setApplyingBonus(true);
+        setManualBonusResult(null);
+
+        try {
+            const response = await api.post('/api/admin/manual-bonus', {
+                sponsor_id: parseInt(manualBonusData.sponsorId),
+                new_member_id: parseInt(manualBonusData.newMemberId),
+                amount: parseFloat(manualBonusData.amount)
+            });
+
+            setManualBonusResult({
+                success: true,
+                message: response.data.message
+            });
+
+            // Refresh stats
+            fetchStats();
+        } catch (error) {
+            setManualBonusResult({
+                success: false,
+                message: error.response?.data?.detail || 'Error al aplicar el bono manual'
+            });
+        } finally {
+            setApplyingBonus(false);
         }
     };
 
@@ -478,12 +504,12 @@ export default function AdminDashboard() {
                                     {pendingOrders.slice(0, 5).map(order => (
                                         <tr key={order.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
                                             <td style={{ padding: '0.75rem 1.5rem', fontWeight: 'bold' }}>#{order.id}</td>
-                                            <td style={{ padding: '0.75rem 1.5rem', color: '#4b5563' }}>{order.user_id}</td>
+                                            <td style={{ padding: '0.75rem 1.5rem', color: '#4b5563' }}>{order.customer_name || order.user_id}</td>
                                             <td style={{ padding: '0.75rem 1.5rem', color: '#4b5563' }}>
                                                 {new Date(order.payment_confirmed_at || order.created_at).toLocaleDateString()}
                                             </td>
                                             <td style={{ padding: '0.75rem 1.5rem', color: '#1f2937' }}>
-                                                {order.items.length} items (Total: {order.total_pv} PV)
+                                                {order.items_count ?? (order.items?.length ?? '—')} item(s) · {order.total_pv} PV
                                             </td>
                                             <td style={{ padding: '0.75rem 1.5rem' }}>
                                                 <button
@@ -527,33 +553,50 @@ export default function AdminDashboard() {
                 <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#1e3a8a', marginBottom: '1rem' }}>
                     Acciones Rápidas
                 </h3>
-                <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                     <button
                         onClick={() => setShowActivationModal(true)}
                         style={{
-                            padding: '0.75rem 1.5rem',
+                            padding: '0.4rem 0.8rem',
                             background: '#10b981',
                             color: 'white',
                             border: 'none',
-                            borderRadius: '0.5rem',
+                            borderRadius: '0.4rem',
                             cursor: 'pointer',
                             fontWeight: '600',
-                            fontSize: '1rem',
+                            fontSize: '0.8rem',
                             boxShadow: '0 2px 4px rgba(16, 185, 129, 0.3)'
                         }}
                     >
                         ✅ Activar Usuario
                     </button>
                     <button
+                        onClick={() => setShowManualBonusModal(true)}
+                        style={{
+                            padding: '0.4rem 0.8rem',
+                            background: '#db2777',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '0.4rem',
+                            cursor: 'pointer',
+                            fontWeight: '600',
+                            fontSize: '0.8rem',
+                            boxShadow: '0 2px 4px rgba(219, 39, 119, 0.3)'
+                        }}
+                    >
+                        🛠️ Corrección Manual de Bono
+                    </button>
+                    <button
                         onClick={() => navigate('/admin/users')}
                         style={{
-                            padding: '0.75rem 1.5rem',
+                            padding: '0.4rem 0.8rem',
                             background: '#3b82f6',
                             color: 'white',
                             border: 'none',
-                            borderRadius: '0.5rem',
+                            borderRadius: '0.4rem',
                             cursor: 'pointer',
-                            fontWeight: '500'
+                            fontWeight: '500',
+                            fontSize: '0.8rem'
                         }}
                     >
                         👥 Gestionar Usuarios
@@ -561,13 +604,14 @@ export default function AdminDashboard() {
                     <button
                         onClick={() => navigate('/admin/products')}
                         style={{
-                            padding: '0.75rem 1.5rem',
+                            padding: '0.4rem 0.8rem',
                             background: '#8b5cf6',
                             color: 'white',
                             border: 'none',
-                            borderRadius: '0.5rem',
+                            borderRadius: '0.4rem',
                             cursor: 'pointer',
-                            fontWeight: '500'
+                            fontWeight: '500',
+                            fontSize: '0.8rem'
                         }}
                     >
                         📦 Gestionar Productos
@@ -575,13 +619,14 @@ export default function AdminDashboard() {
                     <button
                         onClick={() => navigate('/admin/payments')}
                         style={{
-                            padding: '0.75rem 1.5rem',
+                            padding: '0.4rem 0.8rem',
                             background: '#f59e0b',
                             color: 'white',
                             border: 'none',
-                            borderRadius: '0.5rem',
+                            borderRadius: '0.4rem',
                             cursor: 'pointer',
-                            fontWeight: '500'
+                            fontWeight: '500',
+                            fontSize: '0.8rem'
                         }}
                     >
                         💳 Ver Pagos Pendientes
@@ -589,13 +634,14 @@ export default function AdminDashboard() {
                     <button
                         onClick={() => navigate('/admin/qualified-ranks')}
                         style={{
-                            padding: '0.75rem 1.5rem',
+                            padding: '0.4rem 0.8rem',
                             background: '#7c3aed',
                             color: 'white',
                             border: 'none',
-                            borderRadius: '0.5rem',
+                            borderRadius: '0.4rem',
                             cursor: 'pointer',
-                            fontWeight: '500'
+                            fontWeight: '500',
+                            fontSize: '0.8rem'
                         }}
                     >
                         🏆 Rangos de Calificación
@@ -603,13 +649,14 @@ export default function AdminDashboard() {
                     <button
                         onClick={() => navigate('/admin/honor-ranks')}
                         style={{
-                            padding: '0.75rem 1.5rem',
+                            padding: '0.4rem 0.8rem',
                             background: '#10b981',
                             color: 'white',
                             border: 'none',
-                            borderRadius: '0.5rem',
+                            borderRadius: '0.4rem',
                             cursor: 'pointer',
-                            fontWeight: '500'
+                            fontWeight: '500',
+                            fontSize: '0.8rem'
                         }}
                     >
                         💎 Rangos de Honor
@@ -617,16 +664,122 @@ export default function AdminDashboard() {
                     <button
                         onClick={() => navigate('/admin/orders')}
                         style={{
-                            padding: '0.75rem 1.5rem',
+                            padding: '0.4rem 0.8rem',
                             background: '#ec4899',
                             color: 'white',
                             border: 'none',
-                            borderRadius: '0.5rem',
+                            borderRadius: '0.4rem',
                             cursor: 'pointer',
-                            fontWeight: '500'
+                            fontWeight: '500',
+                            fontSize: '0.8rem'
                         }}
                     >
                         📋 Gestión de Pedidos
+                    </button>
+                    <button
+                        onClick={() => navigate('/admin/suppliers')}
+                        style={{
+                            padding: '0.4rem 0.8rem',
+                            background: '#78716c',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '0.4rem',
+                            cursor: 'pointer',
+                            fontWeight: '500',
+                            fontSize: '0.8rem'
+                        }}
+                    >
+                        🏭 Proveedores
+                    </button>
+                    <button
+                        onClick={() => navigate('/admin/supplier-orders')}
+                        style={{
+                            padding: '0.4rem 0.8rem',
+                            background: '#0891b2',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '0.4rem',
+                            cursor: 'pointer',
+                            fontWeight: '500',
+                            fontSize: '0.8rem'
+                        }}
+                    >
+                        🛒 Pedidos a Fábrica
+                    </button>
+                    <button
+                        onClick={() => navigate('/admin/kyc')}
+                        style={{
+                            padding: '0.4rem 0.8rem',
+                            background: '#b45309',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '0.4rem',
+                            cursor: 'pointer',
+                            fontWeight: '500',
+                            fontSize: '0.8rem'
+                        }}
+                    >
+                        🆆 Validaciones KYC
+                    </button>
+                    <button
+                        onClick={() => navigate('/admin/withdrawals')}
+                        style={{
+                            padding: '0.4rem 0.8rem',
+                            background: '#1d4ed8',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '0.4rem',
+                            cursor: 'pointer',
+                            fontWeight: '500',
+                            fontSize: '0.8rem'
+                        }}
+                    >
+                        🏦 Retiros
+                    </button>
+                    <button
+                        onClick={() => navigate('/admin/sponsorship-commissions')}
+                        style={{
+                            padding: '0.4rem 0.8rem',
+                            background: '#15803d',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '0.4rem',
+                            cursor: 'pointer',
+                            fontWeight: '500',
+                            fontSize: '0.8rem'
+                        }}
+                    >
+                        💰 Comisiones Patrocinio
+                    </button>
+                    <button
+                        onClick={() => navigate('/admin/pickup-points')}
+                        style={{
+                            padding: '0.4rem 0.8rem',
+                            background: '#be185d',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '0.4rem',
+                            cursor: 'pointer',
+                            fontWeight: '500',
+                            fontSize: '0.8rem'
+                        }}
+                    >
+                        📍 Puntos de Recogida
+                    </button>
+                    <button
+                        onClick={() => navigate('/admin/logistics')}
+                        style={{
+                            padding: '0.4rem 0.8rem',
+                            background: '#92400e',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '0.4rem',
+                            cursor: 'pointer',
+                            fontWeight: '500',
+                            fontSize: '0.8rem'
+                        }}
+                    >
+                        🚛 Logística (Bultos)
                     </button>
                 </div>
             </div>
@@ -822,8 +975,9 @@ export default function AdminDashboard() {
                                 <p style={{ fontWeight: '600', marginBottom: '0.5rem' }}>{activationResult.message}</p>
                                 {activationResult.success && activationResult.data && (
                                     <div style={{ fontSize: '0.875rem' }}>
-                                        <p>Membresía: {activationResult.data.membership_code}</p>
-                                        <p>Comisiones generadas: {activationResult.data.total_commissions_generated}</p>
+                                        <p>Orden Generada: #{activationResult.data.order_id}</p>
+                                        <p>Nivel de Paquete: FDI {activationResult.data.package_level || 1}</p>
+                                        <p>PV Añadido a la Red: {activationResult.data.pv_added}</p>
                                     </div>
                                 )}
                             </div>
@@ -862,6 +1016,162 @@ export default function AdminDashboard() {
                                 }}
                             >
                                 {activating ? 'Activando...' : 'Activar Usuario'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Manual Bonus Modal */}
+            {showManualBonusModal && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: 'rgba(0,0,0,0.5)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 1000
+                }}>
+                    <div style={{
+                        background: 'white',
+                        borderRadius: '1rem',
+                        padding: '2rem',
+                        maxWidth: '500px',
+                        width: '90%',
+                        maxHeight: '90vh',
+                        overflow: 'auto'
+                    }}>
+                        <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#db2777', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <span>🛠️</span> Corrección de Bono Directo
+                        </h3>
+
+                        <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '1.5rem' }}>
+                            Utiliza esta herramienta únicamente para abonar comisiones directas faltantes (ej. reactivaciones antiguas). 
+                            <strong> Solo se permite 1 corrección al mes por patrocinador.</strong>
+                        </p>
+
+                        <div style={{ marginBottom: '1rem' }}>
+                            <label style={{ display: 'block', color: '#374151', fontWeight: '500', marginBottom: '0.5rem' }}>
+                                ID del Patrocinador (Quien recibe el dinero)
+                            </label>
+                            <input
+                                type="number"
+                                value={manualBonusData.sponsorId}
+                                onChange={(e) => setManualBonusData({ ...manualBonusData, sponsorId: e.target.value })}
+                                placeholder="Ej: 10"
+                                style={{
+                                    width: '100%',
+                                    padding: '0.75rem',
+                                    border: '1px solid #d1d5db',
+                                    borderRadius: '0.5rem',
+                                    fontSize: '1rem'
+                                }}
+                            />
+                            {manualBonusData.sponsorId && (
+                                <div style={{ fontSize: '0.875rem', color: allUsers.find(u => u.id === parseInt(manualBonusData.sponsorId)) ? '#10b981' : '#ef4444', marginTop: '0.5rem', fontWeight: '500' }}>
+                                    {allUsers.find(u => u.id === parseInt(manualBonusData.sponsorId)) 
+                                        ? `👤 ${allUsers.find(u => u.id === parseInt(manualBonusData.sponsorId)).name}` 
+                                        : '⚠️ Usuario no encontrado'}
+                                </div>
+                            )}
+                        </div>
+
+                        <div style={{ marginBottom: '1rem' }}>
+                            <label style={{ display: 'block', color: '#374151', fontWeight: '500', marginBottom: '0.5rem' }}>
+                                ID del Usuario Referido (Quien compró)
+                            </label>
+                            <input
+                                type="number"
+                                value={manualBonusData.newMemberId}
+                                onChange={(e) => setManualBonusData({ ...manualBonusData, newMemberId: e.target.value })}
+                                placeholder="Ej: 15"
+                                style={{
+                                    width: '100%',
+                                    padding: '0.75rem',
+                                    border: '1px solid #d1d5db',
+                                    borderRadius: '0.5rem',
+                                    fontSize: '1rem'
+                                }}
+                            />
+                            {manualBonusData.newMemberId && (
+                                <div style={{ fontSize: '0.875rem', color: allUsers.find(u => u.id === parseInt(manualBonusData.newMemberId)) ? '#10b981' : '#ef4444', marginTop: '0.5rem', fontWeight: '500' }}>
+                                    {allUsers.find(u => u.id === parseInt(manualBonusData.newMemberId)) 
+                                        ? `👤 ${allUsers.find(u => u.id === parseInt(manualBonusData.newMemberId)).name}` 
+                                        : '⚠️ Usuario no encontrado'}
+                                </div>
+                            )}
+                        </div>
+
+                        <div style={{ marginBottom: '1.5rem' }}>
+                            <label style={{ display: 'block', color: '#374151', fontWeight: '500', marginBottom: '0.5rem' }}>
+                                Monto a Abonar (USD)
+                            </label>
+                            <input
+                                type="number"
+                                step="0.01"
+                                value={manualBonusData.amount}
+                                onChange={(e) => setManualBonusData({ ...manualBonusData, amount: e.target.value })}
+                                placeholder="Ej: 9.7"
+                                style={{
+                                    width: '100%',
+                                    padding: '0.75rem',
+                                    border: '1px solid #d1d5db',
+                                    borderRadius: '0.5rem',
+                                    fontSize: '1rem'
+                                }}
+                            />
+                        </div>
+
+                        {manualBonusResult && (
+                            <div style={{
+                                padding: '1rem',
+                                borderRadius: '0.5rem',
+                                marginBottom: '1rem',
+                                background: manualBonusResult.success ? '#d1fae5' : '#fee2e2',
+                                border: `1px solid ${manualBonusResult.success ? '#10b981' : '#ef4444'}`,
+                                color: manualBonusResult.success ? '#065f46' : '#991b1b'
+                            }}>
+                                <p style={{ fontWeight: '600' }}>{manualBonusResult.message}</p>
+                            </div>
+                        )}
+
+                        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+                            <button
+                                onClick={() => {
+                                    setShowManualBonusModal(false);
+                                    setManualBonusResult(null);
+                                    setManualBonusData({ sponsorId: '', newMemberId: '', amount: '' });
+                                }}
+                                style={{
+                                    padding: '0.75rem 1.5rem',
+                                    background: '#6b7280',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '0.5rem',
+                                    cursor: 'pointer',
+                                    fontWeight: '500'
+                                }}
+                            >
+                                Cerrar
+                            </button>
+                            <button
+                                onClick={handleApplyManualBonus}
+                                disabled={applyingBonus}
+                                style={{
+                                    padding: '0.75rem 1.5rem',
+                                    background: applyingBonus ? '#fbcfe8' : '#db2777',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '0.5rem',
+                                    cursor: applyingBonus ? 'not-allowed' : 'pointer',
+                                    fontWeight: '600'
+                                }}
+                            >
+                                {applyingBonus ? 'Aplicando...' : 'Aplicar Corrección'}
                             </button>
                         </div>
                     </div>

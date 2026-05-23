@@ -30,11 +30,126 @@ def get_superadmin_user(current_user: User = Depends(get_current_admin_user)):
         )
     return current_user
 
+# --- Dashboard Stats (una sola llamada, filtrada por país) ---
+from backend.database.models.payment_transaction import PaymentTransaction
+
+@router.get("/dashboard-stats")
+def get_dashboard_stats(
+    country: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user)
+):
+    """
+    Returns all KPIs needed for the Admin Dashboard in a single DB call,
+    properly filtered by country.
+
+    - total_users        : all users in the country (or all countries)
+    - active_users       : users with status='active'
+    - total_products     : products whose available_countries includes the country
+    - pending_payments   : payment transactions with status='pending'
+    - pending_shipments  : orders with status in (en_preparacion, pendiente_envio)
+    - recent_orders      : last 5 pending orders (id, user_id, status, created_at, items_count)
+    """
+
+    # country_admin: always lock to their country
+    if getattr(current_user, 'admin_role', '') == 'country_admin':
+        country = getattr(current_user, 'admin_country', country)
+
+    apply_country = country and country != 'Todos'
+
+    # ── 1. Users ─────────────────────────────────────────────────────────
+    users_q = db.query(User)
+    if apply_country:
+        users_q = users_q.filter(User.country.ilike(f"%{country}%"))
+
+    total_users  = users_q.count()
+    active_users = users_q.filter(User.status == 'active').count()
+
+    # ── 2. Products ──────────────────────────────────────────────────────
+    from backend.database.models.product import Product
+    products_q = db.query(Product).filter(Product.active == True)
+    if apply_country:
+        products_q = products_q.filter(
+            Product.available_countries.ilike(f'%"{country}"%')
+        )
+    total_products = products_q.count()
+
+    # ── 3. Pending Payments ──────────────────────────────────────────────
+    from backend.database.models.order import Order as OrderModel
+    payments_q = (
+        db.query(PaymentTransaction)
+        .join(OrderModel, PaymentTransaction.order_id == OrderModel.id)
+        .filter(PaymentTransaction.status == "pending")
+    )
+    if apply_country:
+        payments_q = payments_q.join(User, OrderModel.user_id == User.id).filter(
+            User.country.ilike(f"%{country}%")
+        )
+    pending_payments = payments_q.count()
+
+    # ── 4. Pending Shipments ─────────────────────────────────────────────
+    shipment_statuses = ['en_preparacion', 'pendiente_envio']
+    orders_q = db.query(OrderModel).filter(OrderModel.status.in_(shipment_statuses))
+    if apply_country:
+        orders_q = orders_q.join(User, OrderModel.user_id == User.id).filter(
+            User.country.ilike(f"%{country}%")
+        )
+    pending_shipments = orders_q.count()
+
+    # ── 5. Recent Pending Orders (for the action table) ──────────────────
+    recent_q = (
+        db.query(OrderModel)
+        .filter(OrderModel.status.in_(shipment_statuses))
+        .order_by(OrderModel.payment_confirmed_at.desc().nullslast())
+    )
+    if apply_country:
+        # Already filtered above — re-apply on the fresh query
+        recent_q = recent_q.join(User, OrderModel.user_id == User.id).filter(
+            User.country.ilike(f"%{country}%")
+        )
+    recent_orders_raw = recent_q.limit(10).all()
+
+    recent_orders = []
+    for o in recent_orders_raw:
+        customer = "—"
+        if o.user:
+            customer = (o.user.name or "").strip() or o.user.email or "—"
+        elif o.guest_info:
+            import json as _json
+            try:
+                g = _json.loads(o.guest_info)
+                customer = g.get('name', 'Invitado')
+            except Exception:
+                pass
+
+        recent_orders.append({
+            "id": o.id,
+            "user_id": o.user_id,
+            "customer_name": customer,
+            "status": o.status,
+            "total_pv": o.total_pv,
+            "items_count": len(o.items),
+            "created_at": o.created_at,
+            "payment_confirmed_at": o.payment_confirmed_at,
+        })
+
+    return {
+        "total_users":       total_users,
+        "active_users":      active_users,
+        "total_products":    total_products,
+        "pending_payments":  pending_payments,
+        "pending_shipments": pending_shipments,
+        "recent_orders":     recent_orders,
+        # Meta
+        "filtered_by": country if apply_country else "Todos",
+    }
+
 # --- Supplier / Manufacturer Orders ---
 from backend.database.models.order import Order
 from backend.database.models.order_item import OrderItem
 from backend.database.models.product import Product
 from backend.database.models.supplier import Supplier
+
 
 @router.get("/supplier-orders")
 def get_supplier_orders(
@@ -45,16 +160,36 @@ def get_supplier_orders(
     """
     Get all product orders that haven't been sent to the manufacturer/supplier yet.
     Groups by supplier and aggregates quantities.
+    Always returns all suppliers even if they have 0 pending items.
     """
     print("[SUPPLIER_ORDERS] Endpoint called by user:", current_user.email, flush=True)
+    
+    # 1. Fetch all suppliers to ensure they are always displayed
+    all_suppliers = db.query(Supplier).order_by(Supplier.name).all()
+    
+    suppliers_data = {}
+    for sup in all_suppliers:
+        suppliers_data[sup.id] = {
+            "supplier_id": sup.id,
+            "supplier_name": sup.name,
+            "items": {}
+        }
+        
+    # Agregamos la entrada para "Sin Proveedor Asignado"
+    suppliers_data[0] = {
+        "supplier_id": 0,
+        "supplier_name": "Sin Proveedor Asignado",
+        "items": {}
+    }
+
     try:
         if getattr(current_user, 'admin_role', '') == 'country_admin' and getattr(current_user, 'admin_country', ''):
             country = current_user.admin_country
 
         # Find all paid orders
-        query = db.query(Order).filter(Order.status.in_(["pagado", "paid", "shipped", "delivered"]))
+        query = db.query(Order).filter(Order.status.in_(["pagado", "paid", "shipped", "delivered", "en_preparacion"]))
         
-        # Filtro Global por País (haciendo JOIN implícito con User)
+        # Filtro Global por País
         if country and country != 'Todos':
             query = query.join(User, Order.user_id == User.id).filter(User.country.ilike(f"%{country}%"))
             
@@ -63,72 +198,73 @@ def get_supplier_orders(
         
         print(f"[SUPPLIER_ORDERS] Found {len(paid_order_ids)} paid orders", flush=True)
         
-        if not paid_order_ids:
-            return []
-            
-        # Get all items for these orders that are NOT yet ordered from supplier
-        print("[SUPPLIER_ORDERS] Querying pending order items...", flush=True)
-        from sqlalchemy.orm import joinedload
-        pending_items = (
-            db.query(OrderItem)
-            .options(joinedload(OrderItem.product).joinedload(Product.supplier))
-            .filter(
-                OrderItem.order_id.in_(paid_order_ids),
-                OrderItem.is_ordered_from_supplier == False
+        pending_items = []
+        if paid_order_ids:
+            # Get all items for these orders that are NOT yet ordered from supplier
+            print("[SUPPLIER_ORDERS] Querying pending order items...", flush=True)
+            from sqlalchemy.orm import joinedload
+            pending_items = (
+                db.query(OrderItem)
+                .options(joinedload(OrderItem.product).joinedload(Product.supplier))
+                .filter(
+                    OrderItem.order_id.in_(paid_order_ids),
+                    OrderItem.is_ordered_from_supplier == False
+                )
+                .all()
             )
-            .all()
-        )
-        print(f"[SUPPLIER_ORDERS] Found {len(pending_items)} pending order items", flush=True)
+            print(f"[SUPPLIER_ORDERS] Found {len(pending_items)} pending order items", flush=True)
+            
+        # Aggregate by supplier and then by product
+        for item in pending_items:
+            product = item.product
+            supplier = product.supplier if product else None
+            
+            sup_id = supplier.id if supplier else 0
+            
+            # Ensure supplier exists in dictionary (in case a product has a deleted supplier)
+            if sup_id not in suppliers_data:
+                suppliers_data[sup_id] = {
+                    "supplier_id": sup_id,
+                    "supplier_name": supplier.name if supplier else "Sin Proveedor Asignado",
+                    "items": {}
+                }
+                
+            prod_id = product.id
+            options_key = item.selected_options or ""
+            group_key = f"{prod_id}_{options_key}"
+            
+            if group_key not in suppliers_data[sup_id]["items"]:
+                suppliers_data[sup_id]["items"][group_key] = {
+                    "product_id": product.id,
+                    "product_name": product.name,
+                    "selected_options": item.selected_options,
+                    "sku": product.sku,
+                    "image_url": product.image_url,
+                    "total_quantity": 0,
+                    "order_item_ids": [] # Keep track to archive them later
+                }
+                
+            suppliers_data[sup_id]["items"][group_key]["total_quantity"] += item.quantity
+            suppliers_data[sup_id]["items"][group_key]["order_item_ids"].append(item.id)
+            
     except Exception as e:
         print(f"[SUPPLIER_ORDERS] ERROR: {e}", flush=True)
         raise e
-        
-    # Aggregate by supplier and then by product
-    # Format: { supplier_id: { "supplier_name": str, "products": { product_id: { details + qty } } } }
-    suppliers_data = {}
-    
-    for item in pending_items:
-        product = item.product
-        supplier = product.supplier if product else None
-        
-        sup_id = supplier.id if supplier else 0
-        sup_name = supplier.name if supplier else "Sin Proveedor Asignado"
-        
-        if sup_id not in suppliers_data:
-            suppliers_data[sup_id] = {
-                "supplier_id": sup_id,
-                "supplier_name": sup_name,
-                "items": {}
-            }
-            
-        prod_id = product.id
-        options_key = item.selected_options or ""
-        group_key = f"{prod_id}_{options_key}"
-        
-        if group_key not in suppliers_data[sup_id]["items"]:
-            suppliers_data[sup_id]["items"][group_key] = {
-                "product_id": product.id,
-                "product_name": product.name,
-                "selected_options": item.selected_options,
-                "sku": product.sku,
-                "image_url": product.image_url,
-                "total_quantity": 0,
-                "order_item_ids": [] # Keep track to archive them later
-            }
-            
-        suppliers_data[sup_id]["items"][group_key]["total_quantity"] += item.quantity
-        suppliers_data[sup_id]["items"][group_key]["order_item_ids"].append(item.id)
         
     # Convert to array for frontend
     result = []
     for sup_id, s_data in suppliers_data.items():
         products_list = list(s_data["items"].values())
-        if products_list:
-            result.append({
-                "supplier_id": s_data["supplier_id"],
-                "supplier_name": s_data["supplier_name"],
-                "products": products_list
-            })
+        # Always include the supplier, even if products_list is empty
+        # Omit "Sin Proveedor Asignado" ONLY IF it's empty
+        if sup_id == 0 and not products_list:
+            continue
+            
+        result.append({
+            "supplier_id": s_data["supplier_id"],
+            "supplier_name": s_data["supplier_name"],
+            "products": products_list
+        })
             
     return result
 
@@ -311,6 +447,51 @@ def approve_payment(
         return {"message": "Payment approved successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.delete("/reject-payment/{payment_id}")
+def reject_payment(
+    payment_id: int, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user)
+):
+    """
+    Manually reject/delete a pending payment.
+    This also deletes the associated order and restores stock.
+    """
+    tx = db.query(PaymentTransaction).filter(PaymentTransaction.id == payment_id).first()
+    if not tx:
+        raise HTTPException(status_code=404, detail="Payment not found")
+        
+    order = db.query(Order).filter(Order.id == tx.order_id).first()
+    
+    try:
+        # If there's an order, restore stock and delete items
+        if order:
+            from backend.database.models.product import Product
+            from backend.database.models.order_item import OrderItem
+            
+            # Restore stock
+            for item in order.items:
+                product = db.query(Product).filter(Product.id == item.product_id).first()
+                if product:
+                    product.stock += item.quantity
+                    
+            # Delete order items
+            db.query(OrderItem).filter(OrderItem.order_id == order.id).delete()
+            
+        # Delete transaction
+        db.delete(tx)
+        
+        # Delete order
+        if order:
+            db.delete(order)
+            
+        db.commit()
+        return {"message": "Pago y pedido eliminados exitosamente"}
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error al eliminar pago: {str(e)}")
 
 # --- User Management ---
 from pydantic import BaseModel
@@ -1019,12 +1200,9 @@ def update_sponsorship_commission_status(
 
 
 # --- Manual User Activation ---
-from backend.mlm.services.activation_service import process_activation
-
 class ManualActivationData(BaseModel):
     user_id: int
-    package_amount: float = 100.0
-    package_level: int = 1  # 1=Franq 1, 2=Franq 2, 3=Franq 3
+    package_id: int
 
 @router.post("/activate-user")
 def activate_user_manually(
@@ -1033,57 +1211,161 @@ def activate_user_manually(
     current_user: User = Depends(get_current_admin_user)
 ):
     """
-    Manually activate a user after confirming bank transfer payment.
-    This will:
-    - Generate membership number and code
-    - Create sponsorship commission ($9.7 to direct sponsor)
-    - Calculate and distribute Binary Global commissions (7%)
-    - Activate user in all MLM plans (Binary Global, Forced Matrix)
-    - Trigger arrival bonuses for upline
+    Manually activate a user by creating an admin order and triggering payment logic.
+    This ensures package_level, PV, commissions, and shipping are all handled correctly.
     """
     try:
+        from backend.database.models.product import Product
+        from backend.database.models.order import Order
+        from backend.database.models.order_item import OrderItem
+        from backend.mlm.services.payment_service import process_successful_payment
+        
         # Validate user exists
         user = db.query(User).filter(User.id == data.user_id).first()
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
-        
-        # Process activation with commission generation
-        result = process_activation(
-            db=db,
-            user_id=data.user_id,
-            package_amount=data.package_amount,
-            signup_percent=None,  # Use default from plan
-            plan_file=None,  # Use default plan
-            package_level=data.package_level
-        )
-        
-        # Check if already activated
-        if result.get('already_activated'):
-            return {
-                "message": "User was already activated",
-                "membership_number": result.get('membership_number'),
-                "membership_code": result.get('membership_code'),
+            
+        # Get product
+        product = db.query(Product).filter(Product.id == data.package_id).first()
+        if not product:
+            raise HTTPException(status_code=404, detail="Package product not found")
+            
+        # Check if user is already fully activated and buying an activation product (not an upgrade)
+        if user.status == 'active' and product.is_activation and not product.is_upgrade:
+             return {
+                "message": "User was already activated. Consider using an upgrade package instead.",
                 "already_activated": True
-            }
+             }
+
+        # Create Order
+        new_order = Order(
+            user_id=user.id,
+            total_usd=product.price_usd,
+            total_cop=product.price_local,
+            total_pv=product.pv,
+            status="pagado",  # Will be moved to en_preparacion by process_successful_payment
+            shipping_type="delivery", # Default to delivery so it goes to shipments list
+            shipping_address=user.address,
+            shipping_city=user.city,
+            shipping_state=user.province,
+            shipping_postal_code=user.postal_code,
+            shipping_country=user.country,
+        )
+        db.add(new_order)
+        db.commit()
+        db.refresh(new_order)
         
-        # Return success with commission details
+        # Create Order Item
+        new_item = OrderItem(
+            order_id=new_order.id,
+            product_id=product.id,
+            product_name=product.name,
+            quantity=1,
+            price_usd=product.price_usd,
+            price_local=product.price_local
+        )
+        db.add(new_item)
+        db.commit()
+        
+        # Process the "successful payment" to trigger all side effects
+        process_successful_payment(db, new_order.id, transaction_id=None)
+        
         return {
-            "message": "User activated successfully with commissions generated",
-            "user_id": data.user_id,
+            "message": f"Usuario {user.name} activado con éxito. Orden de envío generada.",
+            "user_id": user.id,
             "user_name": user.name,
-            "membership_number": result.get('membership_number'),
-            "membership_code": result.get('membership_code'),
-            "package_amount": data.package_amount,
-            "sponsorship_commission": result.get('sponsorship_commission'),
-            "signup_commissions_count": len(result.get('signup_commissions', [])),
-            "total_commissions_generated": len(result.get('signup_commissions', [])) + (1 if result.get('sponsorship_commission') else 0)
+            "order_id": new_order.id,
+            "package_name": product.name,
+            "package_level": product.package_level,
+            "pv_added": product.pv
         }
         
     except ValueError as e:
+        db.rollback()
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Error activating user: {str(e)}")
+
+
+# --- Manual Bonus Correction ---
+class ManualBonusData(BaseModel):
+    sponsor_id: int
+    new_member_id: int
+    amount: float
+    description: str = "Corrección manual de bono faltante"
+
+@router.post("/manual-bonus")
+def apply_manual_bonus(
+    data: ManualBonusData,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user)
+):
+    """
+    Apply a manual bonus to a sponsor, limited to once per month per sponsor to avoid duplicates.
+    """
+    from datetime import datetime, date
+    import calendar
+    
+    try:
+        if data.amount <= 0:
+            raise HTTPException(status_code=400, detail="El monto debe ser mayor a cero.")
+            
+        sponsor = db.query(User).filter(User.id == data.sponsor_id).first()
+        if not sponsor:
+            raise HTTPException(status_code=404, detail="Patrocinador no encontrado.")
+            
+        new_member = db.query(User).filter(User.id == data.new_member_id).first()
+        if not new_member:
+            raise HTTPException(status_code=404, detail="Usuario referido no encontrado.")
+            
+        # Check if already applied this month for this sponsor
+        today = date.today()
+        first_day = today.replace(day=1)
+        last_day = today.replace(day=calendar.monthrange(today.year, today.month)[1])
+        
+        existing_correction = db.query(SponsorshipCommission).filter(
+            SponsorshipCommission.sponsor_id == data.sponsor_id,
+            SponsorshipCommission.status == "manual_correction",
+            SponsorshipCommission.created_at >= first_day,
+            SponsorshipCommission.created_at <= datetime(last_day.year, last_day.month, last_day.day, 23, 59, 59)
+        ).first()
+        
+        if existing_correction:
+            raise HTTPException(
+                status_code=400, 
+                detail="⚠️ Ya se aplicó una corrección manual a este patrocinador durante este mes. Por seguridad, el sistema bloquea múltiples pagos manuales."
+            )
+            
+        # Apply the bonus
+        sponsor.available_balance = (sponsor.available_balance or 0.0) + data.amount
+        sponsor.total_earnings = (sponsor.total_earnings or 0.0) + data.amount
+        sponsor.monthly_earnings = (sponsor.monthly_earnings or 0.0) + data.amount
+        
+        comm = SponsorshipCommission(
+            sponsor_id=sponsor.id,
+            new_member_id=new_member.id,
+            package_amount=0.0, # Not an actual package sale 
+            commission_amount=data.amount,
+            status="manual_correction"
+        )
+        comm.paid_at = datetime.utcnow()
+        
+        db.add(comm)
+        db.add(sponsor)
+        db.commit()
+        
+        return {
+            "success": True,
+            "message": f"Se ha abonado exitosamente ${data.amount} USD al usuario {sponsor.name}.",
+            "new_balance": sponsor.available_balance
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error aplicando bono manual: {str(e)}")
 
 
 # --- TEMPORARY: Matrix Migration Endpoint ---
@@ -1682,9 +1964,250 @@ def get_top_products(db: Session = Depends(get_db), current_user: User = Depends
         })
     return results
 
+# ============================================================
+# ADMIN REPORTS ENDPOINTS (AdminReports.jsx)
+# ============================================================
+
+def _get_period_range(period: str):
+    """Returns (start_dt, end_dt) for the given period string."""
+    from datetime import datetime, timedelta
+    now = datetime.utcnow()
+    if period == "this_month":
+        start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        end = now
+    elif period == "last_month":
+        first_this = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        end = first_this
+        start = (first_this - timedelta(days=1)).replace(day=1)
+    elif period == "this_year":
+        start = now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+        end = now
+    else:  # default: "30d"
+        end = now
+        start = now - timedelta(days=30)
+    return start, end
+
+
+
+@router.get("/reports/dashboard-stats")
+def get_dashboard_stats(period: str = "30d", country: str = None, db: Session = Depends(get_db), current_user: User = Depends(get_current_admin_user)):
+    """KPIs principales para la página de Reportes."""
+    from backend.database.models.unilevel import UnilevelCommission
+    from backend.database.models.binary import BinaryCommission
+    from backend.database.models.sponsorship import SponsorshipCommission
+    from backend.database.models.supplier import SupplierOrder
+
+    paid_statuses = ["pagado", "paid", "shipped", "delivered", "completado", "reservado", "en_preparacion"]
+    start_dt, end_dt = _get_period_range(period)
+
+    # Gross sales in selected period
+    q_gross = db.query(func.sum(Order.total_cop)).filter(
+        Order.status.in_(paid_statuses),
+        Order.created_at >= start_dt,
+        Order.created_at <= end_dt
+    )
+    if country and country != "Todos":
+        q_gross = q_gross.join(User, Order.user_id == User.id).filter(func.trim(User.country) == country.strip())
+    gross_sales = q_gross.scalar() or 0.0
+
+    # Growth vs previous equivalent period
+    from datetime import timedelta
+    period_length = end_dt - start_dt
+    prev_start = start_dt - period_length
+    q_gross_prev = db.query(func.sum(Order.total_cop)).filter(
+        Order.status.in_(paid_statuses),
+        Order.created_at >= prev_start,
+        Order.created_at < start_dt
+    )
+    if country and country != "Todos":
+        q_gross_prev = q_gross_prev.join(User, Order.user_id == User.id).filter(func.trim(User.country) == country.strip())
+    gross_prev = q_gross_prev.scalar() or 0.0
+
+    sales_growth = 0
+    if gross_prev > 0:
+        sales_growth = round(((float(gross_sales) - float(gross_prev)) / float(gross_prev)) * 100, 1)
+
+    # Total commissions in period (USD -> COP)
+    q_uni = db.query(func.sum(UnilevelCommission.commission_amount)).filter(UnilevelCommission.created_at >= start_dt, UnilevelCommission.created_at <= end_dt)
+    q_bn  = db.query(func.sum(BinaryCommission.commission_amount)).filter(BinaryCommission.created_at >= start_dt, BinaryCommission.created_at <= end_dt)
+    q_spo = db.query(func.sum(SponsorshipCommission.commission_amount)).filter(SponsorshipCommission.created_at >= start_dt, SponsorshipCommission.created_at <= end_dt)
+
+    if country and country != "Todos":
+        q_uni = q_uni.join(User, UnilevelCommission.user_id == User.id).filter(func.trim(User.country) == country.strip())
+        q_bn = q_bn.join(User, BinaryCommission.user_id == User.id).filter(func.trim(User.country) == country.strip())
+        q_spo = q_spo.join(User, SponsorshipCommission.user_id == User.id).filter(func.trim(User.country) == country.strip())
+
+    uni = q_uni.scalar() or 0.0
+    bn  = q_bn.scalar() or 0.0
+    spo = q_spo.scalar() or 0.0
+
+    total_commissions_usd = float(uni) + float(bn) + float(spo)
+    total_commissions_cop = total_commissions_usd * 4500
+
+    payout_ratio = 0
+    if gross_sales > 0:
+        payout_ratio = round((total_commissions_cop / float(gross_sales)) * 100, 1)
+
+    net_profit = float(gross_sales) - total_commissions_cop
+
+    # New users in period
+    q_new_users = db.query(User).filter(User.created_at >= start_dt, User.created_at <= end_dt)
+    if country and country != "Todos":
+        q_new_users = q_new_users.filter(func.trim(User.country) == country.strip())
+    new_users = q_new_users.count()
+
+    # Active packages (always total - not period-dependent)
+    q_active = db.query(User).filter(User.status == "active")
+    if country and country != "Todos":
+        q_active = q_active.filter(func.trim(User.country) == country.strip())
+    active_packages = q_active.count()
+
+    # Pending supplier orders
+    try:
+        pending_orders = db.query(SupplierOrder).filter(SupplierOrder.status == "pending").count()
+    except Exception:
+        pending_orders = 0
+
+    return {
+        "gross_sales": float(gross_sales),
+        "sales_growth": sales_growth,
+        "commissions": total_commissions_cop,
+        "payout_ratio": payout_ratio,
+        "profit": net_profit,
+        "new_users": new_users,
+        "active_packages": active_packages,
+        "pending_orders": pending_orders
+    }
+
+
+@router.get("/reports/income-vs-commissions")
+def get_income_vs_commissions(period: str = "30d", country: str = None, db: Session = Depends(get_db), current_user: User = Depends(get_current_admin_user)):
+    """Ventas vs comisiones por mes, adaptado al periodo seleccionado."""
+    from datetime import datetime, timedelta
+    from backend.database.models.unilevel import UnilevelCommission
+    from backend.database.models.binary import BinaryCommission
+    from backend.database.models.sponsorship import SponsorshipCommission
+
+    paid_statuses = ["pagado", "paid", "shipped", "delivered", "completado", "reservado", "en_preparacion"]
+    now = datetime.utcnow()
+    results = []
+
+    for i in range(6):
+        month_start = (now.replace(day=1) - timedelta(days=i * 30)).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        if i == 0:
+            month_end = now
+        else:
+            month_end = (month_start.replace(day=28) + timedelta(days=4)).replace(day=1)
+
+        q_ventas = db.query(func.sum(Order.total_cop)).filter(Order.status.in_(paid_statuses), Order.created_at >= month_start, Order.created_at < month_end)
+        q_uni = db.query(func.sum(UnilevelCommission.commission_amount)).filter(UnilevelCommission.created_at >= month_start, UnilevelCommission.created_at < month_end)
+        q_bn = db.query(func.sum(BinaryCommission.commission_amount)).filter(BinaryCommission.created_at >= month_start, BinaryCommission.created_at < month_end)
+        q_spo = db.query(func.sum(SponsorshipCommission.commission_amount)).filter(SponsorshipCommission.created_at >= month_start, SponsorshipCommission.created_at < month_end)
+
+        if country and country != "Todos":
+            q_ventas = q_ventas.join(User, Order.user_id == User.id).filter(func.trim(User.country) == country.strip())
+            q_uni = q_uni.join(User, UnilevelCommission.user_id == User.id).filter(func.trim(User.country) == country.strip())
+            q_bn = q_bn.join(User, BinaryCommission.user_id == User.id).filter(func.trim(User.country) == country.strip())
+            q_spo = q_spo.join(User, SponsorshipCommission.user_id == User.id).filter(func.trim(User.country) == country.strip())
+
+        ventas = q_ventas.scalar() or 0.0
+        uni = q_uni.scalar() or 0.0
+        bn = q_bn.scalar() or 0.0
+        spo = q_spo.scalar() or 0.0
+        comisiones = (float(uni) + float(bn) + float(spo)) * 4500
+
+        results.append({
+            "name": month_start.strftime("%b %Y"),
+            "ventas": float(ventas),
+            "comisiones": comisiones
+        })
+
+    return results
+
+
+@router.get("/reports/active-packages")
+def get_active_packages(country: str = None, db: Session = Depends(get_db), current_user: User = Depends(get_current_admin_user)):
+    """Distribución de usuarios activos por nivel de paquete."""
+    package_names = {1: "FDI 1", 2: "FDI 2", 3: "FDI 3", 4: "FDI 4", 5: "FDI 5"}
+    query = db.query(User.package_level, func.count(User.id)).filter(
+        User.status == "active",
+        User.package_level != None
+    )
+    if country and country != "Todos":
+        query = query.filter(func.trim(User.country) == country.strip())
+        
+    rows = query.group_by(User.package_level).all()
+
+    return [
+        {"name": package_names.get(lvl, f"Nivel {lvl}"), "value": cnt}
+        for lvl, cnt in rows if lvl
+    ]
+
+
+@router.get("/reports/top-products")
+def get_top_products(period: str = "30d", country: str = None, db: Session = Depends(get_db), current_user: User = Depends(get_current_admin_user)):
+    """Top 5 productos más vendidos por unidades en el período."""
+    from backend.database.models.order import OrderItem
+    paid_statuses = ["pagado", "paid", "shipped", "delivered", "completado", "reservado", "en_preparacion"]
+    start_dt, end_dt = _get_period_range(period)
+
+    q_rows = db.query(
+        OrderItem.product_name,
+        func.sum(OrderItem.quantity).label("total_vendido")
+    ).join(Order, OrderItem.order_id == Order.id).filter(
+        Order.status.in_(paid_statuses),
+        Order.created_at >= start_dt,
+        Order.created_at <= end_dt
+    )
+
+    if country and country != "Todos":
+        q_rows = q_rows.join(User, Order.user_id == User.id).filter(func.trim(User.country) == country.strip())
+
+    rows = q_rows.group_by(OrderItem.product_name).order_by(
+        func.sum(OrderItem.quantity).desc()
+    ).limit(5).all()
+
+    return [{"name": name, "ventas": int(total or 0)} for name, total in rows]
+
+
+@router.get("/reports/network-growth")
+def get_network_growth(period: str = "30d", country: str = None, db: Session = Depends(get_db), current_user: User = Depends(get_current_admin_user)):
+    """Crecimiento de red: nuevos registros y pagos binarios por mes."""
+    from datetime import datetime, timedelta
+    from backend.database.models.binary import BinaryCommission
+
+    now = datetime.utcnow()
+    monthly = []
+
+    for i in range(6):
+        month_start = (now.replace(day=1) - timedelta(days=i * 30)).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        if i == 0:
+            month_end = now
+        else:
+            month_end = (month_start.replace(day=28) + timedelta(days=4)).replace(day=1)
+
+        q_nuevos = db.query(User).filter(User.created_at >= month_start, User.created_at < month_end)
+        if country and country != "Todos":
+            q_nuevos = q_nuevos.filter(func.trim(User.country) == country.strip())
+        nuevos = q_nuevos.count()
+
+        q_pagos = db.query(BinaryCommission).filter(BinaryCommission.created_at >= month_start, BinaryCommission.created_at < month_end)
+        if country and country != "Todos":
+            q_pagos = q_pagos.join(User, BinaryCommission.user_id == User.id).filter(func.trim(User.country) == country.strip())
+        pagos_binarios = q_pagos.count()
+
+        monthly.append({
+            "name": month_start.strftime("%b %Y"),
+            "unilevel": nuevos,
+            "binaria": pagos_binarios
+        })
+
+    return {"networkGrowth": monthly}
+
+
 @router.get("/reports/country-stats")
 def get_country_stats(country: str = "Todos", db: Session = Depends(get_db), current_user: User = Depends(get_current_admin_user)):
-    paid_statuses = ["pagado", "paid", "shipped", "delivered"]
+    paid_statuses = ["pagado", "paid", "shipped", "delivered", "completado", "reservado", "en_preparacion"]
     
     # Base queries
     q_users = db.query(User)
@@ -1694,7 +2217,7 @@ def get_country_stats(country: str = "Todos", db: Session = Depends(get_db), cur
     # Revenue: sum over paid orders. If filtering by country, join User.
     q_revenue = db.query(func.sum(Order.total_cop)).filter(Order.status.in_(paid_statuses))
     if country and country != "Todos":
-        q_revenue = q_revenue.join(User, Order.user_id == User.id).filter(User.country == country)
+        q_revenue = q_revenue.join(User, Order.user_id == User.id).filter(func.trim(User.country) == country.strip())
     
     from backend.database.models.unilevel import UnilevelCommission
     from backend.database.models.binary import BinaryCommission
@@ -1707,15 +2230,15 @@ def get_country_stats(country: str = "Todos", db: Session = Depends(get_db), cur
     q_sponsorship = db.query(func.sum(SponsorshipCommission.commission_amount))
     
     if country and country != "Todos":
-        q_users = q_users.filter(User.country == country)
-        q_unilevel = q_unilevel.join(User, UnilevelCommission.user_id == User.id).filter(User.country == country)
-        q_binary = q_binary.join(User, BinaryCommission.user_id == User.id).filter(User.country == country)
-        q_sponsorship = q_sponsorship.join(User, SponsorshipCommission.sponsor_id == User.id).filter(User.country == country)
+        q_users = q_users.filter(func.trim(User.country) == country.strip())
+        q_unilevel = q_unilevel.join(User, UnilevelCommission.user_id == User.id).filter(func.trim(User.country) == country.strip())
+        q_binary = q_binary.join(User, BinaryCommission.user_id == User.id).filter(func.trim(User.country) == country.strip())
+        q_sponsorship = q_sponsorship.join(User, SponsorshipCommission.sponsor_id == User.id).filter(func.trim(User.country) == country.strip())
 
     # Unpaid Comissions (WithdrawalRequests pending)
     q_withdrawals = db.query(func.sum(WithdrawalRequest.amount)).filter(WithdrawalRequest.status == "pending")
     if country and country != "Todos":
-        q_withdrawals = q_withdrawals.join(User, WithdrawalRequest.user_id == User.id).filter(User.country == country)
+        q_withdrawals = q_withdrawals.join(User, WithdrawalRequest.user_id == User.id).filter(func.trim(User.country) == country.strip())
 
     total_users = q_users.count()
     total_companies = q_suppliers.count()
@@ -1727,11 +2250,11 @@ def get_country_stats(country: str = "Todos", db: Session = Depends(get_db), cur
     bin_c = q_binary.scalar() or 0.0
     spo_c = q_sponsorship.scalar() or 0.0
     total_paid_commusd = float(uni_c) + float(bin_c) + float(spo_c)
-    total_paid_commcop = total_paid_commusd * 4000
+    total_paid_commcop = total_paid_commusd * 4500  # Tasa actualizada: $4,500 COP por USD
     
     # Unpaid (in USD)
     unpaid_usd = q_withdrawals.scalar() or 0.0
-    unpaid_cop = float(unpaid_usd) * 4000
+    unpaid_cop = float(unpaid_usd) * 4500  # Tasa actualizada: $4,500 COP por USD
 
     return {
         "metrics": {
@@ -1746,18 +2269,18 @@ def get_country_stats(country: str = "Todos", db: Session = Depends(get_db), cur
 
 @router.get("/reports/country-ranking")
 def get_country_ranking(db: Session = Depends(get_db), current_user: User = Depends(get_current_admin_user)):
-    paid_statuses = ["pagado", "paid", "shipped", "delivered"]
+    paid_statuses = ["pagado", "paid", "shipped", "delivered", "completado", "reservado", "en_preparacion"]
     
-    # Group users by country to get affiliate count
-    user_counts = db.query(User.country, func.count(User.id).label('afiliados')).group_by(User.country).all()
+    # Group users by country (trimmed) to get affiliate count
+    user_counts = db.query(func.trim(User.country).label("country"), func.count(User.id).label("afiliados")).group_by(func.trim(User.country)).all()
     
     # Group revenue by country
     revenue_sums = db.query(
-        User.country, 
-        func.sum(Order.total_cop).label('ingresos')
+        func.trim(User.country).label("country"), 
+        func.sum(Order.total_cop).label("ingresos")
     ).join(Order, Order.user_id == User.id).filter(
         Order.status.in_(paid_statuses)
-    ).group_by(User.country).all()
+    ).group_by(func.trim(User.country)).all()
     
     # Merge data
     country_data = {}
@@ -1777,16 +2300,16 @@ def get_country_ranking(db: Session = Depends(get_db), current_user: User = Depe
 
 @router.get("/reports/income-local-vs-intl")
 def get_income_local_vs_intl(db: Session = Depends(get_db), current_user: User = Depends(get_current_admin_user)):
-    paid_statuses = ["pagado", "paid", "shipped", "delivered"]
+    paid_statuses = ["pagado", "paid", "shipped", "delivered", "completado", "reservado", "en_preparacion"]
     
     total_colombia = db.query(func.sum(Order.total_cop)).join(User, Order.user_id == User.id).filter(
         Order.status.in_(paid_statuses),
-        User.country == "Colombia"
+        func.trim(User.country) == "Colombia"
     ).scalar() or 0.0
     
     total_intl = db.query(func.sum(Order.total_cop)).join(User, Order.user_id == User.id).filter(
         Order.status.in_(paid_statuses),
-        User.country != "Colombia"
+        func.trim(User.country) != "Colombia"
     ).scalar() or 0.0
     
     total_all = float(total_colombia) + float(total_intl)
@@ -1860,3 +2383,65 @@ def get_taxes(db: Session = Depends(get_db), current_user: User = Depends(get_cu
         })
         
     return results
+
+# --- EMERGENCY SCHEMA UPDATE 2026 (Orders Fix) ---
+@router.post("/schema-update-orders-2026")
+def schema_update_orders_2026(
+    key: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Emergency endpoint to update DB schema for Orders and related tables.
+    Adds missing columns added recently.
+    """
+    if key != "TEI_ORDERS_FIX_2026":
+        raise HTTPException(status_code=403, detail="Invalid key")
+    
+    from sqlalchemy import text
+    results = []
+    
+    # 1. Add Columns to ORDERS
+    orders_cols = [
+        ("shipping_type", "VARCHAR(50) DEFAULT 'delivery'"),
+        ("tracking_number", "VARCHAR(100)"),
+        ("payment_confirmed_at", "TIMESTAMP WITH TIME ZONE"),
+        ("shipped_at", "TIMESTAMP WITH TIME ZONE"),
+        ("completed_at", "TIMESTAMP WITH TIME ZONE"),
+        ("shipping_cost_base", "FLOAT DEFAULT 0.0"),
+        ("shipping_tax_amount", "FLOAT DEFAULT 0.0"),
+        ("batch_id", "INTEGER"),
+        ("pickup_point_id", "INTEGER"),
+        ("siigo_invoice_id", "VARCHAR(100)"),
+        ("cufe", "VARCHAR(255)"),
+        ("siigo_status", "VARCHAR(50)"),
+        ("siigo_invoice_pdf_url", "VARCHAR(512)"),
+        ("shipping_label_pdf_url", "VARCHAR(512)")
+    ]
+    
+    for col, type_def in orders_cols:
+        try:
+            db.execute(text("ALTER TABLE orders ADD COLUMN " + col + " " + type_def))
+            results.append("Added column orders." + col)
+        except Exception as e:
+            results.append("Column orders." + col + " might exist or error: " + str(e))
+            db.rollback()
+
+    # 2. Add Columns to ORDER_ITEMS
+    try:
+        db.execute(text("ALTER TABLE order_items ADD COLUMN is_ordered_from_supplier BOOLEAN DEFAULT FALSE"))
+        results.append("Added column order_items.is_ordered_from_supplier")
+    except Exception as e:
+        results.append("Column order_items.is_ordered_from_supplier might exist: " + str(e))
+        db.rollback()
+
+    # 3. Create shipment_batches table if missing
+    try:
+        from backend.database.models.shipment_batch import ShipmentBatch
+        from backend.database.connection import engine
+        ShipmentBatch.__table__.create(bind=engine)
+        results.append("Ensured shipment_batches table exists")
+    except Exception as e:
+        results.append("ShipmentBatch check/creation: " + str(e))
+
+    db.commit()
+    return {"status": "completed", "log": results}
