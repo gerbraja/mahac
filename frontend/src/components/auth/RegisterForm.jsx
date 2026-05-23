@@ -3,34 +3,41 @@ import { useNavigate } from "react-router-dom";
 import { api } from "../../api/api";
 import { Country, State, City } from 'country-state-city';
 import { COLOMBIA_ZIP_CODES } from '../../data/colombiaZipCodes';
-// Updated zip codes import v2 (Cache Buster)
+import { COLOMBIA_DIVIPOLA_COMPLETO } from '../../data/colombiaDivipolaCompleto';
 
 export default function RegisterForm({ referralCode = "", onSuccess = null, onBack = null }) {
     const navigate = useNavigate();
 
     const [formData, setFormData] = useState({
-        name: "",
+        first_name: "",
+        last_name: "",
+        person_type: "Natural",
         email: "",
         username: "",
         password: "",
         confirm_password: "",
+        document_type: "",
         document_id: "",
+        verification_digit: "",
         gender: "",
         birth_date: "",
-        phone: "",
+        phone: "+57 ",
         address: "",
         city: "",
         province: "",
-        country: "",
+        country: "Colombia",
         postal_code: "",
+        municipio_id: "",   // Código DIVIPOLA/DANE 5 dígitos (DIAN)
         referral_code: "",
-        acceptedTerms: false
+        acceptedTerms: false,
+        acceptedDataPolicy: false,
+        acceptedSagrilaft: false
     });
 
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState("");
     const [showTerms, setShowTerms] = useState(false);
-    const [selectedCountryCode, setSelectedCountryCode] = useState("");
+    const [selectedCountryCode, setSelectedCountryCode] = useState("CO");
     const [selectedStateCode, setSelectedStateCode] = useState("");
 
     // Extraer solo el username si referralCode es una URL completa
@@ -69,6 +76,87 @@ export default function RegisterForm({ referralCode = "", onSuccess = null, onBa
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
+    // ————————————————————————————————————————————————————————
+    // DIAN DV Calculator — Algoritmo oficial (serie de primos)
+    // Solo aplica para CC y NIT en Colombia.
+    // ————————————————————————————————————————————————————————
+    const PRIME_SERIES = [3, 7, 13, 17, 19, 23, 29, 37, 41, 43, 47, 53, 59, 67, 71];
+
+    const calculateDV = (docNumber) => {
+        const digits = String(docNumber).replace(/\D/g, "");
+        if (!digits || digits.length < 6) return "";
+        let sum = 0;
+        const reversed = digits.split("").reverse();
+        reversed.forEach((d, i) => {
+            sum += parseInt(d, 10) * PRIME_SERIES[i % PRIME_SERIES.length];
+        });
+        const remainder = sum % 11;
+        const dv = remainder === 0 ? 0 : remainder === 1 ? 1 : 11 - remainder;
+        return String(dv);
+    };
+
+    const showsDV = (docType, countryCode) =>
+        countryCode === "CO" && (docType === "CC" || docType === "NIT");
+
+    // Tipos de documento por región del país seleccionado
+    const getDocumentTypes = (isoCode) => {
+        const LATAM = [
+            "AR", "BO", "BR", "CL", "CR", "CU", "DO", "EC", "GT", "HN",
+            "MX", "NI", "PA", "PE", "PY", "SV", "UY", "VE"
+        ];
+        const EUROPE = [
+            "ES", "FR", "DE", "IT", "PT", "GB", "NL", "BE", "CH", "AT",
+            "PL", "SE", "NO", "DK", "FI"
+        ];
+
+        if (isoCode === "CO") {
+            return [
+                { value: "CC",       label: "Cédula de Ciudadanía (CC)" },
+                { value: "TI",       label: "Tarjeta de Identidad (TI)" },
+                { value: "NIT",      label: "NIT (Empresa)" },
+                { value: "CE",       label: "Cédula de Extranjería (CE)" },
+                { value: "PPT",      label: "Permiso de Protección Temporal (PPT)" },
+                { value: "PASAPORTE", label: "Pasaporte" },
+            ];
+        } else if (LATAM.includes(isoCode)) {
+            return [
+                { value: "CI",        label: "Cédula de Identidad (CI)" },
+                { value: "DNI",       label: "Documento Nacional de Identidad (DNI)" },
+                { value: "RUC",       label: "RUC (Empresa)" },
+                { value: "CE",        label: "Cédula de Extranjería (CE)" },
+                { value: "PASAPORTE", label: "Pasaporte" },
+            ];
+        } else if (EUROPE.includes(isoCode)) {
+            return [
+                { value: "NIF",       label: "NIF / DNI (España y Europa)" },
+                { value: "PASAPORTE", label: "Pasaporte" },
+                { value: "NAT_ID",    label: "National ID" },
+            ];
+        } else {
+            return [
+                { value: "PASAPORTE", label: "Pasaporte" },
+                { value: "NAT_ID",    label: "National ID / Documento Nacional" },
+            ];
+        }
+    };
+
+    const handleDocumentTypeChange = (e) => {
+        const newType = e.target.value;
+        const newDV = showsDV(newType, selectedCountryCode)
+            ? calculateDV(formData.document_id)
+            : "";
+        setFormData({ ...formData, document_type: newType, verification_digit: newDV });
+    };
+
+    const handleDocumentIdChange = (e) => {
+        const newId = e.target.value;
+        const newDV = showsDV(formData.document_type, selectedCountryCode)
+            ? calculateDV(newId)
+            : "";
+        setFormData({ ...formData, document_id: newId, verification_digit: newDV });
+    };
+
+
     const handleCountryChange = (e) => {
         const isoCode = e.target.value;
         const country = Country.getCountryByCode(isoCode);
@@ -78,12 +166,15 @@ export default function RegisterForm({ referralCode = "", onSuccess = null, onBa
         // Auto-fill phone code if country exists
         const phonePrefix = country ? `+${country.phonecode} ` : "";
 
+        // Reset document type when country changes (types vary by region)
         setFormData({
             ...formData,
             country: country ? country.name : "",
             province: "",
             city: "",
-            phone: phonePrefix
+            phone: phonePrefix,
+            document_type: "",
+            verification_digit: ""
         });
     };
 
@@ -101,13 +192,21 @@ export default function RegisterForm({ referralCode = "", onSuccess = null, onBa
     const handleCityChange = (e) => {
         const cityName = e.target.value;
         let newPostalCode = formData.postal_code;
+        let newMunicipioId = formData.municipio_id;
 
-        // Auto-fill zip code using nested structure: [StateCode][CityName]
-        if (selectedCountryCode === 'CO' && selectedStateCode && COLOMBIA_ZIP_CODES[selectedStateCode] && COLOMBIA_ZIP_CODES[selectedStateCode][cityName]) {
-            newPostalCode = COLOMBIA_ZIP_CODES[selectedStateCode][cityName];
+        if (selectedCountryCode === 'CO') {
+            // Auto-fill código DIVIPOLA/DANE (5 dígitos, DIAN obligatorio)
+            const divipolaCode = COLOMBIA_DIVIPOLA_COMPLETO[selectedStateCode]?.[cityName];
+            if (divipolaCode) {
+                newMunicipioId = divipolaCode;
+                newPostalCode = divipolaCode; // Use DIVIPOLA as the postal code
+            } else {
+                newMunicipioId = "";
+                newPostalCode = "";
+            }
         }
 
-        setFormData({ ...formData, city: cityName, postal_code: newPostalCode });
+        setFormData({ ...formData, city: cityName, postal_code: newPostalCode, municipio_id: newMunicipioId });
     };
 
     const handleSubmit = async (e) => {
@@ -126,9 +225,16 @@ export default function RegisterForm({ referralCode = "", onSuccess = null, onBa
             // Trim referral code and other sensitive fields
             const dataToSubmit = {
                 ...formData,
+                first_name: formData.first_name?.trim(),
+                last_name: formData.last_name?.trim(),
                 referral_code: formData.referral_code?.trim(),
                 username: formData.username?.trim(),
-                email: formData.email?.trim()
+                email: formData.email?.trim(),
+                // Opcional — backend acepta null
+                document_type: formData.document_type || null,
+                verification_digit: formData.verification_digit || null,
+                person_type: formData.person_type || "Natural",
+                municipio_id: formData.municipio_id || null,
             };
 
             const response = await api.post("/auth/register", dataToSubmit);
@@ -225,16 +331,18 @@ export default function RegisterForm({ referralCode = "", onSuccess = null, onBa
                     </h3>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Nombres */}
                         <div>
                             <label style={{ display: "block", color: "#1e3a8a", fontWeight: "500", marginBottom: "0.5rem" }}>
-                                Nombre Completo *
+                                Nombres * <span style={{ color: "#94a3b8", fontSize: "0.78rem", fontWeight: "normal" }}>(máx. 60 caracteres)</span>
                             </label>
                             <input
                                 type="text"
-                                name="name"
-                                value={formData.name}
+                                name="first_name"
+                                value={formData.first_name}
                                 onChange={handleChange}
                                 required
+                                maxLength={60}
                                 style={{
                                     width: "100%",
                                     padding: "0.75rem",
@@ -243,8 +351,58 @@ export default function RegisterForm({ referralCode = "", onSuccess = null, onBa
                                     outline: "none",
                                     color: "#333"
                                 }}
-                                placeholder="Ej: Juan Pérez Gómez"
+                                placeholder="Ej: Juan Carlos"
                             />
+                        </div>
+
+                        {/* Apellidos */}
+                        <div>
+                            <label style={{ display: "block", color: "#1e3a8a", fontWeight: "500", marginBottom: "0.5rem" }}>
+                                Apellidos * <span style={{ color: "#94a3b8", fontSize: "0.78rem", fontWeight: "normal" }}>(máx. 60 caracteres)</span>
+                            </label>
+                            <input
+                                type="text"
+                                name="last_name"
+                                value={formData.last_name}
+                                onChange={handleChange}
+                                required
+                                maxLength={60}
+                                style={{
+                                    width: "100%",
+                                    padding: "0.75rem",
+                                    borderRadius: "0.5rem",
+                                    border: "2px solid rgba(59, 130, 246, 0.3)",
+                                    outline: "none",
+                                    color: "#333"
+                                }}
+                                placeholder="Ej: Pérez Gómez"
+                            />
+                        </div>
+
+                        {/* Tipo de Persona (Siigo/DIAN) — solo visible si país = Colombia o NIT */}
+                        <div>
+                            <label style={{ display: "block", color: "#1e3a8a", fontWeight: "500", marginBottom: "0.5rem" }}>
+                                Tipo de Persona *{" "}
+                                <span style={{ color: "#94a3b8", fontSize: "0.78rem", fontWeight: "normal" }}>(DIAN / Siigo)</span>
+                            </label>
+                            <select
+                                name="person_type"
+                                value={formData.person_type}
+                                onChange={handleChange}
+                                required
+                                style={{
+                                    width: "100%",
+                                    padding: "0.75rem",
+                                    borderRadius: "0.5rem",
+                                    border: "2px solid rgba(59, 130, 246, 0.3)",
+                                    outline: "none",
+                                    color: "#333",
+                                    backgroundColor: "white"
+                                }}
+                            >
+                                <option value="Natural">Persona Natural (CC, CE, PPT…)</option>
+                                <option value="Juridica">Persona Jurídica (NIT / Empresa)</option>
+                            </select>
                         </div>
 
                         <div>
@@ -369,26 +527,86 @@ export default function RegisterForm({ referralCode = "", onSuccess = null, onBa
                     </h3>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
+                        {/* Documento de Identidad — Tipo + Número + DV */}
+                        <div style={{ gridColumn: "1 / -1" }}>
                             <label style={{ display: "block", color: "#1e3a8a", fontWeight: "500", marginBottom: "0.5rem" }}>
                                 Documento de Identidad *
                             </label>
-                            <input
-                                type="text"
-                                name="document_id"
-                                value={formData.document_id}
-                                onChange={handleChange}
-                                required
-                                style={{
-                                    width: "100%",
-                                    padding: "0.75rem",
+
+                            {/* Fila: Tipo | Número */}
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+                                {/* Selector tipo */}
+                                <div>
+                                    <select
+                                        name="document_type"
+                                        value={formData.document_type}
+                                        onChange={handleDocumentTypeChange}
+                                        style={{
+                                            width: "100%",
+                                            padding: "0.75rem",
+                                            borderRadius: "0.5rem",
+                                            border: "2px solid rgba(59, 130, 246, 0.3)",
+                                            outline: "none",
+                                            color: formData.document_type ? "#333" : "#9ca3af",
+                                            backgroundColor: "white"
+                                        }}
+                                    >
+                                        <option value="">Tipo de documento...</option>
+                                        {getDocumentTypes(selectedCountryCode).map(dt => (
+                                            <option key={dt.value} value={dt.value}>{dt.label}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                {/* Número de documento */}
+                                <div>
+                                    <input
+                                        type="text"
+                                        name="document_id"
+                                        value={formData.document_id}
+                                        onChange={handleDocumentIdChange}
+                                        required
+                                        style={{
+                                            width: "100%",
+                                            padding: "0.75rem",
+                                            borderRadius: "0.5rem",
+                                            border: "2px solid rgba(59, 130, 246, 0.3)",
+                                            outline: "none",
+                                            color: "#333"
+                                        }}
+                                        placeholder="Número de documento"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Badge DV — solo visible si país=CO y tipo=CC o NIT */}
+                            {showsDV(formData.document_type, selectedCountryCode) && (
+                                <div style={{
+                                    marginTop: "0.6rem",
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: "0.5rem",
+                                    background: formData.verification_digit !== "" ? "#eff6ff" : "#f8fafc",
+                                    border: `1px solid ${formData.verification_digit !== "" ? "#bfdbfe" : "#e2e8f0"}`,
                                     borderRadius: "0.5rem",
-                                    border: "2px solid rgba(59, 130, 246, 0.3)",
-                                    outline: "none",
-                                    color: "#333"
-                                }}
-                                placeholder="Cédula, pasaporte, DNI, etc."
-                            />
+                                    padding: "0.45rem 0.85rem",
+                                    fontSize: "0.9rem"
+                                }}>
+                                    <span style={{ color: "#64748b" }}>Dígito de Verificación (DV):</span>
+                                    <span style={{
+                                        fontWeight: "bold",
+                                        fontSize: "1.1rem",
+                                        color: formData.verification_digit !== "" ? "#1e40af" : "#94a3b8",
+                                        minWidth: "1.5rem",
+                                        textAlign: "center"
+                                    }}>
+                                        {formData.verification_digit !== "" ? formData.verification_digit : "—"}
+                                    </span>
+                                    <span style={{ color: "#94a3b8", fontSize: "0.78rem" }}>
+                                        (calculado automáticamente · DIAN)
+                                    </span>
+                                </div>
+                            )}
                         </div>
 
                         <div>
@@ -587,7 +805,7 @@ export default function RegisterForm({ referralCode = "", onSuccess = null, onBa
 
                             <div>
                                 <label style={{ display: "block", color: "#1e3a8a", fontWeight: "500", marginBottom: "0.5rem" }}>
-                                    Código Postal *
+                                    {selectedCountryCode === "CO" ? "Código DIVIPOLA *" : "Código Postal *"}
                                 </label>
                                 <input
                                     type="text"
@@ -595,6 +813,9 @@ export default function RegisterForm({ referralCode = "", onSuccess = null, onBa
                                     value={formData.postal_code}
                                     onChange={handleChange}
                                     required
+                                    maxLength={selectedCountryCode === "CO" ? 5 : 20}
+                                    pattern={selectedCountryCode === "CO" ? "^[0-9]{5}$" : undefined}
+                                    title={selectedCountryCode === "CO" ? "El código DIVIPOLA debe tener exactamente 5 dígitos" : undefined}
                                     style={{
                                         width: "100%",
                                         padding: "0.75rem",
@@ -610,44 +831,87 @@ export default function RegisterForm({ referralCode = "", onSuccess = null, onBa
                     </div>
                 </div>
 
-                {/* Terms and Conditions Checkbox */}
-                <div style={{ marginBottom: "1.5rem", display: "flex", alignItems: "flex-start", gap: "0.75rem" }}>
-                    <input
-                        type="checkbox"
-                        id="terms"
-                        checked={formData.acceptedTerms}
-                        onChange={(e) => setFormData({ ...formData, acceptedTerms: e.target.checked })}
-                        required
-                        style={{
-                            marginTop: "0.25rem",
-                            width: "1.25rem",
-                            height: "1.25rem",
-                            cursor: "pointer"
-                        }}
-                    />
-                    <label htmlFor="terms" style={{ color: "#475569", fontSize: "0.95rem", lineHeight: "1.4" }}>
-                        He leído y acepto los <button type="button" onClick={() => setShowTerms(true)} style={{ color: "#3b82f6", fontWeight: "bold", textDecoration: "underline", background: "none", border: "none", padding: 0, cursor: "pointer" }}>Términos y Condiciones</button>, incluyendo las políticas de privacidad y tratamiento de datos.
-                    </label>
+                {/* Legal Consent Checkboxes (Three explicit checkpoints) */}
+                <div style={{ display: "flex", flexDirection: "column", gap: "1rem", marginBottom: "2rem" }}>
+                    {/* 1. Terms & Conditions & Commercial Contract */}
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: "0.75rem" }}>
+                        <input
+                            type="checkbox"
+                            id="terms"
+                            checked={formData.acceptedTerms}
+                            onChange={(e) => setFormData({ ...formData, acceptedTerms: e.target.checked })}
+                            required
+                            style={{
+                                marginTop: "0.25rem",
+                                width: "1.25rem",
+                                height: "1.25rem",
+                                cursor: "pointer"
+                            }}
+                        />
+                        <label htmlFor="terms" style={{ color: "#475569", fontSize: "0.95rem", lineHeight: "1.4" }}>
+                            He leído y acepto los <button type="button" onClick={() => setShowTerms(true)} style={{ color: "#3b82f6", fontWeight: "bold", textDecoration: "underline", background: "none", border: "none", padding: 0, cursor: "pointer" }}>Términos y Condiciones</button> y los términos del <a href="https://tuempresainternacional.com/documentos/contrato_comercial.html?v=3" target="_blank" rel="noopener noreferrer" style={{ color: "#3b82f6", fontWeight: "bold", textDecoration: "underline" }}>Contrato Comercial de Ventas Multinivel</a> de TEI.
+                        </label>
+                    </div>
+
+                    {/* 2. Data Treatment Policy */}
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: "0.75rem" }}>
+                        <input
+                            type="checkbox"
+                            id="dataPolicy"
+                            checked={formData.acceptedDataPolicy}
+                            onChange={(e) => setFormData({ ...formData, acceptedDataPolicy: e.target.checked })}
+                            required
+                            style={{
+                                marginTop: "0.25rem",
+                                width: "1.25rem",
+                                height: "1.25rem",
+                                cursor: "pointer"
+                            }}
+                        />
+                        <label htmlFor="dataPolicy" style={{ color: "#475569", fontSize: "0.95rem", lineHeight: "1.4" }}>
+                            He leído, conozco y acepto la <a href="https://tuempresainternacional.com/documentos/politica_datos.html?v=3" target="_blank" rel="noopener noreferrer" style={{ color: "#3b82f6", fontWeight: "bold", textDecoration: "underline" }}>Política de Tratamiento de Datos</a> de TEI.
+                        </label>
+                    </div>
+
+                    {/* 3. SAGRILAFT Manual & Declarations */}
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: "0.75rem" }}>
+                        <input
+                            type="checkbox"
+                            id="sagrilaft"
+                            checked={formData.acceptedSagrilaft}
+                            onChange={(e) => setFormData({ ...formData, acceptedSagrilaft: e.target.checked })}
+                            required
+                            style={{
+                                marginTop: "0.25rem",
+                                width: "1.25rem",
+                                height: "1.25rem",
+                                cursor: "pointer"
+                            }}
+                        />
+                        <label htmlFor="sagrilaft" style={{ color: "#475569", fontSize: "0.95rem", lineHeight: "1.4" }}>
+                            He leído, comprendido y acepto las políticas del <a href="https://tuempresainternacional.com/documentos/manual_sagrilaft.html?v=3" target="_blank" rel="noopener noreferrer" style={{ color: "#3b82f6", fontWeight: "bold", textDecoration: "underline" }}>SAGRILAFT</a> y realizo las declaraciones de cumplimiento.
+                        </label>
+                    </div>
                 </div>
 
                 {/* Submit Button */}
                 <button
                     type="submit"
-                    disabled={loading || !formData.acceptedTerms}
+                    disabled={loading || !formData.acceptedTerms || !formData.acceptedDataPolicy || !formData.acceptedSagrilaft}
                     style={{
                         width: "100%",
-                        background: loading || !formData.acceptedTerms ? "#cbd5e1" : "linear-gradient(to right, #3b82f6, #1e40af)",
+                        background: loading || !formData.acceptedTerms || !formData.acceptedDataPolicy || !formData.acceptedSagrilaft ? "#cbd5e1" : "linear-gradient(to right, #3b82f6, #1e40af)",
                         color: "white",
                         fontWeight: "bold",
                         padding: "1rem",
                         borderRadius: "0.75rem",
                         border: "none",
-                        cursor: loading || !formData.acceptedTerms ? "not-allowed" : "pointer",
-                        opacity: loading || !formData.acceptedTerms ? 0.7 : 1,
+                        cursor: loading || !formData.acceptedTerms || !formData.acceptedDataPolicy || !formData.acceptedSagrilaft ? "not-allowed" : "pointer",
+                        opacity: loading || !formData.acceptedTerms || !formData.acceptedDataPolicy || !formData.acceptedSagrilaft ? 0.7 : 1,
                         fontSize: "1.125rem",
                         marginTop: "1rem",
                         transition: "all 0.3s ease",
-                        boxShadow: loading || !formData.acceptedTerms ? "none" : "0 4px 15px rgba(37, 99, 235, 0.4)"
+                        boxShadow: loading || !formData.acceptedTerms || !formData.acceptedDataPolicy || !formData.acceptedSagrilaft ? "none" : "0 4px 15px rgba(37, 99, 235, 0.4)"
                     }}
                 >
                     {loading ? "Registrando..." : "Crear Cuenta Completar →"}
