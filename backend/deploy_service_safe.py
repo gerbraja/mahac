@@ -11,6 +11,8 @@ def deploy_service():
 
     email_sender = os.getenv("EMAIL_SENDER", "")
     email_password = os.getenv("EMAIL_PASSWORD", "")
+    smtp_server = os.getenv("SMTP_SERVER", "smtp-relay.brevo.com")
+    smtp_port = os.getenv("SMTP_PORT", "587")
 
     # Safety check: ensure they actually filled it out
     if not email_sender or not email_password or "PEGAR" in email_password:
@@ -26,14 +28,16 @@ def deploy_service():
         "--allow-unauthenticated",
         "--port", "8000",
         "--update-env-vars",
-        f"CLOUD_SQL_CONNECTION_NAME=tei-mlm-prod:southamerica-east1:mlm-db," +
+        f"CLOUD_SQL_CONNECTION_NAME=tei-mlm-prod:us-central1:mlm-db-us," +
         f"DB_USER=postgres," +
         f"DB_PASS=AdminPostgres2025," +
         f"DB_NAME=tiendavirtual," +
         f"PYTHONPATH=/app," +
+        f"SMTP_SERVER={smtp_server}," +
+        f"SMTP_PORT={smtp_port}," +
         f"EMAIL_SENDER={email_sender}," +
         f"EMAIL_PASSWORD={email_password}",
-        "--add-cloudsql-instances=tei-mlm-prod:southamerica-east1:mlm-db"
+        "--add-cloudsql-instances=tei-mlm-prod:us-central1:mlm-db-us"
     ]
     
     print("Executing deployment command safely...")
