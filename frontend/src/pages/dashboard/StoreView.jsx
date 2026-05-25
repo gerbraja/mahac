@@ -2,7 +2,52 @@ import React, { useEffect, useState } from 'react';
 import { api } from '../../api/api';
 import { useCart } from '../../context/CartContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+
+const CATEGORIES = [
+    {
+        id: 'all',
+        name: 'Todos',
+        image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=500&auto=format&fit=crop&q=60',
+        dbNames: []
+    },
+    {
+        id: 'ropa-interior',
+        name: 'Ropa Interior',
+        image: 'https://images.unsplash.com/photo-1582533561751-ef6f6ab93a2e?w=500&auto=format&fit=crop&q=60',
+        dbNames: ['Ropa Interior', 'Ropa interior', 'Lencería', 'Lenceria']
+    },
+    {
+        id: 'tangas',
+        name: 'Tangas',
+        image: 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=500&auto=format&fit=crop&q=60',
+        dbNames: ['Tangas', 'Tanga', 'tanga', 'tangas']
+    },
+    {
+        id: 'cacheteros',
+        name: 'Cacheteros',
+        image: 'https://images.unsplash.com/photo-1574297500572-c5173f2a1b94?w=500&auto=format&fit=crop&q=60',
+        dbNames: ['Cacheteros', 'Cachetero', 'cacheteros', 'cachetero', 'Semicachetero', 'Semicacheteros']
+    },
+    {
+        id: 'vestidos-bano',
+        name: 'Vestidos de Baño',
+        image: 'https://images.unsplash.com/photo-1502444330042-d1a1ddf9bb56?w=500&auto=format&fit=crop&q=60',
+        dbNames: ['Vestidos de Baño', 'Vestidos de baño', 'Vestido de Baño', 'Vestido de baño', 'Bañadores', 'Bañador']
+    },
+    {
+        id: 'camisas-damas',
+        name: 'Camisas y Blusas',
+        image: 'https://images.unsplash.com/photo-1548624149-f9b1859aa7d0?w=500&auto=format&fit=crop&q=60',
+        dbNames: ['Camisas y Blusas (Dama)', 'Camisas y Blusas', 'Blusas', 'Blusa', 'Camisas Dama', 'Camisetas Dama']
+    },
+    {
+        id: 'camisas-hombre',
+        name: 'Camisas Hombre',
+        image: 'https://images.unsplash.com/photo-1607345366928-199ea26cfe3e?w=500&auto=format&fit=crop&q=60',
+        dbNames: ['Camisas Hombre', 'Camisas para Hombre', 'Camisas (Hombre)', 'Camisetas Hombre']
+    }
+];
 
 const StoreView = () => {
     const [products, setProducts] = useState([]);
@@ -10,8 +55,35 @@ const StoreView = () => {
     const [loading, setLoading] = useState(true);
     const [selectedProduct, setSelectedProduct] = useState(null);
     const [showBanner, setShowBanner] = useState(true);
+    const [activeCategory, setActiveCategory] = useState('all');
+    const [searchParams, setSearchParams] = useSearchParams();
     const { addToCart, cart } = useCart();
     const navigate = useNavigate();
+
+    // Sync category from URL search parameters (?cat=ropa-interior)
+    useEffect(() => {
+        const catParam = searchParams.get('cat');
+        if (catParam) {
+            const isValid = CATEGORIES.some(c => c.id === catParam);
+            if (isValid) {
+                setActiveCategory(catParam);
+            }
+        } else {
+            setActiveCategory('all');
+        }
+    }, [searchParams]);
+
+    // Handler when clicking a category card to update the URL
+    const handleCategoryChange = (catId) => {
+        setActiveCategory(catId);
+        const newParams = new URLSearchParams(searchParams);
+        if (catId === 'all') {
+            newParams.delete('cat');
+        } else {
+            newParams.set('cat', catId);
+        }
+        setSearchParams(newParams);
+    };
 
     // Calculate total items in cart
     const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
@@ -19,13 +91,17 @@ const StoreView = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [productsRes, userRes] = await Promise.all([
-                    api.get(`/api/products/?_t=${new Date().getTime()}`),
-                    api.get('/auth/me').catch(() => ({ data: null }))
-                ]);
+                // 1. Fetch User First
+                const userRes = await api.get('/auth/me').catch(() => ({ data: null }));
+                const fetchedUser = userRes.data;
+                
+                // 2. Determine Country
+                const country = fetchedUser?.country || 'Colombia';
+                
+                // 3. Fetch Products for that country
+                const productsRes = await api.get(`/api/products/?_t=${new Date().getTime()}&country=${country}`);
 
                 let fetchedProducts = productsRes.data;
-                const fetchedUser = userRes.data;
 
                 // Process Upgrade Pricing
                 if (fetchedUser && fetchedUser.status === 'active' && fetchedUser.package_level === 1) {
@@ -79,6 +155,71 @@ const StoreView = () => {
     }
 
     const regularProducts = products.filter(p => !p.is_activation);
+
+    // Filter regular products by selected category
+    const filteredRegularProducts = regularProducts.filter(product => {
+        if (activeCategory === 'all') return true;
+        
+        const catNameLower = (product.category || '').toLowerCase().trim();
+        const nameLower = (product.name || '').toLowerCase();
+        
+        // 1. Direct category match via dbNames
+        const selectedCatConfig = CATEGORIES.find(c => c.id === activeCategory);
+        if (selectedCatConfig && selectedCatConfig.dbNames.some(name => name.toLowerCase().trim() === catNameLower)) {
+            return true;
+        }
+        
+        // 2. Fallback keyword match if DB category is general 'ropa y accesorios' or similar
+        if (catNameLower.includes('ropa y accesorios') || catNameLower.includes('ropa') || catNameLower.includes('accesorios')) {
+            if (activeCategory === 'ropa-interior') {
+                return nameLower.includes('interior') || 
+                       nameLower.includes('lence') || 
+                       nameLower.includes('panty') || 
+                       nameLower.includes('panties') || 
+                       nameLower.includes('hilo') || 
+                       nameLower.includes('sosten') || 
+                       nameLower.includes('sostén') || 
+                       nameLower.includes('brassier') || 
+                       nameLower.includes('boxer') || 
+                       nameLower.includes('bóxer') || 
+                       nameLower.includes('copa pre') || 
+                       nameLower.includes('frida') || 
+                       nameLower.includes('ibiza') || 
+                       nameLower.includes('liz') || 
+                       nameLower.includes('seleni') || 
+                       nameLower.includes('girasoli') || 
+                       nameLower.includes('magi') || 
+                       nameLower.includes('sari');
+            }
+            if (activeCategory === 'tangas') {
+                return nameLower.includes('tanga') || nameLower.includes('hilo dental');
+            }
+            if (activeCategory === 'cacheteros') {
+                return nameLower.includes('cachetero') || nameLower.includes('semicachetero');
+            }
+            if (activeCategory === 'vestidos-bano') {
+                return nameLower.includes('baño') || nameLower.includes('bañador') || nameLower.includes('bikini') || nameLower.includes('asoleador');
+            }
+            if (activeCategory === 'camisas-damas') {
+                const isShirt = nameLower.includes('camisa') || 
+                                nameLower.includes('blusa') || 
+                                nameLower.includes('bluson') || 
+                                nameLower.includes('blusón') || 
+                                nameLower.includes('camiseta') || 
+                                nameLower.includes('top') || 
+                                nameLower.includes('crop');
+                const isHombre = nameLower.includes('hombre') || nameLower.includes('caballero');
+                return isShirt && !isHombre;
+            }
+            if (activeCategory === 'camisas-hombre') {
+                const isShirt = nameLower.includes('camisa') || nameLower.includes('camiseta');
+                const isHombre = nameLower.includes('hombre') || nameLower.includes('caballero');
+                return isShirt && isHombre;
+            }
+        }
+        
+        return false;
+    });
 
     return (
         <div className="p-6 relative" style={{ maxWidth: '100%', width: '100%' }}>
@@ -155,7 +296,7 @@ const StoreView = () => {
                             {user.status === 'pre-affiliate' ? '⚪ Pre-afiliado (Gratuito)' :
                                 user.package_level >= 2 ? '🏅 Activo Paquete de Productos' :
                                     user.package_level === 1 ? '🎖️ Activo Franquicia Digital 1' :
-                                        '🟢 Activo'}
+                                        '🌱 Emprendedor Inicial'}
                         </span>
                     </div>
                 )}
@@ -183,7 +324,7 @@ const StoreView = () => {
                                 Aviso Importante — Pedidos de Vestuario y Calzado
                             </p>
                             <p style={{ margin: '0.15rem 0 0', color: '#9a3412', fontSize: '0.875rem' }}>
-                                Los pedidos de vestuario y calzado están habilitados <strong>únicamente los lunes</strong>. Gracias por tu comprensión. 🙏
+                                Los pedidos de vestuario y calzado están habilitados <strong>únicamente los días martes</strong>. Gracias por tu comprensión. 🙏
                             </p>
                         </div>
                     </div>
@@ -241,14 +382,75 @@ const StoreView = () => {
                 </div>
             )}
 
+            {/* Categories Navigation Section */}
+            <div className="mb-10">
+                <h2 className="text-xl font-extrabold text-blue-900 mb-4 flex items-center gap-2">
+                    🛍️ Navegar por Categorías
+                </h2>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3 w-full">
+                    {CATEGORIES.map(cat => (
+                        <motion.div
+                            key={cat.id}
+                            whileHover={{ scale: 1.03, y: -2 }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={() => handleCategoryChange(cat.id)}
+                            className={`relative rounded-xl overflow-hidden aspect-[16/11] cursor-pointer group border-2 transition-all duration-300 ${
+                                activeCategory === cat.id 
+                                    ? 'border-blue-500 shadow-lg ring-4 ring-blue-100 scale-102' 
+                                    : 'border-transparent shadow-sm hover:shadow-md'
+                            }`}
+                        >
+                            {/* Background Image */}
+                            <div className="absolute inset-0 bg-gray-100">
+                                <img
+                                    src={cat.image}
+                                    alt={cat.name}
+                                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                />
+                                {/* Dark Gradient Overlay */}
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/35 to-transparent" />
+                            </div>
+                            {/* Category Text Overlay */}
+                            <div className="absolute inset-0 flex items-center justify-center p-2 text-center z-10">
+                                <span className="text-white text-xs md:text-sm font-black uppercase tracking-wider leading-tight drop-shadow-md select-none">
+                                    {cat.name}
+                                </span>
+                            </div>
+                            {/* Active Dot indicator */}
+                            {activeCategory === cat.id && (
+                                <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-blue-400 rounded-full border border-white shadow-sm z-20 animate-pulse" />
+                            )}
+                        </motion.div>
+                    ))}
+                </div>
+            </div>
+
             {/* Regular Products Section */}
             <div>
-                <h2 className="text-2xl font-bold text-gray-800 mb-4">Catálogo General</h2>
-                {regularProducts.length === 0 ? (
-                    <p className="text-gray-500">No hay productos disponibles por el momento.</p>
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-2xl font-bold text-gray-800">
+                        {activeCategory === 'all' 
+                            ? 'Catálogo General' 
+                            : `Catálogo: ${CATEGORIES.find(c => c.id === activeCategory)?.name}`}
+                    </h2>
+                    {activeCategory !== 'all' && (
+                        <button 
+                            onClick={() => handleCategoryChange('all')}
+                            className="text-sm font-bold text-blue-600 hover:text-blue-800 transition-colors"
+                        >
+                            Ver Todo
+                        </button>
+                    )}
+                </div>
+                {filteredRegularProducts.length === 0 ? (
+                    <div className="text-center py-12 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+                        <span className="text-3xl block mb-2">🔍</span>
+                        <p className="text-gray-500 font-semibold">No hay productos en esta categoría por el momento.</p>
+                        <p className="text-gray-400 text-xs mt-1">Próximamente agregaremos más prendas a esta sección.</p>
+                    </div>
                 ) : (
                     <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3 w-full">
-                        {regularProducts.map(product => (
+                        {filteredRegularProducts.map(product => (
                             <ProductCard
                                 key={product.id}
                                 product={product}
@@ -313,14 +515,28 @@ const ProductCard = ({ product, addToCart, isSpecial, onClick }) => {
                 </div>
             </div>
 
-            {/* Product Info */}
             <div className="px-4 pb-4 pt-2 flex-1 flex flex-col">
                 <h3
                     onClick={onClick}
-                    className="font-bold text-lg text-gray-800 mb-2 line-clamp-2 cursor-pointer hover:text-blue-600 transition-colors"
+                    className="font-bold text-lg text-gray-800 mb-1 line-clamp-2 cursor-pointer hover:text-blue-600 transition-colors"
                 >
                     {product.name}
                 </h3>
+                
+                {/* Rating Display */}
+                {product.rating_count > 0 ? (
+                    <div className="flex items-center gap-1 mb-2">
+                        <span className="text-yellow-400 text-sm">⭐</span>
+                        <span className="text-sm font-bold text-gray-700">{product.average_rating?.toFixed(1)}/7</span>
+                        <span className="text-xs text-gray-400">({product.rating_count})</span>
+                    </div>
+                ) : (
+                    <div className="flex items-center gap-1 mb-2">
+                        <span className="text-gray-300 text-sm">⭐</span>
+                        <span className="text-xs text-gray-400">Sin calificar</span>
+                    </div>
+                )}
+                
                 <p className="text-gray-600 text-sm mb-3 line-clamp-3 flex-1">{product.description}</p>
 
                 {/* Price and PV */}
@@ -413,15 +629,24 @@ const ProductDetailsModal = ({ product, onClose, addToCart }) => {
             >
                 {/* Cabezal Ultra-Compacto */}
                 <div className="px-4 py-2 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
-                    <div className="flex items-center gap-2 overflow-hidden">
-                        {product.is_activation && (
-                            <span className="bg-blue-600 text-white text-[10px] px-1.5 py-0.5 rounded font-black shrink-0">
-                                🚀
-                            </span>
+                    <div className="flex flex-col overflow-hidden">
+                        <div className="flex items-center gap-2">
+                            {product.is_activation && (
+                                <span className="bg-blue-600 text-white text-[10px] px-1.5 py-0.5 rounded font-black shrink-0">
+                                    🚀
+                                </span>
+                            )}
+                            <h2 className="text-sm font-bold text-gray-800 truncate">
+                                {product.name}
+                            </h2>
+                        </div>
+                        {product.rating_count > 0 && (
+                            <div className="flex items-center gap-1 mt-0.5">
+                                <span className="text-yellow-400 text-[10px]">⭐</span>
+                                <span className="text-[10px] font-bold text-gray-700">{product.average_rating?.toFixed(1)}/7</span>
+                                <span className="text-[10px] text-gray-400">({product.rating_count} valoraciones)</span>
+                            </div>
                         )}
-                        <h2 className="text-sm font-bold text-gray-800 truncate">
-                            {product.name}
-                        </h2>
                     </div>
                     <div className="flex items-center gap-3 shrink-0 ml-4">
                         <div className="text-right">

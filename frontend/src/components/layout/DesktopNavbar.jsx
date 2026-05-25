@@ -6,8 +6,18 @@ const DesktopNavbar = ({
     navData, // { personalItems, networkItems, moreItems }
     isActive
 }) => {
+    const tiendaItems = [
+        { to: '/dashboard/store', icon: '🛍️', label: 'Ver Todo' },
+        { to: '/dashboard/store?cat=ropa-interior', icon: '👙', label: 'Ropa Interior' },
+        { to: '/dashboard/store?cat=tangas', icon: '🎀', label: 'Tangas' },
+        { to: '/dashboard/store?cat=cacheteros', icon: '🩲', label: 'Cacheteros' },
+        { to: '/dashboard/store?cat=vestidos-bano', icon: '🩱', label: 'Vestidos de Baño' },
+        { to: '/dashboard/store?cat=camisas-damas', icon: '👚', label: 'Camisas y Blusas' },
+        { to: '/dashboard/store?cat=camisas-hombre', icon: '👕', label: 'Camisas Hombre' }
+    ];
+
     // Dropdown States
-    const [openDropdown, setOpenDropdown] = useState(null); // 'personal', 'network', 'more', or null
+    const [openDropdown, setOpenDropdown] = useState(null); // 'tienda', 'personal', 'network', 'more', or null
     const dropdownRef = useRef(null);
     const location = useLocation();
 
@@ -35,6 +45,14 @@ const DesktopNavbar = ({
         }
     };
 
+    // Helper to verify if an item is active including search params
+    const isItemActive = (to) => {
+        if (to.includes('?')) {
+            return location.pathname + location.search === to;
+        }
+        return isActive(to);
+    };
+
     // Helper to render dropdown menu
     const renderDropdownMenu = (items) => (
         <div className="absolute top-full right-0 mt-2 w-56 bg-white rounded-xl shadow-2xl border border-gray-100 py-2 z-50 animate-fade-in-down">
@@ -43,7 +61,7 @@ const DesktopNavbar = ({
                     key={item.to}
                     to={item.to}
                     className={`flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors
-                        ${isActive(item.to) ? 'text-blue-600 bg-blue-50' : 'text-gray-600'}
+                        ${isItemActive(item.to) ? 'text-blue-600 bg-blue-50 font-bold' : 'text-gray-600'}
                     `}
                 >
                     <span className="text-lg">{item.icon}</span>
@@ -85,18 +103,24 @@ const DesktopNavbar = ({
             {/* Navigation Links */}
             <nav className="flex items-center space-x-2" ref={dropdownRef}>
 
-                {/* 1. Tienda (Direct Link) */}
-                <Link
-                    to="/dashboard/store"
-                    className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all
-                        ${isActive('/dashboard/store')
-                            ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md'
-                            : 'text-gray-600 hover:text-blue-600 hover:bg-gray-50'
-                        }
-                    `}
-                >
-                    <span>🛍️</span> Tienda
-                </Link>
+                {/* 1. Tienda Dropdown */}
+                <div className="relative">
+                    <button
+                        onClick={() => toggleDropdown('tienda')}
+                        className={`flex items-center gap-1 px-4 py-2 rounded-lg text-sm font-bold transition-all relative
+                            ${openDropdown === 'tienda' 
+                                ? 'text-blue-600 bg-blue-50' 
+                                : location.pathname.startsWith('/dashboard/store')
+                                    ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md'
+                                    : 'text-gray-600 hover:text-blue-600 hover:bg-white'
+                            }
+                        `}
+                    >
+                        <span>🛍️</span> Tienda
+                        <span className={`transform transition-transform duration-200 ${openDropdown === 'tienda' ? 'rotate-180' : ''}`}>▼</span>
+                    </button>
+                    {openDropdown === 'tienda' && renderDropdownMenu(tiendaItems)}
+                </div>
 
                 {/* 2. Personal Group */}
                 <div className="relative">
