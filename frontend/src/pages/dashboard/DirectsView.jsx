@@ -346,6 +346,10 @@ const DirectsView = () => {
     const fetchDirects = async () => {
         setLoading(true);
         try {
+            // Always fetch from /auth/me to get the correct userId.
+            // Never rely on localStorage('userId') here because an admin
+            // impersonating a user will have a new JWT token but the cached
+            // userId in localStorage might still point to the admin.
             const userRes = await api.get('/auth/me');
             const currentUserId = userRes.data.id;
             const res = await api.get(`/api/unilevel/directs/${currentUserId}`);

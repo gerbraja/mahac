@@ -27,7 +27,10 @@ class LoginData(BaseModel):
     password: str
 
 class RegisterData(BaseModel):
-    name: str
+    # Nombre separado para Siigo (evita errores con nombres largos)
+    first_name: str           # Nombres
+    last_name: str            # Apellidos
+    name: Optional[str] = None  # Campo heredado (se auto-construye si no se envía)
     email: str
     username: str
     password: str
@@ -35,12 +38,16 @@ class RegisterData(BaseModel):
     referral_code: str
     gender: str
     document_id: str
+    document_type: Optional[str] = None       # CC, NIT, CE, PPT, Pasaporte, DNI...
+    verification_digit: Optional[str] = None  # DV calculado por el frontend (DIAN, solo Colombia)
+    person_type: Optional[str] = "Natural"    # 'Natural' o 'Juridica' (Siigo/DIAN)
     birth_date: str
     phone: str
     address: str
     city: str
     province: str
     postal_code: str
+    municipio_id: Optional[str] = None  # Código DIVIPOLA/DANE 5 dígitos (DIAN obligatorio)
     country: str
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
@@ -118,9 +125,14 @@ def register(data: RegisterData, background_tasks: BackgroundTasks, db: Session 
                 detail="Error al procesar la contraseña. Intente con otra o contacte soporte."
             )
 
+        # Build full name from separated fields (Siigo compatibility)
+        full_name = f"{data.first_name.strip()} {data.last_name.strip()}".strip()
+
         # Create user record with all information
         new_user = UserModel(
-            name=data.name, 
+            name=full_name,
+            first_name=data.first_name.strip(),
+            last_name=data.last_name.strip(),
             email=data.email,
             username=data.username,
             password=hashed_password,
@@ -128,6 +140,9 @@ def register(data: RegisterData, background_tasks: BackgroundTasks, db: Session 
             status="pre-affiliate",  # Initially pre-affiliate until payment
             # Personal information
             document_id=data.document_id,
+            document_type=data.document_type,
+            verification_digit=data.verification_digit,
+            person_type=data.person_type or "Natural",
             gender=data.gender,
             birth_date=datetime.strptime(data.birth_date, "%Y-%m-%d").date(),
             phone=data.phone,
@@ -136,7 +151,9 @@ def register(data: RegisterData, background_tasks: BackgroundTasks, db: Session 
             city=data.city,
             province=data.province,
             postal_code=data.postal_code,
-            country=data.country
+            municipio_id=data.municipio_id,
+            country=data.country,
+            active_until=datetime.utcnow() + timedelta(days=365)
         )
         
         if referer:
@@ -217,12 +234,13 @@ def register(data: RegisterData, background_tasks: BackgroundTasks, db: Session 
         # Send Welcome Email (Background Task)
         # We pass necessary info so we don't rely on DB objects inside async task (avoid detachment issues)
         referral_link_url = f"https://tuempresainternacional.com/usuario/{new_user.username}"
-        send_welcome_email(
+        background_tasks.add_task(
+            send_welcome_email,
             to_email=new_user.email,
             username=new_user.username,
             full_name=new_user.name,
             referral_link=referral_link_url
-        ) # Sync call
+        )
 
         # Generate token for auto-login
         token = jwt.encode({"user_id": new_user.id}, SECRET_KEY, algorithm=ALGORITHM)
@@ -275,7 +293,12 @@ from ..utils.auth import get_current_user_object, oauth2_scheme, SECRET_KEY, ALG
 
 @router.get("/me")
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
-    """Get current user data from JWT token."""
+    """Get current user data from JWT token.
+    
+    NOTE: This is the ONLY /auth/me endpoint. A second definition existed below (now
+    removed) that FastAPI was silently ignoring. This merged version returns all fields
+    needed by the frontend: profile data AND wallet/admin info.
+    """
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id: int = payload.get("user_id")
@@ -305,9 +328,12 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         "email": user.email,
         "username": user.username,
         "referral_code": user.referral_code or user.username,
+        "referral_link": f"/usuario/{user.username}",
         "status": user.status,
         "document_id": user.document_id,
         "is_admin": user.is_admin,
+        "admin_role": getattr(user, 'admin_role', None),
+        "admin_country": getattr(user, 'admin_country', None),
         # Personal Info (normalize gender for UI)
         "gender": _gender_for_client(user.gender),
         "birth_date": user.birth_date,
@@ -321,6 +347,10 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         "created_at": user.created_at,
         "crypto_wallet_address": user.crypto_wallet,
         "package_level": user.package_level,
+        # Wallet info (used by dashboard)
+        "has_transaction_pin": bool(getattr(user, 'transaction_pin', None)),
+        "bank_balance": getattr(user, 'bank_balance', 0.0) or 0.0,
+        "available_balance": getattr(user, 'available_balance', 0.0) or 0.0,
         "rank": _get_user_honor_rank(db, user.id)
     }
 
@@ -451,25 +481,10 @@ def login(data: LoginData, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=f"Internal server error")
 
 
-@router.get("/me")
-def get_current_user_info(current_user: UserModel = Depends(get_current_user_object), db: Session = Depends(get_db)):
-    """Get current user information."""
-    return {
-        "id": current_user.id,
-        "username": current_user.username,
-        "email": current_user.email,
-        "name": current_user.name,
-        "is_admin": current_user.is_admin,
-        "admin_role": current_user.admin_role,
-        "admin_country": current_user.admin_country,
-        "referral_link": f"/usuario/{current_user.username}",
-        "has_transaction_pin": bool(current_user.transaction_pin),
-        "bank_balance": current_user.bank_balance or 0.0,
-        "available_balance": current_user.available_balance or 0.0,
-        "package_level": current_user.package_level,
-        "status": current_user.status,
-        "rank": _get_user_honor_rank(db, current_user.id)
-    }
+# NOTE: The second @router.get("/me") that was here has been REMOVED.
+# FastAPI was silently ignoring it because the first definition (above) takes
+# precedence. All its fields have been merged into the first endpoint.
+# See the get_current_user function above for the combined implementation.
 
 
 # ==================== SECURITY ENDPOINTS ====================
@@ -601,13 +616,13 @@ def forgot_password(data: ForgotPasswordData, background_tasks: BackgroundTasks,
             db.commit()
 
             reset_link = f"{FRONTEND_URL}/reset-password?token={token}"
-            send_password_reset_email(to_email=user.email, reset_link=reset_link) # Sync direct call
-            print(f"✅ Password reset token generated for user {user.email}")
+            background_tasks.add_task(send_password_reset_email, to_email=user.email, reset_link=reset_link)
+            print(f"Password reset token generated and email queued for user {user.email}")
         else:
-            print(f"ℹ️ Forgot-password requested for non-existing email: {data.email}")
+            print(f"Forgot-password requested for non-existing email: {data.email}")
 
     except Exception as e:
-        import traceback; print(f"❌ Error in forgot_password: {type(e).__name__}: {str(e)}", flush=True); traceback.print_exc()
+        import traceback; print(f"Error in forgot_password: {type(e).__name__}: {str(e)}", flush=True); traceback.print_exc()
         # Still return success to not leak info
 
     # Always return the same message

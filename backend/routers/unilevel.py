@@ -283,40 +283,177 @@ def get_unilevel_stats(user_id: int, db: Session = Depends(get_db)):
 @router.get("/directs/{user_id}")
 def get_directs(user_id: int, db: Session = Depends(get_db)):
     """
-    Get all direct referred users (based on User.referred_by_id)
+    Get all direct referred users (based on User.referred_by_id).
+    Each entry now includes rank progress data so the frontend can
+    render Honor Rank and Qualification Rank progress bars without
+    making extra API calls.
     """
-    # Get all users directly referred by this user
+    from backend.database.models.order import Order
+    from backend.database.models.order_item import OrderItem
+    from backend.database.models.wallet import WalletTransaction
+    from sqlalchemy import func as sqlfunc
+
+    # Honor Rank thresholds (commission accumulated in USD)
+    HONOR_RANKS = [
+        {"name": "Silver",              "emoji": "🥈", "commission": 1_000},
+        {"name": "Gold",                "emoji": "🥇", "commission": 4_700},
+        {"name": "Platinum",            "emoji": "💎", "commission": 8_700},
+        {"name": "Rubí",                "emoji": "💍", "commission": 19_700},
+        {"name": "Esmeralda",           "emoji": "💚", "commission": 39_700},
+        {"name": "Diamond",             "emoji": "✨", "commission": 77_700},
+        {"name": "Blue Diamond",        "emoji": "🔷", "commission": 127_700},
+        {"name": "Diamante Rojo",       "emoji": "🔴", "commission": 277_700},
+        {"name": "Diamante Negro",      "emoji": "🖤", "commission": 477_700},
+        {"name": "Diamante Corona",     "emoji": "👑", "commission": 777_700},
+        {"name": "Diamante Corona Azul","emoji": "💠", "commission": 1_777_700},
+        {"name": "Diamante Corona Rojo","emoji": "❤️‍🔥","commission": 7_777_700},
+        {"name": "Diamante Corona Negro","emoji": "🏆", "commission": 37_777_700},
+    ]
+
+    # Qualification Rank thresholds (number of completed matrices)
+    QUALIFICATION_RANKS = [
+        {"name": "Consumidor", "emoji": "👤",  "matrix_id": 27},
+        {"name": "Bronce",     "emoji": "🥉",  "matrix_id": 77},
+        {"name": "Plata",      "emoji": "🥈",  "matrix_id": 277},
+        {"name": "Oro",        "emoji": "🥇",  "matrix_id": 877},
+        {"name": "Platino",    "emoji": "💎",  "matrix_id": 3_000},
+        {"name": "Rubí",       "emoji": "💍",  "matrix_id": 9_700},
+        {"name": "Esmeralda",  "emoji": "💚",  "matrix_id": 30_000},
+        {"name": "Diamante",   "emoji": "✨",  "matrix_id": 100_000},
+    ]
+
+    # Get the current user's username and referral code for fallback lookup
+    sponsor_user = db.query(User).filter(User.id == user_id).first()
+    if not sponsor_user:
+        return {
+            "user_id": user_id,
+            "total_directs": 0,
+            "total_network": 0,
+            "directs": [],
+        }
+
+    # Primary lookup: by referred_by_id (preferred, set for all new registrations)
+    # Fallback: by referred_by text field matching the sponsor's username (legacy registrations)
+    sponsor_username = (sponsor_user.username or "").lower().strip()
+    sponsor_refcode = (sponsor_user.referral_code or "").lower().strip()
+
+    from sqlalchemy import or_, func as sqlfunc2
+
     direct_referrals = db.query(User).filter(
-        User.referred_by_id == user_id
-    ).all()
-    
-    # Build directs list with user information
+        or_(
+            User.referred_by_id == user_id,
+            # Legacy fallback: referred_by field stored the sponsor's username as plain text
+            sqlfunc2.lower(sqlfunc2.trim(User.referred_by)) == sponsor_username,
+            sqlfunc2.lower(sqlfunc2.trim(User.referred_by)) == sponsor_refcode,
+        )
+    ).filter(User.id != user_id).all()  # Exclude self-reference just in case
+
     directs_list = []
-    for direct_user in direct_referrals:
+    for du in direct_referrals:
+        # ── Honor Rank: total lifetime earnings from wallet ──────────────
+        total_earned = 0.0
+        try:
+            total_earned = float(
+                db.query(sqlfunc.sum(WalletTransaction.amount))
+                .filter(
+                    WalletTransaction.user_id == du.id,
+                    WalletTransaction.transaction_type == "credit"
+                )
+                .scalar() or 0
+            )
+        except Exception:
+            pass
+
+        # Current honor rank (highest threshold exceeded)
+        current_honor = None
+        next_honor = None
+        for i, rank in enumerate(HONOR_RANKS):
+            if total_earned >= rank["commission"]:
+                current_honor = rank
+            else:
+                next_honor = rank
+                break
+
+        honor_progress_pct = 0.0
+        if next_honor:
+            prev_threshold = current_honor["commission"] if current_honor else 0
+            span = next_honor["commission"] - prev_threshold
+            honor_progress_pct = round(
+                min(100, max(0, (total_earned - prev_threshold) / span * 100)), 1
+            ) if span > 0 else 0
+
+        # ── Qualification Rank: matrix completions ───────────────────────
+        matrix_count = 0
+        try:
+            from backend.database.models.matrix import MatrixMember
+            matrix_count = db.query(MatrixMember).filter(
+                MatrixMember.user_id == du.id
+            ).count()
+        except Exception:
+            pass
+
+        current_qual = None
+        next_qual = None
+        for i, rank in enumerate(QUALIFICATION_RANKS):
+            if matrix_count >= rank["matrix_id"]:
+                current_qual = rank
+            else:
+                next_qual = rank
+                break
+
+        qual_progress_pct = 0.0
+        if next_qual:
+            prev_threshold = current_qual["matrix_id"] if current_qual else 0
+            span = next_qual["matrix_id"] - prev_threshold
+            qual_progress_pct = round(
+                min(100, max(0, (matrix_count - prev_threshold) / span * 100)), 1
+            ) if span > 0 else 0
+
         directs_list.append({
-            "user_id": direct_user.id,
-            "name": direct_user.name or "Unknown",
-            "email": direct_user.email or None,
-            "status": direct_user.status or "inactive",
-            "username": direct_user.username or None,
-            "membership_code": direct_user.membership_code or None
+            "user_id": du.id,
+            "name": du.name or "Unknown",
+            "email": du.email or None,
+            "status": du.status or "inactive",
+            "username": du.username or None,
+            "membership_code": du.membership_code or None,
+            # Honor Rank progress
+            "total_earned_usd": total_earned,
+            "honor_rank": current_honor,
+            "next_honor_rank": next_honor,
+            "honor_progress_pct": honor_progress_pct,
+            # Qualification Rank progress
+            "matrix_count": matrix_count,
+            "qualification_rank": current_qual,
+            "next_qualification_rank": next_qual,
+            "qualification_progress_pct": qual_progress_pct,
         })
-    
+
+
     # Count total network (all downlines recursively)
-    def count_all_referrals(user_id_to_count):
-        count = 0
+    # Uses the same dual-lookup logic (referred_by_id OR legacy referred_by text)
+    def count_all_referrals(uid):
+        uid_user = db.query(User).filter(User.id == uid).first()
+        if not uid_user:
+            return 0
+        u_name = (uid_user.username or "").lower().strip()
+        u_ref = (uid_user.referral_code or "").lower().strip()
         referrals = db.query(User).filter(
-            User.referred_by_id == user_id_to_count
+            or_(
+                User.referred_by_id == uid,
+                sqlfunc2.lower(sqlfunc2.trim(User.referred_by)) == u_name,
+                sqlfunc2.lower(sqlfunc2.trim(User.referred_by)) == u_ref,
+            ),
+            User.id != uid
         ).all()
-        for referral in referrals:
-            count += 1 + count_all_referrals(referral.id)
-        return count
-    
+        return sum(1 + count_all_referrals(r.id) for r in referrals)
+
+
     total_network = count_all_referrals(user_id)
-    
+
     return {
         "user_id": user_id,
         "total_directs": len(directs_list),
         "total_network": total_network,
-        "directs": directs_list
+        "directs": directs_list,
     }
+
