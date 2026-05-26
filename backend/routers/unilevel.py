@@ -290,7 +290,6 @@ def get_directs(user_id: int, db: Session = Depends(get_db)):
     """
     from backend.database.models.order import Order
     from backend.database.models.order_item import OrderItem
-    from backend.database.models.wallet import WalletTransaction
     from sqlalchemy import func as sqlfunc
 
     # Honor Rank thresholds (commission accumulated in USD)
@@ -350,19 +349,8 @@ def get_directs(user_id: int, db: Session = Depends(get_db)):
 
     directs_list = []
     for du in direct_referrals:
-        # ── Honor Rank: total lifetime earnings from wallet ──────────────
-        total_earned = 0.0
-        try:
-            total_earned = float(
-                db.query(sqlfunc.sum(WalletTransaction.amount))
-                .filter(
-                    WalletTransaction.user_id == du.id,
-                    WalletTransaction.transaction_type == "credit"
-                )
-                .scalar() or 0
-            )
-        except Exception:
-            pass
+        # ── Honor Rank: total lifetime earnings ──────────────
+        total_earned = float(du.total_earnings or 0.0)
 
         # Current honor rank (highest threshold exceeded)
         current_honor = None
