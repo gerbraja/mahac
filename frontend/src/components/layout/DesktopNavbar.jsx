@@ -9,8 +9,9 @@ const DesktopNavbar = ({
     const tiendaItems = [
         { to: '/dashboard/store', icon: '🛍️', label: 'Ver Todo' },
         { to: '/dashboard/store?cat=ropa-interior', icon: '👙', label: 'Ropa Interior' },
-        { to: '/dashboard/store?cat=tangas', icon: '🎀', label: 'Tangas' },
-        { to: '/dashboard/store?cat=cacheteros', icon: '🩲', label: 'Cacheteros' },
+        { to: '/dashboard/store?cat=conjuntos', icon: '👗', label: 'Conjuntos' },
+        { to: '/dashboard/store?cat=vestuario-premium', icon: '⭐', label: 'Vestuario Premium' },
+        { to: '/dashboard/store?cat=vestidos-faldas', icon: '💃', label: 'Vestidos y Faldas' },
         { to: '/dashboard/store?cat=vestidos-bano', icon: '🩱', label: 'Vestidos de Baño' },
         { to: '/dashboard/store?cat=camisas-damas', icon: '👚', label: 'Camisas y Blusas' },
         { to: '/dashboard/store?cat=camisas-hombre', icon: '👕', label: 'Camisas Hombre' }

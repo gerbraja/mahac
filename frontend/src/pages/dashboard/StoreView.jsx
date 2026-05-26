@@ -14,20 +14,26 @@ const CATEGORIES = [
     {
         id: 'ropa-interior',
         name: 'Ropa Interior',
-        image: 'https://images.unsplash.com/photo-1582533561751-ef6f6ab93a2e?w=500&auto=format&fit=crop&q=60',
+        image: 'https://storage.googleapis.com/tuempresainternacional-assets/images/banner_ropa_interior.png',
         dbNames: ['Ropa Interior', 'Ropa interior', 'Lencería', 'Lenceria']
     },
     {
-        id: 'tangas',
-        name: 'Tangas',
-        image: 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=500&auto=format&fit=crop&q=60',
-        dbNames: ['Tangas', 'Tanga', 'tanga', 'tangas']
+        id: 'conjuntos',
+        name: 'Conjuntos',
+        image: 'https://images.unsplash.com/photo-1608231387042-66d1773070a5?w=500&auto=format&fit=crop&q=60',
+        dbNames: ['Conjuntos', 'Conjunto', 'conjuntos', 'conjunto']
     },
     {
-        id: 'cacheteros',
-        name: 'Cacheteros',
-        image: 'https://images.unsplash.com/photo-1574297500572-c5173f2a1b94?w=500&auto=format&fit=crop&q=60',
-        dbNames: ['Cacheteros', 'Cachetero', 'cacheteros', 'cachetero', 'Semicachetero', 'Semicacheteros']
+        id: 'vestuario-premium',
+        name: 'Vestuario Premium',
+        image: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=500&auto=format&fit=crop&q=60',
+        dbNames: ['Premium', 'Premium Vestuario', 'Vestuario Premium']
+    },
+    {
+        id: 'vestidos-faldas',
+        name: 'Vestidos y Faldas',
+        image: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=500&auto=format&fit=crop&q=60',
+        dbNames: ['Vestidos y Faldas', 'Vestidos', 'Vestido', 'Faldas', 'Falda']
     },
     {
         id: 'vestidos-bano',
@@ -49,6 +55,30 @@ const CATEGORIES = [
     }
 ];
 
+const SUBCATEGORIES = {
+    'ropa-interior': [
+        { id: 'all-sub', name: 'Todos' },
+        { id: 'tangas', name: 'Tangas / Hilos', keywords: ['tanga', 'hilo dental', 'hilo'] },
+        { id: 'cacheteros', name: 'Cacheteros', keywords: ['cachetero', 'semicachetero'] },
+        { id: 'conjuntos-lenceria', name: 'Conjuntos Lencería', keywords: ['conjunto', 'cojunto'] },
+        { id: 'copas-prehormadas', name: 'Copas Prehormadas', keywords: ['copa pre', 'prehormada'] },
+        { id: 'basicos', name: 'Básicos / Diaria', keywords: ['frida', 'ibiza', 'liz', 'seleni'] }
+    ],
+    'camisas-damas': [
+        { id: 'all-sub', name: 'Todos' },
+        { id: 'manga-larga', name: 'Manga Larga', keywords: ['manga larga'] },
+        { id: 'manga-corta', name: 'Manga Corta', keywords: ['manga corta'] },
+        { id: 'oversize', name: 'Oversize', keywords: ['oversize'] },
+        { id: 'blusones', name: 'Blusones', keywords: ['bluson', 'blusón'] }
+    ],
+    'vestidos-bano': [
+        { id: 'all-sub', name: 'Todos' },
+        { id: 'enterizo-bano', name: 'Enterizos', keywords: ['vestido de baño', 'enterizo'] },
+        { id: 'asoleadores', name: 'Asoleadores', keywords: ['asoleador'] }
+    ]
+};
+
+
 const StoreView = () => {
     const [products, setProducts] = useState([]);
     const [user, setUser] = useState(null);
@@ -59,6 +89,15 @@ const StoreView = () => {
     const [searchParams, setSearchParams] = useSearchParams();
     const { addToCart, cart } = useCart();
     const navigate = useNavigate();
+    const [searchTerm, setSearchTerm] = useState('');
+    const [activeSubcategory, setActiveSubcategory] = useState('all-sub');
+
+    // Reset subcategory and search term when main category changes
+    useEffect(() => {
+        setActiveSubcategory('all-sub');
+        setSearchTerm('');
+    }, [activeCategory]);
+
 
     // Sync category from URL search parameters (?cat=ropa-interior)
     useEffect(() => {
@@ -156,69 +195,96 @@ const StoreView = () => {
 
     const regularProducts = products.filter(p => !p.is_activation);
 
-    // Filter regular products by selected category
+    // Filter regular products by selected category and subcategory and search term
     const filteredRegularProducts = regularProducts.filter(product => {
-        if (activeCategory === 'all') return true;
-        
-        const catNameLower = (product.category || '').toLowerCase().trim();
-        const nameLower = (product.name || '').toLowerCase();
-        
-        // 1. Direct category match via dbNames
-        const selectedCatConfig = CATEGORIES.find(c => c.id === activeCategory);
-        if (selectedCatConfig && selectedCatConfig.dbNames.some(name => name.toLowerCase().trim() === catNameLower)) {
-            return true;
+        // 1. Search Term Filter (Global)
+        if (searchTerm.trim() !== '') {
+            const term = searchTerm.toLowerCase().trim();
+            const matchesSearch = 
+                (product.name || '').toLowerCase().includes(term) ||
+                (product.description || '').toLowerCase().includes(term) ||
+                (product.sku || '').toLowerCase().includes(term) ||
+                (product.category || '').toLowerCase().includes(term);
+            if (!matchesSearch) return false;
+        }
+
+        // 2. Category Filter
+        let matchesCategory = false;
+        if (activeCategory === 'all') {
+            matchesCategory = true;
+        } else {
+            const catNameLower = (product.category || '').toLowerCase().trim();
+            const nameLower = (product.name || '').toLowerCase();
+            
+            // 2.1. Direct category match via dbNames
+            const selectedCatConfig = CATEGORIES.find(c => c.id === activeCategory);
+            if (selectedCatConfig && selectedCatConfig.dbNames.some(name => name.toLowerCase().trim() === catNameLower)) {
+                matchesCategory = true;
+            }
+            
+            // 2.2. Fallback keyword match if DB category is general 'ropa y accesorios' or similar
+            if (!matchesCategory && (catNameLower.includes('ropa y accesorios') || catNameLower.includes('ropa') || catNameLower.includes('accesorios'))) {
+                if (activeCategory === 'ropa-interior') {
+                    matchesCategory = nameLower.includes('interior') || 
+                                   nameLower.includes('lence') || 
+                                   nameLower.includes('panty') || 
+                                   nameLower.includes('panties') || 
+                                   nameLower.includes('hilo') || 
+                                   nameLower.includes('tanga') || 
+                                   nameLower.includes('cachetero') || 
+                                   nameLower.includes('semicachetero') || 
+                                   nameLower.includes('sosten') || 
+                                   nameLower.includes('sostén') || 
+                                   nameLower.includes('brassier') || 
+                                   nameLower.includes('boxer') || 
+                                   nameLower.includes('bóxer') || 
+                                   nameLower.includes('copa pre') || 
+                                   nameLower.includes('frida') || 
+                                   nameLower.includes('ibiza') || 
+                                   nameLower.includes('liz') || 
+                                   nameLower.includes('seleni') || 
+                                   nameLower.includes('girasoli') || 
+                                   nameLower.includes('magi') || 
+                                   nameLower.includes('sari');
+                } else if (activeCategory === 'conjuntos') {
+                    matchesCategory = nameLower.includes('conjunto') || nameLower.includes('cojunto');
+                } else if (activeCategory === 'vestuario-premium') {
+                    matchesCategory = nameLower.includes('premium') || nameLower.includes('exclusivo') || nameLower.includes('lujo') || nameLower.includes('edición especial') || nameLower.includes('edicion especial');
+                } else if (activeCategory === 'vestidos-faldas') {
+                    matchesCategory = (nameLower.includes('vestido') || nameLower.includes('falda') || nameLower.includes('faldas') || nameLower.includes('vestidos')) && !nameLower.includes('baño');
+                } else if (activeCategory === 'vestidos-bano') {
+                    matchesCategory = nameLower.includes('baño') || nameLower.includes('bañador') || nameLower.includes('bikini') || nameLower.includes('asoleador');
+                } else if (activeCategory === 'camisas-damas') {
+                    const isShirt = nameLower.includes('camisa') || 
+                                    nameLower.includes('blusa') || 
+                                    nameLower.includes('bluson') || 
+                                    nameLower.includes('blusón') || 
+                                    nameLower.includes('camiseta') || 
+                                    nameLower.includes('top') || 
+                                    nameLower.includes('crop');
+                    const isHombre = nameLower.includes('hombre') || nameLower.includes('caballero');
+                    matchesCategory = isShirt && !isHombre;
+                } else if (activeCategory === 'camisas-hombre') {
+                    const isShirt = nameLower.includes('camisa') || nameLower.includes('camiseta');
+                    const isHombre = nameLower.includes('hombre') || nameLower.includes('caballero');
+                    matchesCategory = isShirt && isHombre;
+                }
+            }
         }
         
-        // 2. Fallback keyword match if DB category is general 'ropa y accesorios' or similar
-        if (catNameLower.includes('ropa y accesorios') || catNameLower.includes('ropa') || catNameLower.includes('accesorios')) {
-            if (activeCategory === 'ropa-interior') {
-                return nameLower.includes('interior') || 
-                       nameLower.includes('lence') || 
-                       nameLower.includes('panty') || 
-                       nameLower.includes('panties') || 
-                       nameLower.includes('hilo') || 
-                       nameLower.includes('sosten') || 
-                       nameLower.includes('sostén') || 
-                       nameLower.includes('brassier') || 
-                       nameLower.includes('boxer') || 
-                       nameLower.includes('bóxer') || 
-                       nameLower.includes('copa pre') || 
-                       nameLower.includes('frida') || 
-                       nameLower.includes('ibiza') || 
-                       nameLower.includes('liz') || 
-                       nameLower.includes('seleni') || 
-                       nameLower.includes('girasoli') || 
-                       nameLower.includes('magi') || 
-                       nameLower.includes('sari');
-            }
-            if (activeCategory === 'tangas') {
-                return nameLower.includes('tanga') || nameLower.includes('hilo dental');
-            }
-            if (activeCategory === 'cacheteros') {
-                return nameLower.includes('cachetero') || nameLower.includes('semicachetero');
-            }
-            if (activeCategory === 'vestidos-bano') {
-                return nameLower.includes('baño') || nameLower.includes('bañador') || nameLower.includes('bikini') || nameLower.includes('asoleador');
-            }
-            if (activeCategory === 'camisas-damas') {
-                const isShirt = nameLower.includes('camisa') || 
-                                nameLower.includes('blusa') || 
-                                nameLower.includes('bluson') || 
-                                nameLower.includes('blusón') || 
-                                nameLower.includes('camiseta') || 
-                                nameLower.includes('top') || 
-                                nameLower.includes('crop');
-                const isHombre = nameLower.includes('hombre') || nameLower.includes('caballero');
-                return isShirt && !isHombre;
-            }
-            if (activeCategory === 'camisas-hombre') {
-                const isShirt = nameLower.includes('camisa') || nameLower.includes('camiseta');
-                const isHombre = nameLower.includes('hombre') || nameLower.includes('caballero');
-                return isShirt && isHombre;
+        if (!matchesCategory) return false;
+
+        // 3. Subcategory Filter (If active category has subcategories configured)
+        if (activeCategory !== 'all' && activeSubcategory !== 'all-sub' && SUBCATEGORIES[activeCategory]) {
+            const subConfig = SUBCATEGORIES[activeCategory].find(s => s.id === activeSubcategory);
+            if (subConfig && subConfig.keywords) {
+                const nameLower = (product.name || '').toLowerCase();
+                const matchesSub = subConfig.keywords.some(kw => nameLower.includes(kw));
+                if (!matchesSub) return false;
             }
         }
-        
-        return false;
+
+        return true;
     });
 
     return (
@@ -387,7 +453,7 @@ const StoreView = () => {
                 <h2 className="text-xl font-extrabold text-blue-900 mb-4 flex items-center gap-2">
                     🛍️ Navegar por Categorías
                 </h2>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3 w-full">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-8 gap-3 w-full">
                     {CATEGORIES.map(cat => (
                         <motion.div
                             key={cat.id}
@@ -424,6 +490,53 @@ const StoreView = () => {
                     ))}
                 </div>
             </div>
+
+            {/* ─── Search Bar and Subcategory Tags ─── */}
+            <div className="mb-8 bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-4">
+                {/* Search Input */}
+                <div className="relative flex items-center">
+                    <span className="absolute left-4 text-gray-400 text-lg">🔍</span>
+                    <input
+                        type="text"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        placeholder="Buscar prendas por nombre, color, talla, referencia o palabras clave..."
+                        className="w-full pl-11 pr-10 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm text-gray-800 placeholder-gray-400 transition-all shadow-inner"
+                    />
+                    {searchTerm && (
+                        <button
+                            onClick={() => setSearchTerm('')}
+                            className="absolute right-4 text-gray-400 hover:text-gray-600 font-bold text-sm transition-colors"
+                        >
+                            ✕
+                        </button>
+                    )}
+                </div>
+
+                {/* Subcategory Tags - Show only if active category has subcategories */}
+                {activeCategory !== 'all' && SUBCATEGORIES[activeCategory] && (
+                    <div className="flex flex-col gap-2">
+                        <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Subcategorías:</span>
+                        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-gray-200">
+                            {SUBCATEGORIES[activeCategory].map((sub) => (
+                                <button
+                                    key={sub.id}
+                                    onClick={() => setActiveSubcategory(sub.id)}
+                                    className={`px-4 py-2 rounded-xl text-xs font-black transition-all whitespace-nowrap select-none
+                                        ${activeSubcategory === sub.id 
+                                            ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md' 
+                                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                        }
+                                    `}
+                                >
+                                    {sub.name}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+            </div>
+
 
             {/* Regular Products Section */}
             <div>
