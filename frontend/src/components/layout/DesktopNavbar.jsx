@@ -14,7 +14,8 @@ const DesktopNavbar = ({
         { to: '/dashboard/store?cat=vestidos-faldas', icon: '💃', label: 'Vestidos y Faldas' },
         { to: '/dashboard/store?cat=vestidos-bano', icon: '🩱', label: 'Vestidos de Baño' },
         { to: '/dashboard/store?cat=camisas-damas', icon: '👚', label: 'Camisas y Blusas' },
-        { to: '/dashboard/store?cat=camisas-hombre', icon: '👕', label: 'Camisas Hombre' }
+        { to: '/dashboard/store?cat=camisas-hombre', icon: '👕', label: 'Camisas Hombre' },
+        { to: '/dashboard/store?cat=calzado', icon: '👟', label: 'Calzado' }
     ];
 
     // Dropdown States
