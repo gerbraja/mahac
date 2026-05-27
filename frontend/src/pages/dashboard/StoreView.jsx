@@ -8,7 +8,7 @@ const CATEGORIES = [
     {
         id: 'all',
         name: 'Todos',
-        image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=500&auto=format&fit=crop&q=60',
+        image: 'https://storage.googleapis.com/tuempresainternacional-assets/images/banner_todos_productos.png',
         dbNames: []
     },
     {
@@ -20,7 +20,7 @@ const CATEGORIES = [
     {
         id: 'conjuntos',
         name: 'Conjuntos',
-        image: 'https://images.unsplash.com/photo-1608231387042-66d1773070a5?w=500&auto=format&fit=crop&q=60',
+        image: 'https://storage.googleapis.com/tuempresainternacional-assets/images/banner_conjuntos.png',
         dbNames: ['Conjuntos', 'Conjunto', 'conjuntos', 'conjunto']
     },
     {
@@ -44,7 +44,7 @@ const CATEGORIES = [
     {
         id: 'camisas-damas',
         name: 'Camisas y Blusas',
-        image: 'https://images.unsplash.com/photo-1548624149-f9b1859aa7d0?w=500&auto=format&fit=crop&q=60',
+        image: 'https://storage.googleapis.com/tuempresainternacional-assets/images/banner_blusas_camisas.png',
         dbNames: ['Camisas y Blusas (Dama)', 'Camisas y Blusas', 'Blusas', 'Blusa', 'Camisas Dama', 'Camisetas Dama']
     },
     {
@@ -52,6 +52,12 @@ const CATEGORIES = [
         name: 'Camisas Hombre',
         image: 'https://images.unsplash.com/photo-1607345366928-199ea26cfe3e?w=500&auto=format&fit=crop&q=60',
         dbNames: ['Camisas Hombre', 'Camisas para Hombre', 'Camisas (Hombre)', 'Camisetas Hombre']
+    },
+    {
+        id: 'calzado',
+        name: 'Calzado',
+        image: 'https://storage.googleapis.com/tuempresainternacional-assets/images/banner_calzado.png',
+        dbNames: ['Calzado', 'Zapatos', 'Zapato', 'Tenis', 'Sandalias', 'Sandalia']
     }
 ];
 
@@ -268,6 +274,8 @@ const StoreView = () => {
                     const isShirt = nameLower.includes('camisa') || nameLower.includes('camiseta');
                     const isHombre = nameLower.includes('hombre') || nameLower.includes('caballero');
                     matchesCategory = isShirt && isHombre;
+                } else if (activeCategory === 'calzado') {
+                    matchesCategory = nameLower.includes('zapato') || nameLower.includes('tenis') || nameLower.includes('sandalia') || nameLower.includes('calzado') || nameLower.includes('tacon') || nameLower.includes('tacón') || nameLower.includes('plataforma') || nameLower.includes('baleta') || nameLower.includes('baletas');
                 }
             }
         }
@@ -453,7 +461,7 @@ const StoreView = () => {
                 <h2 className="text-xl font-extrabold text-blue-900 mb-4 flex items-center gap-2">
                     🛍️ Navegar por Categorías
                 </h2>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-8 gap-3 w-full">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-9 gap-3 w-full">
                     {CATEGORIES.map(cat => (
                         <motion.div
                             key={cat.id}
