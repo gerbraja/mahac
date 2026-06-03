@@ -9,7 +9,12 @@ from ..database.models.product import Product as ProductModel
 from ..database.models.supplier import Supplier
 from ..schemas.product import Product as ProductSchema, ProductCreate, ProductBase, ProductUpdate
 from ..routers.auth import get_current_user_object
+from ..utils.auth import get_current_user_optional
 from ..database.models.user import User
+from ..database.models.product_review import ProductReview
+from ..database.models.order import Order
+from ..database.models.order_item import OrderItem
+from ..schemas.product_review import ProductReviewCreate, ProductReviewOut
 
 router = APIRouter(prefix="/products", tags=["Products"])
 
@@ -73,6 +78,7 @@ def create_product(
             weight_grams=prod.weight_grams,
             image_url=prod.image_url,
             is_activation=prod.is_activation,
+            is_upgrade=getattr(prod, 'is_upgrade', False),
             # New Fields
             cost_price=prod.cost_price,
             tei_pv=prod.tei_pv,
@@ -80,6 +86,14 @@ def create_product(
             public_price=prod.public_price,
             sku=prod.sku,
             supplier_id=prod.supplier_id,
+            package_level=prod.package_level,
+            dian_code=prod.dian_code,
+            tax_type=prod.tax_type,
+            options=prod.options,
+            variant_stock=prod.variant_stock,
+            shipping_class=prod.shipping_class,
+            available_countries=prod.available_countries,
+            active=prod.active if prod.active is not None else True,
         )
         db.add(new_product)
         db.commit()
@@ -97,17 +111,34 @@ def create_product(
 def list_products(
     supplier_id: int = None,
     include_inactive: bool = False,
-    db: Session = Depends(get_db)
+    country: str = None,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user_optional)
 ):
     query = db.query(ProductModel)
     
+    if country and country != 'Todos':
+        query = query.filter(ProductModel.available_countries.ilike(f'%"{country}"%'))
+    
     # Cuando se filtra por proveedor, mostramos todos los estados (activo+suspendido)
-    # para que el admin pueda gestionarlos. En el catálogo público solo activos.
     if supplier_id is not None:
         query = query.filter(ProductModel.supplier_id == supplier_id)
     elif not include_inactive:
         query = query.filter(ProductModel.active == True)
         
+    # Lógica de Visibilidad Dinámica para Tienda (Solo si NO filtramos por proveedor)
+    # Bypass visibility rules for admin users so they can see all products in the Admin Panel
+    if supplier_id is None and not (current_user and current_user.is_admin):
+        if not current_user or current_user.status != 'active' or (current_user.package_level or 0) == 0:
+            # Usuario inactivo / Visitante / Emprendedor Inicial (Nivel 0): Ve productos normales + Paquetes Iniciales (Oculta Upgrades)
+            query = query.filter(ProductModel.is_upgrade == False)
+        elif current_user.package_level == 1:
+            # Usuario Activo Nivel 1: Ve productos normales + Upgrades (Oculta Paquetes Iniciales)
+            query = query.filter(ProductModel.is_activation == False)
+        else:
+            # Usuario Activo Nivel 2 o 3: Ve solo productos normales (Oculta Iniciales y Upgrades)
+            query = query.filter(ProductModel.is_activation == False, ProductModel.is_upgrade == False)
+            
     products = query.order_by(ProductModel.created_at.desc()).all()
     return products
 
@@ -198,3 +229,63 @@ def delete_product(
 
 
 
+
+@router.post("/{product_id}/reviews", response_model=ProductReviewOut)
+def create_product_review(
+    product_id: int,
+    review_data: ProductReviewCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_object)
+):
+    product = db.query(ProductModel).filter(ProductModel.id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    order_item = db.query(OrderItem).join(Order).filter(
+        OrderItem.id == review_data.order_item_id,
+        OrderItem.product_id == product_id,
+        Order.user_id == current_user.id
+    ).first()
+    
+    if not order_item:
+        raise HTTPException(status_code=403, detail="Solo puedes calificar productos que hayas comprado y recibido.")
+
+    valid_statuses = ["completado", "entregado", "efectivo"]
+    if order_item.order.status.lower() not in valid_statuses:
+        raise HTTPException(status_code=403, detail=f"El pedido debe estar completado para calificar. Estado actual: {order_item.order.status}")
+
+    existing_review = db.query(ProductReview).filter(
+        ProductReview.user_id == current_user.id,
+        ProductReview.order_item_id == review_data.order_item_id
+    ).first()
+    
+    if existing_review:
+        raise HTTPException(status_code=400, detail="Ya has calificado este producto en esta compra.")
+
+    new_review = ProductReview(
+        product_id=product_id,
+        user_id=current_user.id,
+        order_item_id=review_data.order_item_id,
+        rating=review_data.rating,
+        comment=review_data.comment
+    )
+    db.add(new_review)
+    db.flush()
+    
+    all_reviews = db.query(ProductReview.rating).filter(ProductReview.product_id == product_id).all()
+    total_ratings = len(all_reviews)
+    if total_ratings > 0:
+        avg_rating = sum(r[0] for r in all_reviews) / total_ratings
+        product.average_rating = avg_rating
+        product.rating_count = total_ratings
+        
+    db.commit()
+    db.refresh(new_review)
+    return new_review
+
+@router.get("/{product_id}/reviews", response_model=List[ProductReviewOut])
+def get_product_reviews(product_id: int, db: Session = Depends(get_db)):
+    reviews = db.query(ProductReview).filter(
+        ProductReview.product_id == product_id
+    ).order_by(ProductReview.created_at.desc()).all()
+    return reviews
