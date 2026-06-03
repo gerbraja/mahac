@@ -1291,7 +1291,7 @@ def get_withholding_certificate(
         },
         "company": {
             "name": "TEI S.A.S. — Tu Empresa Internacional",
-            "nit": "En trámite",
+            "nit": "902045325-4",
             "address": "Colombia",
         },
         "summary": {
