@@ -234,7 +234,7 @@ const KYCValidation = () => {
                     {/* 1. Review Personal Info */}
                     <Section title="1. Información Básica">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg mb-6">
-                            <InfoField label="Nombre del Perfil" value={user.name || ''} />
+                            <InfoField label="Usuario" value={user.username || ''} />
                             <InfoField label="Email" value={user.email || ''} />
                             <InfoField label="Documento Registrado" value={user.document_id || 'Pendiente'} />
                             <InfoField label="País Seleccionado" value={country.name} />
