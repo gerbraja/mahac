@@ -20,8 +20,10 @@ def send_welcome_email(to_email: str, username: str, full_name: str, referral_li
         password = os.getenv("EMAIL_PASSWORD")
 
         if not sender_email or not password:
-            logger.warning("⚠️ Email credentials not found. Welcome email was not sent.")
+            logger.warning("Email credentials not found. Welcome email was not sent.")
             return
+            
+        clean_password = password.replace(" ", "")
 
         # Create message
         message = MIMEMultipart("alternative")
@@ -70,16 +72,19 @@ def send_welcome_email(to_email: str, username: str, full_name: str, referral_li
         part2 = MIMEText(html, "html")
         message.attach(part2)
 
-        # Connect to Gmail SMTP Server using context manager for safety
-        with smtplib.SMTP("smtp.gmail.com", 587) as server:
+        smtp_server = os.getenv("SMTP_SERVER", "smtp.gmail.com")
+        smtp_port = int(os.getenv("SMTP_PORT", "587"))
+
+        # Connect to SMTP Server using context manager for safety
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
             server.starttls()  # Upgrade connection to secure
-            server.login(sender_email, password)
+            server.login(sender_email, clean_password)
             server.sendmail(sender_email, to_email, message.as_string())
         
-        logger.info(f"✅ Welcome email sent successfully to {to_email}")
+        logger.info(f"Welcome email sent successfully to {to_email}")
 
     except Exception as e:
-        logger.error(f"❌ Failed to send welcome email to {to_email}: {str(e)}")
+        logger.error(f"Failed to send welcome email to {to_email}: {str(e)}")
 
 def send_order_invoice_email(order_data: dict, user_email: str):
     """
@@ -90,8 +95,10 @@ def send_order_invoice_email(order_data: dict, user_email: str):
         password = os.getenv("EMAIL_PASSWORD")
 
         if not sender_email or not password:
-            logger.warning("⚠️ Email credentials not found. Invoice email was not sent.")
+            logger.warning("Email credentials not found. Invoice email was not sent.")
             return
+
+        clean_password = password.replace(" ", "")
 
         message = MIMEMultipart("alternative")
         message["Subject"] = f"¡Tu pedido #{order_data['id']} ha sido enviado! 📦"
@@ -178,13 +185,13 @@ def send_order_invoice_email(order_data: dict, user_email: str):
 
         with smtplib.SMTP(smtp_server, smtp_port) as server:
             server.starttls()
-            server.login(sender_email, password)
+            server.login(sender_email, clean_password)
             server.sendmail(sender_email, user_email, message.as_string())
         
-        logger.info(f"✅ Invoice email sent successfully to {user_email}")
+        logger.info(f"Invoice email sent successfully to {user_email}")
 
     except Exception as e:
-        logger.error(f"❌ Failed to send invoice email to {user_email}: {str(e)}")
+        logger.error(f"Failed to send invoice email to {user_email}: {str(e)}")
 
 
 def send_password_reset_email(to_email: str, reset_link: str):
@@ -197,7 +204,7 @@ def send_password_reset_email(to_email: str, reset_link: str):
         password = os.getenv("EMAIL_PASSWORD")
 
         if not sender_email or not password:
-            logger.warning("⚠️ Email credentials not found. Password reset email was not sent.")
+            logger.warning("Email credentials not found. Password reset email was not sent.")
             return
 
         message = MIMEMultipart("alternative")
@@ -259,15 +266,64 @@ def send_password_reset_email(to_email: str, reset_link: str):
         smtp_port = int(os.getenv("SMTP_PORT", "587"))
 
         with smtplib.SMTP(smtp_server, smtp_port) as server:
-            server.set_debuglevel(1) # Added debug level to see SMTP conversation
             server.starttls()
             # Remove spaces from password if user copy-pasted with spaces
             clean_password = password.replace(" ", "")
             server.login(sender_email, clean_password)
             server.sendmail(sender_email, to_email, message.as_string())
 
-        print(f"✅ Password reset email sent successfully to {to_email}", flush=True)
+        logger.info(f"Password reset email sent successfully to {to_email}")
 
     except Exception as e:
-        print(f"❌ Failed to send password reset email to {to_email}: {str(e)}", flush=True)
+        logger.error(f"Failed to send password reset email to {to_email}: {str(e)}")
 
+
+
+def send_admin_alert_email(subject: str, alert_message: str):
+    """
+    Sends a system alert email to the admin.
+    """
+    try:
+        sender_email = os.getenv("EMAIL_SENDER")
+        password = os.getenv("EMAIL_PASSWORD")
+
+        if not sender_email or not password:
+            logger.warning("Email credentials not found. Alert email was not sent.")
+            return
+
+        clean_password = password.replace(" ", "")
+
+        message = MIMEMultipart("alternative")
+        message["Subject"] = subject
+        alias_email = "alertas@tuempresainternacional.com"
+        message["From"] = f"Alerta Sistema TEI <{alias_email}>"
+        message["To"] = sender_email
+
+        html = f"""
+        <html>
+          <body style="font-family: Arial, sans-serif; padding: 20px;">
+            <h2 style="color: #dc2626;">🚨 Alerta del Sistema TEI</h2>
+            <div style="background-color: #fee2e2; padding: 15px; border-radius: 5px; border: 1px solid #f87171;">
+                <p><strong>Detalle del reporte:</strong></p>
+                <p>{alert_message}</p>
+            </div>
+            <p style="font-size: 12px; color: #666; margin-top: 20px;">Este es un mensaje automático de monitoreo de Centro Comercial TEI.</p>
+          </body>
+        </html>
+        """
+
+        part = MIMEText(html, "html")
+        message.attach(part)
+
+        smtp_server = os.getenv("SMTP_SERVER", "smtp.gmail.com")
+        smtp_port = int(os.getenv("SMTP_PORT", "587"))
+
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
+            server.starttls()
+            server.login(sender_email, clean_password)
+            server.sendmail(sender_email, sender_email, message.as_string())
+
+        logger.info("Admin alert email sent successfully")
+
+    except Exception as e:
+        logger.error(f"Failed to send admin alert email: {str(e)}")

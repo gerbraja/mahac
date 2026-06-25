@@ -12,6 +12,7 @@ const DashboardLayout = () => {
 
   // State
   const [isAdmin, setIsAdmin] = useState(false);
+  const [impersonating, setImpersonating] = useState(false);
 
   // Desktop Nav State (moved to DesktopNavbar component internal state for dropdowns)
 
@@ -37,10 +38,16 @@ const DashboardLayout = () => {
       if (!token) return;
 
       try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const payload = JSON.parse(atob(base64));
         if (payload.is_admin) setIsAdmin(true);
       } catch (e) {
         console.error("Error checking admin status", e);
+      }
+
+      if (localStorage.getItem('admin_token')) {
+        setImpersonating(true);
       }
     };
     checkAdmin();
@@ -53,6 +60,16 @@ const DashboardLayout = () => {
 
   // Close Sheet helper
   const closeSheet = () => setActiveSheet(null);
+
+  const handleStopImpersonating = () => {
+    const adminToken = localStorage.getItem('admin_token');
+    if (adminToken) {
+      localStorage.setItem('access_token', adminToken);
+      localStorage.removeItem('admin_token');
+      localStorage.removeItem('userId'); // Remove impersonated userId if any
+      window.location.href = '/admin/users';
+    }
+  };
 
   // --- NAVIGATION CONFIGURATION ---
 
@@ -130,6 +147,38 @@ const DashboardLayout = () => {
         {/* 2. MAIN CONTENT AREA */}
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
           <main className="flex-1 overflow-auto p-4 md:p-6 main-content bg-gray-50 pb-24 md:pb-6">
+            {impersonating && (
+              <div style={{
+                background: '#ef4444',
+                color: 'white',
+                padding: '1rem',
+                borderRadius: '0.5rem',
+                marginBottom: '1rem',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                boxShadow: '0 4px 6px -1px rgba(239, 68, 68, 0.5)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 'bold' }}>
+                  <span>🕵️‍♂️</span>
+                  <span>Estás navegando en MODO IMPERSONACIÓN (como otro usuario)</span>
+                </div>
+                <button 
+                  onClick={handleStopImpersonating}
+                  style={{
+                    background: 'white',
+                    color: '#ef4444',
+                    border: 'none',
+                    padding: '0.5rem 1rem',
+                    borderRadius: '0.25rem',
+                    fontWeight: 'bold',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Volver a Administrador
+                </button>
+              </div>
+            )}
             <Outlet />
           </main>
         </div>

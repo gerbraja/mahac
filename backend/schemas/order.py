@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Any
 from datetime import datetime
 
 
@@ -32,10 +32,14 @@ class UserSummary(BaseModel):
 
 class OrderCreate(BaseModel):
     items: List[OrderItemCreate]
-    shipping_address: Optional[str]
-    shipping_address: Optional[str]
+    shipping_address: Optional[str] = None
     guest_info: Optional[GuestInfo] = None
+    shipping_type: Optional[str] = "delivery" # delivery, pickup, activation
     payment_method: Optional[str] = None
+    # New fields for detailed shipping
+    shipping_cost_base: Optional[float] = 0.0
+    shipping_tax_amount: Optional[float] = 0.0
+    pickup_point_id: Optional[int] = None
 
 
 class OrderItemOut(BaseModel):
@@ -56,14 +60,16 @@ class OrderOut(BaseModel):
     id: int
     user_id: Optional[int]
     user: Optional[UserSummary] = None
-    guest_info: Optional[str] # Or parse as dict if using Pydantic JSON logic, but str for simplicity with Text column
+    guest_info: Optional[Any] = None  # Can be str (JSON) or dict depending on DB driver
     total_usd: float
     total_cop: float
     total_pv: float
     shipping_address: Optional[str]
     status: str
-    payment_method: Optional[str]
+    shipping_type: str
     tracking_number: Optional[str]
+    siigo_invoice_pdf_url: Optional[str]
+    shipping_label_pdf_url: Optional[str]
     created_at: datetime
     payment_confirmed_at: Optional[datetime]
     shipped_at: Optional[datetime]

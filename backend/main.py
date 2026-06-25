@@ -781,6 +781,71 @@ def run_dian_inventory_migration(key: str, db: Session = Depends(get_db)):
         db.rollback()
         return {"status": "error", "error": str(e)}
 
+@app.get("/run-available-countries-migration")
+def run_available_countries_migration(key: str, db: Session = Depends(get_db)):
+    """Adds available_countries column to products table in Postgres."""
+    if key != "secure_setup_key_2025":
+        raise HTTPException(status_code=403, detail="Forbidden")
+    results = []
+    try:
+        res = db.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name = 'products' AND column_name = 'available_countries'"))
+        if not res.fetchone():
+            # Add column with default value '["Colombia"]'
+            db.execute(text("ALTER TABLE products ADD COLUMN available_countries VARCHAR DEFAULT '[\"Colombia\"]'"))
+            # Make sure existing records have the default
+            db.execute(text("UPDATE products SET available_countries = '[\"Colombia\"]' WHERE available_countries IS NULL"))
+            results.append("✅ Added available_countries to products")
+        else:
+            results.append("ℹ️ available_countries already in products")
+            
+        db.commit()
+        return {"status": "ok", "results": results}
+    except Exception as e:
+        db.rollback()
+        return {"status": "error", "error": str(e)}
+
+
+@app.get("/update-honor-ranks")
+def update_honor_ranks(key: str, db: Session = Depends(get_db)):
+    """Updates or seeds honor rank commission thresholds."""
+    if key != "secure_setup_key_2025":
+        raise HTTPException(status_code=403, detail="Forbidden")
+    
+    from backend.database.models.honor_rank import HonorRank
+    
+    RANKS_DATA = [
+        {"name": "Silver",               "commission_required": 1000,     "reward_description": "Reward $97 worth of products",                     "reward_value_usd": 97},
+        {"name": "Gold",                 "commission_required": 4700,     "reward_description": "Reward $277 worth of products",                    "reward_value_usd": 277},
+        {"name": "Platinum",             "commission_required": 8700,     "reward_description": "Gift for $1000 USD",                               "reward_value_usd": 1000},
+        {"name": "Rubí",                 "commission_required": 19700,    "reward_description": "Domestic Trip x3",                                 "reward_value_usd": None},
+        {"name": "Esmeralda",            "commission_required": 39700,    "reward_description": "Cruise x4",                                        "reward_value_usd": None},
+        {"name": "Diamond",              "commission_required": 77700,    "reward_description": "International Cruise x5 + Pool 7%",                "reward_value_usd": None},
+        {"name": "Blue Diamond",         "commission_required": 127700,   "reward_description": "Luxury trip x5 + Pool 7%",                         "reward_value_usd": None},
+        {"name": "Diamante Rojo",        "commission_required": 277700,   "reward_description": "Una Propiedad $400.000 USD + Pool 7%",             "reward_value_usd": None},
+        {"name": "Diamante Negro",       "commission_required": 477700,   "reward_description": "Una Propiedad $1.700.000 USD + Pool 7%",           "reward_value_usd": None},
+        {"name": "Diamante Corona",      "commission_required": 777700,   "reward_description": "Una Propiedad $3.000.000 USD + Pool 7%",           "reward_value_usd": None},
+        {"name": "Diamante Corona Azul", "commission_required": 1777700,  "reward_description": "Una Propiedad $7.000.000 USD + Pool 7%",           "reward_value_usd": None},
+        {"name": "Diamante Corona Rojo", "commission_required": 7777700,  "reward_description": "Una Propiedad $10.000.000 USD + Pool 7%",          "reward_value_usd": None},
+        {"name": "Diamante Corona Negro","commission_required": 37777700, "reward_description": "Una Propiedad $27.000.000 USD + Pool 7%",          "reward_value_usd": None},
+    ]
+    
+    results = []
+    for rd in RANKS_DATA:
+        existing = db.query(HonorRank).filter(HonorRank.name == rd["name"]).first()
+        if existing:
+            old = existing.commission_required
+            existing.commission_required = rd["commission_required"]
+            existing.reward_description = rd["reward_description"]
+            existing.reward_value_usd = rd["reward_value_usd"]
+            results.append({"action": "updated", "name": rd["name"], "old": old, "new": rd["commission_required"]})
+        else:
+            new_rank = HonorRank(**rd)
+            db.add(new_rank)
+            results.append({"action": "inserted", "name": rd["name"], "commission": rd["commission_required"]})
+    
+    db.commit()
+    return {"status": "ok", "results": results}
+
 
 @app.get("/fix-limpiap")
 def fix_limpiap(key: str, mode: str = "inspect", db: Session = Depends(get_db)):

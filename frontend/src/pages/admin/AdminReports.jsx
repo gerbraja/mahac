@@ -4,29 +4,38 @@ import {
     LineChart, Line, PieChart, Pie, Cell
 } from 'recharts';
 import { api } from '../../api/api';
+import { useAdmin } from '../../context/AdminContext';
 
 export default function AdminReports() {
+    const { globalCountry } = useAdmin();
     const [loading, setLoading] = useState(true);
     const [reportData, setReportData] = useState(null);
     const [networkGrowth, setNetworkGrowth] = useState([]);
+    const [period, setPeriod] = useState('30d');
 
     // Colores para gráficos de pastel
     const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
     useEffect(() => {
         const fetchReports = async () => {
+            setLoading(true);
             try {
+                const params = { period };
+                if (globalCountry && globalCountry !== 'Todos') {
+                    params.country = globalCountry;
+                }
+                
                 // Fetch all data in parallel
                 const [networkRes, statsRes, incomeRes, pkgsRes, topRes] = await Promise.all([
-                    api.get('/admin/reports/network-growth').catch(() => ({ data: { networkGrowth: [] } })),
-                    api.get('/admin/reports/dashboard-stats').catch(() => ({ data: {} })),
-                    api.get('/admin/reports/income-vs-commissions').catch(() => ({ data: [] })),
-                    api.get('/admin/reports/active-packages').catch(() => ({ data: [] })),
-                    api.get('/admin/reports/top-products').catch(() => ({ data: [] }))
+                    api.get('/api/admin/reports/network-growth', { params }).catch(() => ({ data: { networkGrowth: [] } })),
+                    api.get('/api/admin/reports/dashboard-stats', { params }).catch(() => ({ data: {} })),
+                    api.get('/api/admin/reports/income-vs-commissions', { params }).catch(() => ({ data: [] })),
+                    api.get('/api/admin/reports/active-packages', { params }).catch(() => ({ data: [] })),
+                    api.get('/api/admin/reports/top-products', { params }).catch(() => ({ data: [] }))
                 ]);
 
                 if (networkRes.data && networkRes.data.networkGrowth) {
-                    setNetworkGrowth(networkRes.data.networkGrowth.reverse());
+                    setNetworkGrowth(networkRes.data.networkGrowth);
                 }
 
                 const s = statsRes.data || {};
@@ -54,7 +63,7 @@ export default function AdminReports() {
         };
 
         fetchReports();
-    }, []);
+    }, [period, globalCountry]);
 
     if (loading || !reportData) {
         return (
@@ -75,22 +84,34 @@ export default function AdminReports() {
         }).format(value);
     };
 
+    const periodLabels = {
+        '30d': 'Últimos 30 días',
+        'this_month': 'Este Mes',
+        'last_month': 'Mes Anterior',
+        'this_year': 'Este Año'
+    };
+
     return (
         <div className="max-w-7xl mx-auto space-y-6">
             <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold text-gray-800">📊 Reportes y Analíticas (Fase 1)</h1>
+                <h1 className="text-2xl font-bold text-gray-800">📊 Reportes y Analíticas</h1>
                 <div className="flex space-x-2">
-                    <select className="bg-white border border-gray-300 text-gray-700 py-2 px-4 rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <option>Últimos 30 días</option>
-                        <option>Este Mes</option>
-                        <option>Mes Anterior</option>
-                        <option>Este Año</option>
+                    <select
+                        value={period}
+                        onChange={(e) => setPeriod(e.target.value)}
+                        className="bg-white border border-gray-300 text-gray-700 py-2 px-4 rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                        <option value="30d">Últimos 30 días</option>
+                        <option value="this_month">Este Mes</option>
+                        <option value="last_month">Mes Anterior</option>
+                        <option value="this_year">Este Año</option>
                     </select>
                     <button className="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700 transition">
                         Descargar Excel
                     </button>
                 </div>
             </div>
+
 
             {/* Tarjetas de Métricas Principales */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -193,7 +214,7 @@ export default function AdminReports() {
                 <div className="bg-white p-6 rounded-lg shadow border border-gray-100 lg:col-span-1">
                     <h2 className="text-lg font-bold text-gray-700 mb-4">Top Productos Vendidos</h2>
                     <div className="space-y-4">
-                        {topProducts.map((prod, idx) => (
+                        {topProducts.length > 0 ? topProducts.map((prod, idx) => (
                             <div key={idx} className="flex justify-between items-center">
                                 <div className="flex items-center space-x-3">
                                     <span className="text-xl font-bold text-gray-400">#{idx + 1}</span>
@@ -201,7 +222,13 @@ export default function AdminReports() {
                                 </div>
                                 <span className="font-bold text-blue-600">{prod.ventas} ud.</span>
                             </div>
-                        ))}
+                        )) : (
+                            <div className="flex flex-col items-center justify-center h-40 text-center">
+                                <span className="text-4xl mb-3">🛒</span>
+                                <p className="text-gray-500 font-medium">Aún no hay ventas registradas</p>
+                                <p className="text-gray-400 text-sm mt-1">El ranking se actualizará automáticamente con la primera compra real.</p>
+                            </div>
+                        )}
                     </div>
                 </div>
 

@@ -55,11 +55,30 @@ const SimpleAdmin = () => {
         dian_code: '',
         tax_type: 'IVA',
         options_list: [],
-        shipping_class: 'normal'
+        shipping_class: 'normal',
+        available_countries: ['Colombia']
     });
     const [suppliers, setSuppliers] = useState([]);
     const [editingId, setEditingId] = useState(null);
     const [message, setMessage] = useState('');
+
+    const COUNTRIES = [
+        'Colombia', 'Panamá', 'República Dominicana', 'Costa Rica', 
+        'Paraguay', 'Uruguay', 'Argentina', 'Brasil', 'Ecuador', 
+        'Perú', 'Bolivia', 'Chile', 'Venezuela', 'Guatemala',
+        'El Salvador', 'Honduras', 'Nicaragua', 'Belice'
+    ];
+
+    const handleCountryToggle = (country) => {
+        setFormData(prev => {
+            const current = prev.available_countries || [];
+            if (current.includes(country)) {
+                return { ...prev, available_countries: current.filter(c => c !== country) };
+            } else {
+                return { ...prev, available_countries: [...current, country] };
+            }
+        });
+    };
 
     useEffect(() => {
         fetchProducts();
@@ -164,7 +183,8 @@ const SimpleAdmin = () => {
                         return Object.keys(obj).length > 0 ? JSON.stringify(obj) : null;
                     })()
                     : null,
-                shipping_class: formData.shipping_class || 'normal'
+                shipping_class: formData.shipping_class || 'normal',
+                available_countries: JSON.stringify(formData.available_countries || ['Colombia'])
             };
 
             if (editingId) {
@@ -175,7 +195,8 @@ const SimpleAdmin = () => {
                 setMessage('Producto creado exitosamente');
             }
             setFormData({
-                cost_price: 0, tei_pv: 0, tax_rate: 0, public_price: 0, sku: '', supplier_id: '', package_level: 0, dian_code: '', tax_type: 'IVA', options_list: [], shipping_class: 'normal'
+                name: '', description: '', category: '', price_usd: 0, price_local: 0, pv: 0, stock: 0, weight_grams: 500, image_url: '', is_activation: false, is_upgrade: false, direct_bonus_pv: 0,
+                cost_price: 0, tei_pv: 0, tax_rate: 0, public_price: 0, sku: '', supplier_id: '', package_level: 0, dian_code: '', tax_type: 'IVA', options_list: [], shipping_class: 'normal', available_countries: ['Colombia']
             });
             setEditingId(null);
             fetchProducts();
@@ -202,9 +223,17 @@ const SimpleAdmin = () => {
             }
         }
     
+        let countriesList = ['Colombia'];
+        if (product.available_countries) {
+            try {
+                countriesList = JSON.parse(product.available_countries);
+            } catch (e) {}
+        }
+    
         setFormData({
             ...product,
-            options_list: optionsList
+            options_list: optionsList,
+            available_countries: countriesList
         });
         setEditingId(product.id);
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -599,6 +628,27 @@ const SimpleAdmin = () => {
                     </p>
                 </div>
 
+                {/* Países Disponibles */}
+                <div style={{ gridColumn: 'span 2', padding: '1rem', background: '#fef3c7', borderRadius: '0.5rem', border: '1px solid #fde68a' }}>
+                    <strong style={{ display: 'block', marginBottom: '0.5rem', color: '#92400e' }}>🌎 Países Disponibles</strong>
+                    <p style={{ margin: '0 0 1rem', fontSize: '0.85rem', color: '#b45309' }}>
+                        Selecciona en qué países se mostrará este producto en la tienda.
+                    </p>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '0.5rem' }}>
+                        {COUNTRIES.map(country => (
+                            <label key={country} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.9rem', color: '#78350f' }}>
+                                <input
+                                    type="checkbox"
+                                    checked={(formData.available_countries || []).includes(country)}
+                                    onChange={() => handleCountryToggle(country)}
+                                    style={{ width: '16px', height: '16px', accentColor: '#d97706' }}
+                                />
+                                {country}
+                            </label>
+                        ))}
+                    </div>
+                </div>
+
                 <button
                     type="submit"
                     style={{
@@ -621,7 +671,7 @@ const SimpleAdmin = () => {
                             setEditingId(null);
                             setFormData({
                                 name: '', description: '', category: '', price_usd: 0, price_local: 0, pv: 0, direct_bonus_pv: 0, stock: 0, weight_grams: 500, image_url: '', is_activation: false, is_upgrade: false,
-                                cost_price: 0, tei_pv: 0, tax_rate: 0, public_price: 0, sku: '', supplier_id: '', package_level: 0, dian_code: '', tax_type: 'IVA', options_list: []
+                                cost_price: 0, tei_pv: 0, tax_rate: 0, public_price: 0, sku: '', supplier_id: '', package_level: 0, dian_code: '', tax_type: 'IVA', options_list: [], available_countries: ['Colombia']
                             });
                         }}
                         style={{
@@ -648,6 +698,7 @@ const SimpleAdmin = () => {
                             <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Variantes</th>
                             <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Precio USD</th>
                             <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>IVA</th>
+                            <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Stock</th>
                             <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>PV</th>
                             <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Acciones</th>
                         </tr>
@@ -685,6 +736,19 @@ const SimpleAdmin = () => {
                                 <td style={{ padding: '0.75rem' }}>${p.price_usd}</td>
                                 <td style={{ padding: '0.75rem', fontSize: '0.85rem', color: p.tax_rate > 0 ? '#ef4444' : '#10b981', fontWeight: 'bold' }}>
                                     {p.tax_rate ? `${(p.tax_rate * 100).toFixed(0)}%` : '0%'}
+                                </td>
+                                <td style={{ padding: '0.75rem' }}>
+                                    <span style={{
+                                        padding: '0.25rem 0.5rem',
+                                        borderRadius: '0.25rem',
+                                        fontSize: '0.8rem',
+                                        fontWeight: 'bold',
+                                        background: p.stock === 0 ? '#fee2e2' : p.stock <= 5 ? '#fef3c7' : '#d1fae5',
+                                        color: p.stock === 0 ? '#dc2626' : p.stock <= 5 ? '#d97706' : '#065f46',
+                                        border: `1px solid ${p.stock === 0 ? '#fca5a5' : p.stock <= 5 ? '#fde68a' : '#6ee7b7'}`
+                                    }}>
+                                        {p.stock} {p.stock === 0 ? '(Agotado)' : p.stock <= 5 ? '(Bajo)' : ''}
+                                    </span>
                                 </td>
                                 <td style={{ padding: '0.75rem' }}>{p.pv}</td>
                                 <td style={{ padding: '0.75rem', display: 'flex', gap: '0.5rem' }}>

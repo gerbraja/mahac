@@ -344,15 +344,6 @@ const Opportunity = () => {
           <h2 className="text-4xl md:text-6xl font-bold mb-8 text-white">¿Estás listo para tu nueva vida?</h2>
           <div className="max-w-2xl mx-auto bg-white p-8 rounded-3xl shadow-2xl text-slate-900 border border-white/20 backdrop-blur-sm">
             <RegisterForm referralCode={refCode} />
-            <p className="mt-6 text-gray-500 text-sm italic">
-              He leído y acepto los Términos y Condiciones, incluyendo las políticas de privacidad, tratamiento de datos y la Tasa Cambiaria Fija de $4.500 COP/USD.
-            </p>
-            <button 
-              onClick={() => document.querySelector('form')?.requestSubmit()}
-              className="mt-8 bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-12 rounded-full text-xl shadow-xl transition-all w-full"
-            >
-              ✅ Crear Cuenta Completar →
-            </button>
           </div>
         </div>
       </section>

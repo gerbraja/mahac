@@ -102,14 +102,23 @@ def create_order(db: Session, payload: OrderCreate, current_user):
     if not shipping_addr and current_user:
          shipping_addr = f"{current_user.address}, {current_user.city}, {current_user.province}"
     
+    # Auto-detect shipping_type if not provided
+    s_type = getattr(payload, "shipping_type", "delivery")
+    if any(it["product"].is_activation for it in order_items):
+        s_type = "activation"
+
     order = Order(
         user_id=user_id,
         guest_info=guest_info_json,
         total_usd=round(total_usd,2),
-        total_cop=round(total_cop,2),
+        total_cop=round(total_cop + (payload.shipping_cost_base or 0.0) + (payload.shipping_tax_amount or 0.0), 2),
         total_pv=round(total_pv,2),
         shipping_address=shipping_addr,
+        shipping_type=s_type,
         payment_method=payload.payment_method,
+        shipping_cost_base=payload.shipping_cost_base or 0.0,
+        shipping_tax_amount=payload.shipping_tax_amount or 0.0,
+        pickup_point_id=payload.pickup_point_id,
         status="reservado"
     )
     db.add(order)

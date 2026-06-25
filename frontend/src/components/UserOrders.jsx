@@ -1,28 +1,36 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../api/api';
+import ProductReviewModal from './ProductReviewModal';
 
 const UserOrders = () => {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filterStatus, setFilterStatus] = useState('all');
+    const [reviewModalData, setReviewModalData] = useState(null);
 
     const statusLabels = {
         reservado: 'Reservado',
-        pendiente_envio: 'Pendiente de Envío',
+        en_preparacion: 'En Preparación',
+        en_transito_a_punto: 'En Tránsito al Punto',
+        listo_para_entrega: 'Listo para Entrega',
         enviado: 'Enviado',
         completado: 'Completado'
     };
 
     const statusColors = {
         reservado: 'bg-yellow-100 text-yellow-800 border-yellow-300',
-        pendiente_envio: 'bg-blue-100 text-blue-800 border-blue-300',
+        en_preparacion: 'bg-blue-100 text-blue-800 border-blue-300',
+        en_transito_a_punto: 'bg-indigo-100 text-indigo-800 border-indigo-300',
+        listo_para_entrega: 'bg-orange-100 text-orange-800 border-orange-300',
         enviado: 'bg-purple-100 text-purple-800 border-purple-300',
         completado: 'bg-green-100 text-green-800 border-green-300'
     };
 
     const statusDescriptions = {
         reservado: 'Tu pedido está reservado. Completa el pago para continuar.',
-        pendiente_envio: 'Pago confirmado. Tu pedido está siendo preparado para envío.',
+        en_preparacion: 'Pago confirmado. Tu pedido está en alistamiento.',
+        en_transito_a_punto: 'Tu pedido viaja en un envío consolidado hacia tu ciudad.',
+        listo_para_entrega: '📍 Por favor, pasar por su pedido al lugar de entrega por favor.',
         enviado: 'Tu pedido ha sido enviado y está en camino.',
         completado: 'Tu pedido ha sido entregado exitosamente.'
     };
@@ -75,8 +83,9 @@ const UserOrders = () => {
     };
 
     const getStatusProgress = (status) => {
-        const statuses = ['reservado', 'pendiente_envio', 'enviado', 'completado'];
+        const statuses = ['reservado', 'en_preparacion', 'en_transito_a_punto', 'listo_para_entrega', 'enviado', 'completado'];
         const currentIndex = statuses.indexOf(status);
+        if (currentIndex === -1) return 20; // Default for unknown
         return ((currentIndex + 1) / statuses.length) * 100;
     };
 
@@ -268,9 +277,19 @@ const UserOrders = () => {
                                         )}
                                         <p className="text-sm text-gray-600">Cantidad: {item.quantity}</p>
                                     </div>
-                                    <div className="text-right">
-                                        <p className="font-medium">{formatCurrency(item.subtotal_cop)}</p>
-                                        <p className="text-sm text-gray-600">{item.subtotal_pv} PV</p>
+                                    <div className="text-right flex flex-col items-end gap-2">
+                                        <div>
+                                            <p className="font-medium">{formatCurrency(item.subtotal_cop)}</p>
+                                            <p className="text-sm text-gray-600">{item.subtotal_pv} PV</p>
+                                        </div>
+                                        {order.status === 'completado' && (
+                                            <button
+                                                onClick={() => setReviewModalData(item)}
+                                                className="text-xs bg-yellow-100 text-yellow-800 hover:bg-yellow-200 px-3 py-1.5 rounded-full font-bold shadow-sm transition flex items-center gap-1"
+                                            >
+                                                <span>⭐</span> Calificar
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                             ))}
@@ -296,10 +315,16 @@ const UserOrders = () => {
                             </button>
                         )}
 
-                        {order.status === 'pendiente_envio' && (
+                        {order.status === 'en_preparacion' && (
                             <div className="flex-1 bg-blue-50 text-blue-700 px-4 py-2 rounded-lg text-center font-medium">
                                 ⏳ En preparación para envío
                             </div>
+                        )}
+
+                        {order.status === 'listo_para_entrega' && (
+                             <div className="flex-1 bg-orange-100 text-orange-800 px-4 py-2 rounded-lg text-center font-bold animate-pulse">
+                                📍 ¡LISTO PARA ENTREGA! FAVOR PASAR POR ÉL
+                             </div>
                         )}
 
                         {order.status === 'enviado' && order.tracking_number && (
@@ -333,6 +358,13 @@ const UserOrders = () => {
                 </div>
             ))
             }
+            
+            <ProductReviewModal
+                isOpen={!!reviewModalData}
+                onClose={() => setReviewModalData(null)}
+                orderItem={reviewModalData}
+                onReviewSubmitted={fetchOrders}
+            />
         </div >
     );
 };

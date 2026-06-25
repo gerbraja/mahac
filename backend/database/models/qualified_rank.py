@@ -11,6 +11,7 @@ class QualifiedRank(Base):
     matrix_id_required = Column(Integer, nullable=False) # Which matrix completes this rank?
     reward_amount = Column(Float, nullable=False) # $147, $500, $1700...
     monthly_limit = Column(Integer, nullable=True)
+    semester_limit = Column(Integer, nullable=True)
     yearly_limit = Column(Integer, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 

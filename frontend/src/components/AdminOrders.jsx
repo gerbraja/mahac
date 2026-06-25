@@ -11,18 +11,26 @@ const AdminOrders = () => {
     const [newStatus, setNewStatus] = useState('');
     const [trackingNumber, setTrackingNumber] = useState('');
     const [selectedOrderIds, setSelectedOrderIds] = useState(new Set());
-    const [filterProduct, setFilterProduct] = useState(''); // Restored state for product search
+    const [filterProduct, setFilterProduct] = useState(''); 
+    const [pickupPoints, setPickupPoints] = useState([]);
+    const [showBatchModal, setShowBatchModal] = useState(false);
+    const [batchPickupPointId, setBatchPickupPointId] = useState('');
+    const [batchMasterTracking, setBatchMasterTracking] = useState('');
 
     const statusLabels = {
         reservado: 'Reservado',
-        pendiente_envio: 'Pendiente de Envío',
+        en_preparacion: 'En Preparación',
+        en_transito_a_punto: 'En Tránsito a Punto',
+        listo_para_entrega: 'Listo para Entrega',
         enviado: 'Enviado',
         completado: 'Completado'
     };
 
     const statusColors = {
         reservado: 'bg-yellow-100 text-yellow-800',
-        pendiente_envio: 'bg-blue-100 text-blue-800',
+        en_preparacion: 'bg-blue-100 text-blue-800',
+        en_transito_a_punto: 'bg-indigo-100 text-indigo-800',
+        listo_para_entrega: 'bg-orange-100 text-orange-800',
         enviado: 'bg-purple-100 text-purple-800',
         completado: 'bg-green-100 text-green-800'
     };
@@ -36,7 +44,17 @@ const AdminOrders = () => {
 
     useEffect(() => {
         fetchOrders();
+        fetchPickupPoints();
     }, []);
+
+    const fetchPickupPoints = async () => {
+        try {
+            const res = await api.get('/api/pickup-points/');
+            setPickupPoints(res.data);
+        } catch (e) {
+            console.error("Error fetching pickup points", e);
+        }
+    };
 
     // Toggle selection of a single order
     const handleSelectOrder = (orderId) => {
@@ -56,6 +74,26 @@ const AdminOrders = () => {
         } else {
             const allIds = new Set(filteredOrders.map(o => o.id));
             setSelectedOrderIds(allIds);
+        }
+    };
+
+    const handleCreateBatch = async () => {
+        if (selectedOrderIds.size === 0) return alert("Selecciona pedidos primero.");
+        if (!batchPickupPointId) return alert("Selecciona un Punto de Entrega.");
+
+        try {
+            const res = await api.post('/api/logistics/batches', {
+                pickup_point_id: parseInt(batchPickupPointId),
+                order_ids: Array.from(selectedOrderIds),
+                master_tracking: batchMasterTracking
+            });
+
+            alert(`¡Bulto creado! ID: ${res.data.id}\nSe ha desactivado el bulto anterior de este punto.`);
+            setShowBatchModal(false);
+            setSelectedOrderIds(new Set());
+            fetchOrders();
+        } catch (err) {
+            alert("Error al crear bulto: " + (err.response?.data?.detail || err.message));
         }
     };
 
@@ -401,12 +439,20 @@ const AdminOrders = () => {
                 </div>
 
                 {selectedOrderIds.size > 0 && (
-                    <button
-                        onClick={handleBulkPrint}
-                        className="bg-gray-800 text-white px-4 py-2 rounded-lg hover:bg-gray-900 transition font-medium flex items-center gap-2 shadow-sm"
-                    >
-                        🖨️ Imprimir Seleccionados ({selectedOrderIds.size})
-                    </button>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={handleBulkPrint}
+                            className="bg-gray-700 text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition font-medium flex items-center gap-2 shadow-sm"
+                        >
+                            🖨️ Imprimir ({selectedOrderIds.size})
+                        </button>
+                        <button
+                            onClick={() => setShowBatchModal(true)}
+                            className="bg-blue-700 text-white px-4 py-2 rounded-lg hover:bg-blue-800 transition font-medium flex items-center gap-2 shadow-sm"
+                        >
+                            📦 Crear Bulto Consolidado
+                        </button>
+                    </div>
                 )}
 
                 <button
@@ -714,6 +760,59 @@ const AdminOrders = () => {
                     </div>
                 )
             }
+
+            {/* Modal de Creación de Bulto */}
+            {showBatchModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+                        <h2 className="text-2xl font-bold mb-4">📦 Crear Bulto Consolidado</h2>
+                        <p className="text-gray-600 mb-6 font-medium">Has seleccionado <span className="text-blue-600 font-bold">{selectedOrderIds.size} pedidos</span> para agrupar.</p>
+                        
+                        <div className="space-y-4 mb-8">
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-1 uppercase tracking-tight">Punto de Entrega Destino</label>
+                                <select 
+                                    className="w-full border-gray-300 rounded-xl py-3 border px-4 focus:ring-2 focus:ring-blue-500"
+                                    value={batchPickupPointId}
+                                    onChange={(e) => setBatchPickupPointId(e.target.value)}
+                                >
+                                    <option value="">-- Seleccionar Ciudad/Punto --</option>
+                                    {pickupPoints.map(p => (
+                                        <option key={p.id} value={p.id}>{p.name} - {p.city}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-1 uppercase tracking-tight">Número de Guía Maestra (Inter Rapidisimo)</label>
+                                <input 
+                                    type="text"
+                                    className="w-full border-gray-300 rounded-xl py-3 border px-4 focus:ring-2 focus:ring-blue-500"
+                                    placeholder="IR12345678 (Opcional)"
+                                    value={batchMasterTracking}
+                                    onChange={(e) => setBatchMasterTracking(e.target.value)}
+                                />
+                                <p className="text-[10px] text-gray-400 mt-1 uppercase font-bold">Esta es la guía que emite la transportadora por el saco de 40kg.</p>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-3">
+                            <button
+                                onClick={handleCreateBatch}
+                                className="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 active:scale-95 transition-all shadow-md"
+                            >
+                                CONFIRMAR Y CREAR
+                            </button>
+                            <button
+                                onClick={() => setShowBatchModal(false)}
+                                className="flex-1 bg-gray-100 text-gray-600 py-3 rounded-xl font-bold hover:bg-gray-200 transition-all"
+                            >
+                                CANCELAR
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div >
     );
 };

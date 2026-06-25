@@ -179,8 +179,15 @@ def process_arrival_bonuses(db: Session, new_member: BinaryGlobalMember, plan_fi
                 if not exists:
                     user = db.query(User).filter(User.id == upline.user_id).first()
                     if user:
-                        user.available_balance = (user.available_balance or 0.0) + bonus_amount
-                        user.total_earnings = (user.total_earnings or 0.0) + bonus_amount
+                        is_active_account = False
+                        if user.active_until and user.active_until >= datetime.utcnow():
+                            is_active_account = True
+                            
+                        if is_active_account:
+                            user.available_balance = (user.available_balance or 0.0) + bonus_amount
+                            user.total_earnings = (user.total_earnings or 0.0) + bonus_amount
+                        else:
+                            print(f"⚠️ Global Binary commission of {bonus_amount} for User {user.id} skipped (Expired Account)")
         
         current = upline
         level_up += 1

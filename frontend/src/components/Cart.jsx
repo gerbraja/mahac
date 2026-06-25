@@ -27,8 +27,8 @@ export default function Cart() {
   // Additional cost: $5,000 COP for each additional 500g
   let shippingCostCOP = 0;
 
-  if (subtotalCOP >= 397000) {
-    shippingCostCOP = 0; // Free shipping for orders over $397,000 COP
+  if (subtotalCOP >= 490000) {
+    shippingCostCOP = 0; // Free shipping for orders over $490,000 COP
   } else {
     // Quantity-Based Shipping Cost
     // Base cost: $13,700 for the first product
@@ -230,9 +230,9 @@ export default function Cart() {
             <div className="bg-white rounded-lg shadow-md p-6">
               <h2 className="text-xl font-bold text-gray-800 mb-4">🚚 Método de Entrega</h2>
 
-              {subtotalCOP >= 397000 && shippingMethod === "delivery" && (
+              {subtotalCOP >= 490000 && (
                 <div className="mb-4 p-3 bg-green-100 text-green-800 rounded-lg">
-                  🎉 ¡Envío GRATIS! Tu pedido supera los $397,000 COP
+                  🎉 ¡Flete GRATIS! Tu pedido supera los $490,000 COP
                 </div>
               )}
 
@@ -249,9 +249,13 @@ export default function Cart() {
                   />
                   <div className="flex-1">
                     <p className="font-bold text-gray-800">📍 Recogida en Punto de Entrega</p>
-                    <p className="text-sm text-gray-600">Gratis - Recoge tu pedido en el punto más cercano</p>
+                    <p className="text-sm text-gray-600">
+                      {subtotalCOP >= 490000 ? "GRATIS - Tu pedido califica para flete gratis" : "Recoge tu pedido en el punto más cercano"}
+                    </p>
                   </div>
-                  <span className="font-bold text-green-600">GRATIS</span>
+                  <span className={`font-bold ${subtotalCOP >= 490000 ? 'text-green-600' : 'text-blue-600'}`}>
+                    {subtotalCOP >= 490000 ? 'GRATIS' : `$${shippingCostCOP.toLocaleString()} COP`}
+                  </span>
                 </label>
 
                 <label className="flex items-center gap-3 p-4 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition"
@@ -267,11 +271,11 @@ export default function Cart() {
                   <div className="flex-1">
                     <p className="font-bold text-gray-800">🏠 Envío a Domicilio</p>
                     <p className="text-sm text-gray-600">
-                      {subtotalCOP >= 397000 ? "GRATIS - Tu pedido califica para envío gratis" : "Recibe tu pedido en la puerta de tu casa"}
+                      {subtotalCOP >= 490000 ? "GRATIS - Tu pedido califica para flete gratis" : "Recibe tu pedido en la puerta de tu casa"}
                     </p>
                   </div>
-                  <span className={`font-bold ${subtotalCOP >= 397000 ? 'text-green-600' : 'text-blue-600'}`}>
-                    {subtotalCOP >= 397000 ? 'GRATIS' : `$${shippingCostCOP.toLocaleString()} COP`}
+                  <span className={`font-bold ${subtotalCOP >= 490000 ? 'text-green-600' : 'text-blue-600'}`}>
+                    {subtotalCOP >= 490000 ? 'GRATIS' : `$${shippingCostCOP.toLocaleString()} COP`}
                   </span>
                 </label>
               </div>

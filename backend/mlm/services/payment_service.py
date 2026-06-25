@@ -6,13 +6,17 @@ from backend.database.models.payment_transaction import PaymentTransaction
 from backend.database.models.product import Product
 from backend.database.models.user import User
 from backend.database.models.unilevel import UnilevelMember, UnilevelCommission
+from backend.database.models.sponsorship import SponsorshipCommission
 from backend.database.models.binary_millionaire import BinaryMillionaireMember
 from backend.mlm.services.unilevel_service import calculate_unilevel_commissions
 from backend.mlm.services.activation_service import process_activation
 from backend.mlm.services.binary_millionaire_service import register_in_millionaire, distribute_millionaire_commissions
 from backend.mlm.services.pool_service import accumulate_global_pool
+from backend.services.siigo_service import emit_invoice as emit_siigo_invoice
+from backend.services.shipping_service import generar_guia_interrapidisimo
+from backend.services.notification_service import notify_order_event
 
-def process_post_payment_commissions(db: Session, user_id: int, total_pv: int, is_activation: bool, total_cop: float = 0.0, total_direct_bonus_pv: float = 0.0):
+def process_post_payment_commissions(db: Session, user_id: int, total_pv: int, is_activation: bool, total_cop: float = 0.0, total_direct_bonus_pv: float = 0.0, package_level: int = 0):
     """
     Centralized logic for post-payment actions:
     1. Open Networks (Unilevel & Millionaire Binary):
@@ -25,24 +29,25 @@ def process_post_payment_commissions(db: Session, user_id: int, total_pv: int, i
     
     print(f"--- Processing Commissions for User {user_id} | Activation: {is_activation} | PV: {total_pv} ---")
     
-    # --- 1. OPEN NETWORKS (Available to ALL via Generic Purchase) ---
-    # Call Activation Service for Registration/Status Fix
-    # generic_activation: Update Status, Reg in Unilevel/Mill, NO Matrix/Global/Bonus
+    # --- 1. OPEN NETWORKS & EXTEND VIGENCIA ---
     try:
-        if is_activation:
-             # FULL ACTIVATION
+        from datetime import datetime, timedelta
+        
+        # Extend active_until (Max 365 days non-cumulative)
+        user = db.query(User).filter(User.id == user_id).first()
+        if user:
+            user.status = 'active'
+            user.active_until = datetime.utcnow() + timedelta(days=365)
+            db.add(user)
+            db.flush()
+
+        # Call Activation Service for Registration/Commissions
+        if is_activation or total_pv > 0:
              process_activation(
-                 db, user_id, float(total_cop), pv=total_pv
+                 db, user_id, float(total_cop), pv=total_pv, is_full_activation=is_activation, package_level=package_level
              )
-        else:
-            # CONSUMER ACTIVATION (Generic)
-            # Only trigger status update & reg check if PV > 0
-             if total_pv > 0:
-                 process_activation(
-                     db, user_id, float(total_cop), pv=total_pv
-                 )
     except Exception as e:
-        print(f"❌ Error in process_activation call: {e}")
+        print(f"❌ Error in process_activation call or vigencia extension: {e}")
 
     # --- 2. EXTRA MANUAL STEPS ---
     # Direct Sponsor Bonus (PV) - This was custom in payment_service, keep it here.
@@ -56,13 +61,12 @@ def process_post_payment_commissions(db: Session, user_id: int, total_pv: int, i
                         sponsor.available_balance = (sponsor.available_balance or 0.0) + amount
                         sponsor.total_earnings = (sponsor.total_earnings or 0.0) + amount
                         sponsor.monthly_earnings = (sponsor.monthly_earnings or 0.0) + amount
-                        
-                        comm = UnilevelCommission(
-                            user_id=sponsor.id,
-                            sale_amount=amount, 
+                        comm = SponsorshipCommission(
+                            sponsor_id=sponsor.id,
+                            new_member_id=user.id,
+                            package_amount=float(total_cop), 
                             commission_amount=amount,
-                            level=1,
-                            type="direct_sponsor_bonus"
+                            status="paid"
                         )
                         db.add(comm)
                         db.add(sponsor)
@@ -101,38 +105,43 @@ def process_post_payment_commissions(db: Session, user_id: int, total_pv: int, i
 
 def process_successful_payment(db: Session, order_id: int, transaction_id: int = None):
     """
-    Process a successful payment:
-    1. Update Order status.
-    2. Update PaymentTransaction.
-    3. Trigger Centralized Commission Logic.
+    Process a successful payment with final confirmed logic:
+    1. Siigo Invoice + GCS Backup (All)
+    2. MLM Payout (Activation/PV)
+    3. Inter Rapidisimo Guía (Delivery/Activation)
+    4. Pickup specific logic (Status en_preparacion, No Guía)
     """
     order = db.query(Order).filter(Order.id == order_id).with_for_update().first()
     if not order:
         raise ValueError("Order not found")
 
-    # 1. Update Order status
-    needs_shipping = False
-    items = db.query(OrderItem).filter(OrderItem.order_id == order.id).all()
-    
+    # 0. Identify Order Characteristics
     is_activation = False
+    is_pickup = (getattr(order, 'shipping_type', 'delivery') == "pickup")
     total_pv = 0
     total_direct_bonus = 0
     total_cop = order.total_cop or 0.0
-    
+    needs_physical_delivery = False
+    max_package_level = 0
+
+    items = db.query(OrderItem).filter(OrderItem.order_id == order.id).all()
     for item in items:
         prod = db.query(Product).filter(Product.id == item.product_id).first()
         if prod:
-            if not prod.is_activation:
-                 needs_shipping = True
-            
             if prod.is_activation:
                 is_activation = True
+                needs_physical_delivery = True # Legal compliance in Colombia
+            else:
+                needs_physical_delivery = True
             
             total_pv += (prod.pv or 0) * item.quantity
             total_direct_bonus += (prod.direct_bonus_pv or 0) * item.quantity
             
-            # AUTOMATION: Update User Package Level based on product purchased
+            # Update User Package Level
             if prod.package_level and prod.package_level > 0:
+                if prod.package_level > max_package_level:
+                    max_package_level = prod.package_level
+                
                 user = db.query(User).filter(User.id == order.user_id).first()
                 if user:
                     current_level = user.package_level or 0
@@ -140,26 +149,53 @@ def process_successful_payment(db: Session, order_id: int, transaction_id: int =
                         user.package_level = prod.package_level
                         db.add(user)
 
-    if needs_shipping:
-        order.status = "pendiente_envio"
-    else:
-        # Digital only (Activation)
-        order.status = "completado"
-        order.completed_at = func.now()
-
+    # 1. Update Order Status
+    # All orders start in 'en_preparacion' after payment
+    order.status = "en_preparacion"
+    order.payment_confirmed_at = func.now()
     db.add(order)
-    
-    # 2. Update Transaction status
+    db.commit()
+
+    # 2. Trigger Siigo Invoicing (Includes GCS Backup internally)
+    user = db.query(User).filter(User.id == order.user_id).first()
+    try:
+        if user:
+            emit_siigo_invoice(order, user, db)
+            print(f"📄 Siigo Invoice triggered for Order {order.id}")
+    except Exception as e:
+        print(f"⚠️ Error triggering Siigo Invoice: {e}")
+
+    # 2b. 📧 Notificación: Pago Confirmado (Email + WhatsApp cuando esté activo)
+    try:
+        if user:
+            notify_order_event("payment_confirmed", order, user, db)
+    except Exception as e:
+        print(f"⚠️ Error sending payment_confirmed notification: {e}")
+
+    # 3. Logistic Automation (Label Generation)
+    # Now called for ALL physical/pickup/activation orders for identification
+    if needs_physical_delivery:
+        try:
+            generar_guia_interrapidisimo(order, db)
+        except Exception as e_ship:
+            print(f"⚠️ Error triggering Shipping Guide/Label: {e_ship}")
+
+    # 3b. 📧 Notificación de Rastreo: Si tiene guía individual (envío directo)
+    try:
+        if user and getattr(order, 'tracking_number', None) and not is_pickup:
+            notify_order_event("in_transit", order, user, db)
+    except Exception as e:
+        print(f"⚠️ Error sending in_transit notification: {e}")
+
+    # 4. Update Transaction status
     if transaction_id:
         tx = db.query(PaymentTransaction).filter(PaymentTransaction.id == transaction_id).first()
         if tx:
             tx.status = "success"
             db.add(tx)
-    
-    # Commit status updates first
     db.commit()
 
-    # 3. Process Commissions (Centralized)
-    process_post_payment_commissions(db, order.user_id, total_pv, is_activation, total_cop, total_direct_bonus)
+    # 5. Process Commissions (MLM)
+    process_post_payment_commissions(db, order.user_id, total_pv, is_activation, total_cop, total_direct_bonus, max_package_level)
 
     return True

@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../api/api';
 import TeiLogo from '../components/TeiLogo';
-import CompleteRegistration from './CompleteRegistration';
+
+const CompleteRegistration = React.lazy(() => import('./CompleteRegistration'));
 
 export default function Personal() {
     const navigate = useNavigate();
@@ -30,10 +31,12 @@ export default function Personal() {
 
     if (showRegistrationForm) {
         return (
-            <CompleteRegistration 
-                referralCode={referralCode} 
-                onBack={() => setShowRegistrationForm(false)}
-            />
+            <React.Suspense fallback={<div className="flex items-center justify-center min-h-screen bg-slate-950 text-white text-xl">Cargando...</div>}>
+                <CompleteRegistration 
+                    referralCode={referralCode} 
+                    onBack={() => setShowRegistrationForm(false)}
+                />
+            </React.Suspense>
         );
     }
 

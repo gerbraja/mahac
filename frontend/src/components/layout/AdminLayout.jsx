@@ -9,22 +9,16 @@ export default function AdminLayout() {
     const { globalCountry, setGlobalCountry, countries, isCountryAdmin, isSuperAdmin } = useAdmin();
 
     // Rutas exclusivas del Super Admin
-    const superAdminRoutes = ['/admin/country-stats', '/admin/taxes'];
+    const superAdminRoutes = ['/admin/country-stats', '/admin/taxes', '/admin/accounting'];
 
     const allMenuItems = [
         { path: '/admin', label: 'Dashboard', icon: '📊' },
         { path: '/admin/users', label: 'Usuarios', icon: '👥' },
-        { path: '/admin/products', label: 'Productos', icon: '📦' },
-        { path: '/admin/suppliers', label: 'Proveedores', icon: '🏭' },
-        { path: '/admin/supplier-orders', label: 'Pedidos a Fábrica', icon: '🛒' },
-        { path: '/admin/payments', label: 'Pagos Pendientes', icon: '💳' },
-        { path: '/admin/kyc', label: 'Validaciones KYC', icon: '🆆' },
-        { path: '/admin/withdrawals', label: 'Retiros', icon: '🏦' },
-        { path: '/admin/sponsorship-commissions', label: 'Comisiones Patrocinio', icon: '💰' },
-        { path: '/admin/pickup-points', label: 'Puntos de Recogida', icon: '📍' },
         { path: '/admin/reports', label: 'Reportes', icon: '📈' },
+        { path: '/admin/logistics', label: 'Logística (Bultos)', icon: '🚛' },
         { path: '/admin/country-stats', label: 'Estad. por País', icon: '🗺️' },
         { path: '/admin/taxes', label: 'Impuestos y Retenciones', icon: '🧯' },
+        { path: '/admin/accounting', label: 'Contabilidad', icon: '🏦' },
     ];
 
     // Hide super-admin-only routes from country admins
@@ -207,7 +201,9 @@ export default function AdminLayout() {
 
                 {/* Page Content */}
                 <main style={{ padding: '2rem' }}>
-                    <Outlet />
+                    <React.Suspense fallback={<div className="text-gray-600 text-lg">Cargando...</div>}>
+                        <Outlet />
+                    </React.Suspense>
                 </main>
             </div>
         </div>

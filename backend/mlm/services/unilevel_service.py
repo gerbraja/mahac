@@ -69,12 +69,21 @@ def calculate_unilevel_commissions(db: Session, seller_id: int, sale_amount: flo
                 db.add(commission)
                 commissions.append(commission)
 
-                # Update Beneficiary Balance
+                # Update Beneficiary Balance (Only if ACTIVE)
                 sponsor_user = db.query(User).filter(User.id == sponsor.user_id).with_for_update().first()
+                from datetime import datetime
                 if sponsor_user:
-                    sponsor_user.available_balance = (sponsor_user.available_balance or 0.0) + commission_amount
-                    sponsor_user.monthly_earnings = (sponsor_user.monthly_earnings or 0.0) + commission_amount
-                    sponsor_user.total_earnings = (sponsor_user.total_earnings or 0.0) + commission_amount
+                    # Check active_until
+                    is_active = False
+                    if sponsor_user.active_until and sponsor_user.active_until >= datetime.utcnow():
+                        is_active = True
+                        
+                    if is_active:
+                        sponsor_user.available_balance = (sponsor_user.available_balance or 0.0) + commission_amount
+                        sponsor_user.monthly_earnings = (sponsor_user.monthly_earnings or 0.0) + commission_amount
+                        sponsor_user.total_earnings = (sponsor_user.total_earnings or 0.0) + commission_amount
+                    else:
+                        print(f"⚠️ Unilevel commission of {commission_amount} for User {sponsor_user.id} skipped (Expired Account)")
 
             sponsor = sponsor.sponsor
             level += 1

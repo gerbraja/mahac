@@ -985,13 +985,29 @@ def get_release_status(db: Session = Depends(get_db), current_user: User = Depen
         
         msg = f"Liberación de fondos cerrada. Próxima fecha: día {next_date}."
 
+    # Fetch bank details if verified
+    bank_name = None
+    bank_account_number = None
+    bank_account_type = None
+    
+    if current_user.is_kyc_verified:
+        from backend.database.models.compliance_record import ComplianceRecord
+        record = db.query(ComplianceRecord).filter(ComplianceRecord.user_id == current_user.id).first()
+        if record:
+            bank_name = record.bank_name
+            bank_account_number = record.bank_account_number
+            bank_account_type = record.bank_account_type
+
     return {
         "current_date": today.strftime("%Y-%m-%d"),
         "active_window": active_window,
         "available_to_release": float(f"{available_to_release:.2f}"),
         "bank_balance": float(f"{current_user.bank_balance or 0.0:.2f}"),
         "kyc_verified": current_user.is_kyc_verified,
-        "message": msg
+        "message": msg,
+        "verified_bank_name": bank_name,
+        "verified_bank_account_number": bank_account_number,
+        "verified_bank_account_type": bank_account_type
     }
 
 @router.post("/release")
@@ -1073,13 +1089,28 @@ def request_withdrawal(
         current_user.available_balance -= data.amount
         current_user.bank_balance -= data.amount
         
+        # Fetch compliance record for verified bank details
+        from backend.database.models.compliance_record import ComplianceRecord
+        kyc_record = db.query(ComplianceRecord).filter(ComplianceRecord.user_id == current_user.id).first()
+        
+        verified_payment_info = ""
+        if kyc_record and kyc_record.bank_name and kyc_record.bank_account_number:
+            verified_payment_info = (
+                f"Banco: {kyc_record.bank_name} | "
+                f"Cuenta: {kyc_record.bank_account_type or 'Ahorros'} No. {kyc_record.bank_account_number} | "
+                f"Titular: {current_user.name} | "
+                f"NIT/CC: {kyc_record.rut_nit or current_user.document_id}"
+            )
+        else:
+            verified_payment_info = data.payment_info or "Información bancaria no encontrada."
+
         # Create Request
         req = WithdrawalRequest(
             user_id=current_user.id,
             amount=data.amount,
             source_type="bank_withdrawal",
             status="pending",
-            payment_info=data.payment_info
+            payment_info=verified_payment_info
         )
         db.add(req)
         db.commit()

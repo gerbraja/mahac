@@ -23,11 +23,11 @@ def deploy_service():
         r"C:\Users\mahac\AppData\Local\Google\Cloud SDK\google-cloud-sdk\bin\gcloud.cmd",
         "run", "deploy", "mlm-backend",
         "--source", ".",
-        "--region", "southamerica-east1",
+        "--region", "us-central1",
         "--project", "tei-mlm-prod",
         "--allow-unauthenticated",
         "--port", "8000",
-        "--update-env-vars",
+        "--set-env-vars",
         f"CLOUD_SQL_CONNECTION_NAME=tei-mlm-prod:us-central1:mlm-db-us," +
         f"DB_USER=postgres," +
         f"DB_PASS=AdminPostgres2025," +

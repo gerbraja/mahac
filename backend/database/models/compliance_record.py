@@ -46,6 +46,24 @@ class ComplianceRecord(Base):
     bank_certificate_url = Column(String(500), nullable=True)
     profile_photo_url = Column(String(500), nullable=True)
     
+    # AI Extracted & Verified Information
+    bank_name = Column(String(150), nullable=True)
+    bank_account_number = Column(String(100), nullable=True)
+    bank_account_type = Column(String(50), nullable=True)
+    rut_nit = Column(String(100), nullable=True)
+    rut_city = Column(String(100), nullable=True)
+    extracted_metadata = Column(Text, nullable=True)
+    
+    # User Inputted Details (for verification cross-check)
+    input_full_name_cedula = Column(String(255), nullable=True)
+    input_document_id_rut = Column(String(100), nullable=True)
+    input_address = Column(String(255), nullable=True)
+    input_department = Column(String(100), nullable=True)
+    input_city = Column(String(100), nullable=True)
+    input_bank_name = Column(String(150), nullable=True)
+    input_bank_account_type = Column(String(50), nullable=True)
+    input_bank_account_number = Column(String(100), nullable=True)
+    
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

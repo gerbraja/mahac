@@ -12,7 +12,7 @@ from backend.database.models.unilevel import UnilevelMember
 SPONSORSHIP_COMMISSION_USD = 9.7
 
 
-def process_activation(db: Session, user_id: int, package_amount: float, pv: int = 3, signup_percent: float | None = None, plan_file: str | None = None, package_level: int = 1):
+def process_activation(db: Session, user_id: int, package_amount: float, pv: int = 3, signup_percent: float | None = None, plan_file: str | None = None, package_level: int = 1, is_full_activation: bool = True):
     """Process user activation atomically.
 
     - Locks the user row
@@ -66,32 +66,22 @@ def process_activation(db: Session, user_id: int, package_amount: float, pv: int
         user.membership_code = f"{int(next_num):07d}"
         
         # Change user status to 'active'
-        # Change user status to 'active'
         user.status = 'active'
-        user.package_level = package_level
+        
+        # Only upgrade package_level if the new level is higher
+        if package_level > (user.package_level or 0):
+            user.package_level = package_level
+            
+        if is_full_activation:
+            user.has_package = True
 
         # write activation log
         activation_log = ActivationLog(user_id=user_id, package_amount=package_amount)
         db.add(activation_log)
 
         # CREATE SPONSORSHIP COMMISSION ($9.7 USD to direct sponsor)
+        # REMOVED: Sponsorship commissions are now handled dynamically in payment_service.py based on product's direct_bonus_pv.
         sponsorship_commission = None
-        if hasattr(user, 'referred_by_id') and user.referred_by_id:
-            # Update Sponsor's Balance IMMEDIATELY
-            sponsor_user = db.query(User).filter(User.id == user.referred_by_id).with_for_update().first()
-            if sponsor_user:
-                sponsor_user.available_balance = (sponsor_user.available_balance or 0.0) + SPONSORSHIP_COMMISSION_USD
-                sponsor_user.total_earnings = (sponsor_user.total_earnings or 0.0) + SPONSORSHIP_COMMISSION_USD
-                
-                sponsorship_commission = SponsorshipCommission(
-                    sponsor_id=user.referred_by_id,
-                    new_member_id=user_id,
-                    package_amount=package_amount,
-                    commission_amount=SPONSORSHIP_COMMISSION_USD,
-                    status="paid"  # Mark as paid immediately since we updated balance
-                )
-                db.add(sponsorship_commission)
-                db.flush()  # Get the commission ID
 
         # Ensure Unilevel placement exists for the user (create if missing).
         # We use the referred_by_id from User to link sponsor (if present).
@@ -126,11 +116,12 @@ def process_activation(db: Session, user_id: int, package_amount: float, pv: int
         signup_comms = calculate_binary_global_commissions(db, user_id, package_amount, signup_percent=signup_percent or None)
 
         # 2) TRIGGER: Activate in Binary Global 2x2 (Pre-register + Activate)
-        # This will automatically trigger arrival bonuses for upline
+        # Everyone is pre-registered, but only full_activation triggers Arrival Bonuses
         plan_file = plan_file or "binario_global/plan_template.yml"
         from backend.mlm.services.binary_service import register_in_binary_global, activate_binary_global
         register_in_binary_global(db, user_id)
-        activate_binary_global(db, user_id, plan_file=plan_file)
+        if is_full_activation:
+            activate_binary_global(db, user_id, plan_file=plan_file)
 
         # 2.5) TRIGGER: Activate in Binary Millionaire (Automatic Global Placement)
         from backend.mlm.services.binary_millionaire_service import register_in_millionaire, distribute_millionaire_commissions
@@ -149,33 +140,34 @@ def process_activation(db: Session, user_id: int, package_amount: float, pv: int
 
         # 3) TRIGGER: Activate in Forced Matrix 3x3 (Buy Position in CONSUMIDOR Matrix)
         # All activated users enter Matrix ID 27 (CONSUMIDOR - $77)
-        try:
-            from backend.mlm.services.matrix_service import MatrixService
-            from backend.mlm.schemas.plan import MatrixPlan
-            import yaml
-            import os
-            
-            # Load Matrix Plan
-            matrix_plan_path = os.path.join(os.path.dirname(__file__), "..", "plans", "matriz_forzada", "plan_template.yml")
-            
-            if os.path.exists(matrix_plan_path):
-                with open(matrix_plan_path, 'r') as f:
-                    plan_data = yaml.safe_load(f)
-                    matrix_plan = MatrixPlan(**plan_data)
-                    matrix_service = MatrixService(matrix_plan)
-                    
-                    # Register user in Matrix 27 (CONSUMIDOR) - default activation matrix
-                    CONSUMIDOR_MATRIX_ID = 27
-                    matrix_service.buy_matrix(db, user_id, matrix_id=CONSUMIDOR_MATRIX_ID)
-                    print(f"✓ User {user_id} registered in Forced Matrix CONSUMIDOR (ID: {CONSUMIDOR_MATRIX_ID})")
-            else:
-                print(f"⚠️  WARNING: Matrix plan file not found at {matrix_plan_path}")
-                print(f"   User {user_id} activated but NOT registered in Forced Matrix")
-        except Exception as e:
-            print(f"⚠️  ERROR activating user {user_id} in Forced Matrix: {e}")
-            import traceback
-            traceback.print_exc()
-            # Don't fail activation if matrix registration fails, but log it prominently
+        if is_full_activation:
+            try:
+                from backend.mlm.services.matrix_service import MatrixService
+                from backend.mlm.schemas.plan import MatrixPlan
+                import yaml
+                import os
+                
+                # Load Matrix Plan
+                matrix_plan_path = os.path.join(os.path.dirname(__file__), "..", "plans", "matriz_forzada", "plan_template.yml")
+                
+                if os.path.exists(matrix_plan_path):
+                    with open(matrix_plan_path, 'r') as f:
+                        plan_data = yaml.safe_load(f)
+                        matrix_plan = MatrixPlan(**plan_data)
+                        matrix_service = MatrixService(matrix_plan)
+                        
+                        # Register user in Matrix 27 (CONSUMIDOR) - default activation matrix
+                        CONSUMIDOR_MATRIX_ID = 27
+                        matrix_service.buy_matrix(db, user_id, matrix_id=CONSUMIDOR_MATRIX_ID)
+                        print(f"✓ User {user_id} registered in Forced Matrix CONSUMIDOR (ID: {CONSUMIDOR_MATRIX_ID})")
+                else:
+                    print(f"⚠️  WARNING: Matrix plan file not found at {matrix_plan_path}")
+                    print(f"   User {user_id} activated but NOT registered in Forced Matrix")
+            except Exception as e:
+                print(f"⚠️  ERROR activating user {user_id} in Forced Matrix: {e}")
+                import traceback
+                traceback.print_exc()
+                # Don't fail activation if matrix registration fails, but log it prominently
 
 
         # commit atomically

@@ -1028,7 +1028,7 @@ IMPORTANTE: LEA DETENIDAMENTE EL PRESENTE CONTRATO DE ADHESIÓN. AL DILIGENCIAR 
 
 LAS PARTES:
 
-LA COMPAÑÍA: TU EMPRESA INTERNACIONAL S.A.S. (identificada con NIT 902045325-4), sociedad comercial domiciliada en Medellín.
+LA COMPAÑÍA: Tu Empresa Internacional S.A.S. (identificada con NIT 902045325-4), sociedad debidamente constituida y válidamente existente de acuerdo con las leyes de la República de Colombia, dedicada al ejercicio de las actividades de comercialización en red o mercadeo multinivel (“Mercadeo Multinivel”), de acuerdo con el artículo 2 de la Ley 1700 de 2013 y cualquier otra normativa que la reglamente, modifique, adicione o derogue, según consta en el certificado de existencia y representación legal de la compañía.
 
 EL VENDEDOR INDEPENDIENTE (USTED): La persona natural o jurídica que diligencia el formulario de registro electrónico, cuyos datos se consideran veraces y fidedignos para todos los efectos legales.
 
@@ -1091,7 +1091,7 @@ PARÁGRAFO RGPD (PARA RESIDENTES EN EUROPA): De conformidad con el Reglamento Ge
 
 ### CLÁUSULA DECIMOPRIMERA: RESOLUCIÓN DE CONFLICTOS
 Cualquier controversia o diferencia relativa a este contrato se intentará resolver inicialmente mediante arreglo directo entre las partes en un término no mayor a 30 días calendario.
-Si no se llegare a un acuerdo, las partes acuerdan someterse a la jurisdicción ordinaria de los jueces de la República de Colombia, fijando como domicilio contractual la ciudad de Medellín.
+Si no se llegare a un acuerdo, las partes acuerdan someterse a la jurisdicción ordinaria de los jueces de la República de Colombia.
 
 ### CLÁUSULA DECIMOSEGUNDA: MODIFICACIONES
 LA COMPAÑÍA se reserva el derecho de modificar estos términos, el Plan de Compensación, precios y políticas en cualquier momento. Las modificaciones serán efectivas tras su publicación en el sitio web oficial o la oficina virtual. La continuación de las actividades del Vendedor Independiente o la realización de compras tras la publicación constituye la aceptación tácita de las nuevas condiciones.

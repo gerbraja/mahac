@@ -3,7 +3,6 @@ import { Routes, Route, useParams, Navigate } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Home from "./pages/Home";
 import CartPage from "./pages/CartPage";
-import CompleteRegistration from "./pages/CompleteRegistration";
 import DashboardLayout from "./components/layout/DashboardLayout";
 import MatrixView from "./pages/dashboard/MatrixView";
 import WalletView from "./pages/dashboard/WalletView";
@@ -20,40 +19,45 @@ import StoreView from './pages/dashboard/StoreView';
 import DashboardHome from './pages/dashboard/DashboardHome';
 import Login from './pages/Login';
 import ResetPassword from './pages/ResetPassword';
-import Opportunity from './pages/Opportunity';
 import Personal from './pages/Personal';
 import OrderConfirmation from './pages/OrderConfirmation';
-import Checkout from './pages/Checkout';
 import QualifiedRanksView from './pages/dashboard/QualifiedRanksView';
 import HonorRanksView from './pages/dashboard/HonorRanksView';
 import MarketingBubbles from "./components/MarketingBubbles";
 import UserOrders from './components/UserOrders';
 import UpgradePackage from './pages/dashboard/UpgradePackage';
 import KYCValidation from './pages/dashboard/KYCValidation';
+import PickupPointPortal from './pages/PickupPointPortal';
 
+// Lazy imports for heavy pages
+const CompleteRegistration = React.lazy(() => import("./pages/CompleteRegistration"));
+const Opportunity = React.lazy(() => import('./pages/Opportunity'));
+const Checkout = React.lazy(() => import('./pages/Checkout'));
 const SupplierInventory = React.lazy(() => import('./pages/SupplierInventory'));
 
-
-// Admin imports
+// Admin imports and lazy components
 import AdminLayout from './components/layout/AdminLayout';
-import AdminDashboardPage from './pages/admin/AdminDashboard';
-import AdminWithdrawals from './pages/admin/AdminWithdrawals';
-import AdminUsers from './pages/admin/AdminUsers';
-import AdminProducts from './pages/admin/AdminProducts';
-import AdminPayments from './pages/admin/AdminPayments';
-import AdminSponsorshipCommissions from './pages/admin/AdminSponsorshipCommissions';
-import AdminQualifiedRanks from './pages/admin/AdminQualifiedRanks';
-import AdminHonorRanks from './pages/admin/AdminHonorRanks';
-import AdminOrders from './components/AdminOrders';
-import AdminPickupPoints from './pages/admin/AdminPickupPoints';
-import AdminKYC from './pages/admin/AdminKYC';
-import AdminSuppliers from './pages/admin/AdminSuppliers';
-import AdminSupplierOrders from './pages/admin/AdminSupplierOrders';
-import AdminReports from './pages/admin/AdminReports';
-import AdminCountryStats from './pages/admin/AdminCountryStats';
-import AdminTaxes from './pages/admin/AdminTaxes';
 import RequireAdmin from './components/auth/RequireAdmin';
 import { AdminProvider } from './context/AdminContext';
+
+const AdminDashboardPage = React.lazy(() => import('./pages/admin/AdminDashboard'));
+const AdminWithdrawals = React.lazy(() => import('./pages/admin/AdminWithdrawals'));
+const AdminLogistics = React.lazy(() => import('./pages/admin/AdminLogistics'));
+const AdminUsers = React.lazy(() => import('./pages/admin/AdminUsers'));
+const AdminProducts = React.lazy(() => import('./pages/admin/AdminProducts'));
+const AdminPayments = React.lazy(() => import('./pages/admin/AdminPayments'));
+const AdminSponsorshipCommissions = React.lazy(() => import('./pages/admin/AdminSponsorshipCommissions'));
+const AdminQualifiedRanks = React.lazy(() => import('./pages/admin/AdminQualifiedRanks'));
+const AdminHonorRanks = React.lazy(() => import('./pages/admin/AdminHonorRanks'));
+const AdminOrders = React.lazy(() => import('./components/AdminOrders'));
+const AdminPickupPoints = React.lazy(() => import('./pages/admin/AdminPickupPoints'));
+const AdminKYC = React.lazy(() => import('./pages/admin/AdminKYC'));
+const AdminSuppliers = React.lazy(() => import('./pages/admin/AdminSuppliers'));
+const AdminSupplierOrders = React.lazy(() => import('./pages/admin/AdminSupplierOrders'));
+const AdminReports = React.lazy(() => import('./pages/admin/AdminReports'));
+const AdminCountryStats = React.lazy(() => import('./pages/admin/AdminCountryStats'));
+const AdminTaxes = React.lazy(() => import('./pages/admin/AdminTaxes'));
+const AdminAccounting = React.lazy(() => import('./pages/admin/AdminAccounting'));
 
 // Component to capture username from URL and redirect to home with ref parameter
 function ReferralRedirect() {
@@ -96,7 +100,7 @@ class ErrorBoundary extends React.Component {
           >
             Recargar Página
           </button>
-          {process.env.NODE_ENV === 'development' && (
+          {import.meta.env.DEV && (
             <details className="mt-8 p-4 bg-white rounded shadow max-w-4xl overflow-auto text-left">
               <summary className="cursor-pointer font-bold text-gray-800">Detalles del Error (Solo Desarrollo)</summary>
               <pre className="text-red-500 text-sm mt-2 whitespace-pre-wrap">
@@ -121,16 +125,17 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/opportunity" element={<Opportunity />} />
+        <Route path="/opportunity" element={<React.Suspense fallback={<div className="flex items-center justify-center min-h-screen bg-slate-950 text-white text-xl">Cargando...</div>}><Opportunity /></React.Suspense>} />
         <Route path="/personal" element={<Personal />} />
         <Route path="/register" element={<RegisterRedirect />} />
         <Route path="/usuario/:username" element={<ReferralRedirect />} />
-        <Route path="/complete-registration" element={<CompleteRegistration />} />
+        <Route path="/complete-registration" element={<React.Suspense fallback={<div className="flex items-center justify-center min-h-screen bg-slate-950 text-white text-xl">Cargando...</div>}><CompleteRegistration /></React.Suspense>} />
         <Route path="/cart" element={<CartPage />} />
-        <Route path="/checkout" element={<Checkout />} />
+        <Route path="/checkout" element={<React.Suspense fallback={<div className="flex items-center justify-center min-h-screen bg-slate-950 text-white text-xl">Cargando...</div>}><Checkout /></React.Suspense>} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/order-confirmation/:orderId" element={<OrderConfirmation />} />
         <Route path="/supplier-inventory/:token" element={<React.Suspense fallback={<div>Cargando...</div>}><SupplierInventory /></React.Suspense>} />
+        <Route path="/punto-de-entrega/:token" element={<PickupPointPortal />} />
 
         {/* Admin Routes */}
         <Route path="/admin" element={
@@ -150,12 +155,14 @@ export default function App() {
           <Route path="qualified-ranks" element={<AdminQualifiedRanks />} />
           <Route path="honor-ranks" element={<AdminHonorRanks />} />
           <Route path="pickup-points" element={<AdminPickupPoints />} />
+          <Route path="logistics" element={<AdminLogistics />} />
           <Route path="kyc" element={<AdminKYC />} />
           <Route path="suppliers" element={<AdminSuppliers />} />
           <Route path="supplier-orders" element={<AdminSupplierOrders />} />
           <Route path="reports" element={<AdminReports />} />
           <Route path="country-stats" element={<AdminCountryStats />} />
           <Route path="taxes" element={<AdminTaxes />} />
+          <Route path="accounting" element={<AdminAccounting />} />
         </Route>
 
         {/* User Dashboard Routes */}

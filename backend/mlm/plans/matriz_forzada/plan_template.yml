@@ -1,18 +1,17 @@
-
-plan_name: "Forced Matrix"
+﻿plan_name: "Forced Matrix"
 plan_key: "matriz_forzada"
 description: "Matrix with fixed width and depth"
 currency: "USD"
 qualification:
     minimum_personal_volume: "0.00"
 
-# Matrices / levels definition. Amounts are strings and should be parsed to Decimal in the loader.
 matrices:
     - id: 27
       amount: "77.00"
       reentry_amount: "27.00"
       next_matrix: 77
-      monthly_limit: 14
+      monthly_limit: 7
+      semester_limit: null
       yearly_limit: null
       rank_up:
           from: "Consumer"
@@ -24,7 +23,8 @@ matrices:
       amount: "277.00"
       reentry_amount: "77.00"
       next_matrix: 277
-      monthly_limit: 10
+      monthly_limit: 6
+      semester_limit: null
       yearly_limit: null
       rank_up:
           from: "Distributor"
@@ -36,7 +36,8 @@ matrices:
       amount: "877.00"
       reentry_amount: "277.00"
       next_matrix: 877
-      monthly_limit: 8
+      monthly_limit: 5
+      semester_limit: null
       yearly_limit: null
       rank_up:
           from: "Bronze Distributor"
@@ -50,7 +51,8 @@ matrices:
       amount: "3000.00"
       reentry_amount: "877.00"
       next_matrix: 3000
-      monthly_limit: 7
+      monthly_limit: 4
+      semester_limit: null
       yearly_limit: null
       rank_up:
           from: "Silver Distributor"
@@ -64,7 +66,8 @@ matrices:
       amount: "9700.00"
       reentry_amount: "3000.00"
       next_matrix: 9700
-      monthly_limit: 6
+      monthly_limit: 3
+      semester_limit: null
       yearly_limit: null
       rank_up:
           from: "Gold Distributor"
@@ -78,7 +81,8 @@ matrices:
       amount: "25000.00"
       reentry_amount: "9700.00"
       next_matrix: 25000
-      monthly_limit: 5
+      monthly_limit: 2
+      semester_limit: null
       yearly_limit: null
       rank_up:
           from: "Platinum Business Owner"
@@ -92,7 +96,8 @@ matrices:
       amount: "77000.00"
       reentry_amount: "25000.00"
       next_matrix: 77000
-      monthly_limit: 4
+      monthly_limit: 1
+      semester_limit: null
       yearly_limit: null
       rank_up:
           from: "Ruby Executive"
@@ -106,7 +111,8 @@ matrices:
       amount: "270000.00"
       reentry_amount: "77000.00"
       next_matrix: 270000
-      monthly_limit: 2
+      monthly_limit: null
+      semester_limit: 1
       yearly_limit: null
       rank_up:
           from: "Emerald Leader"
@@ -114,26 +120,114 @@ matrices:
       one_time_bonus:
           amount: "47000.00"
           description: "Master bonus"
-      period: "month"
+      period: "semester"
 
     - id: 270000
       amount: "970000.00"
       reentry_amount: "270000.00"
       next_matrix: 970000
-      monthly_limit: 1
-      yearly_limit: null
+      monthly_limit: null
+      semester_limit: null
+      yearly_limit: 1
       rank_up:
           from: "Diamond Master"
           to: "Blue Diamond Elite"
       one_time_bonus:
           amount: "77000.00"
           description: "Elite bonus"
-      period: "month"
+      period: "year"
 
-# End of matrices
+    - id: 970000
+      amount: "2700000.00"
+      reentry_amount: "970000.00"
+      next_matrix: 2700000
+      monthly_limit: null
+      semester_limit: null
+      yearly_limit: 1
+      rank_up:
+          from: "Blue Diamond Elite"
+          to: "Red Diamond Elite"
+      one_time_bonus:
+          amount: "477000.00"
+          description: "Casa / Retiro Lujo 7 dias"
+      period: "year"
+
+    - id: 2700000
+      amount: "5700000.00"
+      reentry_amount: "2700000.00"
+      next_matrix: 5700000
+      monthly_limit: null
+      semester_limit: null
+      yearly_limit: 1
+      rank_up:
+          from: "Red Diamond Elite"
+          to: "Black Diamond Elite"
+      one_time_bonus:
+          amount: "1777000.00"
+          description: "Propiedad / Viaje ensueño 7 dias"
+      period: "year"
+
+    - id: 5700000
+      amount: "14000000.00"
+      reentry_amount: "5700000.00"
+      next_matrix: 14000000
+      monthly_limit: null
+      semester_limit: null
+      yearly_limit: 1
+      rank_up:
+          from: "Black Diamond Elite"
+          to: "Crown Diamond"
+      one_time_bonus:
+          amount: "3700000.00"
+          description: "Crown Bonus"
+      period: "year"
+
+    - id: 14000000
+      amount: "37000000.00"
+      reentry_amount: "14000000.00"
+      next_matrix: 37000000
+      monthly_limit: null
+      semester_limit: null
+      yearly_limit: 1
+      rank_up:
+          from: "Crown Diamond"
+          to: "Blue Crown Diamond"
+      one_time_bonus:
+          amount: "7000000.00"
+          description: "Blue Crown Bonus"
+      period: "year"
+
+    - id: 37000000
+      amount: "97000000.00"
+      reentry_amount: "37000000.00"
+      next_matrix: 97000000
+      monthly_limit: null
+      semester_limit: null
+      yearly_limit: 1
+      rank_up:
+          from: "Blue Crown Diamond"
+          to: "Red Crown Diamond"
+      one_time_bonus:
+          amount: "14000000.00"
+          description: "Red Crown Bonus"
+      period: "year"
+
+    - id: 97000000
+      amount: "370000000.00"
+      reentry_amount: "97000000.00"
+      next_matrix: null
+      monthly_limit: null
+      semester_limit: null
+      yearly_limit: 1
+      rank_up:
+          from: "Red Crown Diamond"
+          to: "Black Crown Diamond"
+      one_time_bonus:
+          amount: "37000000.00"
+          description: "Black Crown Bonus"
+      period: "year"
 
 notes: |
     This YAML file defines the forced-matrix plan. Keep the plan as pure YAML.
-    Implementation code and examples are stored under `backend/mlm/examples/`.
+    Implementation code and examples are stored under backend/mlm/examples/.
     Virtual balance column and other DB notes can go here.
-

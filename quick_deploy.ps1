@@ -6,7 +6,7 @@ Write-Host "Quick Deploy: Unilevel Fixes" -ForegroundColor Cyan
 Write-Host "====================================" -ForegroundColor Cyan
 
 $PROJECT_ID = "tei-mlm-prod"
-$REGION = "southamerica-east1"
+$REGION = "us-central1"
 $BACKEND_SERVICE = "mlm-backend"
 
 # Step 1: Deploy Backend

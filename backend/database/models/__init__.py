@@ -5,7 +5,7 @@ Import the modules here so that `Base.metadata.create_all()` picks them up when
 the application starts. Keep imports minimal to avoid side effects.
 """
 
-from . import user, product, cart, supplier, order, order_item, payment_transaction, category, withdrawal
+from . import user, product, cart, supplier, order, order_item, payment_transaction, category, withdrawal, product_review, shipment_batch, pickup_point, compliance_record
 try:
 	# optional model, may be added later
 	from . import unilevel
@@ -34,5 +34,10 @@ except Exception:
 
 try:
     from . import siigo_log
+except Exception:
+    pass
+
+try:
+    from . import operating_expense
 except Exception:
     pass

@@ -43,6 +43,15 @@ class MatrixService:
             func.extract('year', MatrixMember.created_at) == year
         ).count()
 
+    def _count_in_rolling_months(self, db: Session, user_id: int, matrix_id: int, ts: datetime, months: int) -> int:
+        from dateutil.relativedelta import relativedelta
+        start_ts = ts - relativedelta(months=months)
+        return db.query(MatrixMember).filter(
+            MatrixMember.user_id == user_id,
+            MatrixMember.matrix_id == matrix_id,
+            MatrixMember.created_at >= start_ts
+        ).count()
+
     def get_user_rank(self, db: Session, user_id: int) -> str:
         # In a real implementation, this might query a separate Rank model or User field.
         # For now, we return a default or fetch from User if implemented.
@@ -97,9 +106,15 @@ class MatrixService:
             if c >= (level_config.monthly_limit or 0):
                 return {"ok": False, "message": "monthly_limit_exceeded"}
 
+        # enforce semester limit
+        if getattr(level_config, 'semester_limit', None) is not None:
+            c = self._count_in_rolling_months(db, user_id, matrix_id, ts, 6)
+            if c >= (level_config.semester_limit or 0):
+                return {"ok": False, "message": "semester_limit_exceeded"}
+
         # enforce yearly limit
         if level_config.yearly_limit is not None:
-            c = self._count_in_year(db, user_id, matrix_id, ts)
+            c = self._count_in_rolling_months(db, user_id, matrix_id, ts, 12)
             if c >= (level_config.yearly_limit or 0):
                 return {"ok": False, "message": "yearly_limit_exceeded"}
 
@@ -201,8 +216,10 @@ class MatrixService:
                     # For simplicity, we'll check monthly limit if set, else yearly.
                     
                     cycles_count = 0
+                    from dateutil.relativedelta import relativedelta
+                    
                     if rank_config.monthly_limit:
-                        start_date = datetime(now.year, now.month, 1)
+                        start_date = now - relativedelta(months=1)
                         cycles_count = db.query(MatrixCommission).filter(
                             MatrixCommission.user_id == user_id,
                             MatrixCommission.matrix_id == matrix_id,
@@ -212,11 +229,23 @@ class MatrixService:
                         
                         if cycles_count >= rank_config.monthly_limit:
                             print(f"User {user_id} hit monthly limit ({rank_config.monthly_limit}) for Matrix {matrix_id}. No reward.")
-                            continue # Skip reward, but maybe still advance? User said "Topes para los ciclos", usually implies stopping everything.
-                            # Let's assume we skip reward AND advance/re-entry to prevent infinite loops or abuse.
+                            continue
+
+                    elif getattr(rank_config, 'semester_limit', None) is not None:
+                        start_date = now - relativedelta(months=6)
+                        cycles_count = db.query(MatrixCommission).filter(
+                            MatrixCommission.user_id == user_id,
+                            MatrixCommission.matrix_id == matrix_id,
+                            MatrixCommission.reason.like("Cycle Reward%"),
+                            MatrixCommission.created_at >= start_date
+                        ).count()
+                        
+                        if cycles_count >= rank_config.semester_limit:
+                            print(f"User {user_id} hit semester limit ({rank_config.semester_limit}) for Matrix {matrix_id}. No reward.")
+                            continue
                     
                     elif rank_config.yearly_limit:
-                        start_date = datetime(now.year, 1, 1)
+                        start_date = now - relativedelta(years=1)
                         cycles_count = db.query(MatrixCommission).filter(
                             MatrixCommission.user_id == user_id,
                             MatrixCommission.matrix_id == matrix_id,
@@ -289,10 +318,17 @@ class MatrixService:
                     )
                     db.add(comm)
 
-                    # 4. Update User Balance (Cash)
+                    # 4. Update User Balance (Cash) Only if Active
                     user = db.query(User).filter(User.id == user_id).with_for_update().first()
+                    is_active_account = False
+                    if user and user.active_until and user.active_until >= datetime.utcnow():
+                        is_active_account = True
+                        
                     if user and cash_reward > 0:
-                        user.purchase_balance = (user.purchase_balance or 0.0) + cash_reward
+                        if is_active_account:
+                            user.purchase_balance = (user.purchase_balance or 0.0) + cash_reward
+                        else:
+                            print(f"⚠️ Matrix cycle cash reward of {cash_reward} for User {user.id} skipped (Expired Account)")
                     
                     # 5. Award Frozen Crypto (if split)
                     if is_split and crypto_tokens > 0:

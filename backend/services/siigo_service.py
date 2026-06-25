@@ -22,6 +22,7 @@ from backend.database.models.order import Order
 from backend.database.models.user import User
 from backend.database.models.siigo_log import SiigoLog
 from backend.utils.dian_math import unit_price_cop, invoice_total_from_items, validate_totals
+from backend.services.storage_service import upload_to_gcs, generate_invoice_filename
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +35,7 @@ SIIGO_API_URL     = os.getenv("SIIGO_API_URL", "https://api.siigo.com/")
 SIIGO_DOCUMENT_ID = int(os.getenv("SIIGO_DOCUMENT_ID", "0"))    # ID tipo comprobante FV
 SIIGO_SELLER_ID   = int(os.getenv("SIIGO_SELLER_ID", "0"))      # ID vendedor en Siigo
 SIIGO_COST_CENTER = os.getenv("SIIGO_COST_CENTER", "")          # (Opcional) Centro de costos
+SIIGO_PARTNER_ID  = os.getenv("SIIGO_PARTNER_ID", "TEIPlatform") # Partner ID registrado en Siigo
 
 # ─────────────────────────────────────────────
 # Tabla: document_type texto → código numérico Siigo / DIAN
@@ -142,7 +144,7 @@ def build_customer_payload(user: User) -> dict:
     }
 
 def get_or_create_siigo_customer(user: User, token: str, db: Session = None) -> str:
-    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json", "Partner-Id": "TEI-Platform"}
+    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json", "Partner-Id": SIIGO_PARTNER_ID}
     identification = (user.document_id or "").replace(".", "").replace(",", "").strip()
     try:
         resp = httpx.get(f"{SIIGO_API_URL}v1/customers?identification={identification}", headers=headers, timeout=15)
@@ -207,7 +209,7 @@ def emit_invoice(order: Order, user: User, db: Session) -> dict:
     due_date = invoice_date 
 
     payload = build_invoice_payload(order, user, p_method_info, due_date, invoice_date)
-    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json", "Partner-Id": "TEI-Platform"}
+    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json", "Partner-Id": SIIGO_PARTNER_ID}
     
     try:
         resp = httpx.post(f"{SIIGO_API_URL}v1/invoices", json=payload, headers=headers, timeout=30)
@@ -221,6 +223,22 @@ def emit_invoice(order: Order, user: User, db: Session) -> dict:
         
         _write_log(db, "emit_invoice", "success", payload, data, resp.status_code, order_id=order.id, 
                    siigo_invoice_id=order.siigo_invoice_id, cufe=order.cufe)
+        
+        # 1.1 RESPALDO AUTOMÁTCO EN GOOGLE CLOUD STORAGE
+        try:
+            pdf_b64 = download_invoice_pdf(order.siigo_invoice_id, token)
+            if pdf_b64:
+                import base64
+                pdf_bytes = base64.b64decode(pdf_b64)
+                filename = generate_invoice_filename(order.id, order.siigo_invoice_id)
+                gcs_url = upload_to_gcs(pdf_bytes, filename)
+                if gcs_url:
+                    order.siigo_invoice_pdf_url = gcs_url
+                    db.commit()
+                    print(f"✅ Factura respaldada en GCS: {gcs_url}")
+        except Exception as e_pdf:
+            logger.error(f"⚠️ Error respaldando PDF en GCS: {e_pdf}")
+
         return data
 
     except Exception as e:
@@ -229,6 +247,18 @@ def emit_invoice(order: Order, user: User, db: Session) -> dict:
         order.siigo_status = "error"
         db.commit()
         raise SiigoAPIError(f"Siigo Error: {error_msg}")
+
+def download_invoice_pdf(invoice_id: str, token: str) -> Optional[str]:
+    """Retrieve the base64 PDF of an invoice from Siigo."""
+    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json", "Partner-Id": SIIGO_PARTNER_ID}
+    try:
+        resp = httpx.get(f"{SIIGO_API_URL}v1/invoices/{invoice_id}/pdf", headers=headers, timeout=15)
+        resp.raise_for_status()
+        # Siigo devuelve un JSON con el campo 'base64'
+        return resp.json().get("base64")
+    except Exception as e:
+        logger.error(f"Error downloading PDF from Siigo: {e}")
+        return None
 
 # ─────────────────────────────────────────────────────────────────
 # HELPERS INTERNOS

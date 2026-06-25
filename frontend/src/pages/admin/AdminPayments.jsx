@@ -64,6 +64,21 @@ export default function AdminPayments() {
         }
     };
 
+    const handleReject = async (paymentId) => {
+        if (!window.confirm('¿Estás seguro de ELIMINAR este pago y su pedido asociado? Esta acción no se puede deshacer y devolverá los productos al inventario.')) {
+            return;
+        }
+
+        try {
+            await api.delete(`/api/admin/reject-payment/${paymentId}`);
+            setMessage('Pago y pedido eliminados exitosamente.');
+            fetchPayments();
+            setTimeout(() => setMessage(''), 5000);
+        } catch (error) {
+            setMessage(error.response?.data?.detail || 'Error al eliminar pago');
+        }
+    };
+
     return (
         <div>
             <div style={{ marginBottom: '2rem' }}>
@@ -199,14 +214,45 @@ export default function AdminPayments() {
                                     </td>
                                     <td style={{ padding: '1rem', fontSize: '0.875rem', color: '#6b7280' }}>
                                         {new Date(payment.created_at).toLocaleDateString('es-ES')}
+                                        <br/>
+                                        {new Date(payment.created_at).toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'})}
+                                        {(() => {
+                                            const hoursDiff = (new Date() - new Date(payment.created_at)) / (1000 * 60 * 60);
+                                            return hoursDiff >= 24 ? (
+                                                <div style={{ color: '#ef4444', fontWeight: 'bold', marginTop: '4px', fontSize: '0.75rem' }}>
+                                                    ⚠️ +24h sin pagar
+                                                </div>
+                                            ) : null;
+                                        })()}
                                     </td>
                                     <td style={{ padding: '1rem' }}>
-                                        {payment.user.registration_complete ? (
+                                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                            {payment.user.registration_complete ? (
+                                                <button
+                                                    onClick={() => handleApprove(payment.id)}
+                                                    style={{
+                                                        padding: '0.5rem 1rem',
+                                                        background: '#10b981',
+                                                        color: 'white',
+                                                        border: 'none',
+                                                        borderRadius: '0.375rem',
+                                                        cursor: 'pointer',
+                                                        fontWeight: '500'
+                                                    }}
+                                                >
+                                                    ✅ Aprobar
+                                                </button>
+                                            ) : (
+                                                <div style={{ fontSize: '0.875rem', color: '#ef4444', flex: '1 1 100%' }}>
+                                                    Usuario debe completar registro primero
+                                                </div>
+                                            )}
+                                            
                                             <button
-                                                onClick={() => handleApprove(payment.id)}
+                                                onClick={() => handleReject(payment.id)}
                                                 style={{
                                                     padding: '0.5rem 1rem',
-                                                    background: '#10b981',
+                                                    background: '#ef4444',
                                                     color: 'white',
                                                     border: 'none',
                                                     borderRadius: '0.375rem',
@@ -214,13 +260,9 @@ export default function AdminPayments() {
                                                     fontWeight: '500'
                                                 }}
                                             >
-                                                ✅ Aprobar
+                                                ❌ Eliminar
                                             </button>
-                                        ) : (
-                                            <div style={{ fontSize: '0.875rem', color: '#ef4444' }}>
-                                                Usuario debe completar registro primero
-                                            </div>
-                                        )}
+                                        </div>
                                     </td>
                                 </tr>
                             ))

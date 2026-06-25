@@ -19,8 +19,11 @@ from backend.utils.auth import get_current_user_optional
 def ping_delete():
     return {"message": "pong-delete - CODE IS UPDATED"}
 
+consecutive_checkout_errors = 0
+
 @router.post("/", response_model=OrderOut)
 def create_order_endpoint(payload: OrderCreate, db: Session = Depends(get_db), current_user=Depends(get_current_user_optional)):
+    global consecutive_checkout_errors
     # Guard against Ghost Orders:
     # If frontend sends a token (implying user) but backend can't resolve it (current_user is None),
     # AND no guest_info is provided, we must reject to prevent an orphan order.
@@ -32,27 +35,48 @@ def create_order_endpoint(payload: OrderCreate, db: Session = Depends(get_db), c
         
         # FIX: Create pending PaymentTransaction for Manual/Bank Transfer orders
         # This ensures they appear in the Admin Panel "Pending Payments" section
-        manual_methods = ["Consignación Bancaria", "Transferencia Bancaria", "Bank Transfer", "Manual", "Consignacion", "bank", "binance", "other"]
+        manual_methods = ["Consignación Bancaria", "Transferencia Bancaria", "Bank Transfer", "Manual", "Consignacion", "bank", "binance", "other", "breb", "pickup"]
         if payload.payment_method in manual_methods:
-            from backend.database.models.payment_transaction import PaymentTransaction
-            
-            # Check if one already exists (unlikely for new order, but safe)
-            existing_tx = db.query(PaymentTransaction).filter(PaymentTransaction.order_id == order.id).first()
-            if not existing_tx:
-                new_tx = PaymentTransaction(
-                    order_id=order.id,
-                    provider="manual", # internal provider name for these
-                    amount=order.total_usd,
-                    currency="USD",
-                    status="pending",
-                    metadata_json={"method": payload.payment_method, "user_note": "Created automatically by system"}
-                )
-                db.add(new_tx)
-                db.commit()
-                # db.refresh(new_tx) # Not strictly needed unless we return it
+            try:
+                from backend.database.models.payment_transaction import PaymentTransaction
+                
+                # Check if one already exists (unlikely for new order, but safe)
+                existing_tx = db.query(PaymentTransaction).filter(PaymentTransaction.order_id == order.id).first()
+                if not existing_tx:
+                    new_tx = PaymentTransaction(
+                        order_id=order.id,
+                        provider="manual", # internal provider name for these
+                        amount=order.total_usd,
+                        currency="USD",
+                        status="pending",
+                        metadata_json={"method": payload.payment_method, "user_note": "Created automatically by system"}
+                    )
+                    db.add(new_tx)
+                    db.commit()
+            except Exception as tx_err:
+                print(f"Warning: Could not create PaymentTransaction: {tx_err}")
+                db.rollback() # Rollback the TX attempt, but order is already committed in create_order
 
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        consecutive_checkout_errors += 1
+        if consecutive_checkout_errors >= 10:
+            from backend.utils.email_service import send_admin_alert_email
+            import traceback
+            error_trace = traceback.format_exc()
+            try:
+                send_admin_alert_email(
+                    "⚠️ Alerta Crítica: Fallos en el Checkout", 
+                    f"El sistema ha registrado 10 intentos de compra fallidos consecutivos.<br><br><b>Último error reportado:</b><br>{str(e)}<br><br><pre>{error_trace}</pre>"
+                )
+            except:
+                pass
+            consecutive_checkout_errors = 0
+            
+        raise HTTPException(status_code=500, detail="Error interno al crear orden")
+    
+    consecutive_checkout_errors = 0
     return order
 
 

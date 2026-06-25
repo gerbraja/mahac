@@ -24,10 +24,10 @@ const CATEGORIES = [
         dbNames: ['Conjuntos', 'Conjunto', 'conjuntos', 'conjunto']
     },
     {
-        id: 'vestuario-premium',
-        name: 'Vestuario Premium',
-        image: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=500&auto=format&fit=crop&q=60',
-        dbNames: ['Premium', 'Premium Vestuario', 'Vestuario Premium']
+        id: 'pijamas',
+        name: 'Pijamas',
+        image: 'https://storage.googleapis.com/tuempresainternacional-assets/images/banner_pijamas.png',
+        dbNames: ['Pijamas', 'Pijama', 'pijamas', 'pijama']
     },
     {
         id: 'vestidos-faldas',
@@ -58,6 +58,12 @@ const CATEGORIES = [
         name: 'Calzado',
         image: 'https://storage.googleapis.com/tuempresainternacional-assets/images/banner_calzado.png',
         dbNames: ['Calzado', 'Zapatos', 'Zapato', 'Tenis', 'Sandalias', 'Sandalia']
+    },
+    {
+        id: 'salud',
+        name: 'Salud',
+        image: 'https://storage.googleapis.com/tuempresainternacional-assets/images/banner_salud.png',
+        dbNames: ['Salud y Bienestar', 'Salud', 'Bienestar']
     }
 ];
 
@@ -254,8 +260,8 @@ const StoreView = () => {
                                    nameLower.includes('sari');
                 } else if (activeCategory === 'conjuntos') {
                     matchesCategory = nameLower.includes('conjunto') || nameLower.includes('cojunto');
-                } else if (activeCategory === 'vestuario-premium') {
-                    matchesCategory = nameLower.includes('premium') || nameLower.includes('exclusivo') || nameLower.includes('lujo') || nameLower.includes('edición especial') || nameLower.includes('edicion especial');
+                } else if (activeCategory === 'pijamas') {
+                    matchesCategory = nameLower.includes('pijama') || nameLower.includes('pijamas');
                 } else if (activeCategory === 'vestidos-faldas') {
                     matchesCategory = (nameLower.includes('vestido') || nameLower.includes('falda') || nameLower.includes('faldas') || nameLower.includes('vestidos')) && !nameLower.includes('baño');
                 } else if (activeCategory === 'vestidos-bano') {
@@ -276,6 +282,8 @@ const StoreView = () => {
                     matchesCategory = isShirt && isHombre;
                 } else if (activeCategory === 'calzado') {
                     matchesCategory = nameLower.includes('zapato') || nameLower.includes('tenis') || nameLower.includes('sandalia') || nameLower.includes('calzado') || nameLower.includes('tacon') || nameLower.includes('tacón') || nameLower.includes('plataforma') || nameLower.includes('baleta') || nameLower.includes('baletas');
+                } else if (activeCategory === 'salud') {
+                    matchesCategory = nameLower.includes('salud') || nameLower.includes('bienestar') || nameLower.includes('suplemento') || nameLower.includes('vitamina') || nameLower.includes('colágeno') || nameLower.includes('colageno');
                 }
             }
         }

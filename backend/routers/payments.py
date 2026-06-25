@@ -2,7 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 import os
+import logging
 from typing import Optional
+
+logger = logging.getLogger(__name__)
 
 from backend.database.connection import get_db
 from backend.utils.auth import get_current_user
@@ -227,3 +230,67 @@ async def payments_webhook(request: Request, db: Session = Depends(get_db)):
         pass
 
     return {"status": "ok", "payment_id": tx.id}
+
+
+@router.get("/api/payments/breb/qr/{order_id}")
+async def get_breb_qr(order_id: int, db: Session = Depends(get_db)):
+    """Genera o recupera un QR Bre-B para un pedido.
+    Usa bancolombia_service (demo hasta que lleguen las credenciales).
+    """
+    order = db.query(Order).filter(Order.id == order_id).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+
+    from backend.services.bancolombia_service import create_qr_payment
+    result = create_qr_payment(order.id, order.total_cop or 0.0)
+    return result
+
+
+@router.post("/api/payments/webhook/breb")
+async def breb_webhook(request: Request, db: Session = Depends(get_db)):
+    """Webhook dedicado para notificaciones de pago Bre-B de Bancolombia.
+    Valida firma HMAC y dispara el flujo de post-pago.
+    """
+    from backend.services.bancolombia_service import verify_webhook_signature
+    from backend.mlm.services.payment_service import process_successful_payment
+
+    body = await request.body()
+    sig_header = request.headers.get("x-bancolombia-signature", "")
+
+    if not verify_webhook_signature(body, sig_header):
+        raise HTTPException(status_code=400, detail="Firma de webhook inválida")
+
+    payload = await request.json()
+    event_type = payload.get("eventType", "").lower()
+    reference = payload.get("reference", "")  # formato: TEI-{order_id}
+
+    # Extraer order_id de la referencia
+    order_id = None
+    if reference.startswith("TEI-"):
+        try:
+            order_id = int(reference.replace("TEI-", ""))
+        except ValueError:
+            pass
+
+    if not order_id:
+        return {"status": "ignored", "reason": "Referencia no reconocida"}
+
+    # Idempotencia: si ya fue procesado, ignorar
+    order = db.query(Order).filter(Order.id == order_id).first()
+    if not order:
+        return {"status": "ignored", "reason": "Orden no encontrada"}
+
+    if order.payment_confirmed_at is not None:
+        return {"status": "ignored", "reason": "Pago ya procesado"}
+
+    # Solo procesar si el evento confirma el pago
+    paid_events = {"payment_approved", "transaction_approved", "breb_paid"}
+    if event_type in paid_events or payload.get("status", "").lower() == "approved":
+        try:
+            process_successful_payment(db, order_id)
+            return {"status": "ok", "order_id": order_id}
+        except Exception as e:
+            logger.error(f"❌ Error procesando pago Bre-B Orden #{order_id}: {e}")
+            raise HTTPException(status_code=500, detail="Error procesando pago")
+
+    return {"status": "ignored", "event": event_type}

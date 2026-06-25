@@ -32,27 +32,36 @@ class User(Base):
     reset_token_expires = Column(DateTime, nullable=True)  # Expiration of reset token
 
     # Additional personal information (from complete registration)
-    document_id = Column(String(50), nullable=True)  # Documento de identidad
-    gender = Column(String(1), nullable=True)  # M/F
-    birth_date = Column(Date, nullable=True)  # Fecha de nacimiento
-    phone = Column(String(20), nullable=True)  # Teléfono
-    
+    first_name = Column(String(100), nullable=True)   # Nombres (Siigo: max 60 chars)
+    last_name = Column(String(100), nullable=True)    # Apellidos (Siigo: max 60 chars)
+    document_id = Column(String(50), nullable=True)   # Documento de identidad
+    gender = Column(String(1), nullable=True)          # M/F
+    birth_date = Column(Date, nullable=True)           # Fecha de nacimiento
+    phone = Column(String(20), nullable=True)          # Teléfono
+
     # Address information
     address = Column(String(500), nullable=True)  # Dirección completa
-    city = Column(String(100), nullable=True)  # Ciudad
+    city = Column(String(100), nullable=True)      # Ciudad (nombre)
     province = Column(String(100), nullable=True)  # Provincia/Estado
-    postal_code = Column(String(20), nullable=True)  # Código postal
-    country = Column(String(100), nullable=True)  # País (del registro)
+    postal_code = Column(String(20), nullable=True) # Código postal (6 dígitos, informativo)
+    municipio_id = Column(String(5), nullable=True)  # Código DIVIPOLA/DANE (5 dígitos, DIAN obligatorio)
+    country = Column(String(100), nullable=True)   # País (del registro)
 
-    # Facturación Electrónica DIAN
-    document_type = Column(String(50), nullable=True) # CC, CE, NIT, PPT
-    company_name = Column(String(255), nullable=True) # Razón social para NIT
-    tax_regime = Column(String(100), nullable=True) # Responsabilidad fiscal
+    # Facturación Electrónica DIAN / Siigo
+    document_type = Column(String(50), nullable=True)    # CC, CE, NIT, PPT, Pasaporte, DNI...
+    verification_digit = Column(String(2), nullable=True) # DV calculado (DIAN, solo Colombia)
+    person_type = Column(String(20), nullable=True)      # 'Natural' o 'Juridica' (Siigo)
+    company_name = Column(String(255), nullable=True)    # Razón social para NIT
+    tax_regime = Column(String(100), nullable=True)      # Responsabilidad fiscal
 
     # Earnings fields for commission payouts
     monthly_earnings = Column(Float, default=0.0)
     total_earnings = Column(Float, default=0.0)
     available_balance = Column(Float, default=0.0)
+    
+    # Active Status expiration and Eligibility
+    active_until = Column(DateTime, nullable=True) # If now() > active_until, user is inactive for commissions
+    has_package = Column(Boolean, default=False)   # True if user has purchased an activation package
     
     # New Bank Model Columns
     bank_balance = Column(Float, default=0.0)        # 🟡 Caja Fuerte

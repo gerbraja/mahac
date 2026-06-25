@@ -15,7 +15,7 @@ const AdminSupplierOrders = () => {
         setError('');
         try {
             const token = localStorage.getItem('access_token');
-            const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+            const baseUrl = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
             const queryParams = new URLSearchParams();
             if (globalCountry && globalCountry !== 'Todos') queryParams.append('country', globalCountry);
 
@@ -44,7 +44,7 @@ const AdminSupplierOrders = () => {
 
         try {
             const token = localStorage.getItem('access_token');
-            const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+            const baseUrl = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
             await axios.post(`${baseUrl}/api/admin/supplier-orders/archive`,
                 { order_item_ids: orderItemIds },
                 { headers: { Authorization: `Bearer ${token}` } }
@@ -137,42 +137,49 @@ const AdminSupplierOrders = () => {
 
                                 {/* Products List */}
                                 <div className="p-6">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                                        {group.products.map((product) => (
-                                            <div key={product.product_id} className="bg-white border text-center border-gray-100 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
-                                                <div className="aspect-square w-full rounded-md bg-gray-50 flex items-center justify-center overflow-hidden mb-4 border border-gray-100">
-                                                    {product.image_url ? (
-                                                        <img
-                                                            src={product.image_url}
-                                                            alt={product.product_name}
-                                                            className="w-full h-full object-cover"
-                                                        />
-                                                    ) : (
-                                                        <Package className="w-12 h-12 text-gray-300" />
+                                    {group.products.length === 0 ? (
+                                        <div className="text-center py-8 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+                                            <Package className="w-10 h-10 text-gray-300 mx-auto mb-2" />
+                                            <p className="text-gray-500 font-medium">0 pedidos pendientes para este fabricante</p>
+                                        </div>
+                                    ) : (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                                            {group.products.map((product) => (
+                                                <div key={product.product_id} className="bg-white border text-center border-gray-100 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
+                                                    <div className="aspect-square w-full rounded-md bg-gray-50 flex items-center justify-center overflow-hidden mb-4 border border-gray-100">
+                                                        {product.image_url ? (
+                                                            <img
+                                                                src={product.image_url}
+                                                                alt={product.product_name}
+                                                                className="w-full h-full object-cover"
+                                                            />
+                                                        ) : (
+                                                            <Package className="w-12 h-12 text-gray-300" />
+                                                        )}
+                                                    </div>
+
+                                                    <h3 className="font-medium text-gray-800 line-clamp-2 min-h-[40px] mb-1" title={product.product_name}>
+                                                        {product.product_name}
+                                                    </h3>
+
+                                                    {product.selected_options && (
+                                                        <p className="text-sm font-semibold text-blue-600 mb-2">
+                                                            Opción: {Object.entries(JSON.parse(product.selected_options)).map(([k, v]) => `${k}: ${v}`).join(', ')}
+                                                        </p>
                                                     )}
+
+                                                    {product.sku && (
+                                                        <p className="text-xs text-gray-500 mb-3">Ref: {product.sku}</p>
+                                                    )}
+
+                                                    <div className="bg-blue-50 text-blue-700 py-2 px-4 rounded-md font-bold text-lg inline-flex items-center gap-2">
+                                                        <span>x{product.total_quantity}</span>
+                                                        <span className="text-sm font-normal text-blue-600">vendidos</span>
+                                                    </div>
                                                 </div>
-
-                                                <h3 className="font-medium text-gray-800 line-clamp-2 min-h-[40px] mb-1" title={product.product_name}>
-                                                    {product.product_name}
-                                                </h3>
-
-                                                {product.selected_options && (
-                                                    <p className="text-sm font-semibold text-blue-600 mb-2">
-                                                        Opción: {Object.entries(JSON.parse(product.selected_options)).map(([k, v]) => `${k}: ${v}`).join(', ')}
-                                                    </p>
-                                                )}
-
-                                                {product.sku && (
-                                                    <p className="text-xs text-gray-500 mb-3">Ref: {product.sku}</p>
-                                                )}
-
-                                                <div className="bg-blue-50 text-blue-700 py-2 px-4 rounded-md font-bold text-lg inline-flex items-center gap-2">
-                                                    <span>x{product.total_quantity}</span>
-                                                    <span className="text-sm font-normal text-blue-600">vendidos</span>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         );

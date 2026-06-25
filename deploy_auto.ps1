@@ -7,7 +7,8 @@ Write-Host "Starting AUTOMATED Google Cloud Deployment for TEI MLM" -ForegroundC
 # Configuration
 $PROJECT_ID = "tei-mlm-prod"
 $REGION = "southamerica-east1"
-$DB_INSTANCE = "mlm-db"
+$DB_INSTANCE = "mlm-db-us"
+$DB_REGION = "us-central1"
 $DB_NAME = "tiendavirtual"
 $BACKEND_SERVICE = "mlm-backend"
 $FRONTEND_BUCKET = "tuempresainternacional-frontend"
@@ -36,7 +37,7 @@ Write-Host "Step 3: Creating Cloud SQL Database" -ForegroundColor Yellow
 Write-Host "Using provided database password..."
 
 # Create Instance
-cmd /c "gcloud sql instances create $DB_INSTANCE --database-version=POSTGRES_15 --tier=db-f1-micro --region=$REGION --root-password=$DB_PASSWORD -q 2>NUL"
+cmd /c "gcloud sql instances create $DB_INSTANCE --database-version=POSTGRES_15 --tier=db-f1-micro --region=$DB_REGION --root-password=$DB_PASSWORD -q 2>NUL"
 
 # Create Database
 cmd /c "gcloud sql databases create $DB_NAME --instance=$DB_INSTANCE -q 2>NUL"

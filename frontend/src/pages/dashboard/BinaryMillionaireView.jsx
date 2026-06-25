@@ -21,7 +21,9 @@ const BinaryMillionaireView = () => {
         const token = localStorage.getItem('access_token');
         if (token) {
             try {
-                const payload = JSON.parse(atob(token.split('.')[1]));
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const payload = JSON.parse(atob(base64));
                 return payload.sub || payload.user_id;
             } catch (e) {
                 console.error('Error decoding token:', e);

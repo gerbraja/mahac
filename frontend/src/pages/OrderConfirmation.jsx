@@ -18,6 +18,9 @@ const OrderConfirmation = () => {
 
     const [hasPin, setHasPin] = useState(false);
 
+    const [brebData, setBrebData] = useState(null);
+    const [fetchingBreb, setFetchingBreb] = useState(false);
+
     useEffect(() => {
         const fetchData = async () => {
             try {
@@ -29,6 +32,11 @@ const OrderConfirmation = () => {
                 const resUser = await api.get('/auth/me');
                 setHasPin(resUser.data.has_transaction_pin);
 
+                // If Bre-B, fetch QR
+                if (resOrder.data.payment_method === 'breb') {
+                    fetchBrebQR();
+                }
+
             } catch (error) {
                 console.error("Error fetching data:", error);
             } finally {
@@ -37,6 +45,40 @@ const OrderConfirmation = () => {
         };
         fetchData();
     }, [orderId]);
+
+    const fetchBrebQR = async () => {
+        setFetchingBreb(true);
+        try {
+            const res = await api.get(`/api/payments/breb/qr/${orderId}`);
+            setBrebData(res.data);
+        } catch (e) {
+            console.error("Error fetching Bre-B QR", e);
+        } finally {
+            setFetchingBreb(false);
+        }
+    };
+
+    // Polling for Order Status (Auto-refresh on payment)
+    useEffect(() => {
+        if (!order || order.status === 'paid' || order.status === 'pendiente_envio' || order.status === 'completado') return;
+
+        const interval = setInterval(async () => {
+            try {
+                const res = await api.get(`/api/orders/${orderId}`);
+                if (res.data.status !== order.status) {
+                    setOrder(res.data);
+                    if (res.data.status === 'paid' || res.data.status === 'pendiente_envio' || res.data.status === 'completado') {
+                        clearInterval(interval);
+                        alert("✅ ¡Pago confirmado! Estamos procesando tu pedido.");
+                    }
+                }
+            } catch (e) {
+                console.error("Polling error", e);
+            }
+        }, 5000);
+
+        return () => clearInterval(interval);
+    }, [order, orderId]);
 
     if (loading) return <div className="p-8 text-center">Cargando detalles del pedido...</div>;
     if (!order) return <div className="p-8 text-center text-red-600">Pedido no encontrado.</div>;
@@ -60,7 +102,7 @@ const OrderConfirmation = () => {
                 return;
             }
             setShowWalletModal(true);
-        } else if (paymentMethod === 'bank' || paymentMethod === 'binance' || order.payment_method === 'binance') {
+        } else if (paymentMethod === 'bank' || paymentMethod === 'breb' || paymentMethod === 'binance' || order.payment_method === 'binance') {
             alert("Por favor envía el comprobante al correo ventas@tuempresainternacional.com para confirmar tu pago. Tu pedido ha sido registrado correctamente.");
             navigate('/dashboard/orders');
         } else {
@@ -281,7 +323,47 @@ const OrderConfirmation = () => {
                                 </div>
                             </label>
 
-                            {/* Other Options */}
+                            {/* Option breb commented out to simplify options
+                            <label className={`flex items-start gap-4 p-4 border-2 rounded-xl cursor-pointer transition-all ${paymentMethod === 'breb' ? 'border-purple-600 bg-purple-50' : 'border-gray-200 hover:border-purple-300'}`}>
+                                <input
+                                    type="radio"
+                                    name="payment"
+                                    value="breb"
+                                    checked={paymentMethod === 'breb'}
+                                    onChange={(e) => setPaymentMethod(e.target.value)}
+                                    className="mt-1 w-5 h-5 text-purple-600"
+                                />
+                                <div className="flex-1">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-2xl">📲</span>
+                                        <span className="font-bold text-gray-800">Bre-B / Pago Rápido (QR)</span>
+                                    </div>
+                                    <div className="mt-2 text-sm text-gray-700 bg-white p-3 rounded border border-gray-200">
+                                        <p className="mb-3">Puedes pagar desde cualquier banco (Bancolombia, Nequi, DaviPlata, etc.) escaneando este código QR o ingresando nuestra Llave Bre-B.</p>
+                                        <div className="flex flex-col items-center mb-3">
+                                            <p className="font-bold text-lg mb-1">Total a Pagar:</p>
+                                            <p className="text-2xl font-mono text-purple-600 font-bold">${order.total_cop?.toLocaleString()} COP</p>
+                                        </div>
+                                        <div className="flex justify-center mb-3">
+                                            {fetchingBreb ? (
+                                                <div className="w-48 h-48 border rounded flex items-center justify-center bg-gray-50">Generando QR...</div>
+                                            ) : brebData?.qr_code && brebData.qr_code !== "PLACEHOLDER_QR_DATA_URL" ? (
+                                                <img src={brebData.qr_code} alt="Bre-B QR" className="w-48 h-48 object-contain border rounded shadow" />
+                                            ) : (
+                                                <div className="w-48 h-48 border-2 border-dashed border-purple-300 rounded-lg flex items-center justify-center bg-purple-50 text-purple-600 font-bold text-center p-4">
+                                                    📲 QR Bre-B <br/> Disponible el Lunes
+                                                </div>
+                                            )}
+                                        </div>
+                                        <p className="text-center"><strong>Llave Bre-B (Celular):</strong> {brebData?.llave_breb || "300 XXX XXXX"}</p>
+                                        <p className="text-center text-xs text-gray-500 mt-1">Referencia: {brebData?.reference || `REF-${orderId}`}</p>
+                                        <p className="mt-4 text-xs text-green-600 font-bold text-center animate-pulse">✨ El sistema detectará tu pago automáticamente al instante.</p>
+                                    </div>
+                                </div>
+                            </label>
+                            */}
+
+                            {/* Other Options commented out to simplify options
                             <div className="grid grid-cols-2 gap-4">
                                 {['Pagar en Oficina', 'PSE', 'Nequi', 'Efecty'].map((method) => (
                                     <label key={method} className={`flex items-center gap-3 p-3 border-2 rounded-xl cursor-pointer transition-all ${paymentMethod === method ? 'border-blue-600 bg-blue-50' : 'border-gray-200 hover:border-blue-300'}`}>
@@ -297,8 +379,9 @@ const OrderConfirmation = () => {
                                     </label>
                                 ))}
                             </div>
+                            */}
 
-                            {/* Dynamic Forms for Other Methods */}
+                            {/* Dynamic Forms for Other Methods commented out to simplify options
                             {(paymentMethod === 'PSE' || paymentMethod === 'Nequi' || paymentMethod === 'Efecty') && (
                                 <motion.div
                                     initial={{ opacity: 0, height: 0 }}
@@ -326,6 +409,7 @@ const OrderConfirmation = () => {
                                     </div>
                                 </motion.div>
                             )}
+                            */}
                         </div>
                     </div>
 

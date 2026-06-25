@@ -3,6 +3,8 @@ import { useCart } from "../context/CartContext";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api/api";
 import { motion, AnimatePresence } from 'framer-motion';
+import { Country, State, City } from 'country-state-city';
+import { COLOMBIA_DIVIPOLA_COMPLETO } from '../data/colombiaDivipolaCompleto';
 
 export default function Checkout() {
     const { cart, clearCart } = useCart();
@@ -20,6 +22,9 @@ export default function Checkout() {
     const [shippingMethod, setShippingMethod] = useState("delivery"); // pickup, delivery
     const [shippingAddress, setShippingAddress] = useState("");
     const [shippingCity, setShippingCity] = useState("");
+    const [selectedCountryCode, setSelectedCountryCode] = useState("CO");
+    const [selectedStateCode, setSelectedStateCode] = useState("");
+    const [shippingDivipola, setShippingDivipola] = useState("");
 
     // Payment Method State
     const [paymentMethod, setPaymentMethod] = useState("");
@@ -27,6 +32,17 @@ export default function Checkout() {
     // Pickup Points State
     const [pickupPoints, setPickupPoints] = useState([]);
     const [selectedPointId, setSelectedPointId] = useState("");
+
+    // Dynamic Shipping State
+    const [shippingDetails, setShippingDetails] = useState({
+        costo_flete_real: 0,
+        costo_cobrado_cliente: 0,
+        subsidio_aplicado: 0,
+        base_iva: 0,
+        iva_flete: 0,
+        mensaje: ''
+    });
+    const [fetchingShipping, setFetchingShipping] = useState(false);
 
     // Fetch Pickup Points
     useEffect(() => {
@@ -54,34 +70,79 @@ export default function Checkout() {
     const subtotalCOP = cart.reduce((sum, p) => sum + (p.price_local || 0) * p.quantity, 0);
     const totalWeightGrams = cart.reduce((sum, p) => sum + (p.weight_grams || 500) * p.quantity, 0);
 
-    let shippingCostCOP = 0;
-    if (shippingMethod === "delivery") {
-        if (subtotalCOP >= 397000) {
-            shippingCostCOP = 0;
-        } else {
-            // Quantity-Based Shipping Cost
-            // Base cost: $13,700 for the first product
-            // Additional cost: $1,700 for each additional product
-            const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+    // Call dynamic shipping API
+    useEffect(() => {
+        const fetchShipping = async () => {
+            if (cart.length === 0) return;
+            setFetchingShipping(true);
+            try {
+                // If it's pickup but no point selected yet, wait.
+                if (shippingMethod === "pickup" && !selectedPointId) {
+                    setShippingDetails({ costo_flete_real: 0, costo_cobrado_cliente: 0, subsidio_aplicado: 0, base_iva: 0, iva_flete: 0, mensaje: 'Selecciona un punto de recogida.' });
+                    setFetchingShipping(false);
+                    return;
+                }
+                
+                // Try to infer divipola, backend defaults to NACIONAL if empty
+                let pseudoDivipola = "";
+                let cityToTest = shippingCity;
 
-            if (totalItems > 0) {
-                const baseRate = 13700;
-                const additionalRate = 1700;
-                shippingCostCOP = baseRate + ((totalItems - 1) * additionalRate);
-            } else {
-                shippingCostCOP = 0;
+                if (shippingMethod === "pickup" && selectedPointId) {
+                    const point = pickupPoints.find(p => p.id === parseInt(selectedPointId));
+                    if (point) cityToTest = point.city;
+                } else if (shippingMethod === "delivery" && shippingDivipola) {
+                    pseudoDivipola = shippingDivipola;
+                }
+
+                if (!pseudoDivipola) {
+                    if (cityToTest.toLowerCase().includes("medellín") || cityToTest.toLowerCase().includes("medellin")) {
+                        pseudoDivipola = "05001";
+                    } else if (cityToTest.length >= 3) {
+                        pseudoDivipola = "00000"; 
+                    }
+                }
+
+                const reqData = {
+                    divipola_destino: pseudoDivipola,
+                    shipping_method: shippingMethod,
+                    items: cart.map(item => ({ product_id: item.id, quantity: item.quantity }))
+                };
+
+                const res = await api.post("/api/shipping/calculate", reqData);
+                setShippingDetails(res.data);
+            } catch (error) {
+            console.error("Error calculating shipping", error);
+            const detail = error.response?.data?.detail || 'Error al cotizar envío.';
+            setShippingDetails({ ...shippingDetails, costo_flete_real: 0, costo_cobrado_cliente: null, mensaje: detail });
+        } finally {
+                setFetchingShipping(false);
             }
-        }
-    }
+        };
 
-    const totalCOP = subtotalCOP + shippingCostCOP;
+        const timeoutId = setTimeout(() => {
+            if (shippingMethod === 'pickup' && selectedPointId) {
+                fetchShipping();
+            } else if (shippingMethod === 'delivery' && shippingCity) {
+                fetchShipping();
+            } else {
+                setShippingDetails({ costo_flete_real: 0, costo_cobrado_cliente: null, subsidio_aplicado: 0, base_iva: 0, iva_flete: 0, mensaje: 'Ingresa una ciudad o punto para cotizar.' });
+            }
+        }, 1000);
+
+        return () => clearTimeout(timeoutId);
+    }, [shippingMethod, shippingCity, selectedPointId, cart, shippingDivipola]);
+
+    const totalCOP = subtotalCOP + (shippingDetails.costo_cobrado_cliente || 0);
+
+    const hasSubsidizedItems = cart.some(item => item.shipping_class === 'subsidized' || item.product?.shipping_class === 'subsidized');
+    const hasFreeItems = cart.some(item => item.shipping_class === 'free' || item.product?.shipping_class === 'free');
 
     const handleCreateOrder = async () => {
         setError("");
 
         // Validate
-        if (shippingMethod === "delivery" && (!shippingAddress || !shippingCity)) {
-            setError("Por favor completa la dirección de envío y ciudad.");
+        if (shippingMethod === "delivery" && (!shippingAddress || !shippingCity || !shippingDivipola || !selectedStateCode)) {
+            setError("Por favor completa todos los campos de la dirección de envío (incluyendo Provincia, Ciudad y DIVIPOLA).");
             return;
         }
 
@@ -122,7 +183,12 @@ export default function Checkout() {
                     quantity: item.quantity
                 })),
                 shipping_address: finalAddress,
-                guest_info: !token ? guestInfo : null
+                shipping_type: shippingMethod, // delivery or pickup
+                guest_info: !token ? guestInfo : null,
+                // Add detailed shipping fields for backend
+                shipping_cost_base: shippingDetails.base_iva || 0,
+                shipping_tax_amount: shippingDetails.iva_flete || 0,
+                pickup_point_id: shippingMethod === "pickup" ? parseInt(selectedPointId) : null
             };
 
             const res = await api.post("/api/orders/", payload);
@@ -133,7 +199,16 @@ export default function Checkout() {
 
         } catch (err) {
             console.error("Order creation error:", err);
-            setError(err.response?.data?.detail || "Error al crear la orden.");
+            const detail = err.response?.data?.detail;
+            if (detail) {
+                if (typeof detail === 'string') {
+                    setError(detail);
+                } else {
+                    setError(JSON.stringify(detail));
+                }
+            } else {
+                setError("Error al crear la orden. Por favor intenta de nuevo o contacta soporte.");
+            }
         } finally {
             setLoading(false);
         }
@@ -231,24 +306,71 @@ export default function Checkout() {
                         {shippingMethod === "delivery" && (
                             <div className="grid grid-cols-1 gap-4 animate-fadeIn">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700">Dirección de Entrega</label>
+                                    <label className="block text-sm font-medium text-gray-700">Dirección Completa *</label>
                                     <input
                                         type="text"
                                         className="w-full p-2 border border-gray-300 rounded-md"
-                                        placeholder="Calle 123 # 45-67"
+                                        placeholder="Calle, número, apartamento, etc."
                                         value={shippingAddress}
                                         onChange={(e) => setShippingAddress(e.target.value)}
                                     />
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700">Ciudad / Municipio</label>
-                                    <input
-                                        type="text"
-                                        className="w-full p-2 border border-gray-300 rounded-md"
-                                        placeholder="Bogotá, Medellín..."
-                                        value={shippingCity}
-                                        onChange={(e) => setShippingCity(e.target.value)}
-                                    />
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700">Provincia/Estado *</label>
+                                        <select
+                                            className="w-full p-2 border border-gray-300 rounded-md bg-white"
+                                            value={selectedStateCode}
+                                            onChange={(e) => {
+                                                setSelectedStateCode(e.target.value);
+                                                setShippingCity("");
+                                                setShippingDivipola("");
+                                            }}
+                                        >
+                                            <option value="">Selecciona...</option>
+                                            {State.getStatesOfCountry(selectedCountryCode).map((state) => (
+                                                <option key={state.isoCode} value={state.isoCode}>
+                                                    {state.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700">Ciudad *</label>
+                                        <select
+                                            className="w-full p-2 border border-gray-300 rounded-md bg-white"
+                                            value={shippingCity}
+                                            onChange={(e) => {
+                                                const cityName = e.target.value;
+                                                setShippingCity(cityName);
+                                                if (selectedCountryCode === 'CO' && cityName) {
+                                                    const divipolaCode = COLOMBIA_DIVIPOLA_COMPLETO[selectedStateCode]?.[cityName];
+                                                    if (divipolaCode) setShippingDivipola(divipolaCode);
+                                                }
+                                            }}
+                                            disabled={!selectedStateCode}
+                                        >
+                                            <option value="">Selecciona...</option>
+                                            {City.getCitiesOfState(selectedCountryCode, selectedStateCode).map((city) => (
+                                                <option key={city.name} value={city.name}>
+                                                    {city.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700">Código DIVIPOLA *</label>
+                                        <input
+                                            type="text"
+                                            className="w-full p-2 border border-gray-300 rounded-md"
+                                            placeholder="Ej: 05001"
+                                            value={shippingDivipola}
+                                            onChange={(e) => setShippingDivipola(e.target.value)}
+                                            maxLength={5}
+                                            pattern="^[0-9]{5}$"
+                                            title="El código DIVIPOLA debe tener exactamente 5 dígitos"
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         )}
@@ -323,7 +445,23 @@ export default function Checkout() {
                                 </div>
                             </label>
 
-                            {/* Other mock options */}
+                            {/* Option breb commented out to simplify options
+                            <label className={`flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50 ${paymentMethod === "breb" ? "border-purple-500 bg-purple-50" : "border-gray-200"}`}>
+                                <input
+                                    type="radio"
+                                    name="payment"
+                                    value="breb"
+                                    checked={paymentMethod === "breb"}
+                                    onChange={(e) => setPaymentMethod(e.target.value)}
+                                    className="w-5 h-5 text-purple-600 mr-3"
+                                />
+                                <div className="flex-1">
+                                    <span className="font-bold block">📲 Bre-B / Pago Rápido (QR)</span>
+                                    <span className="text-xs text-gray-500">Paga al instante sin comisiones desde la App de tu banco escaneando nuestro QR o llave Bre-B.</span>
+                                </div>
+                            </label>
+                            */}
+
                             <label className={`flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50 ${paymentMethod === "binance" ? "border-blue-500 bg-blue-50" : "border-gray-200"}`}>
                                 <input
                                     type="radio"
@@ -339,6 +477,7 @@ export default function Checkout() {
                                 </div>
                             </label>
 
+                            {/* Option other commented out to simplify options
                             <label className={`flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50 ${paymentMethod === "other" ? "border-blue-500 bg-blue-50" : "border-gray-200"}`}>
                                 <input
                                     type="radio"
@@ -352,6 +491,7 @@ export default function Checkout() {
                                     <span className="font-bold block">📍 Otros (Efecty, Nequi, Pago en Oficina)</span>
                                 </div>
                             </label>
+                            */}
                         </div>
                     </div>
 
@@ -366,15 +506,40 @@ export default function Checkout() {
                                 <span className="text-gray-600">Subtotal</span>
                                 <span className="font-bold">${subtotalCOP.toLocaleString()} COP</span>
                             </div>
-                            <div className="flex justify-between">
-                                <span className="text-gray-600">Envío</span>
-                                <span className="font-bold">{shippingCostCOP === 0 ? "Gratis" : `$${shippingCostCOP.toLocaleString()}`}</span>
+                            <div className="flex justify-between items-center">
+                                <span className="text-gray-600">
+                                    Flete {shippingMethod === 'pickup' ? '(Recogida 50% Dto)' : ''}
+                                </span>
+                                <span className="font-bold">
+                                    {fetchingShipping ? "Calculando..." : 
+                                    (shippingDetails.costo_cobrado_cliente === null ? "Por calcular" : 
+                                     (shippingDetails.costo_cobrado_cliente === 0 ? "¡Gratis!" : `$${shippingDetails.costo_cobrado_cliente.toLocaleString()} COP`))
+                                    }
+                                </span>
                             </div>
+                            {shippingDetails.subsidio_aplicado > 0 && (
+                                <div className="flex justify-between text-xs text-blue-600">
+                                    <span>Subsidio Flete Aplicado</span>
+                                    <span className="font-bold">- ${shippingDetails.subsidio_aplicado.toLocaleString()} COP</span>
+                                </div>
+                            )}
+
+                            
                             <div className="border-t pt-2 mt-2 flex justify-between text-lg font-bold text-green-600">
                                 <span>Total</span>
                                 <span>${totalCOP.toLocaleString()} COP</span>
                             </div>
                         </div>
+
+                        {shippingDetails.mensaje && (
+                            <p className="text-xs text-center text-blue-500 mb-3 font-semibold">{shippingDetails.mensaje}</p>
+                        )}
+                        
+                        {(hasSubsidizedItems || subtotalCOP >= 490000) && !hasFreeItems && (
+                            <div className="bg-blue-50 border border-blue-200 text-blue-800 text-xs p-3 rounded mb-4">
+                                ℹ️ <b>Aviso:</b> El beneficio de envío gratis asociado a tu pedido cubre el flete <b>únicamente hasta por un valor máximo de $17.700</b>. Cualquier excedente calculado por la transportadora se reflejará en el total a pagar.
+                            </div>
+                        )}
 
                         <button
                             onClick={handleCreateOrder}

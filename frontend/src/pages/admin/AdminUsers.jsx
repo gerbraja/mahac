@@ -162,9 +162,13 @@ Email: ${user.email}
             const { access_token } = response.data;
 
             if (access_token) {
-                // Logout Current Admin (technically nice to save it but simple replacement is fine for now)
+                // Save current admin token to allow returning later
+                const currentAdminToken = localStorage.getItem('access_token');
+                localStorage.setItem('admin_token', currentAdminToken);
+
+                // Logout Current Admin (replace with impersonated user's token)
                 localStorage.setItem('access_token', access_token);
-                localStorage.setItem('userId', user.id); // Fix: Update userId to impersonated user
+                localStorage.setItem('userId', user.id);
 
                 // Optional: Save admin token to session storage to "return" later? 
                 // For now, simpler is creating a clean session for the user.

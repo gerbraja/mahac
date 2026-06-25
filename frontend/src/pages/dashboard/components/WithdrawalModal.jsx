@@ -21,6 +21,12 @@ const WithdrawalModal = ({ onClose, onWithdrawSuccess }) => {
             const res = await api.get('/api/wallet/release-status');
             setStatus(res.data);
             setKycVerified(res.data.kyc_verified);
+            
+            if (res.data.verified_bank_name && res.data.verified_bank_account_number) {
+                const infoStr = `Banco: ${res.data.verified_bank_name} | Cuenta: ${res.data.verified_bank_account_type || 'Ahorros'} No. ${res.data.verified_bank_account_number}`;
+                setPaymentInfo(infoStr);
+            }
+            
             // Default to release tab if funds available to release
             if (res.data.available_to_release > 0) {
                 setActiveTab('release');
@@ -165,11 +171,17 @@ const WithdrawalModal = ({ onClose, onWithdrawSuccess }) => {
                                 <textarea
                                     value={paymentInfo}
                                     onChange={(e) => setPaymentInfo(e.target.value)}
-                                    className="w-full p-2 border rounded focus:ring-2 focus:ring-green-500 outline-none text-sm"
+                                    className={`w-full p-2 border rounded focus:ring-2 focus:ring-green-500 outline-none text-sm ${status?.verified_bank_name ? 'bg-gray-50 text-gray-600 cursor-not-allowed' : ''}`}
                                     rows="2"
                                     placeholder="Banco, Cuenta, Nombre..."
+                                    readOnly={!!status?.verified_bank_name}
                                     disabled={!kycVerified}
                                 />
+                                {status?.verified_bank_name && (
+                                    <p className="text-xs text-green-600 mt-1 flex items-center">
+                                        <span className="mr-1">✔</span> Cuenta bancaria verificada por KYC
+                                    </p>
+                                )}
                             </div>
 
                             <button

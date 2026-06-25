@@ -75,6 +75,11 @@ Write-Host "Building and deploying backend (this will take 5-10 minutes)..." -Fo
     --set-env-vars="DB_USER=postgres" `
     --set-env-vars="DB_PASS=$DB_PASSWORD_PLAIN" `
     --set-env-vars="DB_NAME=$DB_NAME" `
+    --set-env-vars="SMTP_SERVER=smtp-relay.brevo.com" `
+    --set-env-vars="SMTP_PORT=587" `
+    --set-env-vars="EMAIL_SENDER=a9b7a7001@smtp-brevo.com" `
+    --set-env-vars="EMAIL_PASSWORD=zvWX76U1jDZ9sBtQ" `
+    --set-env-vars="GEMINI_API_KEY=AIzaSyABcha3m2_Pa-fIIKjf3lTIkZ_B2sMIWSE" `
     --add-cloudsql-instances=$CONNECTION_NAME `
     --port=8000
 

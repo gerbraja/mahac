@@ -25,7 +25,7 @@ export default function HonorRanksView() {
             name: 'Gold',
             emoji: '🥇',
             color: 'from-yellow-400 to-yellow-600',
-            commission: 3700,
+            commission: 4700,
             reward: 'Reward $277 worth of products',
             reward_value: 277
         },
@@ -34,7 +34,7 @@ export default function HonorRanksView() {
             name: 'Platinum',
             emoji: '💎',
             color: 'from-blue-300 to-blue-500',
-            commission: 5700,
+            commission: 8700,
             reward: 'Gift for $1000 USD',
             reward_value: 1000
         },
@@ -43,7 +43,7 @@ export default function HonorRanksView() {
             name: 'Rubí',
             emoji: '💍',
             color: 'from-red-600 to-red-800',
-            commission: 9700,
+            commission: 19700,
             reward: 'Domestic Trip x3',
             reward_value: null
         },
@@ -52,7 +52,7 @@ export default function HonorRanksView() {
             name: 'Esmeralda',
             emoji: '💚',
             color: 'from-green-600 to-green-800',
-            commission: 19700,
+            commission: 39700,
             reward: 'Cruise x4',
             reward_value: null
         },
@@ -61,7 +61,7 @@ export default function HonorRanksView() {
             name: 'Diamond',
             emoji: '✨',
             color: 'from-cyan-400 to-cyan-600',
-            commission: 37700,
+            commission: 77700,
             reward: 'International Cruise x5 + Pool 7%',
             reward_value: null
         },
@@ -70,8 +70,62 @@ export default function HonorRanksView() {
             name: 'Blue Diamond',
             emoji: '🔷',
             color: 'from-indigo-600 to-indigo-800',
-            commission: 77700,
+            commission: 127700,
             reward: 'Luxury trip x5 + Pool 7%',
+            reward_value: null
+        },
+        {
+            id: 8,
+            name: 'Diamante Rojo',
+            emoji: '🔴',
+            color: 'from-red-500 to-rose-700',
+            commission: 277700,
+            reward: 'Una Propiedad $400.000 USD + Pool 7%',
+            reward_value: null
+        },
+        {
+            id: 9,
+            name: 'Diamante Negro',
+            emoji: '🖤',
+            color: 'from-gray-800 to-gray-950',
+            commission: 477700,
+            reward: '🔒 Premio Confidencial (Revelado en Club Diamante)',
+            reward_value: null
+        },
+        {
+            id: 10,
+            name: 'Diamante Corona',
+            emoji: '👑',
+            color: 'from-amber-500 to-yellow-700',
+            commission: 777700,
+            reward: '🔒 Premio Confidencial (Revelado en Club Diamante)',
+            reward_value: null
+        },
+        {
+            id: 11,
+            name: 'Diamante Corona Azul',
+            emoji: '💠',
+            color: 'from-blue-600 to-blue-900',
+            commission: 1777700,
+            reward: '🔒 Premio Confidencial (Revelado en Club Diamante)',
+            reward_value: null
+        },
+        {
+            id: 12,
+            name: 'Diamante Corona Rojo',
+            emoji: '❤️‍🔥',
+            color: 'from-rose-600 to-red-900',
+            commission: 7777700,
+            reward: '🔒 Premio Confidencial (Revelado en Club Diamante)',
+            reward_value: null
+        },
+        {
+            id: 13,
+            name: 'Diamante Corona Negro',
+            emoji: '🏆',
+            color: 'from-slate-700 to-slate-950',
+            commission: 37777700,
+            reward: '🔒 Premio Confidencial (Revelado en Club Diamante)',
             reward_value: null
         },
     ];
@@ -194,7 +248,7 @@ export default function HonorRanksView() {
                             <div className="flex justify-between items-start mb-4">
                                 <div className="text-5xl">{rank.emoji}</div>
                                 <div className="text-sm bg-white/30 px-3 py-1 rounded-full">
-                                    Nivel {index + 1}/7
+                                    Nivel {index + 1}/{defaultRanks.length}
                                 </div>
                             </div>
 

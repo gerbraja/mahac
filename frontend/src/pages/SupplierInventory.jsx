@@ -250,7 +250,7 @@ export default function SupplierInventory() {
                                             +
                                         </button>
                                     </div>
-                                )}</div>
+                                )}
                             </div>
                         ))
                     )}

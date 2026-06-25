@@ -40,7 +40,7 @@ Write-Host "Building and deploying backend..." -ForegroundColor Cyan
     --source . `
     --region $REGION `
     --allow-unauthenticated `
-    --update-env-vars="CLOUD_SQL_CONNECTION_NAME=$CONNECTION_NAME,DB_USER=postgres,DB_PASS=$DB_PASSWORD_PLAIN,DB_NAME=$DB_NAME" `
+    --update-env-vars="CLOUD_SQL_CONNECTION_NAME=$CONNECTION_NAME,DB_USER=postgres,DB_PASS=$DB_PASSWORD_PLAIN,DB_NAME=$DB_NAME,SMTP_SERVER=smtp-relay.brevo.com,SMTP_PORT=587,EMAIL_SENDER=a9b7a7001@smtp-brevo.com,EMAIL_PASSWORD=zvWX76U1jDZ9sBtQ,GEMINI_API_KEY=AIzaSyABcha3m2_Pa-fIIKjf3lTIkZ_B2sMIWSE" `
     --add-cloudsql-instances=$CONNECTION_NAME `
     --port=8000
 

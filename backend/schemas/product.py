@@ -15,6 +15,7 @@ class ProductBase(BaseModel):
     stock: Optional[int] = 0
     weight_grams: Optional[int] = 500  # Weight in grams
     is_activation: Optional[bool] = False
+    is_upgrade: Optional[bool] = False
     image_url: Optional[str] = None  # URL of product image
     
     # New Fields
@@ -32,6 +33,10 @@ class ProductBase(BaseModel):
     
     options: Optional[str] = None # JSON string for product attributes
     variant_stock: Optional[str] = None # JSON string for stock per variant
+    
+    shipping_class: Optional[str] = "normal"
+    
+    available_countries: Optional[str] = '["Colombia"]'
     
     active: Optional[bool] = None  # None = no change; True = activo; False = suspendido
 
@@ -53,6 +58,7 @@ class ProductUpdate(BaseModel):
     stock: Optional[int] = None
     weight_grams: Optional[int] = None
     is_activation: Optional[bool] = None
+    is_upgrade: Optional[bool] = None
     image_url: Optional[str] = None
     cost_price: Optional[float] = None
     tei_pv: Optional[int] = None
@@ -68,6 +74,8 @@ class ProductUpdate(BaseModel):
     
     options: Optional[str] = None
     variant_stock: Optional[str] = None
+    shipping_class: Optional[str] = None
+    available_countries: Optional[str] = None
     
     active: Optional[bool] = None
 

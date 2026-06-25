@@ -19,6 +19,7 @@ class MatrixLevel(BaseModel):
     reentry_amount: Decimal
     next_matrix: Optional[int] = None
     monthly_limit: Optional[int] = None
+    semester_limit: Optional[int] = None
     yearly_limit: Optional[int] = None
     rank_up: Optional[RankUp] = None
     one_time_bonus: Optional[OneTimeBonus] = None

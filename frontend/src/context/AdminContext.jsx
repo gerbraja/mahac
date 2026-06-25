@@ -18,7 +18,29 @@ const AdminContext = createContext();
 export const AdminProvider = ({ children }) => {
     // Lista de países gestionables (Fase 1)
     const [countries] = useState([
-        'Todos', 'Colombia', 'Ecuador', 'El Salvador', 'Panamá', 'Perú', 'Venezuela'
+        'Todos',
+        'Argentina',
+        'Bolivia',
+        'Brasil',
+        'Chile',
+        'Colombia',
+        'Costa Rica',
+        'Cuba',
+        'Ecuador',
+        'El Salvador',
+        'Guatemala',
+        'Haití',
+        'Honduras',
+        'Jamaica',
+        'México',
+        'Nicaragua',
+        'Panamá',
+        'Paraguay',
+        'Perú',
+        'Puerto Rico',
+        'República Dominicana',
+        'Uruguay',
+        'Venezuela',
     ]);
 
     // Read role and assigned country from JWT token

@@ -1802,8 +1802,8 @@ def get_network_growth(
         
     return {"networkGrowth": results}
 
-@router.get("/reports/dashboard-stats")
-def get_dashboard_stats(db: Session = Depends(get_db), current_user: User = Depends(get_current_admin_user)):
+@router.get("/reports/dashboard-stats-legacy")
+def get_reports_dashboard_stats_legacy(db: Session = Depends(get_db), current_user: User = Depends(get_current_admin_user)):
     now = datetime.utcnow()
     start_of_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     start_of_last_month = start_of_month - relativedelta(months=1)
@@ -1990,12 +1990,11 @@ def _get_period_range(period: str):
 
 
 @router.get("/reports/dashboard-stats")
-def get_dashboard_stats(period: str = "30d", country: str = None, db: Session = Depends(get_db), current_user: User = Depends(get_current_admin_user)):
+def get_reports_dashboard_stats(period: str = "30d", country: str = None, db: Session = Depends(get_db), current_user: User = Depends(get_current_admin_user)):
     """KPIs principales para la página de Reportes."""
     from backend.database.models.unilevel import UnilevelCommission
     from backend.database.models.binary import BinaryCommission
     from backend.database.models.sponsorship import SponsorshipCommission
-    from backend.database.models.supplier import SupplierOrder
 
     paid_statuses = ["pagado", "paid", "shipped", "delivered", "completado", "reservado", "en_preparacion"]
     start_dt, end_dt = _get_period_range(period)
@@ -2063,10 +2062,7 @@ def get_dashboard_stats(period: str = "30d", country: str = None, db: Session = 
     active_packages = q_active.count()
 
     # Pending supplier orders
-    try:
-        pending_orders = db.query(SupplierOrder).filter(SupplierOrder.status == "pending").count()
-    except Exception:
-        pending_orders = 0
+    pending_orders = 0
 
     return {
         "gross_sales": float(gross_sales),
@@ -2445,3 +2441,126 @@ def schema_update_orders_2026(
 
     db.commit()
     return {"status": "completed", "log": results}
+
+
+@router.get("/reports/accounting")
+def get_accounting_report(
+    period: str = "30d",
+    country: str = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user)
+):
+    """
+    Exposes consolidated accounting/financial P&L and Balance Sheet.
+    """
+    from backend.services.accounting_service import calculate_financial_statement
+    
+    # Check country_admin permissions
+    if getattr(current_user, 'admin_role', '') == 'country_admin':
+        country = getattr(current_user, 'admin_country', country)
+        
+    return calculate_financial_statement(db, period=period, country=country)
+
+
+# ─────────────────────────────────────────────────────────────────
+# OPERATING EXPENSES CRUD ROUTES
+# ─────────────────────────────────────────────────────────────────
+from backend.database.models.operating_expense import OperatingExpense
+
+class ExpenseCreate(BaseModel):
+    concept: str
+    amount: float
+    category: str
+    notes: Optional[str] = None
+    country: Optional[str] = None
+
+@router.post("/expenses")
+def create_operating_expense(
+    data: ExpenseCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user)
+):
+    """
+    Register a new manual operating expense.
+    """
+    if getattr(current_user, 'admin_role', '') == 'country_admin':
+        data.country = getattr(current_user, 'admin_country', data.country)
+        
+    expense = OperatingExpense(
+        concept=data.concept,
+        amount=data.amount,
+        category=data.category,
+        notes=data.notes,
+        country=data.country if data.country and data.country != "Todos" else None
+    )
+    db.add(expense)
+    db.commit()
+    db.refresh(expense)
+    return {
+        "message": "Gasto operativo registrado exitosamente",
+        "expense": {
+            "id": expense.id,
+            "concept": expense.concept,
+            "amount": expense.amount,
+            "category": expense.category,
+            "country": expense.country,
+            "created_at": expense.created_at
+        }
+    }
+
+@router.get("/expenses")
+def get_operating_expenses(
+    period: str = "30d",
+    country: str = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user)
+):
+    """
+    Get manual operating expenses for the selected period.
+    """
+    from backend.services.accounting_service import get_period_dates
+    start_dt, end_dt = get_period_dates(period)
+    
+    if getattr(current_user, 'admin_role', '') == 'country_admin':
+        country = getattr(current_user, 'admin_country', country)
+        
+    query = db.query(OperatingExpense).filter(
+        OperatingExpense.created_at >= start_dt,
+        OperatingExpense.created_at <= end_dt
+    )
+    
+    if country and country != "Todos":
+        query = query.filter((OperatingExpense.country == country) | (OperatingExpense.country == None))
+        
+    expenses = query.order_by(OperatingExpense.created_at.desc()).all()
+    return [{
+        "id": e.id,
+        "concept": e.concept,
+        "amount": e.amount,
+        "category": e.category,
+        "notes": e.notes,
+        "country": e.country or "Global",
+        "created_at": e.created_at
+    } for e in expenses]
+
+@router.delete("/expenses/{expense_id}")
+def delete_operating_expense(
+    expense_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user)
+):
+    """
+    Delete/cancel a manual operating expense.
+    """
+    expense = db.query(OperatingExpense).filter(OperatingExpense.id == expense_id).first()
+    if not expense:
+        raise HTTPException(status_code=404, detail="Gasto no encontrado")
+        
+    if getattr(current_user, 'admin_role', '') == 'country_admin' and expense.country != getattr(current_user, 'admin_country', ''):
+        raise HTTPException(status_code=403, detail="No tienes permisos para eliminar gastos de otros países")
+        
+    db.delete(expense)
+    db.commit()
+    return {"message": "Gasto operativo eliminado exitosamente"}
+
+

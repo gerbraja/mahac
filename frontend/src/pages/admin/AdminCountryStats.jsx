@@ -22,9 +22,9 @@ export default function AdminCountryStats() {
 
                 // Fetch all data in parallel
                 const [statsRes, rankingRes, splitRes] = await Promise.all([
-                    api.get('/admin/reports/country-stats', { params }).catch(() => ({ data: { metrics: {} } })),
-                    api.get('/admin/reports/country-ranking', { params }).catch(() => ({ data: [] })),
-                    api.get('/admin/reports/income-local-vs-intl', { params }).catch(() => ({ data: [] }))
+                    api.get('/api/admin/reports/country-stats', { params }).catch(() => ({ data: { metrics: {} } })),
+                    api.get('/api/admin/reports/country-ranking', { params }).catch(() => ({ data: [] })),
+                    api.get('/api/admin/reports/income-local-vs-intl', { params }).catch(() => ({ data: [] }))
                 ]);
 
                 const m = statsRes.data.metrics || {};

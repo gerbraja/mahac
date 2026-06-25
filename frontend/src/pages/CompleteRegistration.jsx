@@ -1,15 +1,19 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import RegisterForm from "../components/auth/RegisterForm";
 
-export default function CompleteRegistration() {
+export default function CompleteRegistration({ referralCode: propReferralCode, onBack }) {
     const navigate = useNavigate();
     const location = useLocation();
 
-    // Get referral code from state (passed from Home) or default to empty
-    const referralCode = location.state?.referral_code || "";
+    // Get referral code from state (passed from Home) or props (passed from Personal)
+    const referralCode = propReferralCode || location.state?.referral_code || "";
 
     const handleBack = () => {
-        navigate(-1);
+        if (onBack) {
+            onBack();
+        } else {
+            navigate(-1);
+        }
     };
 
     return (

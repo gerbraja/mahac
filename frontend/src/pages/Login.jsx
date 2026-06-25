@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { api } from '../api/api';
 import TeiLogo from '../components/TeiLogo';
-import CompleteRegistration from './CompleteRegistration';
+
+const CompleteRegistration = React.lazy(() => import('./CompleteRegistration'));
 
 export default function Login() {
     const navigate = useNavigate();
@@ -47,7 +48,9 @@ export default function Login() {
             }
 
             try {
-                const tokenPayload = JSON.parse(atob(response.data.access_token.split('.')[1]));
+                const base64Url = response.data.access_token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const tokenPayload = JSON.parse(atob(base64));
                 if (tokenPayload.is_admin) {
                     navigate('/admin');
                 } else {
@@ -108,7 +111,9 @@ export default function Login() {
                     <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
                         <TeiLogo size="medium" showSubtitle={true} />
                     </div>
-                    <CompleteRegistration />
+                    <React.Suspense fallback={<div style={{ color: 'white', textAlign: 'center' }}>Cargando formulario de registro...</div>}>
+                        <CompleteRegistration />
+                    </React.Suspense>
                     <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
                         <p style={{ color: 'white', marginBottom: '0.5rem' }}>¿Ya eres un afiliado activo?</p>
                         <button
