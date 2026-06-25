@@ -47,6 +47,19 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
+# Deploy Frontend to Cloud Run (Primary Hosting)
+Write-Host "Deploying Frontend to Cloud Run (tei-frontend-us)..." -ForegroundColor Cyan
+& "C:\Users\mahac\AppData\Local\Google\Cloud SDK\google-cloud-sdk\bin\gcloud.cmd" run deploy tei-frontend-us `
+    --source . `
+    --region=$REGION `
+    --project=$PROJECT_ID `
+    --allow-unauthenticated
+
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "[ERROR] Frontend Cloud Run deployment failed" -ForegroundColor Red
+    exit 1
+}
+
 # Upload to bucket
 $FRONTEND_BUCKET = "tuempresainternacional-frontend"
 Write-Host "Uploading to Google Cloud Storage..." -ForegroundColor Cyan
