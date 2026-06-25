@@ -1,7 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import { api } from '../../api/api';
 import { useNavigate } from 'react-router-dom';
+import { State, City } from 'country-state-city';
+import { COLOMBIA_DIVIPOLA_COMPLETO } from '../../data/colombiaDivipolaCompleto';
 
 // Icons/Flags could be assets. Using emoji for now.
 
@@ -32,9 +33,21 @@ const KYCValidation = () => {
     const [step, setStep] = useState(1); // 1: Country, 2: Form
     const [country, setCountry] = useState(null);
     const [user, setUser] = useState(null);
+    const [selectedStateCode, setSelectedStateCode] = useState("");
 
     // Form State
     const [formData, setFormData] = useState({
+        // New verification fields
+        input_full_name_cedula: '',
+        input_document_id_rut: '',
+        input_address: '',
+        input_department: '',
+        input_city: '',
+        input_bank_name: '',
+        input_bank_account_type: '',
+        input_bank_account_number: '',
+        municipio_id: '',
+
         is_facturador_electronico: null,
         is_declarante_renta: null,
 
@@ -65,8 +78,48 @@ const KYCValidation = () => {
         profile_photo: null
     });
 
+    const handleDepartmentChange = (stateCode, stateName) => {
+        setSelectedStateCode(stateCode);
+        setFormData(prev => ({
+            ...prev,
+            input_department: stateName,
+            input_city: '',
+            municipio_id: ''
+        }));
+    };
+
+    const handleCityChange = (cityName) => {
+        const divipolaCode = COLOMBIA_DIVIPOLA_COMPLETO[selectedStateCode]?.[cityName] || '';
+        setFormData(prev => ({
+            ...prev,
+            input_city: cityName,
+            municipio_id: divipolaCode
+        }));
+    };
+
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState(null);
+    const [progress, setProgress] = useState(0);
+
+    useEffect(() => {
+        let interval = null;
+        if (loading) {
+            setProgress(0);
+            const startTime = Date.now();
+            const duration = 28000; // Animate to 98% over 28 seconds
+
+            interval = setInterval(() => {
+                const elapsed = Date.now() - startTime;
+                const percentage = Math.min(98, Math.floor((elapsed / duration) * 100));
+                setProgress(percentage);
+            }, 200);
+        } else {
+            setProgress(0);
+        }
+        return () => {
+            if (interval) clearInterval(interval);
+        };
+    }, [loading]);
 
     useEffect(() => {
         api.get('/auth/me').then(res => setUser(res.data));
@@ -99,6 +152,19 @@ const KYCValidation = () => {
             alert("Debes aceptar todas las políticas y términos legales.");
             return;
         }
+        if (
+            !formData.input_full_name_cedula || 
+            !formData.input_document_id_rut || 
+            !formData.input_address || 
+            !formData.input_department || 
+            !formData.input_city || 
+            !formData.input_bank_name || 
+            !formData.input_bank_account_type || 
+            !formData.input_bank_account_number
+        ) {
+            alert("Por favor completa todos los campos requeridos en el formulario.");
+            return;
+        }
 
         setLoading(true);
         const payload = new FormData();
@@ -123,8 +189,8 @@ const KYCValidation = () => {
             console.error("KYC Error:", error);
             setResult({
                 status: 'failed',
-                message: error.response?.data?.detail || "Error en la validación.",
-                reason: "Verifica tu conexión o los archivos."
+                message: "Error en la validación.",
+                reason: error.response?.data?.detail || error.message || "Verifica tu conexión o los archivos."
             });
         } finally {
             setLoading(false);
@@ -167,16 +233,131 @@ const KYCValidation = () => {
 
                     {/* 1. Review Personal Info */}
                     <Section title="1. Información Básica">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg">
-                            <InfoField label="Nombre" value={user.name || ''} />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg mb-6">
+                            <InfoField label="Nombre del Perfil" value={user.name || ''} />
                             <InfoField label="Email" value={user.email || ''} />
-                            <InfoField label="Documento" value={user.document_id || 'Pendiente'} />
+                            <InfoField label="Documento Registrado" value={user.document_id || 'Pendiente'} />
                             <InfoField label="País Seleccionado" value={country.name} />
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <InputField
+                                label="Nombres y Apellidos completos (como figuran en tu Cédula) *"
+                                value={formData.input_full_name_cedula}
+                                onChange={(v) => handleInputChange('input_full_name_cedula', v)}
+                                placeholder="Ej: Alexis Bravo Martinez"
+                            />
+                            <InputField
+                                label="Número de documento de identidad (como figura en tu RUT) *"
+                                value={formData.input_document_id_rut}
+                                onChange={(v) => handleInputChange('input_document_id_rut', v)}
+                                placeholder="Ej: 1013119017"
+                            />
                         </div>
                     </Section>
 
-                    {/* 2. Tax Info */}
-                    <Section title="2. Información Tributaria">
+                    {/* 2. Location & Address */}
+                    <Section title="2. Dirección y Ubicación (para ReteICA)">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="mb-4">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Departamento *</label>
+                                <select
+                                    className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                                    value={selectedStateCode}
+                                    onChange={(e) => {
+                                        const code = e.target.value;
+                                        const name = State.getStateByCodeAndCountry(code, "CO")?.name || "";
+                                        handleDepartmentChange(code, name);
+                                    }}
+                                >
+                                    <option value="">Selecciona Departamento</option>
+                                    {State.getStatesOfCountry("CO").map((state) => (
+                                        <option key={state.isoCode} value={state.isoCode}>
+                                            {state.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            
+                            <div className="mb-4">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Ciudad / Municipio *</label>
+                                <select
+                                    className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                                    disabled={!selectedStateCode}
+                                    value={formData.input_city}
+                                    onChange={(e) => handleCityChange(e.target.value)}
+                                >
+                                    <option value="">Selecciona Ciudad / Municipio</option>
+                                    {selectedStateCode && City.getCitiesOfState("CO", selectedStateCode).map((city) => (
+                                        <option key={city.name} value={city.name}>
+                                            {city.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <InputField
+                                label="Dirección de Residencia *"
+                                value={formData.input_address}
+                                onChange={(v) => handleInputChange('input_address', v)}
+                                placeholder="Ej: Calle 45 #12-34"
+                            />
+                        </div>
+                        {formData.municipio_id && (
+                            <p className="text-xs text-blue-600 font-medium">Código DIVIPOLA/DANE detectado: {formData.municipio_id}</p>
+                        )}
+                    </Section>
+
+                    {/* 3. Bank Details */}
+                    <Section title="3. Información Bancaria (para Retiros)">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="mb-4">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Nombre del Banco *</label>
+                                <select
+                                    className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                                    value={formData.input_bank_name}
+                                    onChange={(e) => handleInputChange('input_bank_name', e.target.value)}
+                                >
+                                    <option value="">Selecciona Banco</option>
+                                    <option value="Bancolombia">Bancolombia</option>
+                                    <option value="Banco de Bogotá">Banco de Bogotá</option>
+                                    <option value="Davivienda">Davivienda</option>
+                                    <option value="BBVA Colombia">BBVA Colombia</option>
+                                    <option value="Banco Popular">Banco Popular</option>
+                                    <option value="Banco de Occidente">Banco de Occidente</option>
+                                    <option value="Banco AV Villas">Banco AV Villas</option>
+                                    <option value="Banco Caja Social">Banco Caja Social</option>
+                                    <option value="Scotiabank Colpatria">Scotiabank Colpatria</option>
+                                    <option value="Itau">Itau</option>
+                                    <option value="Nequi">Nequi</option>
+                                    <option value="Daviplata">Daviplata</option>
+                                    <option value="Otro">Otro / Banco no listado</option>
+                                </select>
+                            </div>
+
+                            <div className="mb-4">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Clase de Cuenta *</label>
+                                <select
+                                    className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                                    value={formData.input_bank_account_type}
+                                    onChange={(e) => handleInputChange('input_bank_account_type', e.target.value)}
+                                >
+                                    <option value="">Selecciona Tipo</option>
+                                    <option value="Ahorros">Cuenta de Ahorros</option>
+                                    <option value="Corriente">Cuenta Corriente</option>
+                                </select>
+                            </div>
+
+                            <InputField
+                                label="Número de Cuenta Bancaria *"
+                                value={formData.input_bank_account_number}
+                                onChange={(v) => handleInputChange('input_bank_account_number', v.replace(/\D/g, ''))}
+                                placeholder="Ingresa solo números"
+                            />
+                        </div>
+                    </Section>
+
+                    {/* 4. Tax Info */}
+                    <Section title="4. Información Tributaria">
                         <YesNoQuestion
                             label="¿Es usted Facturador Electrónico? (Verifique en su RUT)"
                             value={formData.is_facturador_electronico}
@@ -189,8 +370,8 @@ const KYCValidation = () => {
                         />
                     </Section>
 
-                    {/* 3. PEP Declaration */}
-                    <Section title="3. Declaración PEP (Persona Expuesta Políticamente)">
+                    {/* 5. PEP Declaration */}
+                    <Section title="5. Declaración PEP (Persona Expuesta Políticamente)">
                         <YesNoQuestion
                             label="¿Es usted actualmente una Persona Expuesta Políticamente (PEP)?"
                             value={formData.is_pep}
@@ -243,8 +424,8 @@ const KYCValidation = () => {
                         )}
                     </Section>
 
-                    {/* 4. Conflicts & Crypto */}
-                    <Section title="4. Otros">
+                    {/* 6. Conflicts & Crypto */}
+                    <Section title="6. Otros">
                         <YesNoQuestion
                             label="¿Tiene alguna relación personal o familiar con un Empleado o Administrador de TEI?"
                             value={formData.has_conflict_interest}
@@ -267,8 +448,18 @@ const KYCValidation = () => {
                         />
                     </Section>
 
-                    {/* 5. Attachments */}
-                    <Section title="5. Anexos Requeridos">
+                    {/* 7. Attachments */}
+                    <Section title="7. Anexos Requeridos">
+                        <div className="mb-6 p-4 border border-amber-300 bg-amber-50 rounded-lg flex items-start gap-3">
+                            <span className="text-2xl mt-0.5">⚠️</span>
+                            <div>
+                                <h4 className="font-bold text-amber-900 text-sm">AVISO CRÍTICO PARA DOCUMENTOS</h4>
+                                <p className="text-xs text-amber-800 mt-1 leading-relaxed">
+                                    Los archivos que subas <strong>NO DEBEN ESTAR PROTEGIDOS POR CONTRASEÑAS</strong>, tener firmas de seguridad digital restrictivas ni venir comprimidos (archivos .ZIP o .RAR). El motor de revisión automática no procesa archivos protegidos o bloqueados y fallará de inmediato. Si tu certificado bancario en PDF te pide clave para abrir, por favor <strong>tómale una captura de pantalla (JPG o PNG) limpia</strong> y sube la imagen.
+                                </p>
+                            </div>
+                        </div>
+                        
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <FileInput label="Cargar RUT Actualizado" onChange={(e) => handleFileChange(e, 'rut')} file={files.rut} />
                             <FileInput label="Fotocopia Doc. Identidad" onChange={(e) => handleFileChange(e, 'cedula')} file={files.cedula} />
@@ -277,8 +468,8 @@ const KYCValidation = () => {
                         </div>
                     </Section>
 
-                    {/* 6. Legal Checkboxes */}
-                    <Section title="6. Declaraciones Legales">
+                    {/* 8. Legal Checkboxes */}
+                    <Section title="8. Declaraciones Legales">
                         <div className="space-y-4">
                             <Checkbox
                                 checked={formData.accepted_data_policy}
@@ -297,6 +488,25 @@ const KYCValidation = () => {
                             />
                         </div>
                     </Section>
+
+                    {/* Progress Bar while loading */}
+                    {loading && (
+                        <div className="bg-blue-50 border border-blue-100 rounded-xl p-6 text-center space-y-4">
+                            <div className="flex justify-between items-center text-sm font-semibold text-blue-900">
+                                <span>Validando Tus Documentos</span>
+                                <span>{progress}%</span>
+                            </div>
+                            <div className="w-full bg-blue-200 h-3 rounded-full overflow-hidden">
+                                <div 
+                                    className="bg-blue-600 h-full rounded-full transition-all duration-300 ease-out" 
+                                    style={{ width: `${progress}%` }}
+                                ></div>
+                            </div>
+                            <p className="text-xs text-blue-700">
+                                Estamos verificando las firmas, NIT del RUT, Cédula de Identidad y la Certificación Bancaria. Esto toma aprox. 30 segundos.
+                            </p>
+                        </div>
+                    )}
 
                     {/* Result Message */}
                     {result && (

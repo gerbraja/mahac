@@ -11,9 +11,12 @@ passlib[bcrypt]
 python-jose[cryptography]
 pyyaml
 requests
+httpx>=0.24.0
 pytest
 python-multipart
 argon2-cffi
 bcrypt==4.0.1
 # Force rebuild 2025-03-06 fixing dateutil
 python-dateutil>=2.9.0
+google-cloud-storage
+pypdf
