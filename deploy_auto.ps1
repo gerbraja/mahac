@@ -46,6 +46,18 @@ $CONNECTION_NAME = gcloud sql instances describe $DB_INSTANCE --format='value(co
 Write-Host "Database created/checked. Connection: $CONNECTION_NAME" -ForegroundColor Green
 
 Write-Host "Step 4: Deploying Backend to Cloud Run" -ForegroundColor Yellow
+
+# Read GEMINI_API_KEY from .env (one directory up since we are about to enter backend)
+$GEMINI_KEY = ""
+if (Test-Path ".env") {
+    $env_content = Get-Content ".env"
+    foreach ($line in $env_content) {
+        if ($line -match "^GEMINI_API_KEY=(.*)") {
+            $GEMINI_KEY = $Matches[1].Trim().Trim("'").Trim('"')
+        }
+    }
+}
+
 Set-Location backend
 
 # Deploy Backend
@@ -53,7 +65,7 @@ gcloud run deploy $BACKEND_SERVICE `
     --source . `
     --region $REGION `
     --allow-unauthenticated `
-    --set-env-vars="CLOUD_SQL_CONNECTION_NAME=$CONNECTION_NAME,DB_USER=postgres,DB_PASS=$DB_PASSWORD,DB_NAME=$DB_NAME" `
+    --set-env-vars="CLOUD_SQL_CONNECTION_NAME=$CONNECTION_NAME,DB_USER=postgres,DB_PASS=$DB_PASSWORD,DB_NAME=$DB_NAME,GEMINI_API_KEY=$GEMINI_KEY" `
     --add-cloudsql-instances=$CONNECTION_NAME `
     --port=8000 `
     -q
