@@ -238,7 +238,7 @@ const DashboardHome = () => {
                             <span className="text-xl mt-0.5">⚠️</span>
                             <div>
                                 <h4 className="text-lg font-bold text-red-200 mb-1">Tu cuenta no está calificando aún</h4>
-                                <p>Para participar oficialmente y ganar los viajes, debes tener activo un <strong>Paquete de nivel 2, 3, 4 o 5</strong> durante el periodo de la campaña.</p>
+                                <p>Para participar oficialmente y ganar los viajes, debes tener activo un <strong>Paquete de nivel 3, 4 o 5 en adelante</strong> durante el periodo de la campaña.</p>
                                 <p className="mt-2 text-xs opacity-90">¡Adquiere o mejora tu paquete ahora para que tu progreso y el de tu red cuenten!</p>
                             </div>
                         </div>

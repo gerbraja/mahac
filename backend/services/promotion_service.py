@@ -60,12 +60,12 @@ def is_qualifier_eligible(db: Session, user_id: int) -> bool:
     Si estaba inactivo, debe haberse activado durante la promoción.
     """
     user = db.query(User).filter(User.id == user_id).first()
-    if not user or user.package_level not in [2, 3, 4, 5]:
+    if not user or user.package_level not in [3, 4, 5]:
         return False
         
-    # Si tiene paquete activo en el momento de consulta (has_package=True y nivel >= 2)
+    # Si tiene paquete activo en el momento de consulta (has_package=True y nivel >= 3)
     # y no está suspendido, es elegible para participar.
-    if user.has_package and user.package_level >= 2 and user.status == "active":
+    if user.has_package and user.package_level >= 3 and user.status == "active":
         return True
         
     return False
