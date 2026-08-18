@@ -204,6 +204,7 @@ const DashboardHome = () => {
                         <p className="text-xs text-gray-600 mt-2">Comparte este enlace para registrar nuevos socios en tu red.</p>
                     </div>
                 </div>
+            )}
             {/* Travel Promotion Section */}
             {promoData && promoData.eligible && (
                 <div className="bg-gradient-to-br from-indigo-900 to-blue-950 text-white rounded-3xl p-6 md:p-8 shadow-2xl relative overflow-hidden border border-indigo-800">
