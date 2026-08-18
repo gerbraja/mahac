@@ -38,35 +38,51 @@ def _apply_withholding(db: Session, user: User, gross_amount: float, release_typ
     if not is_colombia or gross_amount <= 0:
         return gross_amount
 
-    # 1. ReteFuente (national — applies to all Colombia)
-    retefuente_cfg = db.query(WithholdingTaxConfig).filter(
-        WithholdingTaxConfig.country == 'Colombia',
-        WithholdingTaxConfig.city == None,
-        WithholdingTaxConfig.tax_type == 'retefuente',
-        WithholdingTaxConfig.active == True
+    # Try to find the user's approved KYC record with their custom tax profile
+    from backend.database.models.compliance_record import ComplianceRecord
+    record = db.query(ComplianceRecord).filter(
+        ComplianceRecord.user_id == user.id,
+        ComplianceRecord.status == 'approved'
     ).first()
-    retefuente_pct = retefuente_cfg.percentage if retefuente_cfg else 6.0
-    retefuente_amount = round(gross_amount * retefuente_pct / 100, 4)
 
-    # 2. ReteICA (municipal — only if city matches a config)
-    reteica_pct = 0.0
-    reteica_amount = 0.0
-    if city:
-        reteica_cfg = db.query(WithholdingTaxConfig).filter(
+    # 1. ReteFuente (national — applies to all Colombia)
+    if record:
+        retefuente_pct = record.retefuente_rate if record.apply_retefuente else 0.0
+    else:
+        # Fallback to general database configuration
+        retefuente_cfg = db.query(WithholdingTaxConfig).filter(
             WithholdingTaxConfig.country == 'Colombia',
-            WithholdingTaxConfig.city.ilike(city),
-            WithholdingTaxConfig.tax_type == 'reteica',
+            WithholdingTaxConfig.city == None,
+            WithholdingTaxConfig.tax_type == 'retefuente',
             WithholdingTaxConfig.active == True
         ).first()
-        if reteica_cfg:
-            reteica_pct = reteica_cfg.percentage
-            reteica_amount = round(gross_amount * reteica_pct / 100, 4)
+        retefuente_pct = retefuente_cfg.percentage if retefuente_cfg else 6.0
+        
+    retefuente_amount = round(gross_amount * retefuente_pct / 100, 4)
+
+    # 2. ReteICA (municipal — only if city matches a config or is set in approved KYC)
+    reteica_pct = 0.0
+    if record:
+        reteica_pct = record.reteica_rate if record.apply_reteica else 0.0
+    else:
+        # Fallback to municipal database configuration
+        if city:
+            reteica_cfg = db.query(WithholdingTaxConfig).filter(
+                WithholdingTaxConfig.country == 'Colombia',
+                WithholdingTaxConfig.city.ilike(city),
+                WithholdingTaxConfig.tax_type == 'reteica',
+                WithholdingTaxConfig.active == True
+            ).first()
+            if reteica_cfg:
+                reteica_pct = reteica_cfg.percentage
+                
+    reteica_amount = round(gross_amount * reteica_pct / 100, 4)
 
     total_withheld = round(retefuente_amount + reteica_amount, 4)
     net_amount = round(gross_amount - total_withheld, 4)
 
     # Save record
-    record = WithholdingRecord(
+    withholding_record = WithholdingRecord(
         user_id=user.id,
         country=country,
         city=city or None,
@@ -80,8 +96,8 @@ def _apply_withholding(db: Session, user: User, gross_amount: float, release_typ
         total_withheld=total_withheld,
         net_amount=net_amount
     )
-    db.add(record)
-    print(f"[WITHHOLDING] User {user.id} ({country}/{city}): gross={gross_amount:.4f} retefuente={retefuente_amount:.4f} reteica={reteica_amount:.4f} net={net_amount:.4f}", flush=True)
+    db.add(withholding_record)
+    print(f"[WITHHOLDING] User {user.id} ({country}/{city}): gross={gross_amount:.4f} retefuente={retefuente_amount:.4f} ({retefuente_pct}%) reteica={reteica_amount:.4f} ({reteica_pct}%) net={net_amount:.4f}", flush=True)
     return net_amount
 
 

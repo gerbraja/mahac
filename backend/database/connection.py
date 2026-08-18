@@ -3,9 +3,14 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 from typing import Generator
 from dotenv import load_dotenv
+from pathlib import Path
 
-# Load environment variables from .env file
-load_dotenv()
+# Load environment variables from script-relative .env path
+dotenv_path = Path(__file__).resolve().parent.parent / ".env"
+if dotenv_path.exists():
+    load_dotenv(dotenv_path=dotenv_path)
+else:
+    load_dotenv()
 
 print("--> LOADING DATABASE/CONNECTION.PY <--", flush=True)
 

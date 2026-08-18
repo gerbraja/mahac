@@ -4,38 +4,82 @@ from email.mime.multipart import MIMEMultipart
 import os
 import logging
 from datetime import datetime
+import httpx
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def send_welcome_email(to_email: str, username: str, full_name: str, referral_link: str):
+def _send_email_message(to_email: str, subject: str, html_content: str, from_name: str, from_email: str) -> bool:
     """
-    Sends a welcome email to a new user using Gmail SMTP.
-    This function is designed to be run as a background task.
+    Helper function to send email, trying Mailgun API first if configured,
+    and falling back to SMTP otherwise.
     """
+    mailgun_key = os.getenv("MAILGUN_API_KEY")
+    mailgun_domain = os.getenv("MAILGUN_DOMAIN")
+    mailgun_url = os.getenv("MAILGUN_API_URL", "https://api.mailgun.net").rstrip("/")
+
+    if mailgun_key and mailgun_domain:
+        try:
+            url = f"{mailgun_url}/v3/{mailgun_domain}/messages"
+            auth = ("api", mailgun_key)
+            data = {
+                "from": f"{from_name} <{from_email}>",
+                "to": [to_email],
+                "subject": subject,
+                "html": html_content
+            }
+            logger.info(f"Sending email to {to_email} via Mailgun HTTP API...")
+            response = httpx.post(url, auth=auth, data=data, timeout=10.0)
+            if response.status_code == 200:
+                logger.info(f"Email sent successfully via Mailgun to {to_email}")
+                return True
+            else:
+                logger.error(f"Mailgun API returned status {response.status_code}: {response.text}")
+        except Exception as e:
+            logger.error(f"Error sending email via Mailgun API: {str(e)}")
+            # Fallback to SMTP
+
+    # Fallback to SMTP
     try:
-        # Get credentials from environment variables
         sender_email = os.getenv("EMAIL_SENDER")
         password = os.getenv("EMAIL_PASSWORD")
 
         if not sender_email or not password:
-            logger.warning("Email credentials not found. Welcome email was not sent.")
-            return
-            
+            logger.warning("Email credentials not found. SMTP email was not sent.")
+            return False
+
         clean_password = password.replace(" ", "")
 
-        # Create message
         message = MIMEMultipart("alternative")
-        message["Subject"] = "¡Bienvenido a Tienda Virtual TEI! 🚀"
-        
-        # Use alias for the "From" address if configured (e.g. soporte@ authenticating but sending as bienvenida@)
-        alias_email = "bienvenida@tuempresainternacional.com"
-        message["From"] = f"Bienvenida TEI <{alias_email}>"
-        
+        message["Subject"] = subject
+        message["From"] = f"{from_name} <{from_email}>"
         message["To"] = to_email
 
-        # Email Body (HTML)
+        part = MIMEText(html_content, "html")
+        message.attach(part)
+
+        smtp_server = os.getenv("SMTP_SERVER", "smtp.gmail.com")
+        smtp_port = int(os.getenv("SMTP_PORT", "587"))
+
+        logger.info(f"Sending email to {to_email} via SMTP ({smtp_server}:{smtp_port})...")
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
+            server.starttls()
+            server.login(sender_email, clean_password)
+            server.sendmail(sender_email, to_email, message.as_string())
+
+        logger.info(f"Email sent successfully via SMTP to {to_email}")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to send email via SMTP to {to_email}: {str(e)}")
+        return False
+
+
+def send_welcome_email(to_email: str, username: str, full_name: str, referral_link: str):
+    """
+    Sends a welcome email to a new user.
+    """
+    try:
         html = f"""
         <html>
           <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
@@ -67,48 +111,22 @@ def send_welcome_email(to_email: str, username: str, full_name: str, referral_li
           </body>
         </html>
         """
-
-        # Attach HTML content
-        part2 = MIMEText(html, "html")
-        message.attach(part2)
-
-        smtp_server = os.getenv("SMTP_SERVER", "smtp.gmail.com")
-        smtp_port = int(os.getenv("SMTP_PORT", "587"))
-
-        # Connect to SMTP Server using context manager for safety
-        with smtplib.SMTP(smtp_server, smtp_port) as server:
-            server.starttls()  # Upgrade connection to secure
-            server.login(sender_email, clean_password)
-            server.sendmail(sender_email, to_email, message.as_string())
-        
-        logger.info(f"Welcome email sent successfully to {to_email}")
-
+        _send_email_message(
+            to_email=to_email,
+            subject="¡Bienvenido a Tienda Virtual TEI! 🚀",
+            html_content=html,
+            from_name="Bienvenida TEI",
+            from_email="bienvenida@tuempresainternacional.online"
+        )
     except Exception as e:
-        logger.error(f"Failed to send welcome email to {to_email}: {str(e)}")
+        logger.error(f"Failed in send_welcome_email process to {to_email}: {str(e)}")
+
 
 def send_order_invoice_email(order_data: dict, user_email: str):
     """
     Sends an invoice/shipping confirmation email.
     """
     try:
-        sender_email = os.getenv("EMAIL_SENDER")
-        password = os.getenv("EMAIL_PASSWORD")
-
-        if not sender_email or not password:
-            logger.warning("Email credentials not found. Invoice email was not sent.")
-            return
-
-        clean_password = password.replace(" ", "")
-
-        message = MIMEMultipart("alternative")
-        message["Subject"] = f"¡Tu pedido #{order_data['id']} ha sido enviado! 📦"
-        
-        # Use alias for invoice emails
-        alias_email = "facturacion@tuempresainternacional.com"
-        message["From"] = f"Facturación TEI <{alias_email}>"
-        
-        message["To"] = user_email
-
         # Format items list
         items_html = ""
         for item in order_data['items']:
@@ -170,49 +188,28 @@ def send_order_invoice_email(order_data: dict, user_email: str):
               
               <div style="background-color: #1f2937; padding: 20px; text-align: center; color: #9ca3af; font-size: 12px;">
                 <p>&copy; {datetime.now().year} Centro Comercial Virtual TEI.</p>
-                <p>facturacion@tuempresainternacional.com</p>
+                <p>facturacion@tuempresainternacional.online</p>
               </div>
             </div>
           </body>
         </html>
         """
-
-        part2 = MIMEText(html, "html")
-        message.attach(part2)
-
-        smtp_server = os.getenv("SMTP_SERVER", "smtp.gmail.com")
-        smtp_port = int(os.getenv("SMTP_PORT", "587"))
-
-        with smtplib.SMTP(smtp_server, smtp_port) as server:
-            server.starttls()
-            server.login(sender_email, clean_password)
-            server.sendmail(sender_email, user_email, message.as_string())
-        
-        logger.info(f"Invoice email sent successfully to {user_email}")
-
+        _send_email_message(
+            to_email=user_email,
+            subject=f"¡Tu pedido #{order_data['id']} ha sido enviado! 📦",
+            html_content=html,
+            from_name="Facturación TEI",
+            from_email="facturacion@tuempresainternacional.online"
+        )
     except Exception as e:
-        logger.error(f"Failed to send invoice email to {user_email}: {str(e)}")
+        logger.error(f"Failed in send_order_invoice_email process to {user_email}: {str(e)}")
 
 
 def send_password_reset_email(to_email: str, reset_link: str):
     """
     Sends a password reset email with a secure link.
-    Designed to be run as a background task.
     """
     try:
-        sender_email = os.getenv("EMAIL_SENDER")
-        password = os.getenv("EMAIL_PASSWORD")
-
-        if not sender_email or not password:
-            logger.warning("Email credentials not found. Password reset email was not sent.")
-            return
-
-        message = MIMEMultipart("alternative")
-        message["Subject"] = "🔑 Recuperación de contraseña - Centro Comercial TEI"
-        alias_email = "soporte@tuempresainternacional.com"
-        message["From"] = f"Soporte TEI <{alias_email}>"
-        message["To"] = to_email
-
         html = f"""
         <html>
           <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; background-color: #f3f4f6; margin: 0; padding: 20px;">
@@ -258,25 +255,15 @@ def send_password_reset_email(to_email: str, reset_link: str):
           </body>
         </html>
         """
-
-        part = MIMEText(html, "html")
-        message.attach(part)
-
-        smtp_server = os.getenv("SMTP_SERVER", "smtp.gmail.com")
-        smtp_port = int(os.getenv("SMTP_PORT", "587"))
-
-        with smtplib.SMTP(smtp_server, smtp_port) as server:
-            server.starttls()
-            # Remove spaces from password if user copy-pasted with spaces
-            clean_password = password.replace(" ", "")
-            server.login(sender_email, clean_password)
-            server.sendmail(sender_email, to_email, message.as_string())
-
-        logger.info(f"Password reset email sent successfully to {to_email}")
-
+        _send_email_message(
+            to_email=to_email,
+            subject="🔑 Recuperación de contraseña - Centro Comercial TEI",
+            html_content=html,
+            from_name="Soporte TEI",
+            from_email="soporte@tuempresainternacional.online"
+        )
     except Exception as e:
-        logger.error(f"Failed to send password reset email to {to_email}: {str(e)}")
-
+        logger.error(f"Failed in send_password_reset_email process to {to_email}: {str(e)}")
 
 
 def send_admin_alert_email(subject: str, alert_message: str):
@@ -284,21 +271,6 @@ def send_admin_alert_email(subject: str, alert_message: str):
     Sends a system alert email to the admin.
     """
     try:
-        sender_email = os.getenv("EMAIL_SENDER")
-        password = os.getenv("EMAIL_PASSWORD")
-
-        if not sender_email or not password:
-            logger.warning("Email credentials not found. Alert email was not sent.")
-            return
-
-        clean_password = password.replace(" ", "")
-
-        message = MIMEMultipart("alternative")
-        message["Subject"] = subject
-        alias_email = "alertas@tuempresainternacional.com"
-        message["From"] = f"Alerta Sistema TEI <{alias_email}>"
-        message["To"] = sender_email
-
         html = f"""
         <html>
           <body style="font-family: Arial, sans-serif; padding: 20px;">
@@ -311,19 +283,13 @@ def send_admin_alert_email(subject: str, alert_message: str):
           </body>
         </html>
         """
-
-        part = MIMEText(html, "html")
-        message.attach(part)
-
-        smtp_server = os.getenv("SMTP_SERVER", "smtp.gmail.com")
-        smtp_port = int(os.getenv("SMTP_PORT", "587"))
-
-        with smtplib.SMTP(smtp_server, smtp_port) as server:
-            server.starttls()
-            server.login(sender_email, clean_password)
-            server.sendmail(sender_email, sender_email, message.as_string())
-
-        logger.info("Admin alert email sent successfully")
-
+        admin_email = os.getenv("EMAIL_SENDER", "soporte@tuempresainternacional.online")
+        _send_email_message(
+            to_email=admin_email,
+            subject=subject,
+            html_content=html,
+            from_name="Alerta Sistema TEI",
+            from_email="alertas@tuempresainternacional.online"
+        )
     except Exception as e:
-        logger.error(f"Failed to send admin alert email: {str(e)}")
+        logger.error(f"Failed in send_admin_alert_email process: {str(e)}")

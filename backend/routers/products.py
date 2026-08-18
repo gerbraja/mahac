@@ -167,6 +167,68 @@ def fix_images_batch(db: Session = Depends(get_db)):
     db.commit()
     return {"results": results}
 
+@router.get("/debug-reports")
+def debug_reports(db: Session = Depends(get_db)):
+    from backend.database.models.order import Order
+    from backend.database.models.order_item import OrderItem
+    from backend.database.models.user import User
+    from datetime import datetime, timedelta
+    from sqlalchemy import func
+    
+    paid_statuses = ["pagado", "paid", "shipped", "delivered", "completado", "reservado", "en_preparacion"]
+    now = datetime.utcnow()
+    start_dt = now - timedelta(days=30)
+    end_dt = now
+    
+    orders = db.query(Order).order_by(Order.created_at.desc()).limit(10).all()
+    orders_info = []
+    for o in orders:
+        items = db.query(OrderItem).filter(OrderItem.order_id == o.id).all()
+        items_info = [{"name": it.product_name, "qty": it.quantity} for it in items]
+        
+        # Check if user exists
+        user_country = None
+        if o.user_id:
+            user = db.query(User).filter(User.id == o.user_id).first()
+            if user:
+                user_country = user.country
+                
+        orders_info.append({
+            "id": o.id,
+            "status": o.status,
+            "total_cop": o.total_cop,
+            "created_at": str(o.created_at),
+            "user_id": o.user_id,
+            "user_country": user_country,
+            "items": items_info
+        })
+        
+    # Check top products query
+    q_rows = db.query(
+        OrderItem.product_name,
+        func.sum(OrderItem.quantity).label("total_vendido")
+    ).join(Order, OrderItem.order_id == Order.id).filter(
+        Order.status.in_(paid_statuses),
+        Order.created_at >= start_dt,
+        Order.created_at <= end_dt
+    )
+    
+    rows_no_country = q_rows.group_by(OrderItem.product_name).all()
+    res_no_country = [{"name": name, "ventas": int(total or 0)} for name, total in rows_no_country]
+    
+    q_colombia = q_rows.join(User, Order.user_id == User.id).filter(func.trim(User.country) == "Colombia")
+    rows_colombia = q_colombia.group_by(OrderItem.product_name).all()
+    res_colombia = [{"name": name, "ventas": int(total or 0)} for name, total in rows_colombia]
+    
+    return {
+        "recent_orders": orders_info,
+        "top_products_no_country": res_no_country,
+        "top_products_colombia": res_colombia,
+        "start_dt": str(start_dt),
+        "end_dt": str(end_dt),
+        "paid_statuses": paid_statuses
+    }
+
 @router.get("/{product_id}", response_model=ProductSchema)
 def get_product(product_id: int, db: Session = Depends(get_db)):
     product = db.query(ProductModel).filter(ProductModel.id == product_id).first()
@@ -289,3 +351,144 @@ def get_product_reviews(product_id: int, db: Session = Depends(get_db)):
         ProductReview.product_id == product_id
     ).order_by(ProductReview.created_at.desc()).all()
     return reviews
+
+
+from pydantic import BaseModel
+class SyncTrmRequest(BaseModel):
+    custom_trm: Optional[float] = None
+
+@router.post("/sync-trm")
+async def sync_trm_prices(
+    payload: Optional[SyncTrmRequest] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user)
+):
+    """
+    Sync all product prices in USD from their local prices in COP (price_local) using TRM.
+    If custom_trm is provided in the body, it uses that value.
+    Otherwise, it fetches the real-time TRM from open.er-api.com.
+    """
+    import httpx
+    from sqlalchemy import func
+    
+    trm_value = None
+    source = "fallback"
+    
+    if payload and payload.custom_trm is not None:
+        if payload.custom_trm <= 0:
+            raise HTTPException(status_code=400, detail="La TRM debe ser mayor a 0")
+        trm_value = payload.custom_trm
+        source = "manual"
+    else:
+        # Fetch from API
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.get("https://open.er-api.com/v6/latest/USD", timeout=10)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    rates = data.get("rates", {})
+                    cop_rate = rates.get("COP")
+                    if cop_rate:
+                        trm_value = float(cop_rate)
+                        source = "api"
+        except Exception as e:
+            print(f"Error fetching TRM from API: {e}")
+            
+        if not trm_value:
+            trm_value = 4000.00
+            source = "fallback"
+
+    try:
+        from sqlalchemy import cast, Numeric
+        # Run bulk update using round
+        updated_count = db.query(ProductModel).filter(
+            ProductModel.price_local > 0
+        ).update({
+            ProductModel.price_usd: func.round(cast(ProductModel.price_local / trm_value, Numeric), 2)
+        }, synchronize_session=False)
+        db.commit()
+        
+        return {
+            "success": True,
+            "trm": trm_value,
+            "source": source,
+            "updated_products": updated_count,
+            "message": f"Precios actualizados con éxito usando TRM {trm_value:.2f} ({source})"
+        }
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error actualizando precios: {str(e)}")
+
+
+@router.post("/migrate-skus")
+def migrate_product_skus(
+    dry_run: bool = True,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user)
+):
+    """
+    One-time migration to update the SKU of all products to follow the format:
+    P-{id}-{significant_slug} (e.g., P-246-JUEGO-OLLAS-ACERO)
+    """
+    import re
+    
+    def clean_word(word):
+        word = word.upper()
+        accents = {'Á':'A', 'É':'E', 'Í':'I', 'Ó':'O', 'Ú':'U', 'Ñ':'N', 'Ü':'U'}
+        for k, v in accents.items():
+            word = word.replace(k, v)
+        word = re.sub(r'[^A-Z0-9]', '', word)
+        return word
+
+    def generate_sku(product_id, name):
+        words = name.split()
+        stop_words = {
+            "DE", "CON", "PARA", "LA", "EL", "LOS", "LAS", "UN", "UNA", "Y", "EN", "POR", "DEL", 
+            "A", "O", "E", "U", "AL", "DEL"
+        }
+        significant_words = []
+        for w in words:
+            cleaned = clean_word(w)
+            if cleaned and cleaned not in stop_words:
+                significant_words.append(cleaned)
+        slug_parts = significant_words[:3]
+        slug = "-".join(slug_parts)
+        return f"P-{product_id}-{slug}"
+
+    try:
+        products = db.query(ProductModel).all()
+        updated_count = 0
+        details = []
+        
+        for p in products:
+            new_sku = generate_sku(p.id, p.name)
+            old_sku = p.sku
+            if old_sku != new_sku:
+                if not dry_run:
+                    p.sku = new_sku
+                updated_count += 1
+                details.append({
+                    "id": p.id,
+                    "name": p.name,
+                    "old_sku": old_sku,
+                    "new_sku": new_sku
+                })
+                
+        if not dry_run:
+            db.commit()
+            
+        return {
+            "success": True,
+            "dry_run": dry_run,
+            "updated_count": updated_count,
+            "changes": details
+        }
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error durante la migración de SKUs: {str(e)}")
+
+
+
+
+
+

@@ -5,17 +5,22 @@ import { api } from '../../api/api';
 const DashboardHome = () => {
     const [user, setUser] = useState(null);
     const [walletData, setWalletData] = useState(null);
+    const [promoData, setPromoData] = useState(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [userResponse, walletResponse] = await Promise.all([
+                const [userResponse, walletResponse, promoResponse] = await Promise.all([
                     api.get('/auth/me'),
-                    api.get('/api/wallet/summary').catch(() => ({ data: null }))
+                    api.get('/api/wallet/summary').catch(() => ({ data: null })),
+                    api.get('/api/promotions/travel-status').catch(() => ({ data: null }))
                 ]);
                 setUser(userResponse.data);
                 setWalletData(walletResponse.data);
+                if (promoResponse && promoResponse.data) {
+                    setPromoData(promoResponse.data);
+                }
             } catch (error) {
                 console.error("Error fetching data:", error);
             } finally {
@@ -198,6 +203,115 @@ const DashboardHome = () => {
                         </div>
                         <p className="text-xs text-gray-600 mt-2">Comparte este enlace para registrar nuevos socios en tu red.</p>
                     </div>
+                </div>
+            {/* Travel Promotion Section */}
+            {promoData && promoData.eligible && (
+                <div className="bg-gradient-to-br from-indigo-900 to-blue-950 text-white rounded-3xl p-6 md:p-8 shadow-2xl relative overflow-hidden border border-indigo-800">
+                    {/* Decorative Background */}
+                    <div className="absolute right-0 top-0 w-64 h-64 bg-teal-500 opacity-10 rounded-full blur-3xl"></div>
+                    <div className="absolute left-1/4 bottom-0 w-48 h-48 bg-purple-500 opacity-10 rounded-full blur-2xl"></div>
+
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-6">
+                        <div>
+                            <span className="bg-teal-400 text-teal-950 font-bold px-4 py-1.5 rounded-full text-xs uppercase tracking-wider mb-3 inline-block">
+                                ✈️ Gran Campaña de Viajes
+                            </span>
+                            <h2 className="text-3xl font-extrabold tracking-tight">¡Próximo Destino: Punta Cana o San Andrés! 🏖️</h2>
+                            <p className="text-blue-200 mt-1">Periodo de calificación: 4 de Septiembre al 3 de Noviembre de 2026</p>
+                        </div>
+                        {/* Countdown */}
+                        <div className="bg-white bg-opacity-10 backdrop-blur-md rounded-2xl p-4 border border-white border-opacity-20 text-center min-w-[150px] z-10">
+                            <span className="text-xs text-blue-200 block uppercase font-semibold">Tiempo Restante</span>
+                            <span className="text-2xl font-bold block mt-1">
+                                {(() => {
+                                    const diff = new Date('2026-11-03T23:59:59') - new Date();
+                                    const days = Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+                                    return days > 0 ? `${days} Días` : '¡Finalizado!';
+                                })()}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 z-10 relative">
+                        {/* Nacional Trip */}
+                        <div className="bg-white bg-opacity-5 rounded-2xl p-6 border border-white border-opacity-10">
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="text-xl font-bold text-teal-300 flex items-center gap-2">
+                                    🇨🇴 Viaje Nacional (San Andrés / Sta. Marta)
+                                </h3>
+                                <span className="bg-teal-400 text-teal-950 font-extrabold px-3 py-1 rounded-lg text-sm">
+                                    Ganados: {promoData.national_won} / 2 🎟️
+                                </span>
+                            </div>
+                            
+                            <div className="space-y-4">
+                                <div>
+                                    <div className="flex justify-between text-sm mb-1 text-gray-200">
+                                        <span>Líneas Calificadas (min. 3 indirectos)</span>
+                                        <span className="font-bold text-teal-300">{promoData.national_legs} / 3 (para 1 viaje) o 6 (para 2)</span>
+                                    </div>
+                                    <div className="w-full bg-blue-950 bg-opacity-80 rounded-full h-3 overflow-hidden border border-white border-opacity-5">
+                                        <div 
+                                            className="bg-gradient-to-r from-teal-400 to-emerald-400 h-full rounded-full transition-all duration-500" 
+                                            style={{ width: `${Math.min(100, (promoData.national_legs / 6) * 100)}%` }}
+                                        ></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Internacional Trip */}
+                        <div className="bg-white bg-opacity-5 rounded-2xl p-6 border border-white border-opacity-10">
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="text-xl font-bold text-pink-300 flex items-center gap-2">
+                                    🌴 Viaje Internacional (Punta Cana)
+                                </h3>
+                                <span className="bg-pink-400 text-pink-950 font-extrabold px-3 py-1 rounded-lg text-sm">
+                                    Ganados: {promoData.international_won} / 2 🎟️
+                                </span>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div>
+                                    <div className="flex justify-between text-sm mb-1 text-gray-200">
+                                        <span>Líneas Calificadas (min. 5 indirectos)</span>
+                                        <span className="font-bold text-pink-300">{promoData.international_legs} / 5 (para 1 viaje) o 10 (para 2)</span>
+                                    </div>
+                                    <div className="w-full bg-blue-950 bg-opacity-80 rounded-full h-3 overflow-hidden border border-white border-opacity-5">
+                                        <div 
+                                            className="bg-gradient-to-r from-pink-400 to-rose-400 h-full rounded-full transition-all duration-500" 
+                                            style={{ width: `${Math.min(100, (promoData.international_legs / 10) * 100)}%` }}
+                                        ></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Directs List details */}
+                    {promoData.directs_details && promoData.directs_details.length > 0 && (
+                        <div className="mt-8 pt-6 border-t border-white border-opacity-10 z-10 relative">
+                            <h4 className="font-bold text-lg text-blue-200 mb-4 flex items-center gap-2">
+                                👥 Desglose de tus Ramas Unilevel (Periodo Campaña):
+                            </h4>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                                {promoData.directs_details.map((direct, i) => (
+                                    <div key={i} className="bg-blue-950 bg-opacity-40 p-4 rounded-xl border border-white border-opacity-5">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <span className="font-bold block truncate max-w-[120px]" title={direct.name}>{direct.name}</span>
+                                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${direct.active_in_period ? 'bg-green-500 text-green-950' : 'bg-gray-600 text-gray-200'}`}>
+                                                {direct.active_in_period ? 'Frontal Activo' : 'Inactivo'}
+                                            </span>
+                                        </div>
+                                        <div className="text-sm text-gray-300 flex justify-between">
+                                            <span>Indirectos válidos:</span>
+                                            <span className="font-bold text-teal-400">{direct.downline_count}</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
 

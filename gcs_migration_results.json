@@ -1,0 +1,462 @@
+[
+  {
+    "sku": "001-Camisa-Manga-corta-rayas-Azules",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/001-Camisa-Manga-corta-rayas-Azules.png"
+  },
+  {
+    "sku": "002-Camisa-Oversize-Manga-Corta-Rayas-Negras",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/002-Camisa-Oversize-Manga-Corta-Rayas-Negras.png"
+  },
+  {
+    "sku": "003-Camisa-Oversize-Manga-Corta-Rayas-Moradas",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/003-Camisa-Oversize-Manga-Corta-Rayas-Moradas.png"
+  },
+  {
+    "sku": "004-Camisa-Oversize-Manga-Corta-Rayas-Vinotinto",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/004-Camisa-Oversize-Manga-Corta-Rayas-Vinotinto.png"
+  },
+  {
+    "sku": "005-Camisa-Oversize-Manga-Corta-Rayas-Rojas",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/005-Camisa-Oversize-Manga-Corta-Rayas-Rojas.png"
+  },
+  {
+    "sku": "006-Camisa-Manga-Larga-Rayada-Verde",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/006-Camisa-Manga-Larga-Rayada-Verde.png"
+  },
+  {
+    "sku": "007-Camisa-Manga-Larga-Rayada-Negra",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/007-Camisa-Manga-Larga-Rayada-Negra.png"
+  },
+  {
+    "sku": "008-Camisa-Manga-Larga-Rayada-Roja",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/008-Camisa-Manga-Larga-Rayada-Roja.png"
+  },
+  {
+    "sku": "009-Camisa-Manga-Larga-Rayada-Azul",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/009-Camisa-Manga-Larga-Rayada-Azul.png"
+  },
+  {
+    "sku": "010-Camisa-Manga-Larga-Rayada-VClaro",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/010-Camisa-Manga-Larga-Rayada-VClaro.png"
+  },
+  {
+    "sku": "011-Camisa-Manga-Larga-Rayada-Violeta",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/011-Camisa-Manga-Larga-Rayada-Violeta.png"
+  },
+  {
+    "sku": "012-Camisa-Oversize-Manga-Corta-Negra",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/012-Camisa-Oversize-Manga-Corta-Negra.png"
+  },
+  {
+    "sku": "013-Camisa-Oversize-Manga-Corta-AClara",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/013-Camisa-Oversize-Manga-Corta-AClara.png"
+  },
+  {
+    "sku": "014-Camisa-Oversize-Manga-Corta-Rosa",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/014-Camisa-Oversize-Manga-Corta-Rosa.png"
+  },
+  {
+    "sku": "015-Camisa-Oversize-Manga-Corta-Blanca",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/015-Camisa-Oversize-Manga-Corta-Blanca.png"
+  },
+  {
+    "sku": "016-Camisa-Oversize-Manga-Corta-AzulP",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/016-Camisa-Oversize-Manga-Corta-AzulP.png"
+  },
+  {
+    "sku": "017-Camisa-Oversize-Manga-Corta-AClara",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/017-Camisa-Oversize-Manga-Corta-AClara.png"
+  },
+  {
+    "sku": "018-Camisa-Oversize-Manga-Corta-Roja",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/018-Camisa-Oversize-Manga-Corta-Roja.png"
+  },
+  {
+    "sku": "019-Camisa-Oversize-Manga-Corta-AMarina",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/019-Camisa-Oversize-Manga-Corta-AMarina.png"
+  },
+  {
+    "sku": "020-Camisa-Oversize-Manga-Corta-Oliva",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/020-Camisa-Oversize-Manga-Corta-Oliva.png"
+  },
+  {
+    "sku": "021-Camisa-Oversize-Manga-Corta-VTinto",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/021-Camisa-Oversize-Manga-Corta-VTinto.png"
+  },
+  {
+    "sku": "022-Camisa-Oversize-Manga-Corta-Durazno",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/022-Camisa-Oversize-Manga-Corta-Durazno.png"
+  },
+  {
+    "sku": "023-Camisa-Oversize-Manga-Corta-VOscuro",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/023-Camisa-Oversize-Manga-Corta-VOscuro.png"
+  },
+  {
+    "sku": "024-Camisa-Oversize-Manga-Corta-VClaro",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/024-Camisa-Oversize-Manga-Corta-VClaro.png"
+  },
+  {
+    "sku": "025-Camisa-Oversize-Manga-Corta-Amarilla",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/025-Camisa-Oversize-Manga-Corta-Amarilla.png"
+  },
+  {
+    "sku": "026-Camisa-Oversize-Manga-Corta-Cafe",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/026-Camisa-Oversize-Manga-Corta-Cafe.png"
+  },
+  {
+    "sku": "027-Camisa-Oversize-Manga-Corta-Azul",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/027-Camisa-Oversize-Manga-Corta-Azul.png"
+  },
+  {
+    "sku": "028-Camisa-Manga-Corta-AClaro",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/028-Camisa-Manga-Corta-AClaro.png"
+  },
+  {
+    "sku": "029-Camisa-Manga-Corta-Azul",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/029-Camisa-Manga-Corta-Azul.png"
+  },
+  {
+    "sku": "030-Camisa-Manga-Corta-AguaM",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/030-Camisa-Manga-Corta-AguaM.png"
+  },
+  {
+    "sku": "031-Camisa-Manga-Corta-AOscura",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/031-Camisa-Manga-Corta-AOscura.png"
+  },
+  {
+    "sku": "032-Camisa-Manga-Corta-AClaro",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/032-Camisa-Manga-Corta-AClaro.png"
+  },
+  {
+    "sku": "033-Camisa-Manga-Corta-VerdeC",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/033-Camisa-Manga-Corta-VerdeC.png"
+  },
+  {
+    "sku": "034-Camisa-Manga-Corta-Verde",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/034-Camisa-Manga-Corta-Verde.png"
+  },
+  {
+    "sku": "035-Camisa-Manga-Corta-Oliva",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/035-Camisa-Manga-Corta-Oliva.png"
+  },
+  {
+    "sku": "036-Camisa-Manga-Corta-Petroleo",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/036-Camisa-Manga-Corta-Petroleo.png"
+  },
+  {
+    "sku": "037-Camisa-Manga-Corta-Azul",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/037-Camisa-Manga-Corta-Azul.png"
+  },
+  {
+    "sku": "038-Camisa-Manga-Corta-AOscuro",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/038-Camisa-Manga-Corta-AOscuro.png"
+  },
+  {
+    "sku": "039-Camisa-Manga-Corta-AViolet",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/039-Camisa-Manga-Corta-AViolet.png"
+  },
+  {
+    "sku": "040-Camisa-Manga-Corta-CClaro",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/040-Camisa-Manga-Corta-CClaro.png"
+  },
+  {
+    "sku": "041-Camisa-Manga-Corta-Cafe",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/041-Camisa-Manga-Corta-Cafe.png"
+  },
+  {
+    "sku": "042-Camisa-Manga-Corta-COscuro",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/042-Camisa-Manga-Corta-COscuro.png"
+  },
+  {
+    "sku": "043-Camisa-Manga-Corta-VClaro",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/043-Camisa-Manga-Corta-VClaro.png"
+  },
+  {
+    "sku": "044-Camisa-Manga-Corta-Rojo",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/044-Camisa-Manga-Corta-Rojo.png"
+  },
+  {
+    "sku": "045-Camisa-Manga-Corta-Amarilla",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/045-Camisa-Manga-Corta-Amarilla.png"
+  },
+  {
+    "sku": "046-Camisa-Manga-Corta-RosaM",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/046-Camisa-Manga-Corta-RosaM.png"
+  },
+  {
+    "sku": "047-Camisa-Manga-Corta-Rosa",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/047-Camisa-Manga-Corta-Rosa.png"
+  },
+  {
+    "sku": "048-Camisa-Manga-Corta-Fuccia",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/048-Camisa-Manga-Corta-Fuccia.png"
+  },
+  {
+    "sku": "049-Camisa-Manga-Corta-FClaro",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/049-Camisa-Manga-Corta-FClaro.png"
+  },
+  {
+    "sku": "050-Camisa-Manga-Corta-Blanco",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/050-Camisa-Manga-Corta-Blanco.png"
+  },
+  {
+    "sku": "052-Camisa-Manga-Corta-Crema",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/052-Camisa-Manga-Corta-Crema.png"
+  },
+  {
+    "sku": "053-Camisa-Manga-Corta-Morada",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/053-Camisa-Manga-Corta-Morada.png"
+  },
+  {
+    "sku": "054-Camisa-Manga-Corta-VTinto",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/054-Camisa-Manga-Corta-VTinto.png"
+  },
+  {
+    "sku": "055-Camisa-Manga-Corta-Durazno",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/055-Camisa-Manga-Corta-Durazno.png"
+  },
+  {
+    "sku": "056-Camisa-Manga-Corta-Naranja",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/056-Camisa-Manga-Corta-Naranja.png"
+  },
+  {
+    "sku": "057-Camisa-Manga-Corta-Negra",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/057-Camisa-Manga-Corta-Negra.png"
+  },
+  {
+    "sku": "058-Camisa-Manga-Larga-CClaro",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/058-Camisa-Manga-Larga-CClaro.png"
+  },
+  {
+    "sku": "059-Camisa-Manga-Larga-Cafe",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/059-Camisa-Manga-Larga-Cafe.png"
+  },
+  {
+    "sku": "060-Camisa-Manga-Larga-DClaro",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/060-Camisa-Manga-Larga-DClaro.png"
+  },
+  {
+    "sku": "061-Camisa-Manga-Larga-Crema",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/061-Camisa-Manga-Larga-Crema.png"
+  },
+  {
+    "sku": "062-Camisa-Manga-Larga-AClaro",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/062-Camisa-Manga-Larga-AClaro.png"
+  },
+  {
+    "sku": "063-Camisa-Manga-Larga-ACielo",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/063-Camisa-Manga-Larga-ACielo.png"
+  },
+  {
+    "sku": "064-Camisa-Manga-Larga-AOscuro",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/064-Camisa-Manga-Larga-AOscuro.png"
+  },
+  {
+    "sku": "065-Camisa-Manga-Larga-Arey",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/065-Camisa-Manga-Larga-Arey.png"
+  },
+  {
+    "sku": "066-Camisa-Manga-Larga-Rosa",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/066-Camisa-Manga-Larga-Rosa.png"
+  },
+  {
+    "sku": "067-Camisa-Manga-Larga-VerdeO",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/067-Camisa-Manga-Larga-VerdeO.png"
+  },
+  {
+    "sku": "068-Camisa-Manga-Larga-Naranja",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/068-Camisa-Manga-Larga-Naranja.png"
+  },
+  {
+    "sku": "069-Camisa-Manga-Larga-Rojo",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/069-Camisa-Manga-Larga-Rojo.png"
+  },
+  {
+    "sku": "070-Camisa-Manga-Larga-Rosa",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/070-Camisa-Manga-Larga-Rosa.png"
+  },
+  {
+    "sku": "071-Camisa-Manga-Larga-Fuccia",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/071-Camisa-Manga-Larga-Fuccia.png"
+  },
+  {
+    "sku": "072-Camisa-Manga-Larga-Oliva",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/072-Camisa-Manga-Larga-Oliva.png"
+  },
+  {
+    "sku": "073-Camisa-Manga-Larga-Zapote",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/073-Camisa-Manga-Larga-Zapote.png"
+  },
+  {
+    "sku": "074-Camisa-Manga-Larga-Verde",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/074-Camisa-Manga-Larga-Verde.png"
+  },
+  {
+    "sku": "075-Camisa-Manga-Larga-VinoT",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/075-Camisa-Manga-Larga-VinoT.png"
+  },
+  {
+    "sku": "076-Camisa-Manga-Larga-Negro",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/076-Camisa-Manga-Larga-Negro.png"
+  },
+  {
+    "sku": "077-Bluson-manga-corta-Rojo",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/077-Bluson-manga-corta-Rojo.png"
+  },
+  {
+    "sku": "078-Bluson-manga-corta-AzulO",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/078-Bluson-manga-corta-AzulO.png"
+  },
+  {
+    "sku": "079-Bluson-manga-corta-Amarillo",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/079-Bluson-manga-corta-Amarillo.png"
+  },
+  {
+    "sku": "080-Bluson-manga-corta-VinoT",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/080-Bluson-manga-corta-VinoT.png"
+  },
+  {
+    "sku": "081-Bluson-manga-corta-Rosa",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/081-Bluson-manga-corta-Rosa.png"
+  },
+  {
+    "sku": "082-Bluson-manga-corta-AzulC",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/082-Bluson-manga-corta-AzulC.png"
+  },
+  {
+    "sku": "083-Bluson-manga-corta-Fuccia",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/083-Bluson-manga-corta-Fuccia.png"
+  },
+  {
+    "sku": "084-Bluson-manga-corta-Negro",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/084-Bluson-manga-corta-Negro.png"
+  },
+  {
+    "sku": "085-Bluson-manga-corta-ACielo",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/085-Bluson-manga-corta-ACielo.png"
+  },
+  {
+    "sku": "086-Bluson-manga-corta-AMarina",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/086-Bluson-manga-corta-AMarina.png"
+  },
+  {
+    "sku": "087-Bluson-manga-corta-AClaro",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/087-Bluson-manga-corta-AClaro.png"
+  },
+  {
+    "sku": "088-Bluson-manga-corta-RosaC",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/088-Bluson-manga-corta-RosaC.png"
+  },
+  {
+    "sku": "089-Bluson-manga-corta-Azulado",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/089-Bluson-manga-corta-Azulado.png"
+  },
+  {
+    "sku": "090-Bluson-manga-corta-AzulP",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/090-Bluson-manga-corta-AzulP.png"
+  },
+  {
+    "sku": "091-Bluson-manga-corta-Blanco",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/091-Bluson-manga-corta-Blanco.png"
+  },
+  {
+    "sku": "092-Bluson-manga-corta-crema",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/092-Bluson-manga-corta-crema.png"
+  },
+  {
+    "sku": "093-ACTIVACION-PROGRESIVA-FRANQUICIA-INTERNACIONAL-1",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/093-ACTIVACION-PROGRESIVA-FRANQUICIA-INTERNACIONAL-1.png"
+  }
+]

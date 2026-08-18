@@ -28,7 +28,7 @@ El Sistema Unilevel es un plan de compensación que distribuye comisiones a trav
 ### Características Principales
 
 - ✅ **7 niveles de profundidad** - Ganas hasta el 7º nivel
-- ✅ **Total 27% distribuido** - 1% + 2% + 2% + 4% + 5% + 6% + 7%
+- ✅ **Total 27% distribuido** - 0% + 2% + 3% + 4% + 5% + 6% + 7%
 - ✅ **Comisiones automáticas** - Se calculan en cada venta
 - ✅ **Sin límite de ancho** - Puedes tener ilimitados patrocinados directos
 - ✅ **Sistema jerárquico** - Estructura de árbol multinivel
@@ -45,7 +45,7 @@ El Sistema Unilevel es un plan de compensación que distribuye comisiones a trav
                      |
     ┌────────────────┼────────────────┐
     │                │                │
-  [P1]             [P2]             [P3]  ← Nivel 1 (1%)
+  [P1]             [P2]             [P3]  ← Nivel 1 (0%)
     │                │                │
   ┌─┼─┐            ┌─┼─┐            ┌─┼─┐
   │ │ │            │ │ │            │ │ │  ← Nivel 2 (2%)
@@ -53,7 +53,7 @@ El Sistema Unilevel es un plan de compensación que distribuye comisiones a trav
     │                │                │
     └────────────────┼────────────────┘
                      │
-                 [Nivel 3]             ← 2%
+                 [Nivel 3]             ← 3%
                      │
                  [Nivel 4]             ← 4%
                      │
@@ -80,9 +80,9 @@ El Sistema Unilevel es un plan de compensación que distribuye comisiones a trav
 
 | Nivel | Profundidad | Porcentaje | Ejemplo ($100) | Acumulado |
 |-------|-------------|------------|----------------|-----------|
-| 1 | Patrocinados directos | 1% | $1.00 | 1% |
-| 2 | 2ª Generación | 2% | $2.00 | 3% |
-| 3 | 3ª Generación | 2% | $2.00 | 5% |
+| 1 | Patrocinados directos | 0% | $0.00 | 0% |
+| 2 | 2ª Generación | 2% | $2.00 | 2% |
+| 3 | 3ª Generación | 3% | $3.00 | 5% |
 | 4 | 4ª Generación | 4% | $4.00 | 9% |
 | 5 | 5ª Generación | 5% | $5.00 | 14% |
 | 6 | 6ª Generación | 6% | $6.00 | 20% |

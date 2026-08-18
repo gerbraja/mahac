@@ -1,13 +1,52 @@
-from sqlalchemy.orm import Session
+from datetime import datetime, timedelta
 import json
+from sqlalchemy.orm import Session
 from backend.database.models.product import Product
 from backend.database.models.order import Order
 from backend.database.models.order_item import OrderItem
 from backend.schemas.order import OrderCreate
 
+MINIMUM_PURCHASE_COP = 37700.0
+
+def expire_old_reserved_orders(db: Session, max_hours: int = 24):
+    """Auto-expire reserved orders older than max_hours and restore stock."""
+    try:
+        cutoff = datetime.utcnow() - timedelta(hours=max_hours)
+        old_orders = db.query(Order).filter(
+            Order.status == "reservado",
+            Order.created_at <= cutoff
+        ).all()
+        for ord_obj in old_orders:
+            ord_obj.status = "expirado"
+            for item in ord_obj.items:
+                prod = db.query(Product).filter(Product.id == item.product_id).first()
+                if prod:
+                    prod.stock += item.quantity
+                    if item.selected_options and prod.variant_stock:
+                        try:
+                            sel_opt = json.loads(item.selected_options)
+                            var_stock = json.loads(prod.variant_stock)
+                            if sel_opt:
+                                k = list(sel_opt.keys())[0]
+                                val = sel_opt[k]
+                                if val in var_stock:
+                                    var_stock[val] = var_stock.get(val, 0) + item.quantity
+                                    prod.variant_stock = json.dumps(var_stock)
+                        except Exception:
+                            pass
+                    db.add(prod)
+            db.add(ord_obj)
+        if old_orders:
+            db.commit()
+    except Exception as e:
+        print(f"Error in expire_old_reserved_orders: {e}")
+
 
 def create_order(db: Session, payload: OrderCreate, current_user):
     """Minimal create order implementation. Returns the created Order instance."""
+    # Clean up expired reserved orders
+    expire_old_reserved_orders(db)
+
     total_usd = 0.0
     total_cop = 0.0
     total_pv = 0.0
@@ -81,6 +120,11 @@ def create_order(db: Session, payload: OrderCreate, current_user):
             "subtotal_pv": subtotal_pv,
             "selected_options": getattr(item, 'selected_options', None)
         })
+
+    # Validate minimum purchase ($37,700 COP)
+    is_activation_order = any(it["product"].is_activation for it in order_items)
+    if not is_activation_order and total_cop < MINIMUM_PURCHASE_COP:
+        raise ValueError("El monto mínimo de compra en la plataforma es de $37.700 COP.")
 
     # Determine user_id (registered) or None (guest)
     user_id = current_user.id if current_user else None

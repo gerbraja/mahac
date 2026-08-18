@@ -121,7 +121,7 @@ export default function Personal() {
                         </button>
 
                         <button
-                            onClick={() => alert('La aplicación móvil estará disponible próximamente.')}
+                            onClick={() => window.dispatchEvent(new CustomEvent('trigger-pwa-install'))}
                             style={{
                                 width: '100%',
                                 padding: '1.25rem',

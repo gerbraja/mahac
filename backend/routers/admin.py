@@ -2143,7 +2143,7 @@ def get_active_packages(country: str = None, db: Session = Depends(get_db), curr
 @router.get("/reports/top-products")
 def get_top_products(period: str = "30d", country: str = None, db: Session = Depends(get_db), current_user: User = Depends(get_current_admin_user)):
     """Top 5 productos más vendidos por unidades en el período."""
-    from backend.database.models.order import OrderItem
+    from backend.database.models.order_item import OrderItem
     paid_statuses = ["pagado", "paid", "shipped", "delivered", "completado", "reservado", "en_preparacion"]
     start_dt, end_dt = _get_period_range(period)
 

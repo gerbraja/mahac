@@ -89,7 +89,21 @@ export default function Checkout() {
 
                 if (shippingMethod === "pickup" && selectedPointId) {
                     const point = pickupPoints.find(p => p.id === parseInt(selectedPointId));
-                    if (point) cityToTest = point.city;
+                    if (point) {
+                        if (point.name.toLowerCase().includes("oficina")) {
+                            setShippingDetails({
+                                costo_flete_real: 0,
+                                costo_cobrado_cliente: 0,
+                                subsidio_aplicado: 0,
+                                base_iva: 0,
+                                iva_flete: 0,
+                                mensaje: 'Recogida en Oficina - Envío Gratis'
+                            });
+                            setFetchingShipping(false);
+                            return;
+                        }
+                        cityToTest = point.city;
+                    }
                 } else if (shippingMethod === "delivery" && shippingDivipola) {
                     pseudoDivipola = shippingDivipola;
                 }
@@ -130,7 +144,7 @@ export default function Checkout() {
         }, 1000);
 
         return () => clearTimeout(timeoutId);
-    }, [shippingMethod, shippingCity, selectedPointId, cart, shippingDivipola]);
+    }, [shippingMethod, shippingCity, selectedPointId, cart, shippingDivipola, pickupPoints]);
 
     const totalCOP = subtotalCOP + (shippingDetails.costo_cobrado_cliente || 0);
 
@@ -174,6 +188,13 @@ export default function Checkout() {
             } else {
                 const point = pickupPoints.find(p => p.id === parseInt(selectedPointId));
                 finalAddress = `RECOGIDA EN: ${point.name} (${point.address}, ${point.city})`;
+            }
+
+            const isActivationCart = cart.some(item => item.is_activation);
+            if (!isActivationCart && subtotalCOP < 37700) {
+                setError(`El monto mínimo de compra en la plataforma es de $37.700 COP. Te faltan $${(37700 - subtotalCOP).toLocaleString()} COP.`);
+                setLoading(false);
+                return;
             }
 
             const payload = {
@@ -427,6 +448,21 @@ export default function Checkout() {
                                 <div className="flex-1">
                                     <span className="font-bold block">💰 Billetera Virtual (Saldo TEI)</span>
                                     <span className="text-xs text-gray-500">Requiere inicio de sesión y segunda clave.</span>
+                                </div>
+                            </label>
+
+                            <label className={`flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50 ${paymentMethod === "wompi" ? "border-blue-500 bg-blue-50" : "border-gray-200"}`}>
+                                <input
+                                    type="radio"
+                                    name="payment"
+                                    value="wompi"
+                                    checked={paymentMethod === "wompi"}
+                                    onChange={(e) => setPaymentMethod(e.target.value)}
+                                    className="w-5 h-5 text-blue-600 mr-3"
+                                />
+                                <div className="flex-1">
+                                    <span className="font-bold block">💳 Wompi (Bancolombia) - Tarjetas, PSE, Nequi</span>
+                                    <span className="text-xs text-gray-500">Paga al instante con tarjeta de crédito, débito PSE o monedero Nequi de forma 100% segura.</span>
                                 </div>
                             </label>
 

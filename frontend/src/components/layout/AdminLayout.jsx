@@ -1,5 +1,5 @@
+import React, { useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { useState } from 'react';
 import { useAdmin } from '../../context/AdminContext';
 
 export default function AdminLayout() {
@@ -14,8 +14,10 @@ export default function AdminLayout() {
     const allMenuItems = [
         { path: '/admin', label: 'Dashboard', icon: '📊' },
         { path: '/admin/users', label: 'Usuarios', icon: '👥' },
+        { path: '/admin/promotions', label: 'Campaña Viajes', icon: '✈️' },
         { path: '/admin/reports', label: 'Reportes', icon: '📈' },
         { path: '/admin/logistics', label: 'Logística (Bultos)', icon: '🚛' },
+        { path: '/admin/pickup-points', label: 'Puntos de Recogida', icon: '📍' },
         { path: '/admin/country-stats', label: 'Estad. por País', icon: '🗺️' },
         { path: '/admin/taxes', label: 'Impuestos y Retenciones', icon: '🧯' },
         { path: '/admin/accounting', label: 'Contabilidad', icon: '🏦' },
@@ -37,29 +39,35 @@ export default function AdminLayout() {
     return (
         <div style={{ display: 'flex', minHeight: '100vh', background: '#f3f4f6' }}>
             {/* Sidebar */}
-            <aside style={{
-                width: sidebarOpen ? '90px' : '45px',
-                background: '#ffffff', // Fondo claro
-                color: '#1f2937', // Letra oscura
-                borderRight: '1px solid #e5e7eb',
-                transition: 'width 0.3s',
-                display: 'flex',
-                flexDirection: 'column',
-                position: 'fixed',
-                height: '100vh',
-                zIndex: 1000,
-                overflow: 'hidden'
-            }}>
+            <aside 
+                data-collapsed={!sidebarOpen ? "true" : "false"}
+                style={{
+                    width: sidebarOpen ? '288px' : '80px',
+                    background: '#ffffff', // Fondo claro
+                    color: '#1f2937', // Letra oscura
+                    borderRight: '1px solid #e5e7eb',
+                    transition: 'width 0.3s ease',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    position: 'fixed',
+                    height: '100vh',
+                    zIndex: 1000,
+                    overflow: 'hidden',
+                    boxSizing: 'border-box'
+                }}
+            >
                 {/* Logo */}
                 <div style={{
-                    padding: '0.375rem 1.5rem',
+                    padding: sidebarOpen ? '0.75rem 1.5rem' : '0.75rem 0.5rem',
                     borderBottom: '1px solid #e5e7eb',
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'space-between'
+                    justifyContent: sidebarOpen ? 'space-between' : 'center',
+                    height: '56px',
+                    boxSizing: 'border-box'
                 }}>
                     {sidebarOpen && (
-                        <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#1e3a8a' }}>
+                        <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#1e3a8a', whiteSpace: 'nowrap' }}>
                             TEI Admin
                         </div>
                     )}
@@ -69,8 +77,12 @@ export default function AdminLayout() {
                             background: 'transparent',
                             border: 'none',
                             color: '#1f2937',
-                            fontSize: '1.5rem',
-                            cursor: 'pointer'
+                            fontSize: '1.2rem',
+                            cursor: 'pointer',
+                            padding: '0.25rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
                         }}
                     >
                         {sidebarOpen ? '◀' : '▶'}
@@ -79,7 +91,7 @@ export default function AdminLayout() {
 
                 {/* Global Country Selector */}
                 {sidebarOpen && (
-                    <div style={{ padding: '0.375rem 1.5rem', borderBottom: '1px solid #e5e7eb', background: '#f8fafc' }}>
+                    <div style={{ padding: '0.5rem 1.25rem', borderBottom: '1px solid #e5e7eb', background: '#f8fafc' }}>
                         <label className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1 block">Filtro Global:</label>
                         {isCountryAdmin ? (
                             <div className="w-full bg-gray-100 border border-gray-300 text-gray-700 text-sm py-1 px-2 rounded flex items-center gap-1">
@@ -102,7 +114,7 @@ export default function AdminLayout() {
                 {/* Menu Items */}
                 <nav style={{
                     flex: 1,
-                    padding: '0.25rem 0',
+                    padding: '0.5rem 0',
                     overflowY: 'auto',
                     minHeight: 0,
                     scrollbarWidth: 'thin',
@@ -114,47 +126,59 @@ export default function AdminLayout() {
                             onClick={() => navigate(item.path)}
                             style={{
                                 width: '100%',
-                                padding: '0.25rem 0.55rem', // Compacto -10% adicional
+                                padding: sidebarOpen ? '0.6rem 1.25rem' : '0.6rem 0',
                                 background: isActive(item.path) ? '#eff6ff' : 'transparent',
                                 border: 'none',
                                 borderLeft: isActive(item.path) ? '4px solid #1d4ed8' : '4px solid transparent',
                                 color: isActive(item.path) ? '#1d4ed8' : '#374151',
                                 fontWeight: isActive(item.path) ? '600' : 'normal',
-                                textAlign: 'left',
                                 cursor: 'pointer',
                                 display: 'flex',
                                 alignItems: 'center',
-                                gap: '0.75rem',
-                                fontSize: '0.72rem',
-                                transition: 'all 0.2s'
+                                justifyContent: sidebarOpen ? 'flex-start' : 'center',
+                                gap: sidebarOpen ? '0.75rem' : '0',
+                                fontSize: '0.85rem',
+                                transition: 'all 0.2s',
+                                boxSizing: 'border-box'
                             }}
                             onMouseEnter={(e) => {
                                 if (!isActive(item.path)) {
-                                    e.target.style.background = '#f3f4f6';
+                                    e.currentTarget.style.background = '#f3f4f6';
                                 }
                             }}
                             onMouseLeave={(e) => {
                                 if (!isActive(item.path)) {
-                                    e.target.style.background = 'transparent';
+                                    e.currentTarget.style.background = 'transparent';
                                 }
                             }}
                         >
-                            <span style={{ fontSize: '1.1rem' }}>{item.icon}</span>
-                            {sidebarOpen && <span>{item.label}</span>}
+                            <span style={{ fontSize: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '24px' }}>
+                                {item.icon}
+                            </span>
+                            {sidebarOpen && <span style={{ whiteSpace: 'nowrap' }}>{item.label}</span>}
                         </button>
                     ))}
                 </nav>
 
                 {/* Logout */}
-                <div style={{ padding: '0.5rem 1rem', borderTop: '1px solid #e5e7eb' }}>
+                <div style={{ 
+                    padding: sidebarOpen ? '0.75rem 1rem' : '0.75rem 0', 
+                    borderTop: '1px solid #e5e7eb',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    width: '100%',
+                    boxSizing: 'border-box'
+                }}>
                     <button
                         onClick={() => {
                             localStorage.removeItem('token');
                             navigate('/login');
                         }}
                         style={{
-                            width: '100%',
-                            padding: '0.5rem',
+                            width: sidebarOpen ? '100%' : '44px',
+                            height: sidebarOpen ? 'auto' : '44px',
+                            minWidth: sidebarOpen ? 'auto' : '44px',
+                            padding: sidebarOpen ? '0.5rem' : '0',
                             background: '#fee2e2',
                             border: '1px solid #fca5a5',
                             borderRadius: '0.5rem',
@@ -164,14 +188,15 @@ export default function AdminLayout() {
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            gap: '0.5rem',
-                            transition: 'all 0.2s'
+                            gap: sidebarOpen ? '0.5rem' : '0',
+                            transition: 'all 0.2s',
+                            boxSizing: 'border-box'
                         }}
-                        onMouseEnter={(e) => e.target.style.background = '#fecaca'}
-                        onMouseLeave={(e) => e.target.style.background = '#fee2e2'}
+                        onMouseEnter={(e) => e.currentTarget.style.background = '#fecaca'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = '#fee2e2'}
                     >
-                        <span>🚪</span>
-                        {sidebarOpen && <span>Cerrar Sesión</span>}
+                        <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>🚪</span>
+                        {sidebarOpen && <span style={{ whiteSpace: 'nowrap' }}>Cerrar Sesión</span>}
                     </button>
                 </div>
             </aside>
@@ -179,18 +204,23 @@ export default function AdminLayout() {
             {/* Main Content */}
             <div style={{
                 flex: 1,
-                marginLeft: sidebarOpen ? '90px' : '45px',
-                transition: 'margin-left 0.3s'
+                marginLeft: sidebarOpen ? '288px' : '80px',
+                transition: 'margin-left 0.3s ease',
+                minWidth: 0
             }}>
                 {/* Header */}
                 <header style={{
                     background: 'white',
-                    padding: '1.5rem 2rem',
+                    padding: '1rem 2rem',
                     borderBottom: '1px solid #e5e7eb',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                    height: '56px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    boxSizing: 'border-box'
                 }}>
                     <h1 style={{
-                        fontSize: '1.875rem',
+                        fontSize: '1.25rem',
                         fontWeight: 'bold',
                         color: '#1e3a8a',
                         margin: 0

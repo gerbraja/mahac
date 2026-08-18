@@ -1,23 +1,16 @@
-
-import google.generativeai as genai
 import os
 import json
 import logging
+import base64
+import httpx
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Configure Gemini
-api_key = os.getenv("GEMINI_API_KEY")
-if api_key:
-    genai.configure(api_key=api_key)
-else:
-    logger.warning("GEMINI_API_KEY not found in environment variables.")
-
 def validate_documents_with_gemini(rut_tuple, cedula_tuple, bank_tuple, user_data):
     """
-    Sends the 3 documents to Gemini 2.5 Flash for validation against user_data.
+    Sends the 3 documents to Gemini 2.5 Flash for validation against user_data using direct HTTP POST.
     
     Args:
         rut_tuple (tuple): (bytes, mime_type) for RUT.
@@ -63,60 +56,7 @@ def validate_documents_with_gemini(rut_tuple, cedula_tuple, bank_tuple, user_dat
     normalized_cedula_mime = normalize_mime(cedula_mime)
     normalized_bank_mime = normalize_mime(bank_mime)
 
-    # 3. Save files to disk and upload using Gemini File API
-    temp_files = []
-    gemini_files = []
-
     try:
-        import tempfile
-        import os
-        import time
-
-        def prepare_and_upload(content, mime_type, suffix):
-            fd, path = tempfile.mkstemp(suffix=suffix)
-            try:
-                with os.fdopen(fd, 'wb') as tmp:
-                    tmp.write(content)
-                temp_files.append(path)
-                logger.info(f"Uploading file of type {mime_type} to Gemini File API...")
-                gfile = genai.upload_file(path, mime_type=mime_type)
-                
-                # Wait for the file to transition from PROCESSING to ACTIVE
-                logger.info(f"Waiting for Gemini to process file {gfile.name}...")
-                start_time = time.time()
-                while "PROCESSING" in str(gfile.state):
-                    if time.time() - start_time > 30:
-                        raise TimeoutError(f"Gemini processing timed out for file {gfile.name}")
-                    time.sleep(1)
-                    gfile = genai.get_file(gfile.name)
-                    
-                if "FAILED" in str(gfile.state):
-                    raise ValueError(f"Gemini file processing failed for file {gfile.name}")
-                    
-                logger.info(f"File {gfile.name} is now ACTIVE.")
-                gemini_files.append(gfile)
-                return gfile
-            except Exception as e:
-                if path and os.path.exists(path) and path not in temp_files:
-                    try:
-                        os.unlink(path)
-                    except:
-                        pass
-                raise e
-
-        def get_suffix(mime):
-            if "pdf" in mime: return ".pdf"
-            if "png" in mime: return ".png"
-            if "webp" in mime: return ".webp"
-            return ".jpg"
-
-        logger.info(f"Saving temporary documents and uploading...")
-        g_rut = prepare_and_upload(rut_content, normalized_rut_mime, get_suffix(normalized_rut_mime))
-        g_cedula = prepare_and_upload(cedula_content, normalized_cedula_mime, get_suffix(normalized_cedula_mime))
-        g_bank = prepare_and_upload(bank_content, normalized_bank_mime, get_suffix(normalized_bank_mime))
-
-        model = genai.GenerativeModel('gemini-2.5-flash')
-        
         # Prepare the prompt
         prompt = f"""
         You are an expert KYC (Know Your Customer) identity verification AI.
@@ -168,41 +108,76 @@ def validate_documents_with_gemini(rut_tuple, cedula_tuple, bank_tuple, user_dat
         }}
         """
 
-        response = model.generate_content([prompt, g_rut, g_cedula, g_bank])
-        
-        # Parse JSON response
-        try:
-            # Clean up potential markdown code blocks ```json ... ```
-            text_response = response.text.strip()
-            if text_response.startswith("```json"):
-                text_response = text_response[7:-3] # Remove ```json and ```
-            elif text_response.startswith("```"):
-                text_response = text_response[3:-3] # Remove ``` and ```
+        # Encode files to base64 for inline transfer
+        rut_b64 = base64.b64encode(rut_content).decode("utf-8")
+        cedula_b64 = base64.b64encode(cedula_content).decode("utf-8")
+        bank_b64 = base64.b64encode(bank_content).decode("utf-8")
 
-            result = json.loads(text_response.strip())
-            return result
-        except json.JSONDecodeError:
-            logger.error(f"Failed to parse JSON from Gemini: {response.text}")
-            return {"valid": False, "reason": "AI response format error", "raw": response.text}
+        # Build payload using base64 inlineData
+        payload = {
+            "contents": [
+                {
+                    "parts": [
+                        {"text": prompt},
+                        {"text": "\n[DOCUMENTO 1: RUT (REGISTRO UNICO TRIBUTARIO DE COLOMBIA)]\n"},
+                        {
+                            "inlineData": {
+                                "mimeType": normalized_rut_mime,
+                                "data": rut_b64
+                            }
+                        },
+                        {"text": "\n[DOCUMENTO 2: CEDULA DE CIUDADANIA DE COLOMBIA]\n"},
+                        {
+                            "inlineData": {
+                                "mimeType": normalized_cedula_mime,
+                                "data": cedula_b64
+                            }
+                        },
+                        {"text": "\n[DOCUMENTO 3: CERTIFICACION BANCARIA]\n"},
+                        {
+                            "inlineData": {
+                                "mimeType": normalized_bank_mime,
+                                "data": bank_b64
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+
+        api_key = os.getenv("GEMINI_API_KEY")
+        if not api_key:
+            raise ValueError("GEMINI_API_KEY environment variable is not configured.")
+
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
+        headers = {"Content-Type": "application/json"}
+
+        logger.info("Sending documents directly to Gemini API via HTTP POST...")
+        with httpx.Client(timeout=60.0) as client:
+            response = client.post(url, json=payload, headers=headers)
+            
+        if response.status_code != 200:
+            logger.error(f"Gemini API returned error {response.status_code}: {response.text}")
+            raise ValueError(f"Gemini API error: {response.text}")
+
+        res_json = response.json()
+        
+        # Extract candidate text
+        try:
+            text_response = res_json['candidates'][0]['content']['parts'][0]['text'].strip()
+        except (KeyError, IndexError) as err:
+            logger.error(f"Malformed Gemini API response: {res_json}")
+            raise ValueError("Malformed response from Gemini API")
+
+        # Clean up potential markdown code blocks ```json ... ```
+        if text_response.startswith("```json"):
+            text_response = text_response[7:-3]
+        elif text_response.startswith("```"):
+            text_response = text_response[3:-3]
+
+        result = json.loads(text_response.strip())
+        return result
 
     except Exception as e:
         logger.error(f"Error calling Gemini: {str(e)}")
         return {"valid": False, "reason": f"System error during validation: {str(e)}"}
-
-    finally:
-        # 4. Clean up temporary files on disk
-        for path in temp_files:
-            try:
-                if os.path.exists(path):
-                    os.unlink(path)
-                    logger.info(f"Cleaned up local temp file: {path}")
-            except Exception as ex:
-                logger.error(f"Error deleting temp file {path}: {ex}")
-        
-        # 5. Clean up files on Gemini servers
-        for gfile in gemini_files:
-            try:
-                gfile.delete()
-                logger.info(f"Cleaned up Gemini cloud file: {gfile.name}")
-            except Exception as ex:
-                logger.error(f"Error deleting Gemini file {gfile.name}: {ex}")

@@ -1,5 +1,5 @@
 
-from sqlalchemy import Column, Integer, String, Boolean, Text, ForeignKey, DateTime
+from sqlalchemy import Column, Integer, String, Boolean, Text, ForeignKey, DateTime, Float, LargeBinary
 from sqlalchemy.orm import relationship
 from ..connection import Base
 from datetime import datetime
@@ -64,8 +64,37 @@ class ComplianceRecord(Base):
     input_bank_account_type = Column(String(50), nullable=True)
     input_bank_account_number = Column(String(100), nullable=True)
     
+    # Validation Status & Manual Reviews
+    status = Column(String(50), default="pending")  # pending, approved, rejected
+    ai_validation_status = Column(String(50), default="passed")  # passed, mismatched
+    rejection_reason = Column(Text, nullable=True)
+    
+    # Custom Tax settings configured by Admin
+    apply_retefuente = Column(Boolean, default=True)
+    retefuente_rate = Column(Float, default=6.0)
+    apply_reteica = Column(Boolean, default=True)
+    reteica_rate = Column(Float, default=0.0)
+    tax_regime = Column(String(100), nullable=True) # e.g. "Régimen Simple (RST)" o "Régimen Común"
+    
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+    # Binary Storage for uploaded documents
+    rut_file_bytes = Column(LargeBinary, nullable=True)
+    cedula_file_bytes = Column(LargeBinary, nullable=True)
+    bank_file_bytes = Column(LargeBinary, nullable=True)
+    profile_photo_file_bytes = Column(LargeBinary, nullable=True)
+    
+    # Original Filenames and MIME Types
+    rut_filename = Column(String(255), nullable=True)
+    cedula_filename = Column(String(255), nullable=True)
+    bank_filename = Column(String(255), nullable=True)
+    profile_photo_filename = Column(String(255), nullable=True)
+    
+    rut_mime_type = Column(String(100), nullable=True)
+    cedula_mime_type = Column(String(100), nullable=True)
+    bank_mime_type = Column(String(100), nullable=True)
+    profile_photo_mime_type = Column(String(100), nullable=True)
+ 
     # Relationship
     user = relationship("User", backref="compliance_record")

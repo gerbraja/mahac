@@ -1,0 +1,15 @@
+ID: 1 | Name: Distribuidor | MatrixIDRequired: 27 | Reward: 0.0 | Monthly: 7 | Semester: None | Yearly: None
+ID: 2 | Name: Distribuidor Bronce | MatrixIDRequired: 77 | Reward: 0.0 | Monthly: 6 | Semester: None | Yearly: None
+ID: 3 | Name: Distribuidor Plata | MatrixIDRequired: 277 | Reward: 147.0 | Monthly: 5 | Semester: None | Yearly: None
+ID: 4 | Name: Distribuidor Oro | MatrixIDRequired: 877 | Reward: 500.0 | Monthly: 4 | Semester: None | Yearly: None
+ID: 5 | Name: Empresario Platino | MatrixIDRequired: 3000 | Reward: 1700.0 | Monthly: 3 | Semester: None | Yearly: None
+ID: 6 | Name: Empresario Rubí | MatrixIDRequired: 9700 | Reward: 30000.0 | Monthly: 2 | Semester: None | Yearly: None
+ID: 7 | Name: Empresario Esmeralda | MatrixIDRequired: 30000 | Reward: 100000.0 | Monthly: 1 | Semester: None | Yearly: None
+ID: 8 | Name: Diamante | MatrixIDRequired: 100000 | Reward: 300000.0 | Monthly: None | Semester: 1 | Yearly: None
+ID: 9 | Name: Diamante Azul | MatrixIDRequired: 300000 | Reward: 1000000.0 | Monthly: None | Semester: None | Yearly: 1
+ID: 10 | Name: Diamante Rojo | MatrixIDRequired: 1000000 | Reward: 3000000.0 | Monthly: None | Semester: None | Yearly: 1
+ID: 11 | Name: Diamante Negro | MatrixIDRequired: 3000000 | Reward: 7000000.0 | Monthly: None | Semester: None | Yearly: 1
+ID: 12 | Name: Diamante Corona | MatrixIDRequired: 7000000 | Reward: 20000000.0 | Monthly: None | Semester: None | Yearly: 1
+ID: 13 | Name: Corona Azul | MatrixIDRequired: 20000000 | Reward: 70000000.0 | Monthly: None | Semester: None | Yearly: 1
+ID: 14 | Name: Corona Roja | MatrixIDRequired: 70000000 | Reward: 210000000.0 | Monthly: None | Semester: None | Yearly: 1
+ID: 15 | Name: Corona Negra | MatrixIDRequired: 210000000 | Reward: 0.0 | Monthly: None | Semester: None | Yearly: 1

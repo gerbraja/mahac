@@ -1,0 +1,149 @@
+ID=20 | Cat=ZAZAMAS  | Name=Alimentos y Bebidas
+ID=9 | Cat=Proximo Lanzamiento | Name=Belleza y Cuidado Personal
+ID=230 | Cat=ASOLEADOR | Name=Ropa y Accesorios
+ID=151 | Cat=BLUSON MANGA CORTA | Name=Ropa y Accesorios
+ID=143 | Cat=BLUSON MANGA CORTA | Name=Ropa y Accesorios
+ID=146 | Cat=BLUSON MANGA CORTA | Name=Ropa y Accesorios
+ID=149 | Cat=BLUSON MANGA CORTA | Name=Ropa y Accesorios
+ID=154 | Cat=BLUSON MANGA CORTA | Name=Ropa y Accesorios
+ID=145 | Cat=BLUSON MANGA CORTA | Name=Ropa y Accesorios
+ID=153 | Cat=BLUSON MANGA CORTA | Name=Ropa y Accesorios
+ID=156 | Cat=BLUSON MANGA CORTA | Name=Ropa y Accesorios
+ID=147 | Cat=BLUSON MANGA CORTA | Name=Ropa y Accesorios
+ID=148 | Cat=BLUSON MANGA CORTA | Name=Ropa y Accesorios
+ID=144 | Cat=BLUSON MANGA CORTA | Name=Ropa y Accesorios
+ID=152 | Cat=BLUSON MANGA CORTA | Name=Ropa y Accesorios
+ID=142 | Cat=BLUSON MANGA CORTA | Name=Ropa y Accesorios
+ID=150 | Cat=BLUSON MANGA CORTA | Name=Ropa y Accesorios
+ID=155 | Cat=BLUSON MANGA CORTA | Name=Ropa y Accesorios
+ID=141 | Cat=BLUSÓN MANGA CORTA | Name=Ropa y Accesorios
+ID=103 | Cat=CAMISA MANGA CORTA | Name=Ropa y Accesorios
+ID=121 | Cat=CAMISA MANGA CORTA | Name=Ropa y Accesorios
+ID=107 | Cat=CAMISA MANGA CORTA | Name=Ropa y Accesorios
+ID=104 | Cat=CAMISA MANGA CORTA | Name=Ropa y Accesorios
+ID=101 | Cat=CAMISA MANGA CORTA | Name=Ropa y Accesorios
+ID=100 | Cat=CAMISA MANGA CORTA | Name=Ropa y Accesorios
+ID=97 | Cat=CAMISA MANGA CORTA | Name=Ropa y Accesorios
+ID=98 | Cat=CAMISA MANGA CORTA | Name=Ropa y Accesorios
+ID=117 | Cat=CAMISA MANGA CORTA | Name=Ropa y Accesorios
+ID=114 | Cat=CAMISA MANGA CORTA | Name=Ropa y Accesorios
+ID=119 | Cat=CAMISA MANGA CORTA | Name=Ropa y Accesorios
+ID=116 | Cat=CAMISA MANGA CORTA | Name=Ropa y Accesorios
+ID=113 | Cat=CAMISA MANGA CORTA | Name=Ropa y Accesorios
+ID=111 | Cat=CAMISA MANGA CORTA | Name=Ropa y Accesorios
+ID=110 | Cat=CAMISA MANGA CORTA | Name=Ropa y Accesorios
+ID=93 | Cat=CAMISA MANGA CORTA | Name=Ropa y Accesorios
+ID=95 | Cat=CAMISA MANGA CORTA | Name=Ropa y Accesorios
+ID=108 | Cat=CAMISA MANGA CORTA | Name=Ropa y Accesorios
+ID=120 | Cat=CAMISA MANGA CORTA | Name=Ropa y Accesorios
+ID=115 | Cat=CAMISA MANGA CORTA | Name=Ropa y Accesorios
+ID=112 | Cat=CAMISA MANGA CORTA | Name=Ropa y Accesorios
+ID=109 | Cat=CAMISA MANGA CORTA | Name=Ropa y Accesorios
+ID=106 | Cat=CAMISA MANGA CORTA | Name=Ropa y Accesorios
+ID=118 | Cat=CAMISA MANGA CORTA | Name=Ropa y Accesorios
+ID=105 | Cat=CAMISA MANGA CORTA | Name=Ropa y Accesorios
+ID=102 | Cat=CAMISA MANGA CORTA | Name=Ropa y Accesorios
+ID=99 | Cat=CAMISA MANGA CORTA | Name=Ropa y Accesorios
+ID=94 | Cat=CAMISA MANGA CORTA | Name=Ropa y Accesorios
+ID=127 | Cat=CAMISA MANGA LARGA DAMA | Name=Ropa y Accesorios
+ID=122 | Cat=CAMISA MANGA LARGA DAMA | Name=Ropa y Accesorios
+ID=128 | Cat=CAMISA MANGA LARGA DAMA | Name=Ropa y Accesorios
+ID=131 | Cat=CAMISA MANGA LARGA DAMA | Name=Ropa y Accesorios
+ID=134 | Cat=CAMISA MANGA LARGA DAMA | Name=Ropa y Accesorios
+ID=137 | Cat=CAMISA MANGA LARGA DAMA | Name=Ropa y Accesorios
+ID=140 | Cat=CAMISA MANGA LARGA DAMA | Name=Ropa y Accesorios
+ID=123 | Cat=CAMISA MANGA LARGA DAMA | Name=Ropa y Accesorios
+ID=125 | Cat=CAMISA MANGA LARGA DAMA | Name=Ropa y Accesorios
+ID=129 | Cat=CAMISA MANGA LARGA DAMA | Name=Ropa y Accesorios
+ID=138 | Cat=CAMISA MANGA LARGA DAMA | Name=Ropa y Accesorios
+ID=124 | Cat=CAMISA MANGA LARGA DAMA | Name=Ropa y Accesorios
+ID=130 | Cat=CAMISA MANGA LARGA DAMA | Name=Ropa y Accesorios
+ID=133 | Cat=CAMISA MANGA LARGA DAMA | Name=Ropa y Accesorios
+ID=136 | Cat=CAMISA MANGA LARGA DAMA | Name=Ropa y Accesorios
+ID=139 | Cat=CAMISA MANGA LARGA DAMA | Name=Ropa y Accesorios
+ID=126 | Cat=CAMISA MANGA LARGA DAMA | Name=Ropa y Accesorios
+ID=132 | Cat=CAMISA MANGA LARGA DAMA | Name=Ropa y Accesorios
+ID=135 | Cat=CAMISA MANGA LARGA DAMA | Name=Ropa y Accesorios
+ID=71 | Cat=CAMISA MANGA LARGA RAYADA | Name=Ropa y Accesorios
+ID=75 | Cat=CAMISA MANGA LARGA RAYADA | Name=Ropa y Accesorios
+ID=70 | Cat=CAMISA MANGA LARGA RAYADA | Name=Ropa y Accesorios
+ID=73 | Cat=CAMISA MANGA LARGA RAYADA | Name=Ropa y Accesorios
+ID=72 | Cat=CAMISA MANGA LARGA RAYADA | Name=Ropa y Accesorios
+ID=74 | Cat=CAMISA MANGA LARGA RAYADA | Name=Ropa y Accesorios
+ID=76 | Cat=CAMISA OVERSIZE   MANGA CORTA | Name=Ropa y Accesorios
+ID=92 | Cat=CAMISA OVERSIZE MANGA CORTA | Name=Ropa y Accesorios
+ID=89 | Cat=CAMISA OVERSIZE MANGA CORTA | Name=Ropa y Accesorios
+ID=85 | Cat=CAMISA OVERSIZE MANGA CORTA | Name=Ropa y Accesorios
+ID=77 | Cat=CAMISA OVERSIZE MANGA CORTA | Name=Ropa y Accesorios
+ID=91 | Cat=CAMISA OVERSIZE MANGA CORTA | Name=Ropa y Accesorios
+ID=82 | Cat=CAMISA OVERSIZE MANGA CORTA | Name=Ropa y Accesorios
+ID=78 | Cat=CAMISA OVERSIZE MANGA CORTA | Name=Ropa y Accesorios
+ID=87 | Cat=CAMISA OVERSIZE MANGA CORTA | Name=Ropa y Accesorios
+ID=80 | Cat=CAMISA OVERSIZE MANGA CORTA | Name=Ropa y Accesorios
+ID=84 | Cat=CAMISA OVERSIZE MANGA CORTA | Name=Ropa y Accesorios
+ID=79 | Cat=CAMISA OVERSIZE MANGA CORTA | Name=Ropa y Accesorios
+ID=86 | Cat=CAMISA OVERSIZE MANGA CORTA | Name=Ropa y Accesorios
+ID=83 | Cat=CAMISA OVERSIZE MANGA CORTA | Name=Ropa y Accesorios
+ID=81 | Cat=CAMISA OVERSIZE MANGA CORTA | Name=Ropa y Accesorios
+ID=90 | Cat=CAMISA OVERSIZE MANGA CORTA | Name=Ropa y Accesorios
+ID=88 | Cat=CAMISA OVERSIZE MANGA CORTA | Name=Ropa y Accesorios
+ID=68 | Cat=CAMISA OVERSIZE   MANGA CORTA RAYADA | Name=Ropa y Accesorios
+ID=67 | Cat=CAMISA OVERSIZE MANGA CORTA RAYADA | Name=Ropa y Accesorios
+ID=69 | Cat=CAMISA OVERSIZE MANGA CORTA RAYADA | Name=Ropa y Accesorios
+ID=66 | Cat=CAMISA OVERSIZE MANGA CORTA RAYADA | Name=Ropa y Accesorios
+ID=65 | Cat=CAMISA OVERSIZE MANGA CORTA RAYADA  | Name=Ropa y Accesorios
+ID=96 | Cat=CAMISSA MANGA CORTA | Name=Ropa y Accesorios
+ID=213 | Cat=COJUNTO ROPA INTERIOR | Name=Ropa y Accesorios
+ID=62 | Cat=CONJUNTO PANTALON | Name=Ropa y Accesorios
+ID=61 | Cat=CONJUNTO PANTALON | Name=Ropa y Accesorios
+ID=57 | Cat=CONJUNTO PANTALON | Name=Ropa y Accesorios
+ID=59 | Cat=CONJUNTO PANTALON | Name=Ropa y Accesorios
+ID=64 | Cat=CONJUNTO PANTALON | Name=Ropa y Accesorios
+ID=56 | Cat=CONJUNTO PANTALON | Name=Ropa y Accesorios
+ID=58 | Cat=CONJUNTO PANTALON | Name=Ropa y Accesorios
+ID=60 | Cat=CONJUNTO PANTALON | Name=Ropa y Accesorios
+ID=215 | Cat=CONJUNTO ROPA INTERIOR  | Name=Ropa y Accesorios
+ID=214 | Cat=CONJUNTO ROPA INTERIOR  | Name=Ropa y Accesorios
+ID=229 | Cat=CONJUNTO ROPA INTERIOR ANIMADA-2  | Name=Ropa y Accesorios
+ID=228 | Cat=CONJUNTO ROPA INTERIOR ANIMADO | Name=Ropa y Accesorios
+ID=218 | Cat=CONJUNTO ROPA INTERIOR ARIA | Name=Ropa y Accesorios
+ID=216 | Cat=CONJUNTO ROPA INTERIOR BICH | Name=Ropa y Accesorios
+ID=220 | Cat=CONJUNTO ROPA INTERIOR BREN | Name=Ropa y Accesorios
+ID=226 | Cat=CONJUNTO ROPA INTERIOR CHANELA | Name=Ropa y Accesorios
+ID=225 | Cat=CONJUNTO ROPA INTERIOR JULIANI | Name=Ropa y Accesorios
+ID=224 | Cat=CONJUNTO ROPA INTERIOR KIM | Name=Ropa y Accesorios
+ID=219 | Cat=CONJUNTO ROPA INTERIOR LAUR | Name=Ropa y Accesorios
+ID=223 | Cat=CONJUNTO ROPA INTERIOR SALOM | Name=Ropa y Accesorios
+ID=227 | Cat=CONJUNTO ROPA INTERIOR SIRENI | Name=Ropa y Accesorios
+ID=222 | Cat=CONJUNTO ROPA INTERIOR VICTORI | Name=Ropa y Accesorios
+ID=221 | Cat=CONJUNTO ROPA INTERIOR VICTORI | Name=Ropa y Accesorios
+ID=217 | Cat=CONJUNTO ROPA INTERIOR ZULM | Name=Ropa y Accesorios
+ID=236 | Cat=ROPA INTERIOR COPA PRE HORMADA GIRASOLI | Name=Ropa y Accesorios
+ID=233 | Cat=ROPA INTERIOR COPA PRE HORMADA MAGI | Name=Ropa y Accesorios
+ID=234 | Cat=ROPA INTERIOR COPA PRE HORMADA SARI | Name=Ropa y Accesorios
+ID=235 | Cat=ROPA INTERIOR COPA PRE HORMADA SARI-2 | Name=Ropa y Accesorios
+ID=238 | Cat=ROPA INTERIOR FRIDA | Name=Ropa y Accesorios
+ID=239 | Cat=ROPA INTERIOR FRIDA  | Name=Ropa y Accesorios
+ID=237 | Cat=ROPA INTERIOR IBIZA | Name=Ropa y Accesorios
+ID=240 | Cat=ROPA INTERIOR LIZ | Name=Ropa y Accesorios
+ID=241 | Cat=ROPA INTERIOR LIZ  | Name=Ropa y Accesorios
+ID=242 | Cat=ROPA INTERIOR SELENI | Name=Ropa y Accesorios
+ID=243 | Cat=ROPA INTERIOR SELENI | Name=Ropa y Accesorios
+ID=212 | Cat=Vestido Chaleco Largo Hilo | Name=Ropa y Accesorios
+ID=231 | Cat=VESTIDO DE BAÑO | Name=Ropa y Accesorios
+ID=232 | Cat=VESTIDO DE BAÑO | Name=Ropa y Accesorios
+ID=16 | Cat=📈 ACTIVACIÓN PROGRESIVA - FRANQUICIA INTERNACIONAL 1 | Name=Salud y Bienestar
+ID=15 | Cat=CALCIO CON VITAMINA D3 | Name=Salud y Bienestar
+ID=18 | Cat=CLORMAX | Name=Salud y Bienestar
+ID=6 | Cat=COLAGENO HIDROLIZADO | Name=Salud y Bienestar
+ID=11 | Cat=CREMA CON EXTRACTOS NATURALES | Name=Salud y Bienestar
+ID=2 | Cat=FOODLINE | Name=Salud y Bienestar
+ID=10 | Cat=FRANQUICIA INTERNACIONAL 2 | Name=Salud y Bienestar
+ID=1 | Cat=INFACTOR | Name=Salud y Bienestar
+ID=5 | Cat=LIMPIAP | Name=Salud y Bienestar
+ID=4 | Cat=MORILIN | Name=Salud y Bienestar
+ID=7 | Cat=PROBIOQUIN | Name=Salud y Bienestar
+ID=17 | Cat=RED-UC con Vitamina C | Name=Salud y Bienestar
+ID=3 | Cat=RESVERATROL | Name=Salud y Bienestar
+ID=13 | Cat=SAW PALMETO  | Name=Salud y Bienestar
+ID=54 | Cat=UPGRADE (AVANCE) | Name=Salud y Bienestar

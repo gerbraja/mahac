@@ -61,6 +61,47 @@ const SimpleAdmin = () => {
     const [suppliers, setSuppliers] = useState([]);
     const [editingId, setEditingId] = useState(null);
     const [message, setMessage] = useState('');
+    const [customTrm, setCustomTrm] = useState('');
+    const [trmLoading, setTrmLoading] = useState(false);
+
+    useEffect(() => {
+        fetchSuggestedTrm();
+    }, []);
+
+    const fetchSuggestedTrm = async () => {
+        try {
+            const resp = await axios.get('https://open.er-api.com/v6/latest/USD');
+            if (resp.data && resp.data.rates && resp.data.rates.COP) {
+                setCustomTrm(resp.data.rates.COP.toFixed(2));
+            }
+        } catch (e) {
+            console.error("Error fetching TRM recommendation", e);
+        }
+    };
+
+    const handleSyncTrm = async () => {
+        const val = parseFloat(customTrm);
+        if (!val || val <= 0) {
+            alert("Por favor ingresa una TRM válida mayor a 0");
+            return;
+        }
+        if (!window.confirm(`¿Estás seguro de recalcular el precio en dólares de todos los productos usando una TRM de $${val.toFixed(2)} COP?\n\nLos precios en USD se calcularán como: Precio Pesos / TRM.`)) {
+            return;
+        }
+        setTrmLoading(true);
+        try {
+            const response = await api.post('/api/products/sync-trm', {
+                custom_trm: val
+            });
+            setMessage(`¡Éxito! Precios en dólares actualizados con TRM $${response.data.trm} COP. Productos actualizados: ${response.data.updated_products}.`);
+            fetchProducts();
+        } catch (error) {
+            console.error("Error syncing TRM", error);
+            setMessage(error.response?.data?.detail || 'Error al actualizar precios con la TRM');
+        } finally {
+            setTrmLoading(false);
+        }
+    };
 
     const COUNTRIES = [
         'Colombia', 'Panamá', 'República Dominicana', 'Costa Rica', 
@@ -292,6 +333,66 @@ const SimpleAdmin = () => {
                 >
                     📥 Descargar Plantilla CSV (Carga Masiva)
                 </button>
+            </div>
+
+            {/* TRM Synchronization Controls */}
+            <div style={{
+                background: '#f3f4f6',
+                padding: '1.5rem',
+                borderRadius: '0.5rem',
+                marginBottom: '2rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '1rem',
+                border: '1px solid #e5e7eb'
+            }}>
+                <div>
+                    <h4 style={{ margin: 0, fontWeight: 'bold', color: '#1e3a8a', fontSize: '1rem' }}>
+                        💵 Ajustar Tasa de Cambio (TRM COP/USD)
+                    </h4>
+                    <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.85rem', color: '#4b5563' }}>
+                        Recalcula todos los precios en dólares dividiendo el precio en Pesos por la tasa indicada.
+                    </p>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', background: 'white', border: '1px solid #d1d5db', borderRadius: '0.25rem', padding: '0.25rem 0.5rem' }}>
+                        <span style={{ fontSize: '0.9rem', color: '#6b7280', marginRight: '0.25rem' }}>$1 USD =</span>
+                        <input
+                            type="number"
+                            value={customTrm}
+                            onChange={(e) => setCustomTrm(e.target.value)}
+                            placeholder="Ej: 4000"
+                            style={{
+                                width: '100px',
+                                border: 'none',
+                                outline: 'none',
+                                padding: '0.25rem',
+                                fontSize: '1rem',
+                                fontWeight: 'bold',
+                                color: '#1e3a8a'
+                            }}
+                        />
+                        <span style={{ fontSize: '0.9rem', color: '#6b7280' }}>COP</span>
+                    </div>
+                    <button
+                        onClick={handleSyncTrm}
+                        disabled={trmLoading}
+                        style={{
+                            background: '#3b82f6',
+                            color: 'white',
+                            padding: '0.6rem 1.2rem',
+                            borderRadius: '0.25rem',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontWeight: 'bold',
+                            opacity: trmLoading ? 0.6 : 1
+                        }}
+                    >
+                        {trmLoading ? 'Sincronizando...' : '🔄 Aplicar Tasa'}
+                    </button>
+                </div>
             </div>
 
             {message && (
@@ -689,7 +790,7 @@ const SimpleAdmin = () => {
                 )}
             </form>
 
-            <div style={{ background: 'white', borderRadius: '0.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', overflow: 'hidden' }}>
+            <div style={{ background: 'white', borderRadius: '0.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead style={{ background: '#f3f4f6' }}>
                         <tr>

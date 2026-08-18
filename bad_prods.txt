@@ -1,0 +1,29 @@
+﻿Found 7 matching products:
+ID: 1 | Name: FRANQUICIA DIGITAL INTERNACIONAL 1 | Price: 257000.0 | NO IMAGE: None | Category: Activaci¾n
+ID: 2 | Name: FRANQUICIA DIGITAL INTERNACIONAL 2 | Price: 490160.0 | NO IMAGE: None | Category: Activaci¾n
+ID: 3 | Name: FRANQUICIA DIGITAL INTERNACIONAL 3 | Price: 499700.0 | NO IMAGE: None | Category: Activaci¾n
+ID: 4 | Name: Test Product PV | Price: 380000.0 | NO IMAGE: None | Category: Test
+ID: 10 | Name: FRANQUICIA INTERNACIONAL 2 | Price: 490160.0 | HAS IMAGE: https://i.imgur.com/5eDSPUh.png | Category: Salud y Bienestar
+python : Traceback (most recent call last):
+En línea: 1 Carácter: 1
++ python find_bad_products.py 2>&1 | Out-File -Encoding utf8 
+bad_prods. ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Traceback (most r 
+   ecent call last)::String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  File "C:\Users\mahac\multinivel\tiendavirtual\miweb\CentroCom
+ercialTEI\find_bad_products.py", line 23, in <module>
+    print(f"ID: {r[0]} | Name: {r[1]} | Price: {r[2]} | 
+{img_status}: {r[3]} | Category: {r[5]}")
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\mahac\AppData\Local\Programs\Python\Python314\
+Lib\encodings\cp1252.py", line 19, in encode
+    return 
+codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           
+~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode character 
+'\U0001f4c8' in position 15: character maps to <undefined>

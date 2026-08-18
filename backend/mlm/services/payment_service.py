@@ -156,14 +156,14 @@ def process_successful_payment(db: Session, order_id: int, transaction_id: int =
     db.add(order)
     db.commit()
 
-    # 2. Trigger Siigo Invoicing (Includes GCS Backup internally)
-    user = db.query(User).filter(User.id == order.user_id).first()
-    try:
-        if user:
+    # 2. Invoicing triggered immediately upon payment confirmation (User instruction)
+    user = db.query(User).filter(User.id == order.user_id).first() if order.user_id else None
+    if user and not order.siigo_invoice_id:
+        try:
             emit_siigo_invoice(order, user, db)
-            print(f"📄 Siigo Invoice triggered for Order {order.id}")
-    except Exception as e:
-        print(f"⚠️ Error triggering Siigo Invoice: {e}")
+            print(f"📄 Siigo Invoicing triggered immediately upon payment confirmation for Order #{order.id}")
+        except Exception as e_siigo:
+            print(f"⚠️ Error triggering Siigo Invoice on payment confirmation: {e_siigo}")
 
     # 2b. 📧 Notificación: Pago Confirmado (Email + WhatsApp cuando esté activo)
     try:

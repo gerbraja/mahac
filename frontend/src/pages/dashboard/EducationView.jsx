@@ -124,6 +124,18 @@ const EducationView = () => {
                             <p className="text-sm text-gray-600">Guía completa en PDF</p>
                         </div>
                     </a>
+                    <a
+                        href="https://storage.googleapis.com/tuempresainternacional-frontend/documentos/presentacion_negocio_tei.pdf"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 p-4 bg-white rounded-lg hover:shadow-md transition-shadow border border-blue-100 hover:border-blue-300"
+                    >
+                        <span className="text-2xl">🏢</span>
+                        <div>
+                            <h4 className="font-semibold text-gray-800">Presentación de Negocio TEI</h4>
+                            <p className="text-sm text-gray-600">Herramienta de capacitación en PDF</p>
+                        </div>
+                    </a>
                     <a href="#" className="flex items-center gap-3 p-4 bg-white rounded-lg hover:shadow-md transition-shadow">
                         <span className="text-2xl">🎥</span>
                         <div>

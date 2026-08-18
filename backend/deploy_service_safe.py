@@ -14,6 +14,8 @@ def deploy_service():
     smtp_server = os.getenv("SMTP_SERVER", "smtp-relay.brevo.com")
     smtp_port = os.getenv("SMTP_PORT", "587")
 
+    gemini_api_key = os.getenv("GEMINI_API_KEY", "AIzaSyABcha3m2_Pa-fIIKjf3lTIkZ_B2sMIWSE")
+
     # Safety check: ensure they actually filled it out
     if not email_sender or not email_password or "PEGAR" in email_password:
         print("ERROR: Please configure EMAIL_SENDER and EMAIL_PASSWORD in backend/.env before deploying.")
@@ -36,7 +38,8 @@ def deploy_service():
         f"SMTP_SERVER={smtp_server}," +
         f"SMTP_PORT={smtp_port}," +
         f"EMAIL_SENDER={email_sender}," +
-        f"EMAIL_PASSWORD={email_password}",
+        f"EMAIL_PASSWORD={email_password}," +
+        f"GEMINI_API_KEY={gemini_api_key}",
         "--add-cloudsql-instances=tei-mlm-prod:us-central1:mlm-db-us"
     ]
     

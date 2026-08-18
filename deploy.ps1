@@ -9,7 +9,7 @@ Write-Host ""
 
 # Configuration
 $PROJECT_ID = "tei-mlm-prod"
-$REGION = "southamerica-east1"
+$REGION = "us-central1"
 $DB_INSTANCE = "mlm-db"
 $DB_NAME = "tiendavirtual"
 $BACKEND_SERVICE = "mlm-backend"
@@ -75,11 +75,14 @@ Write-Host "Building and deploying backend (this will take 5-10 minutes)..." -Fo
     --set-env-vars="DB_USER=postgres" `
     --set-env-vars="DB_PASS=$DB_PASSWORD_PLAIN" `
     --set-env-vars="DB_NAME=$DB_NAME" `
-    --set-env-vars="SMTP_SERVER=smtp-relay.brevo.com" `
+    --set-env-vars="SMTP_SERVER=smtp.mailgun.org" `
     --set-env-vars="SMTP_PORT=587" `
-    --set-env-vars="EMAIL_SENDER=a9b7a7001@smtp-brevo.com" `
-    --set-env-vars="EMAIL_PASSWORD=zvWX76U1jDZ9sBtQ" `
-    --set-env-vars="GEMINI_API_KEY=AIzaSyABcha3m2_Pa-fIIKjf3lTIkZ_B2sMIWSE" `
+    --set-env-vars="EMAIL_SENDER=soporte@tuempresainternacional.online" `
+    --set-env-vars="EMAIL_PASSWORD=" `
+    --set-env-vars="MAILGUN_API_KEY=REDACTED" `
+    --set-env-vars="MAILGUN_DOMAIN=tuempresainternacional.online" `
+    --set-env-vars="MAILGUN_API_URL=https://api.mailgun.net" `
+    --set-env-vars="GEMINI_API_KEY=REDACTED" `
     --add-cloudsql-instances=$CONNECTION_NAME `
     --port=8000
 

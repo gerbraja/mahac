@@ -1,8 +1,51 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../../api/api';
 import { useNavigate } from 'react-router-dom';
-import { State, City } from 'country-state-city';
 import { COLOMBIA_DIVIPOLA_COMPLETO } from '../../data/colombiaDivipolaCompleto';
+
+const COLOMBIA_DEPARTMENTS = [
+    { code: 'AMA', name: 'Amazonas' },
+    { code: 'ANT', name: 'Antioquia' },
+    { code: 'ARA', name: 'Arauca' },
+    { code: 'ATL', name: 'Atlántico' },
+    { code: 'DC', name: 'Bogotá D.C.' },
+    { code: 'BOL', name: 'Bolívar' },
+    { code: 'BOY', name: 'Boyacá' },
+    { code: 'CAL', name: 'Caldas' },
+    { code: 'CAQ', name: 'Caquetá' },
+    { code: 'CAS', name: 'Casanare' },
+    { code: 'CAU', name: 'Cauca' },
+    { code: 'CES', name: 'Cesar' },
+    { code: 'CHO', name: 'Chocó' },
+    { code: 'CUN', name: 'Cundinamarca' },
+    { code: 'COR', name: 'Córdoba' },
+    { code: 'GUA', name: 'Guainía' },
+    { code: 'GUV', name: 'Guaviare' },
+    { code: 'HUI', name: 'Huila' },
+    { code: 'LAG', name: 'La Guajira' },
+    { code: 'MAG', name: 'Magdalena' },
+    { code: 'MET', name: 'Meta' },
+    { code: 'NAR', name: 'Nariño' },
+    { code: 'NSA', name: 'Norte de Santander' },
+    { code: 'PUT', name: 'Putumayo' },
+    { code: 'QUI', name: 'Quindío' },
+    { code: 'RIS', name: 'Risaralda' },
+    { code: 'SAN', name: 'Santander' },
+    { code: 'SUC', name: 'Sucre' },
+    { code: 'TOL', name: 'Tolima' },
+    { code: 'VAC', name: 'Valle del Cauca' },
+    { code: 'VAU', name: 'Vaupés' },
+    { code: 'VID', name: 'Vichada' },
+    { code: 'SAP', name: 'San Andrés y Providencia' }
+].sort((a, b) => a.name.localeCompare(b.name));
+
+const getCitiesForDepartment = (deptCode) => {
+    if (deptCode === 'DC') {
+        return ['Bogotá D.C.'];
+    }
+    const deptData = COLOMBIA_DIVIPOLA_COMPLETO[deptCode] || {};
+    return Object.keys(deptData).sort();
+};
 
 // Icons/Flags could be assets. Using emoji for now.
 
@@ -89,7 +132,7 @@ const KYCValidation = () => {
     };
 
     const handleCityChange = (cityName) => {
-        const divipolaCode = COLOMBIA_DIVIPOLA_COMPLETO[selectedStateCode]?.[cityName] || '';
+        const divipolaCode = selectedStateCode === 'DC' ? '11001' : (COLOMBIA_DIVIPOLA_COMPLETO[selectedStateCode]?.[cityName] || '');
         setFormData(prev => ({
             ...prev,
             input_city: cityName,
@@ -100,6 +143,21 @@ const KYCValidation = () => {
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState(null);
     const [progress, setProgress] = useState(0);
+    
+    // Status tracking for manual reviews
+    const [kycStatus, setKycStatus] = useState(null);
+    const [statusLoading, setStatusLoading] = useState(true);
+
+    const fetchKycStatus = async () => {
+        try {
+            const res = await api.get('/api/kyc/status');
+            setKycStatus(res.data);
+        } catch (error) {
+            console.error("Error fetching KYC status", error);
+        } finally {
+            setStatusLoading(false);
+        }
+    };
 
     useEffect(() => {
         let interval = null;
@@ -123,7 +181,46 @@ const KYCValidation = () => {
 
     useEffect(() => {
         api.get('/auth/me').then(res => setUser(res.data));
+        fetchKycStatus();
     }, []);
+
+    const handleReSubmit = () => {
+        setKycStatus(null);
+        setResult(null);
+        setStep(1);
+        setFormData({
+            input_full_name_cedula: '',
+            input_document_id_rut: '',
+            input_address: '',
+            input_department: '',
+            input_city: '',
+            input_bank_name: '',
+            input_bank_account_type: '',
+            input_bank_account_number: '',
+            municipio_id: '',
+            is_facturador_electronico: null,
+            is_declarante_renta: null,
+            is_pep: null,
+            pep_position: '',
+            pep_dates: '',
+            has_foreign_accounts: null,
+            has_signature_power_foreign: null,
+            is_pep_associate: null,
+            pep_associate_details: '',
+            has_conflict_interest: null,
+            conflict_details: '',
+            uses_crypto: null,
+            accepted_data_policy: false,
+            accepted_commercial_contract: false,
+            accepted_sagrilaft: false
+        });
+        setFiles({
+            rut: null,
+            cedula: null,
+            bank_certificate: null,
+            profile_photo: null
+        });
+    };
 
     const handleCountrySelect = (c) => {
         setCountry(c);
@@ -185,6 +282,9 @@ const KYCValidation = () => {
                 timeout: 60000
             });
             setResult(res.data);
+            if (res.data.status === 'pending') {
+                fetchKycStatus();
+            }
         } catch (error) {
             console.error("KYC Error:", error);
             setResult({
@@ -196,6 +296,71 @@ const KYCValidation = () => {
             setLoading(false);
         }
     };
+
+    if (!user) return <div className="p-8 text-center">Cargando perfil...</div>;
+
+    if (statusLoading) return <div className="p-8 text-center text-slate-500">Cargando estado de KYC...</div>;
+
+    // 1. If KYC is fully approved
+    if (kycStatus?.is_kyc_verified || kycStatus?.compliance_record?.status === 'approved') {
+        return (
+            <div className="p-8 max-w-xl mx-auto mt-12 bg-white rounded-2xl shadow-xl border border-green-100 text-center space-y-6">
+                <div className="text-6xl">🎉</div>
+                <h1 className="text-2xl font-bold text-green-800">¡KYC Validado Exitosamente!</h1>
+                <p className="text-sm text-slate-600 leading-relaxed font-normal">
+                    Tu documentación ha sido revisada y aprobada por la administración. Tienes habilitado el retiro de comisiones y compras con ganancias acumuladas en el Centro Comercial.
+                </p>
+                <div className="bg-green-50/50 p-4 rounded-xl text-left text-xs space-y-2 border border-green-100 font-mono text-slate-800">
+                    <div><span className="font-semibold text-green-700">País de Operación:</span> {kycStatus?.compliance_record?.country}</div>
+                    <div><span className="font-semibold text-green-700">Identificación Registrada:</span> {kycStatus?.document_id}</div>
+                </div>
+            </div>
+        );
+    }
+
+    // 2. If KYC is pending review
+    if (kycStatus?.compliance_record?.status === 'pending') {
+        return (
+            <div className="p-8 max-w-xl mx-auto mt-12 bg-white rounded-2xl shadow-xl border border-amber-100 text-center space-y-6">
+                <div className="text-6xl animate-pulse">⏳</div>
+                <h1 className="text-2xl font-bold text-amber-800">KYC en Revisión Administrativa</h1>
+                <p className="text-sm text-slate-600 leading-relaxed font-normal">
+                    Tus documentos han sido recibidos y analizados por nuestro motor de IA. Actualmente están en cola de revisión para que la administración autorice formalmente tu perfil tributario.
+                </p>
+                <div className="bg-amber-50/50 p-4 rounded-xl text-left text-xs space-y-2 border border-amber-100 font-mono text-slate-800">
+                    <div><span className="font-semibold text-amber-700">Estado de Validación IA:</span> {kycStatus?.compliance_record?.ai_validation_status === 'passed' ? 'Exitoso' : 'Revisión Requerida'}</div>
+                    <div><span className="font-semibold text-amber-700">Fecha de Envío:</span> {new Date(kycStatus?.compliance_record?.created_at).toLocaleDateString()}</div>
+                </div>
+                <p className="text-xs text-slate-400">Este proceso suele tomar menos de 24 horas hábiles.</p>
+            </div>
+        );
+    }
+
+    // 3. If KYC was rejected by admin
+    if (kycStatus?.compliance_record?.status === 'rejected') {
+        return (
+            <div className="p-8 max-w-xl mx-auto mt-12 bg-white rounded-2xl shadow-xl border border-red-100 text-center space-y-6">
+                <div className="text-6xl">❌</div>
+                <h1 className="text-2xl font-bold text-red-800">Verificación KYC Rechazada</h1>
+                <p className="text-sm text-slate-600 leading-relaxed font-medium">
+                    Lamentablemente, tu documentación no pudo ser aprobada por el administrador.
+                </p>
+                <div className="bg-red-50 p-4 rounded-xl border border-red-200 text-left text-slate-800">
+                    <h3 className="font-bold text-red-950 text-sm mb-1">Motivo del Rechazo:</h3>
+                    <p className="text-red-800 text-xs font-semibold leading-relaxed">
+                        {kycStatus?.compliance_record?.rejection_reason || 'Documentación ilegible o incompleta.'}
+                    </p>
+                </div>
+                <p className="text-xs text-slate-400 font-normal">Por favor, presiona el botón de abajo para corregir tus datos y volver a cargar los archivos correspondientes.</p>
+                <button
+                    onClick={handleReSubmit}
+                    className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition shadow-md hover:shadow-lg hover:-translate-y-0.5"
+                >
+                    Volver a Subir Documentos
+                </button>
+            </div>
+        );
+    }
 
     if (!user) return <div className="p-8 text-center">Cargando perfil...</div>;
 
@@ -265,14 +430,14 @@ const KYCValidation = () => {
                                     value={selectedStateCode}
                                     onChange={(e) => {
                                         const code = e.target.value;
-                                        const name = State.getStateByCodeAndCountry(code, "CO")?.name || "";
+                                        const name = COLOMBIA_DEPARTMENTS.find(d => d.code === code)?.name || "";
                                         handleDepartmentChange(code, name);
                                     }}
                                 >
                                     <option value="">Selecciona Departamento</option>
-                                    {State.getStatesOfCountry("CO").map((state) => (
-                                        <option key={state.isoCode} value={state.isoCode}>
-                                            {state.name}
+                                    {COLOMBIA_DEPARTMENTS.map((dept) => (
+                                        <option key={dept.code} value={dept.code}>
+                                            {dept.name}
                                         </option>
                                     ))}
                                 </select>
@@ -287,9 +452,9 @@ const KYCValidation = () => {
                                     onChange={(e) => handleCityChange(e.target.value)}
                                 >
                                     <option value="">Selecciona Ciudad / Municipio</option>
-                                    {selectedStateCode && City.getCitiesOfState("CO", selectedStateCode).map((city) => (
-                                        <option key={city.name} value={city.name}>
-                                            {city.name}
+                                    {selectedStateCode && getCitiesForDepartment(selectedStateCode).map((cityName) => (
+                                        <option key={cityName} value={cityName}>
+                                            {cityName}
                                         </option>
                                     ))}
                                 </select>

@@ -4,36 +4,37 @@ import Navbar from "./components/Navbar";
 import Home from "./pages/Home";
 import CartPage from "./pages/CartPage";
 import DashboardLayout from "./components/layout/DashboardLayout";
-import MatrixView from "./pages/dashboard/MatrixView";
-import WalletView from "./pages/dashboard/WalletView";
-import BinaryGlobalView from './pages/dashboard/BinaryGlobalView';
-import BinaryMillionaireView from './pages/dashboard/BinaryMillionaireView';
-import UnilevelView from './pages/dashboard/UnilevelView';
-import DirectsView from './pages/dashboard/DirectsView';
-import EducationView from './pages/dashboard/EducationView';
-import DigitalMarketingCourse from './pages/dashboard/DigitalMarketingCourse';
-import NetworkBuildingCourse from './pages/dashboard/NetworkBuildingCourse';
-import PersonalView from './pages/dashboard/PersonalView';
-import SecurityView from './pages/dashboard/SecurityView';
-import StoreView from './pages/dashboard/StoreView';
-import DashboardHome from './pages/dashboard/DashboardHome';
-import Login from './pages/Login';
-import ResetPassword from './pages/ResetPassword';
-import Personal from './pages/Personal';
-import OrderConfirmation from './pages/OrderConfirmation';
-import QualifiedRanksView from './pages/dashboard/QualifiedRanksView';
-import HonorRanksView from './pages/dashboard/HonorRanksView';
 import MarketingBubbles from "./components/MarketingBubbles";
-import UserOrders from './components/UserOrders';
-import UpgradePackage from './pages/dashboard/UpgradePackage';
-import KYCValidation from './pages/dashboard/KYCValidation';
-import PickupPointPortal from './pages/PickupPointPortal';
+import PwaInstallPrompt from "./components/PwaInstallPrompt";
 
-// Lazy imports for heavy pages
+// Lazy imports for pages
+const MatrixView = React.lazy(() => import("./pages/dashboard/MatrixView"));
+const WalletView = React.lazy(() => import("./pages/dashboard/WalletView"));
+const BinaryGlobalView = React.lazy(() => import("./pages/dashboard/BinaryGlobalView"));
+const BinaryMillionaireView = React.lazy(() => import("./pages/dashboard/BinaryMillionaireView"));
+const UnilevelView = React.lazy(() => import("./pages/dashboard/UnilevelView"));
+const DirectsView = React.lazy(() => import("./pages/dashboard/DirectsView"));
+const EducationView = React.lazy(() => import("./pages/dashboard/EducationView"));
+const DigitalMarketingCourse = React.lazy(() => import("./pages/dashboard/DigitalMarketingCourse"));
+const NetworkBuildingCourse = React.lazy(() => import("./pages/dashboard/NetworkBuildingCourse"));
+const PersonalView = React.lazy(() => import("./pages/dashboard/PersonalView"));
+const SecurityView = React.lazy(() => import("./pages/dashboard/SecurityView"));
+const StoreView = React.lazy(() => import("./pages/dashboard/StoreView"));
+const DashboardHome = React.lazy(() => import("./pages/dashboard/DashboardHome"));
+const Login = React.lazy(() => import("./pages/Login"));
+const ResetPassword = React.lazy(() => import("./pages/ResetPassword"));
+const Personal = React.lazy(() => import("./pages/Personal"));
+const OrderConfirmation = React.lazy(() => import("./pages/OrderConfirmation"));
+const QualifiedRanksView = React.lazy(() => import("./pages/dashboard/QualifiedRanksView"));
+const HonorRanksView = React.lazy(() => import("./pages/dashboard/HonorRanksView"));
+const UserOrders = React.lazy(() => import("./components/UserOrders"));
+const UpgradePackage = React.lazy(() => import("./pages/dashboard/UpgradePackage"));
+const KYCValidation = React.lazy(() => import("./pages/dashboard/KYCValidation"));
+const PickupPointPortal = React.lazy(() => import("./pages/PickupPointPortal"));
 const CompleteRegistration = React.lazy(() => import("./pages/CompleteRegistration"));
-const Opportunity = React.lazy(() => import('./pages/Opportunity'));
-const Checkout = React.lazy(() => import('./pages/Checkout'));
-const SupplierInventory = React.lazy(() => import('./pages/SupplierInventory'));
+const Opportunity = React.lazy(() => import("./pages/Opportunity"));
+const Checkout = React.lazy(() => import("./pages/Checkout"));
+const SupplierInventory = React.lazy(() => import("./pages/SupplierInventory"));
 
 // Admin imports and lazy components
 import AdminLayout from './components/layout/AdminLayout';
@@ -58,6 +59,7 @@ const AdminReports = React.lazy(() => import('./pages/admin/AdminReports'));
 const AdminCountryStats = React.lazy(() => import('./pages/admin/AdminCountryStats'));
 const AdminTaxes = React.lazy(() => import('./pages/admin/AdminTaxes'));
 const AdminAccounting = React.lazy(() => import('./pages/admin/AdminAccounting'));
+const AdminPromotions = React.lazy(() => import('./pages/admin/AdminPromotions'));
 
 // Component to capture username from URL and redirect to home with ref parameter
 function ReferralRedirect() {
@@ -100,9 +102,9 @@ class ErrorBoundary extends React.Component {
           >
             Recargar Página
           </button>
-          {import.meta.env.DEV && (
-            <details className="mt-8 p-4 bg-white rounded shadow max-w-4xl overflow-auto text-left">
-              <summary className="cursor-pointer font-bold text-gray-800">Detalles del Error (Solo Desarrollo)</summary>
+          {true && (
+            <details className="mt-8 p-4 bg-white rounded shadow max-w-4xl overflow-auto text-left w-full">
+              <summary className="cursor-pointer font-bold text-red-600">Ver Detalles del Error (Haga clic aquí)</summary>
               <pre className="text-red-500 text-sm mt-2 whitespace-pre-wrap">
                 {this.state.error && this.state.error.toString()}
                 <br />
@@ -121,73 +123,77 @@ class ErrorBoundary extends React.Component {
 export default function App() {
   return (
     <ErrorBoundary>
+      <PwaInstallPrompt />
       <MarketingBubbles />
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/opportunity" element={<React.Suspense fallback={<div className="flex items-center justify-center min-h-screen bg-slate-950 text-white text-xl">Cargando...</div>}><Opportunity /></React.Suspense>} />
-        <Route path="/personal" element={<Personal />} />
-        <Route path="/register" element={<RegisterRedirect />} />
-        <Route path="/usuario/:username" element={<ReferralRedirect />} />
-        <Route path="/complete-registration" element={<React.Suspense fallback={<div className="flex items-center justify-center min-h-screen bg-slate-950 text-white text-xl">Cargando...</div>}><CompleteRegistration /></React.Suspense>} />
-        <Route path="/cart" element={<CartPage />} />
-        <Route path="/checkout" element={<React.Suspense fallback={<div className="flex items-center justify-center min-h-screen bg-slate-950 text-white text-xl">Cargando...</div>}><Checkout /></React.Suspense>} />
-        <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/order-confirmation/:orderId" element={<OrderConfirmation />} />
-        <Route path="/supplier-inventory/:token" element={<React.Suspense fallback={<div>Cargando...</div>}><SupplierInventory /></React.Suspense>} />
-        <Route path="/punto-de-entrega/:token" element={<PickupPointPortal />} />
+      <React.Suspense fallback={<div className="flex items-center justify-center min-h-screen bg-slate-950 text-white text-xl">Cargando...</div>}>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/opportunity" element={<Opportunity />} />
+          <Route path="/personal" element={<Personal />} />
+          <Route path="/register" element={<RegisterRedirect />} />
+          <Route path="/usuario/:username" element={<ReferralRedirect />} />
+          <Route path="/complete-registration" element={<CompleteRegistration />} />
+          <Route path="/cart" element={<CartPage />} />
+          <Route path="/checkout" element={<Checkout />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/order-confirmation/:orderId" element={<OrderConfirmation />} />
+          <Route path="/supplier-inventory/:token" element={<SupplierInventory />} />
+          <Route path="/punto-de-entrega/:token" element={<PickupPointPortal />} />
 
-        {/* Admin Routes */}
-        <Route path="/admin" element={
-          <RequireAdmin>
-            <AdminProvider>
-              <AdminLayout />
-            </AdminProvider>
-          </RequireAdmin>
-        }>
-          <Route index element={<AdminDashboardPage />} />
-          <Route path="users" element={<AdminUsers />} />
-          <Route path="products" element={<AdminProducts />} />
-          <Route path="payments" element={<AdminPayments />} />
-          <Route path="withdrawals" element={<AdminWithdrawals />} />
-          <Route path="orders" element={<AdminOrders />} />
-          <Route path="sponsorship-commissions" element={<AdminSponsorshipCommissions />} />
-          <Route path="qualified-ranks" element={<AdminQualifiedRanks />} />
-          <Route path="honor-ranks" element={<AdminHonorRanks />} />
-          <Route path="pickup-points" element={<AdminPickupPoints />} />
-          <Route path="logistics" element={<AdminLogistics />} />
-          <Route path="kyc" element={<AdminKYC />} />
-          <Route path="suppliers" element={<AdminSuppliers />} />
-          <Route path="supplier-orders" element={<AdminSupplierOrders />} />
-          <Route path="reports" element={<AdminReports />} />
-          <Route path="country-stats" element={<AdminCountryStats />} />
-          <Route path="taxes" element={<AdminTaxes />} />
-          <Route path="accounting" element={<AdminAccounting />} />
-        </Route>
+          {/* Admin Routes */}
+          <Route path="/admin" element={
+            <RequireAdmin>
+              <AdminProvider>
+                <AdminLayout />
+              </AdminProvider>
+            </RequireAdmin>
+          }>
+            <Route index element={<AdminDashboardPage />} />
+            <Route path="users" element={<AdminUsers />} />
+            <Route path="products" element={<AdminProducts />} />
+            <Route path="payments" element={<AdminPayments />} />
+            <Route path="withdrawals" element={<AdminWithdrawals />} />
+            <Route path="orders" element={<AdminOrders />} />
+            <Route path="sponsorship-commissions" element={<AdminSponsorshipCommissions />} />
+            <Route path="qualified-ranks" element={<AdminQualifiedRanks />} />
+            <Route path="honor-ranks" element={<AdminHonorRanks />} />
+            <Route path="pickup-points" element={<AdminPickupPoints />} />
+            <Route path="logistics" element={<AdminLogistics />} />
+            <Route path="kyc" element={<AdminKYC />} />
+            <Route path="suppliers" element={<AdminSuppliers />} />
+            <Route path="supplier-orders" element={<AdminSupplierOrders />} />
+            <Route path="reports" element={<AdminReports />} />
+            <Route path="country-stats" element={<AdminCountryStats />} />
+            <Route path="taxes" element={<AdminTaxes />} />
+            <Route path="accounting" element={<AdminAccounting />} />
+            <Route path="promotions" element={<AdminPromotions />} />
+          </Route>
 
-        {/* User Dashboard Routes */}
-        <Route path="/dashboard" element={<DashboardLayout />}>
-          <Route index element={<DashboardHome />} />
-          <Route path="store" element={<StoreView />} />
-          <Route path="wallet" element={<WalletView />} />
-          <Route path="education" element={<EducationView />} />
-          <Route path="education/marketing" element={<DigitalMarketingCourse />} />
-          <Route path="education/network" element={<NetworkBuildingCourse />} />
-          <Route path="personal" element={<PersonalView />} />
-          <Route path="security" element={<SecurityView />} />
-          <Route path="orders" element={<UserOrders />} />
-          <Route path="binary-global" element={<BinaryGlobalView />} />
-          <Route path="binary-millionaire" element={<BinaryMillionaireView />} />
-          <Route path="matrix" element={<MatrixView />} />
-          <Route path="qualified-ranks" element={<QualifiedRanksView />} />
-          <Route path="honor-ranks" element={<HonorRanksView />} />
-          <Route path="directs" element={<DirectsView />} />
-          <Route path="unilevel" element={<UnilevelView />} />
-          <Route path="upgrade" element={<UpgradePackage />} />
-          <Route path="kyc" element={<KYCValidation />} />
-          <Route path="binary" element={<div><h2>Binary Tree</h2><p>Coming soon...</p></div>} />
-        </Route>
-      </Routes>
+          {/* User Dashboard Routes */}
+          <Route path="/dashboard" element={<DashboardLayout />}>
+            <Route index element={<DashboardHome />} />
+            <Route path="store" element={<StoreView />} />
+            <Route path="wallet" element={<WalletView />} />
+            <Route path="education" element={<EducationView />} />
+            <Route path="education/marketing" element={<DigitalMarketingCourse />} />
+            <Route path="education/network" element={<NetworkBuildingCourse />} />
+            <Route path="personal" element={<PersonalView />} />
+            <Route path="security" element={<SecurityView />} />
+            <Route path="orders" element={<UserOrders />} />
+            <Route path="binary-global" element={<BinaryGlobalView />} />
+            <Route path="binary-millionaire" element={<BinaryMillionaireView />} />
+            <Route path="matrix" element={<MatrixView />} />
+            <Route path="qualified-ranks" element={<QualifiedRanksView />} />
+            <Route path="honor-ranks" element={<HonorRanksView />} />
+            <Route path="directs" element={<DirectsView />} />
+            <Route path="unilevel" element={<UnilevelView />} />
+            <Route path="upgrade" element={<UpgradePackage />} />
+            <Route path="kyc" element={<KYCValidation />} />
+            <Route path="binary" element={<div><h2>Binary Tree</h2><p>Coming soon...</p></div>} />
+          </Route>
+        </Routes>
+      </React.Suspense>
     </ErrorBoundary>
   );
 }

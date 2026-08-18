@@ -1,0 +1,118 @@
+[
+  {
+    "sku": "205-mini-lampara-solar-jortan-street",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/205-mini-lampara-solar-jortan-street.png"
+  },
+  {
+    "sku": "206-mini-lampara-solar-jortan-wall",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/206-mini-lampara-solar-jortan-wall.png"
+  },
+  {
+    "sku": "207-mini-ventilador-clip-usb",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/207-mini-ventilador-clip-usb.png"
+  },
+  {
+    "sku": "208-gramera-electronica",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/208-gramera-electronica.png"
+  },
+  {
+    "sku": "209-dispensador-aceite-metalico",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/209-dispensador-aceite-metalico.png"
+  },
+  {
+    "sku": "210-secador-tennis-zapatos",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/210-secador-tennis-zapatos.png"
+  },
+  {
+    "sku": "211-encendedor-electrico-recargable",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/211-encendedor-electrico-recargable.png"
+  },
+  {
+    "sku": "212-guadaña-podadora-cortadora-cesped",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/212-guadaña-podadora-cortadora-cesped.png"
+  },
+  {
+    "sku": "213-juego-ollas-13-piezas-aquirurgico",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/213-juego-ollas-13-piezas-aquirurgico.png"
+  },
+  {
+    "sku": "214-juego-ollas-12-piezas-aquirurgico",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/214-juego-ollas-12-piezas-aquirurgico.png"
+  },
+  {
+    "sku": "215-organizador-baño-metalico",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/215-organizador-baño-metalico.jpeg"
+  },
+  {
+    "sku": "216-abrelatas-mariposa-acero-mplastico",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/216-abrelatas-mariposa-acero-mplastico.jpeg"
+  },
+  {
+    "sku": "217-closet-armario-3cuerpos",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/217-closet-armario-3cuerpos.png"
+  },
+  {
+    "sku": "218-aspiradora-3en1-automatica-manual",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/218-aspiradora-3en1-automatica-manual.png"
+  },
+  {
+    "sku": "219-ventilador-expandible-personal",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/219-ventilador-expandible-personal.jpeg"
+  },
+  {
+    "sku": "220-lampara-sound-parlante-cargador",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/220-lampara-sound-parlante-cargador.jpeg"
+  },
+  {
+    "sku": "221-juego-set-cuchillos-lujo-6piezas",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/221-juego-set-cuchillos-lujo-6piezas.jpeg"
+  },
+  {
+    "sku": "222-carpa-acampar-camping-200*200cm",
+    "status": "ERROR_DOWNLOAD",
+    "url": null,
+    "detail": "[Errno 22] Invalid argument: 'C:\\\\Users\\\\mahac\\\\AppData\\\\Local\\\\Temp\\\\tei_imgs_batch3_orgvj6rw\\\\222-carpa-acampar-camping-200*200cm.jpeg'"
+  },
+  {
+    "sku": "223-dispensador-esterilizador-cepillos",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/223-dispensador-esterilizador-cepillos.png"
+  },
+  {
+    "sku": "224-rallador-molino-cortador",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/224-rallador-molino-cortador.jpeg"
+  },
+  {
+    "sku": "225-machacador-triturador-ajos",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/225-machacador-triturador-ajos.png"
+  },
+  {
+    "sku": "226-cepillo-limpieza-multifuncional-9en1",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/226-cepillo-limpieza-multifuncional-9en1.png"
+  },
+  {
+    "sku": "226-silla-oficina-escritorio-argonomico",
+    "status": "OK",
+    "url": "https://storage.googleapis.com/tuempresainternacional-assets/images/226-silla-oficina-escritorio-argonomico.jpeg"
+  }
+]

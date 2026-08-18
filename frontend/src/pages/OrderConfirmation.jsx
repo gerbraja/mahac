@@ -27,6 +27,9 @@ const OrderConfirmation = () => {
                 // Fetch Order
                 const resOrder = await api.get(`/api/orders/${orderId}`);
                 setOrder(resOrder.data);
+                if (resOrder.data.payment_method) {
+                    setPaymentMethod(resOrder.data.payment_method);
+                }
 
                 // Fetch User Info to check PIN
                 const resUser = await api.get('/auth/me');
@@ -102,6 +105,26 @@ const OrderConfirmation = () => {
                 return;
             }
             setShowWalletModal(true);
+        } else if (paymentMethod === 'wompi') {
+            setProcessingPayment(true);
+            api.post('/api/payments/create', {
+                order_id: order.id,
+                amount: order.total_cop,
+                provider: 'wompi'
+            }).then(res => {
+                const checkoutUrl = res.data?.provider_session?.checkout_url;
+                if (checkoutUrl) {
+                    // Redirect to Wompi
+                    window.location.href = checkoutUrl;
+                } else {
+                    alert("No se pudo iniciar la sesión de pago con Wompi. Por favor intenta de nuevo.");
+                    setProcessingPayment(false);
+                }
+            }).catch(err => {
+                console.error("Error creating Wompi payment:", err);
+                alert("Error al conectar con la pasarela de pagos. Por favor intenta de nuevo.");
+                setProcessingPayment(false);
+            });
         } else if (paymentMethod === 'bank' || paymentMethod === 'breb' || paymentMethod === 'binance' || order.payment_method === 'binance') {
             alert("Por favor envía el comprobante al correo ventas@tuempresainternacional.com para confirmar tu pago. Tu pedido ha sido registrado correctamente.");
             navigate('/dashboard/orders');
@@ -297,6 +320,25 @@ const OrderConfirmation = () => {
                                 </div>
                             </label>
 
+                            {/* Wompi Option */}
+                            <label className={`flex items-start gap-4 p-4 border-2 rounded-xl cursor-pointer transition-all ${paymentMethod === 'wompi' ? 'border-blue-600 bg-blue-50' : 'border-gray-200 hover:border-blue-300'}`}>
+                                <input
+                                    type="radio"
+                                    name="payment"
+                                    value="wompi"
+                                    checked={paymentMethod === 'wompi'}
+                                    onChange={(e) => setPaymentMethod(e.target.value)}
+                                    className="mt-1 w-5 h-5 text-blue-600"
+                                />
+                                <div className="flex-1">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-2xl">💳</span>
+                                        <span className="font-bold text-gray-800">Wompi (Bancolombia) - Tarjeta, PSE, Nequi</span>
+                                    </div>
+                                    <p className="text-sm text-gray-600 mt-1">Paga al instante de forma segura usando tarjeta de crédito, débito PSE o monedero Nequi.</p>
+                                </div>
+                            </label>
+
                             {/* Bank Transfer Option */}
                             <label className={`flex items-start gap-4 p-4 border-2 rounded-xl cursor-pointer transition-all ${paymentMethod === 'bank' ? 'border-blue-600 bg-blue-50' : 'border-gray-200 hover:border-blue-300'}`}>
                                 <input
@@ -418,15 +460,15 @@ const OrderConfirmation = () => {
                         {!['PSE', 'Nequi', 'Efecty'].includes(paymentMethod) && (
                             <button
                                 onClick={handleConfirmPayment}
-                                disabled={paymentMethod === 'wallet' && !hasPin}
+                                disabled={(paymentMethod === 'wallet' && !hasPin) || processingPayment}
                                 className={`w-full py-4 rounded-xl font-bold text-lg transition-shadow shadow-lg flex items-center justify-center gap-2
-                                    ${paymentMethod === 'wallet' && !hasPin
+                                    ${(paymentMethod === 'wallet' && !hasPin) || processingPayment
                                         ? 'bg-gray-400 text-white cursor-not-allowed'
                                         : 'bg-green-600 text-white hover:bg-green-700'}`}
                             >
                                 <span>
-                                    {paymentMethod === 'wallet' && !hasPin ? '🚫 ' : '✅ '}
-                                    Confirmar Pago
+                                    {(paymentMethod === 'wallet' && !hasPin) ? '🚫 ' : '✅ '}
+                                    {processingPayment ? 'Redirigiendo a Wompi...' : 'Confirmar Pago'}
                                 </span>
                             </button>
                         )}

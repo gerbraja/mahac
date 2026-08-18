@@ -21,7 +21,7 @@ async def test():
         return
         
     print("Attempting to send a test email...")
-    await send_welcome_email(
+    send_welcome_email(
         to_email=email,  # Send to self
         username="test_user",
         full_name="User Test",

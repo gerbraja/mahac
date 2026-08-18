@@ -1,0 +1,1442 @@
+[
+  {
+    "id": 1,
+    "old_sku": null,
+    "new_sku": "P-1-INFACTOR",
+    "name": "INFACTOR"
+  },
+  {
+    "id": 2,
+    "old_sku": null,
+    "new_sku": "P-2-FOODLINE",
+    "name": "FOODLINE"
+  },
+  {
+    "id": 3,
+    "old_sku": null,
+    "new_sku": "P-3-RESVERATROL",
+    "name": "RESVERATROL"
+  },
+  {
+    "id": 4,
+    "old_sku": null,
+    "new_sku": "P-4-MORILIN",
+    "name": "MORILIN"
+  },
+  {
+    "id": 5,
+    "old_sku": null,
+    "new_sku": "P-5-LIMPIAP",
+    "name": "LIMPIAP"
+  },
+  {
+    "id": 6,
+    "old_sku": null,
+    "new_sku": "P-6-COLAGENO-HIDROLIZADO",
+    "name": "COLAGENO HIDROLIZADO"
+  },
+  {
+    "id": 7,
+    "old_sku": null,
+    "new_sku": "P-7-PROBIOQUIN",
+    "name": "PROBIOQUIN"
+  },
+  {
+    "id": 9,
+    "old_sku": null,
+    "new_sku": "P-9-PROXIMO-LANZAMIENTO",
+    "name": "Proximo Lanzamiento"
+  },
+  {
+    "id": 10,
+    "old_sku": null,
+    "new_sku": "P-10-FRANQUICIA-INTERNACIONAL-2",
+    "name": "FRANQUICIA INTERNACIONAL 2"
+  },
+  {
+    "id": 11,
+    "old_sku": null,
+    "new_sku": "P-11-CREMA-EXTRACTOS-NATURALES",
+    "name": "CREMA CON EXTRACTOS NATURALES"
+  },
+  {
+    "id": 12,
+    "old_sku": null,
+    "new_sku": "P-12-TE-VERDE-MORINGA",
+    "name": "TÉ VERDE Y MORINGA"
+  },
+  {
+    "id": 13,
+    "old_sku": null,
+    "new_sku": "P-13-SAW-PALMETO",
+    "name": "SAW PALMETO "
+  },
+  {
+    "id": 14,
+    "old_sku": null,
+    "new_sku": "P-14-TE-VERDE-PINA",
+    "name": "TÉ VERDE Y PIÑA NATURAL"
+  },
+  {
+    "id": 15,
+    "old_sku": null,
+    "new_sku": "P-15-CALCIO-VITAMINA-D3",
+    "name": "CALCIO CON VITAMINA D3"
+  },
+  {
+    "id": 16,
+    "old_sku": null,
+    "new_sku": "P-16-ACTIVACION-PROGRESIVA-FRANQUICIA",
+    "name": "📈 ACTIVACIÓN PROGRESIVA - FRANQUICIA INTERNACIONAL 1"
+  },
+  {
+    "id": 17,
+    "old_sku": null,
+    "new_sku": "P-17-REDUC-VITAMINA-C",
+    "name": "RED-UC con Vitamina C"
+  },
+  {
+    "id": 18,
+    "old_sku": null,
+    "new_sku": "P-18-CLORMAX",
+    "name": "CLORMAX"
+  },
+  {
+    "id": 19,
+    "old_sku": null,
+    "new_sku": "P-19-FRANQUICIA-INTERNACIONAL-3",
+    "name": "FRANQUICIA INTERNACIONAL 3"
+  },
+  {
+    "id": 20,
+    "old_sku": null,
+    "new_sku": "P-20-ZAZAMAS",
+    "name": "ZAZAMAS "
+  },
+  {
+    "id": 24,
+    "old_sku": "REF-bon-21018-vestido-deportivo-azulclaro-hilo-acanalado.",
+    "new_sku": "P-24-VESTIDO-DEPORTIVO",
+    "name": " Vestido Deportivo "
+  },
+  {
+    "id": 25,
+    "old_sku": "REF-bon-21019-vestido-deportivo-blanco-hilo-acanalado.",
+    "new_sku": "P-25-VESTIDO-DEPORTIVO",
+    "name": " Vestido deportivo "
+  },
+  {
+    "id": 26,
+    "old_sku": "REF-bon-21020-vestido-deportivo-azul-hilo-acanalado.",
+    "new_sku": "P-26-VESTIDO-DEPORTIVO",
+    "name": " Vestido deportivo "
+  },
+  {
+    "id": 27,
+    "old_sku": "REF-bon-21021-vestido-deportivo-rosa-hilo-acanalado.",
+    "new_sku": "P-27-VESTIDO-DEPORTIVO",
+    "name": " Vestido deportivo "
+  },
+  {
+    "id": 28,
+    "old_sku": "REF-bon-21022-vestido-deportivo-verde-hilo-acanalado.",
+    "new_sku": "P-28-VESTIDO-DEPORTIVO",
+    "name": " Vestido Deportivo "
+  },
+  {
+    "id": 29,
+    "old_sku": "REF-bon-21001-blanco-pantalon-casual.png",
+    "new_sku": "P-29-PANTALON-CASUAL",
+    "name": "PANTALÓN CASUAL"
+  },
+  {
+    "id": 30,
+    "old_sku": "REF-bon-21002-negro-pantalon-casual",
+    "new_sku": "P-30-PANTALON-CASUAL",
+    "name": "PANTALÓN CASUAL"
+  },
+  {
+    "id": 31,
+    "old_sku": "REF-bon-21003-durazno-pantalon-casual",
+    "new_sku": "P-31-PANTALON-CASUAL",
+    "name": "PANTALÓN CASUAL"
+  },
+  {
+    "id": 32,
+    "old_sku": "REF-bon-21004-vinotinto-pantalon-casual",
+    "new_sku": "P-32-PANTALON-CASUAL",
+    "name": "PANTALÓN CASUAL "
+  },
+  {
+    "id": 33,
+    "old_sku": "REF-bon-21005-palazzo-cafe-tela-chaliz",
+    "new_sku": "P-33-PANTALON-PALAZZO",
+    "name": " PANTALON PALAZZO"
+  },
+  {
+    "id": 34,
+    "old_sku": "REF-bon-21006-palazzo-bege-tela-chaliz",
+    "new_sku": "P-34-PANTALON-PALAZZO",
+    "name": " PANTALON PALAZZO"
+  },
+  {
+    "id": 35,
+    "old_sku": "REF-bon-21007-palazzo-rojo-tela-chaliz",
+    "new_sku": "P-35-PANTALON-PALAZZO",
+    "name": "PANTALON PALAZZO"
+  },
+  {
+    "id": 36,
+    "old_sku": "REF-bon-21008-palazzo-crema-tela-chaliz.png",
+    "new_sku": "P-36-PANTALON-PALAZZO",
+    "name": "PANTALON PALAZZO"
+  },
+  {
+    "id": 37,
+    "old_sku": "REF-bon-21009-conjunto-casual-rosa-chaliz",
+    "new_sku": "P-37-CONJUNTO-CASUAL",
+    "name": "CONJUNTO CASUAL"
+  },
+  {
+    "id": 38,
+    "old_sku": "REF-bon-21010-conjunto-casual-verde-chaliz",
+    "new_sku": "P-38-CONJUNTO-CASUAL",
+    "name": "CONJUNTO CASUAL"
+  },
+  {
+    "id": 39,
+    "old_sku": "REF-bon-21011-conjunto-casual-blanco-chaliz",
+    "new_sku": "P-39-CONJUNTO-CASUAL",
+    "name": "CONJUNTO CASUAL."
+  },
+  {
+    "id": 40,
+    "old_sku": "REF-bon-21012-conjunto-casual-rojo-chaliz",
+    "new_sku": "P-40-CONJUNTO-CASUAL",
+    "name": "CONJUNTO CASUAL"
+  },
+  {
+    "id": 41,
+    "old_sku": "REF-bon-21013-conjunto-casual-azul-chaliz",
+    "new_sku": "P-41-CONJUNTO-CASUAL",
+    "name": "CONJUNTO CASUAL"
+  },
+  {
+    "id": 43,
+    "old_sku": "REF-bon-21015-tipo-tenista-gris-drill-grueso",
+    "new_sku": "P-43-VESTIDO-TIPO-TENISTA",
+    "name": "VESTIDO TIPO TENISTA."
+  },
+  {
+    "id": 44,
+    "old_sku": "REF-bon-21016-tipo-tenista-rojo-drill-grueso",
+    "new_sku": "P-44-VESTIDO-TIPO-TENISTA",
+    "name": "VESTIDO TIPO TENISTA"
+  },
+  {
+    "id": 45,
+    "old_sku": "REF-bon-21017-tipo-tenista-bege-drill-grueso",
+    "new_sku": "P-45-VESTIDO-TIPO-TENISTA",
+    "name": "VESTIDO TIPO TENISTA"
+  },
+  {
+    "id": 46,
+    "old_sku": "bon-21024",
+    "new_sku": "P-46-CONJUNTO-CASUAL-FALDA",
+    "name": "CONJUNTO CASUAL FALDA"
+  },
+  {
+    "id": 47,
+    "old_sku": "bon-21025",
+    "new_sku": "P-47-CONJUNTO-CASUAL-FALDA",
+    "name": "CONJUNTO CASUAL FALDA"
+  },
+  {
+    "id": 48,
+    "old_sku": "bon-21023",
+    "new_sku": "P-48-CONJUNTO-CASUAL-FALDA",
+    "name": "CONJUNTO CASUAL FALDA"
+  },
+  {
+    "id": 49,
+    "old_sku": "bon-21026-conjunto-pantalon",
+    "new_sku": "P-49-CONJUNTO-CASUAL-PANTALON",
+    "name": "CONJUNTO CASUAL PANTALON."
+  },
+  {
+    "id": 50,
+    "old_sku": "bon-21027-conjunto-pantalon",
+    "new_sku": "P-50-CONJUNTO-CASUAL-PANTALON",
+    "name": "CONJUNTO CASUAL PANTALON"
+  },
+  {
+    "id": 51,
+    "old_sku": "bon-21028-conjunto-pantalon",
+    "new_sku": "P-51-CONJUNTO-CASUAL-PANTALON",
+    "name": "CONJUNTO CASUAL PANTALON"
+  },
+  {
+    "id": 52,
+    "old_sku": "",
+    "new_sku": "P-52-TREBOL-BLANCO",
+    "name": "Trébol Blanco"
+  },
+  {
+    "id": 53,
+    "old_sku": "",
+    "new_sku": "P-53-LUCHI-PRINT",
+    "name": "LUCHI PRINT "
+  },
+  {
+    "id": 54,
+    "old_sku": "",
+    "new_sku": "P-54-UPGRADE-AVANCE",
+    "name": "UPGRADE (AVANCE)"
+  },
+  {
+    "id": 55,
+    "old_sku": "",
+    "new_sku": "P-55-UPGRADE-AVANCE",
+    "name": "UPGRADE   (Avance)"
+  },
+  {
+    "id": 56,
+    "old_sku": "",
+    "new_sku": "P-56-CONJUNTO-PANTALON",
+    "name": "CONJUNTO PANTALON"
+  },
+  {
+    "id": 57,
+    "old_sku": "",
+    "new_sku": "P-57-CONJUNTO-PANTALON",
+    "name": "CONJUNTO PANTALON"
+  },
+  {
+    "id": 58,
+    "old_sku": "",
+    "new_sku": "P-58-CONJUNTO-PANTALON",
+    "name": "CONJUNTO PANTALON"
+  },
+  {
+    "id": 59,
+    "old_sku": "",
+    "new_sku": "P-59-CONJUNTO-PANTALON",
+    "name": "CONJUNTO PANTALON"
+  },
+  {
+    "id": 60,
+    "old_sku": "",
+    "new_sku": "P-60-CONJUNTO-PANTALON",
+    "name": "CONJUNTO PANTALON"
+  },
+  {
+    "id": 61,
+    "old_sku": "",
+    "new_sku": "P-61-CONJUNTO-PANTALON",
+    "name": "CONJUNTO PANTALON"
+  },
+  {
+    "id": 62,
+    "old_sku": "",
+    "new_sku": "P-62-CONJUNTO-PANTALON",
+    "name": "CONJUNTO PANTALON"
+  },
+  {
+    "id": 64,
+    "old_sku": "",
+    "new_sku": "P-64-CONJUNTO-PANTALON",
+    "name": "CONJUNTO PANTALON"
+  },
+  {
+    "id": 65,
+    "old_sku": "",
+    "new_sku": "P-65-CAMISA-OVERSIZE-MANGA",
+    "name": "CAMISA OVERSIZE MANGA CORTA RAYADA "
+  },
+  {
+    "id": 66,
+    "old_sku": "",
+    "new_sku": "P-66-CAMISA-OVERSIZE-MANGA",
+    "name": "CAMISA OVERSIZE MANGA CORTA RAYADA"
+  },
+  {
+    "id": 67,
+    "old_sku": "",
+    "new_sku": "P-67-CAMISA-OVERSIZE-MANGA",
+    "name": "CAMISA OVERSIZE MANGA CORTA RAYADA"
+  },
+  {
+    "id": 68,
+    "old_sku": "",
+    "new_sku": "P-68-CAMISA-OVERSIZE-MANGA",
+    "name": "CAMISA OVERSIZE   MANGA CORTA RAYADA"
+  },
+  {
+    "id": 69,
+    "old_sku": "",
+    "new_sku": "P-69-CAMISA-OVERSIZE-MANGA",
+    "name": "CAMISA OVERSIZE MANGA CORTA RAYADA"
+  },
+  {
+    "id": 70,
+    "old_sku": "",
+    "new_sku": "P-70-CAMISA-MANGA-LARGA",
+    "name": "CAMISA MANGA LARGA RAYADA"
+  },
+  {
+    "id": 71,
+    "old_sku": "",
+    "new_sku": "P-71-CAMISA-MANGA-LARGA",
+    "name": "CAMISA MANGA LARGA RAYADA"
+  },
+  {
+    "id": 72,
+    "old_sku": "",
+    "new_sku": "P-72-CAMISA-MANGA-LARGA",
+    "name": "CAMISA MANGA LARGA RAYADA"
+  },
+  {
+    "id": 73,
+    "old_sku": "",
+    "new_sku": "P-73-CAMISA-MANGA-LARGA",
+    "name": "CAMISA MANGA LARGA RAYADA"
+  },
+  {
+    "id": 74,
+    "old_sku": "",
+    "new_sku": "P-74-CAMISA-MANGA-LARGA",
+    "name": "CAMISA MANGA LARGA RAYADA"
+  },
+  {
+    "id": 75,
+    "old_sku": "",
+    "new_sku": "P-75-CAMISA-MANGA-LARGA",
+    "name": "CAMISA MANGA LARGA RAYADA"
+  },
+  {
+    "id": 76,
+    "old_sku": "",
+    "new_sku": "P-76-CAMISA-OVERSIZE-MANGA",
+    "name": "CAMISA OVERSIZE   MANGA CORTA"
+  },
+  {
+    "id": 77,
+    "old_sku": "",
+    "new_sku": "P-77-CAMISA-OVERSIZE-MANGA",
+    "name": "CAMISA OVERSIZE MANGA CORTA"
+  },
+  {
+    "id": 78,
+    "old_sku": "",
+    "new_sku": "P-78-CAMISA-OVERSIZE-MANGA",
+    "name": "CAMISA OVERSIZE MANGA CORTA"
+  },
+  {
+    "id": 79,
+    "old_sku": "",
+    "new_sku": "P-79-CAMISA-OVERSIZE-MANGA",
+    "name": "CAMISA OVERSIZE MANGA CORTA"
+  },
+  {
+    "id": 80,
+    "old_sku": "",
+    "new_sku": "P-80-CAMISA-OVERSIZE-MANGA",
+    "name": "CAMISA OVERSIZE MANGA CORTA"
+  },
+  {
+    "id": 81,
+    "old_sku": "",
+    "new_sku": "P-81-CAMISA-OVERSIZE-MANGA",
+    "name": "CAMISA OVERSIZE MANGA CORTA"
+  },
+  {
+    "id": 82,
+    "old_sku": "",
+    "new_sku": "P-82-CAMISA-OVERSIZE-MANGA",
+    "name": "CAMISA OVERSIZE MANGA CORTA"
+  },
+  {
+    "id": 83,
+    "old_sku": "",
+    "new_sku": "P-83-CAMISA-OVERSIZE-MANGA",
+    "name": "CAMISA OVERSIZE MANGA CORTA"
+  },
+  {
+    "id": 84,
+    "old_sku": "",
+    "new_sku": "P-84-CAMISA-OVERSIZE-MANGA",
+    "name": "CAMISA OVERSIZE MANGA CORTA"
+  },
+  {
+    "id": 85,
+    "old_sku": "",
+    "new_sku": "P-85-CAMISA-OVERSIZE-MANGA",
+    "name": "CAMISA OVERSIZE MANGA CORTA"
+  },
+  {
+    "id": 86,
+    "old_sku": "",
+    "new_sku": "P-86-CAMISA-OVERSIZE-MANGA",
+    "name": "CAMISA OVERSIZE MANGA CORTA"
+  },
+  {
+    "id": 87,
+    "old_sku": "",
+    "new_sku": "P-87-CAMISA-OVERSIZE-MANGA",
+    "name": "CAMISA OVERSIZE MANGA CORTA"
+  },
+  {
+    "id": 88,
+    "old_sku": "",
+    "new_sku": "P-88-CAMISA-OVERSIZE-MANGA",
+    "name": "CAMISA OVERSIZE MANGA CORTA"
+  },
+  {
+    "id": 89,
+    "old_sku": "",
+    "new_sku": "P-89-CAMISA-OVERSIZE-MANGA",
+    "name": "CAMISA OVERSIZE MANGA CORTA"
+  },
+  {
+    "id": 90,
+    "old_sku": "",
+    "new_sku": "P-90-CAMISA-OVERSIZE-MANGA",
+    "name": "CAMISA OVERSIZE MANGA CORTA"
+  },
+  {
+    "id": 91,
+    "old_sku": "",
+    "new_sku": "P-91-CAMISA-OVERSIZE-MANGA",
+    "name": "CAMISA OVERSIZE MANGA CORTA"
+  },
+  {
+    "id": 92,
+    "old_sku": "",
+    "new_sku": "P-92-CAMISA-OVERSIZE-MANGA",
+    "name": "CAMISA OVERSIZE MANGA CORTA"
+  },
+  {
+    "id": 93,
+    "old_sku": "",
+    "new_sku": "P-93-CAMISA-MANGA-CORTA",
+    "name": "CAMISA MANGA CORTA"
+  },
+  {
+    "id": 94,
+    "old_sku": "",
+    "new_sku": "P-94-CAMISA-MANGA-CORTA",
+    "name": "CAMISA MANGA CORTA"
+  },
+  {
+    "id": 95,
+    "old_sku": "",
+    "new_sku": "P-95-CAMISA-MANGA-CORTA",
+    "name": "CAMISA MANGA CORTA"
+  },
+  {
+    "id": 96,
+    "old_sku": "",
+    "new_sku": "P-96-CAMISSA-MANGA-CORTA",
+    "name": "CAMISSA MANGA CORTA"
+  },
+  {
+    "id": 97,
+    "old_sku": "",
+    "new_sku": "P-97-CAMISA-MANGA-CORTA",
+    "name": "CAMISA MANGA CORTA"
+  },
+  {
+    "id": 98,
+    "old_sku": "",
+    "new_sku": "P-98-CAMISA-MANGA-CORTA",
+    "name": "CAMISA MANGA CORTA"
+  },
+  {
+    "id": 99,
+    "old_sku": "",
+    "new_sku": "P-99-CAMISA-MANGA-CORTA",
+    "name": "CAMISA MANGA CORTA"
+  },
+  {
+    "id": 100,
+    "old_sku": "",
+    "new_sku": "P-100-CAMISA-MANGA-CORTA",
+    "name": "CAMISA MANGA CORTA"
+  },
+  {
+    "id": 101,
+    "old_sku": "",
+    "new_sku": "P-101-CAMISA-MANGA-CORTA",
+    "name": "CAMISA MANGA CORTA"
+  },
+  {
+    "id": 102,
+    "old_sku": "",
+    "new_sku": "P-102-CAMISA-MANGA-CORTA",
+    "name": "CAMISA MANGA CORTA"
+  },
+  {
+    "id": 103,
+    "old_sku": "",
+    "new_sku": "P-103-CAMISA-MANGA-CORTA",
+    "name": "CAMISA MANGA CORTA"
+  },
+  {
+    "id": 104,
+    "old_sku": "",
+    "new_sku": "P-104-CAMISA-MANGA-CORTA",
+    "name": "CAMISA MANGA CORTA"
+  },
+  {
+    "id": 105,
+    "old_sku": "",
+    "new_sku": "P-105-CAMISA-MANGA-CORTA",
+    "name": "CAMISA MANGA CORTA"
+  },
+  {
+    "id": 106,
+    "old_sku": "",
+    "new_sku": "P-106-CAMISA-MANGA-CORTA",
+    "name": "CAMISA MANGA CORTA"
+  },
+  {
+    "id": 107,
+    "old_sku": "",
+    "new_sku": "P-107-CAMISA-MANGA-CORTA",
+    "name": "CAMISA MANGA CORTA"
+  },
+  {
+    "id": 108,
+    "old_sku": "",
+    "new_sku": "P-108-CAMISA-MANGA-CORTA",
+    "name": "CAMISA MANGA CORTA"
+  },
+  {
+    "id": 109,
+    "old_sku": "",
+    "new_sku": "P-109-CAMISA-MANGA-CORTA",
+    "name": "CAMISA MANGA CORTA"
+  },
+  {
+    "id": 110,
+    "old_sku": "",
+    "new_sku": "P-110-CAMISA-MANGA-CORTA",
+    "name": "CAMISA MANGA CORTA"
+  },
+  {
+    "id": 111,
+    "old_sku": "",
+    "new_sku": "P-111-CAMISA-MANGA-CORTA",
+    "name": "CAMISA MANGA CORTA"
+  },
+  {
+    "id": 112,
+    "old_sku": "",
+    "new_sku": "P-112-CAMISA-MANGA-CORTA",
+    "name": "CAMISA MANGA CORTA"
+  },
+  {
+    "id": 113,
+    "old_sku": "",
+    "new_sku": "P-113-CAMISA-MANGA-CORTA",
+    "name": "CAMISA MANGA CORTA"
+  },
+  {
+    "id": 114,
+    "old_sku": "",
+    "new_sku": "P-114-CAMISA-MANGA-CORTA",
+    "name": "CAMISA MANGA CORTA"
+  },
+  {
+    "id": 115,
+    "old_sku": "",
+    "new_sku": "P-115-CAMISA-MANGA-CORTA",
+    "name": "CAMISA MANGA CORTA"
+  },
+  {
+    "id": 116,
+    "old_sku": "",
+    "new_sku": "P-116-CAMISA-MANGA-CORTA",
+    "name": "CAMISA MANGA CORTA"
+  },
+  {
+    "id": 117,
+    "old_sku": "",
+    "new_sku": "P-117-CAMISA-MANGA-CORTA",
+    "name": "CAMISA MANGA CORTA"
+  },
+  {
+    "id": 118,
+    "old_sku": "",
+    "new_sku": "P-118-CAMISA-MANGA-CORTA",
+    "name": "CAMISA MANGA CORTA"
+  },
+  {
+    "id": 119,
+    "old_sku": "",
+    "new_sku": "P-119-CAMISA-MANGA-CORTA",
+    "name": "CAMISA MANGA CORTA"
+  },
+  {
+    "id": 120,
+    "old_sku": "",
+    "new_sku": "P-120-CAMISA-MANGA-CORTA",
+    "name": "CAMISA MANGA CORTA"
+  },
+  {
+    "id": 121,
+    "old_sku": "",
+    "new_sku": "P-121-CAMISA-MANGA-CORTA",
+    "name": "CAMISA MANGA CORTA"
+  },
+  {
+    "id": 122,
+    "old_sku": "",
+    "new_sku": "P-122-CAMISA-MANGA-LARGA",
+    "name": "CAMISA MANGA LARGA DAMA"
+  },
+  {
+    "id": 123,
+    "old_sku": "",
+    "new_sku": "P-123-CAMISA-MANGA-LARGA",
+    "name": "CAMISA MANGA LARGA DAMA"
+  },
+  {
+    "id": 124,
+    "old_sku": "",
+    "new_sku": "P-124-CAMISA-MANGA-LARGA",
+    "name": "CAMISA MANGA LARGA DAMA"
+  },
+  {
+    "id": 125,
+    "old_sku": "",
+    "new_sku": "P-125-CAMISA-MANGA-LARGA",
+    "name": "CAMISA MANGA LARGA DAMA"
+  },
+  {
+    "id": 126,
+    "old_sku": "",
+    "new_sku": "P-126-CAMISA-MANGA-LARGA",
+    "name": "CAMISA MANGA LARGA DAMA"
+  },
+  {
+    "id": 127,
+    "old_sku": "",
+    "new_sku": "P-127-CAMISA-MANGA-LARGA",
+    "name": "CAMISA MANGA LARGA DAMA"
+  },
+  {
+    "id": 128,
+    "old_sku": "",
+    "new_sku": "P-128-CAMISA-MANGA-LARGA",
+    "name": "CAMISA MANGA LARGA DAMA"
+  },
+  {
+    "id": 129,
+    "old_sku": "",
+    "new_sku": "P-129-CAMISA-MANGA-LARGA",
+    "name": "CAMISA MANGA LARGA DAMA"
+  },
+  {
+    "id": 130,
+    "old_sku": "",
+    "new_sku": "P-130-CAMISA-MANGA-LARGA",
+    "name": "CAMISA MANGA LARGA DAMA"
+  },
+  {
+    "id": 131,
+    "old_sku": "",
+    "new_sku": "P-131-CAMISA-MANGA-LARGA",
+    "name": "CAMISA MANGA LARGA DAMA"
+  },
+  {
+    "id": 132,
+    "old_sku": "",
+    "new_sku": "P-132-CAMISA-MANGA-LARGA",
+    "name": "CAMISA MANGA LARGA DAMA"
+  },
+  {
+    "id": 133,
+    "old_sku": "",
+    "new_sku": "P-133-CAMISA-MANGA-LARGA",
+    "name": "CAMISA MANGA LARGA DAMA"
+  },
+  {
+    "id": 134,
+    "old_sku": "",
+    "new_sku": "P-134-CAMISA-MANGA-LARGA",
+    "name": "CAMISA MANGA LARGA DAMA"
+  },
+  {
+    "id": 135,
+    "old_sku": "",
+    "new_sku": "P-135-CAMISA-MANGA-LARGA",
+    "name": "CAMISA MANGA LARGA DAMA"
+  },
+  {
+    "id": 136,
+    "old_sku": "",
+    "new_sku": "P-136-CAMISA-MANGA-LARGA",
+    "name": "CAMISA MANGA LARGA DAMA"
+  },
+  {
+    "id": 137,
+    "old_sku": "",
+    "new_sku": "P-137-CAMISA-MANGA-LARGA",
+    "name": "CAMISA MANGA LARGA DAMA"
+  },
+  {
+    "id": 138,
+    "old_sku": "",
+    "new_sku": "P-138-CAMISA-MANGA-LARGA",
+    "name": "CAMISA MANGA LARGA DAMA"
+  },
+  {
+    "id": 139,
+    "old_sku": "",
+    "new_sku": "P-139-CAMISA-MANGA-LARGA",
+    "name": "CAMISA MANGA LARGA DAMA"
+  },
+  {
+    "id": 140,
+    "old_sku": "",
+    "new_sku": "P-140-CAMISA-MANGA-LARGA",
+    "name": "CAMISA MANGA LARGA DAMA"
+  },
+  {
+    "id": 141,
+    "old_sku": "",
+    "new_sku": "P-141-BLUSON-MANGA-CORTA",
+    "name": "BLUSÓN MANGA CORTA"
+  },
+  {
+    "id": 142,
+    "old_sku": "",
+    "new_sku": "P-142-BLUSON-MANGA-CORTA",
+    "name": "BLUSON MANGA CORTA"
+  },
+  {
+    "id": 143,
+    "old_sku": "",
+    "new_sku": "P-143-BLUSON-MANGA-CORTA",
+    "name": "BLUSON MANGA CORTA"
+  },
+  {
+    "id": 144,
+    "old_sku": "",
+    "new_sku": "P-144-BLUSON-MANGA-CORTA",
+    "name": "BLUSON MANGA CORTA"
+  },
+  {
+    "id": 145,
+    "old_sku": "",
+    "new_sku": "P-145-BLUSON-MANGA-CORTA",
+    "name": "BLUSON MANGA CORTA"
+  },
+  {
+    "id": 146,
+    "old_sku": "",
+    "new_sku": "P-146-BLUSON-MANGA-CORTA",
+    "name": "BLUSON MANGA CORTA"
+  },
+  {
+    "id": 147,
+    "old_sku": "",
+    "new_sku": "P-147-BLUSON-MANGA-CORTA",
+    "name": "BLUSON MANGA CORTA"
+  },
+  {
+    "id": 148,
+    "old_sku": "",
+    "new_sku": "P-148-BLUSON-MANGA-CORTA",
+    "name": "BLUSON MANGA CORTA"
+  },
+  {
+    "id": 149,
+    "old_sku": "",
+    "new_sku": "P-149-BLUSON-MANGA-CORTA",
+    "name": "BLUSON MANGA CORTA"
+  },
+  {
+    "id": 150,
+    "old_sku": "",
+    "new_sku": "P-150-BLUSON-MANGA-CORTA",
+    "name": "BLUSON MANGA CORTA"
+  },
+  {
+    "id": 151,
+    "old_sku": "",
+    "new_sku": "P-151-BLUSON-MANGA-CORTA",
+    "name": "BLUSON MANGA CORTA"
+  },
+  {
+    "id": 152,
+    "old_sku": "",
+    "new_sku": "P-152-BLUSON-MANGA-CORTA",
+    "name": "BLUSON MANGA CORTA"
+  },
+  {
+    "id": 153,
+    "old_sku": "",
+    "new_sku": "P-153-BLUSON-MANGA-CORTA",
+    "name": "BLUSON MANGA CORTA"
+  },
+  {
+    "id": 154,
+    "old_sku": "",
+    "new_sku": "P-154-BLUSON-MANGA-CORTA",
+    "name": "BLUSON MANGA CORTA"
+  },
+  {
+    "id": 155,
+    "old_sku": "",
+    "new_sku": "P-155-BLUSON-MANGA-CORTA",
+    "name": "BLUSON MANGA CORTA"
+  },
+  {
+    "id": 156,
+    "old_sku": "",
+    "new_sku": "P-156-BLUSON-MANGA-CORTA",
+    "name": "BLUSON MANGA CORTA"
+  },
+  {
+    "id": 157,
+    "old_sku": "100",
+    "new_sku": "P-157-CAPA-TOP-VERDE",
+    "name": "Capa Top Verde Hilo"
+  },
+  {
+    "id": 158,
+    "old_sku": "101",
+    "new_sku": "P-158-CAPA-TOP-AZUL",
+    "name": "Capa Top Azul Hilo"
+  },
+  {
+    "id": 159,
+    "old_sku": "102",
+    "new_sku": "P-159-CAPA-TOP-BLANCO",
+    "name": "Capa Top Blanco Claro Hilo"
+  },
+  {
+    "id": 160,
+    "old_sku": "103",
+    "new_sku": "P-160-CAPA-TOP-BLANCO",
+    "name": "Capa Top Blanco Marfil Hilo"
+  },
+  {
+    "id": 161,
+    "old_sku": "104",
+    "new_sku": "P-161-CAPA-TOP-CAFE",
+    "name": "Capa Top Cafe Medio Hilo"
+  },
+  {
+    "id": 162,
+    "old_sku": "105",
+    "new_sku": "P-162-CAPA-TOP-BLANCO",
+    "name": "Capa Top Blanco Crema Hilo"
+  },
+  {
+    "id": 163,
+    "old_sku": "106",
+    "new_sku": "P-163-CAPA-TOP-AZUL",
+    "name": "Capa Top Azul Claro Hilo"
+  },
+  {
+    "id": 164,
+    "old_sku": "107",
+    "new_sku": "P-164-BUSO-FENDIX-MANGA",
+    "name": "Buso Fendix Manga Corta Hilo"
+  },
+  {
+    "id": 165,
+    "old_sku": "108",
+    "new_sku": "P-165-BUSO-FRANJAS-MANGA",
+    "name": "Buso Franjas Manga Corta Hilo"
+  },
+  {
+    "id": 166,
+    "old_sku": "109",
+    "new_sku": "P-166-ABRIGO-PELUSA-HILO",
+    "name": "Abrigo con Pelusa Hilo"
+  },
+  {
+    "id": 167,
+    "old_sku": "110",
+    "new_sku": "P-167-BUSO-BLANCO-HILO",
+    "name": "Buso Blanco Hilo"
+  },
+  {
+    "id": 168,
+    "old_sku": "111",
+    "new_sku": "P-168-BUSO-OVERSIZE-HILO",
+    "name": "Buso Oversize Hilo"
+  },
+  {
+    "id": 169,
+    "old_sku": "112",
+    "new_sku": "P-169-BUSO-ROSA-HILO",
+    "name": "Buso Rosa Hilo"
+  },
+  {
+    "id": 170,
+    "old_sku": "113",
+    "new_sku": "P-170-BLUSA-VIOLETA-HILO",
+    "name": "Blusa Violeta Hilo"
+  },
+  {
+    "id": 171,
+    "old_sku": "114",
+    "new_sku": "P-171-BUSO-AZUL-HILO",
+    "name": "Buso Azul Hilo"
+  },
+  {
+    "id": 172,
+    "old_sku": "115",
+    "new_sku": "P-172-BUSO-NEGRO-HILO",
+    "name": "Buso Negro Hilo"
+  },
+  {
+    "id": 173,
+    "old_sku": "116",
+    "new_sku": "P-173-BUSO-CAFE-HILO",
+    "name": "Buso Cafe Hilo"
+  },
+  {
+    "id": 174,
+    "old_sku": "117",
+    "new_sku": "P-174-BUSO-AZUL-TEJIDO",
+    "name": "Buso Azul Tejido Hilo"
+  },
+  {
+    "id": 175,
+    "old_sku": "118",
+    "new_sku": "P-175-BUSO-BEIGE-HILO",
+    "name": "Buso Beige Hilo"
+  },
+  {
+    "id": 176,
+    "old_sku": "119",
+    "new_sku": "P-176-CHALECO-CEREZAS-HILO",
+    "name": "Chaleco Cerezas Hilo"
+  },
+  {
+    "id": 177,
+    "old_sku": "120",
+    "new_sku": "P-177-CHALECO-BLANCO-HILO",
+    "name": "Chaleco Blanco Hilo"
+  },
+  {
+    "id": 178,
+    "old_sku": "121",
+    "new_sku": "P-178-SACO-BLANCO-GLOBO",
+    "name": "Saco Blanco Globo Hilo"
+  },
+  {
+    "id": 179,
+    "old_sku": "122",
+    "new_sku": "P-179-SACO-AZUL-HUELLITAS",
+    "name": "Saco Azul Huellitas Perro Hilo"
+  },
+  {
+    "id": 180,
+    "old_sku": "123",
+    "new_sku": "P-180-SACO-BLANCO-SOMBRERO",
+    "name": "Saco Blanco Sombrero Hilo"
+  },
+  {
+    "id": 181,
+    "old_sku": "124",
+    "new_sku": "P-181-SACO-BLANCO-ESTRELLAS",
+    "name": "Saco Blanco Estrellas Hilo"
+  },
+  {
+    "id": 182,
+    "old_sku": "125",
+    "new_sku": "P-182-SACO-CAFE-HUELLAS",
+    "name": "Saco Cafe Huellas Gato Hilo"
+  },
+  {
+    "id": 183,
+    "old_sku": "126",
+    "new_sku": "P-183-SACO-BLANCO-MARIQUITA",
+    "name": "Saco Blanco Mariquita Hilo"
+  },
+  {
+    "id": 184,
+    "old_sku": "127",
+    "new_sku": "P-184-SACO-BLANCO-ABEJA",
+    "name": "Saco Blanco Abeja Hilo"
+  },
+  {
+    "id": 185,
+    "old_sku": "128",
+    "new_sku": "P-185-SACO-BLANCO-HUELLITAS",
+    "name": "Saco Blanco Huellitas G Hilo"
+  },
+  {
+    "id": 186,
+    "old_sku": "129",
+    "new_sku": "P-186-SACO-AMARILLO-CONEJO",
+    "name": "Saco Amarillo Conejo Hilo"
+  },
+  {
+    "id": 187,
+    "old_sku": "130",
+    "new_sku": "P-187-SACO-CAFE-AVES",
+    "name": "Saco Cafe Aves Hilo"
+  },
+  {
+    "id": 188,
+    "old_sku": "131",
+    "new_sku": "P-188-SACO-ROJO-GIRASOL",
+    "name": "Saco Rojo Girasol Hilo"
+  },
+  {
+    "id": 189,
+    "old_sku": "132",
+    "new_sku": "P-189-SACO-CAFE-CORAZONES",
+    "name": "Saco Cafe Corazones Hilo"
+  },
+  {
+    "id": 190,
+    "old_sku": "133",
+    "new_sku": "P-190-SACO-NEGRO-FRESAS",
+    "name": "Saco Negro Fresas Hilo"
+  },
+  {
+    "id": 191,
+    "old_sku": "134",
+    "new_sku": "P-191-SACO-BLANCO-ZANAHORIAS",
+    "name": "Saco Blanco Zanahorias Hilo"
+  },
+  {
+    "id": 192,
+    "old_sku": "135",
+    "new_sku": "P-192-SACO-BLANCO-MUNECOS",
+    "name": "Saco Blanco Munecos Hilo"
+  },
+  {
+    "id": 193,
+    "old_sku": "136",
+    "new_sku": "P-193-SACO-BLANCO-CEREZAS",
+    "name": "Saco Blanco Cerezas 3D Hilo"
+  },
+  {
+    "id": 194,
+    "old_sku": "137",
+    "new_sku": "P-194-SACO-NEGRO-CEREZAS",
+    "name": "Saco Negro Cerezas Hilo"
+  },
+  {
+    "id": 195,
+    "old_sku": "138",
+    "new_sku": "P-195-SACO-BLANCO-MARIPOSAS",
+    "name": "Saco Blanco Mariposas Hilo"
+  },
+  {
+    "id": 196,
+    "old_sku": "139",
+    "new_sku": "P-196-SACO-BLANCO-MONOS",
+    "name": "Saco Blanco Monos Hilo"
+  },
+  {
+    "id": 197,
+    "old_sku": "140",
+    "new_sku": "P-197-CONJUNTO-NEW-AZUL",
+    "name": "Conjunto New Azul Hilo"
+  },
+  {
+    "id": 198,
+    "old_sku": "141",
+    "new_sku": "P-198-CONJUNTO-CAMPESINA-HILO",
+    "name": "Conjunto Campesina Hilo"
+  },
+  {
+    "id": 199,
+    "old_sku": "142",
+    "new_sku": "P-199-CONJUNTO-FRANJAS-HILO",
+    "name": "Conjunto Franjas Hilo"
+  },
+  {
+    "id": 200,
+    "old_sku": "143",
+    "new_sku": "P-200-VESTIDO-PELUCHE-HILO",
+    "name": "Vestido Peluche Hilo"
+  },
+  {
+    "id": 201,
+    "old_sku": "144",
+    "new_sku": "P-201-CONJUNTO-BURBUJA-HILO",
+    "name": "Conjunto Burbuja Hilo"
+  },
+  {
+    "id": 202,
+    "old_sku": "145",
+    "new_sku": "P-202-CONJUNTO-CHIC-NEGRO",
+    "name": "Conjunto Chic Negro Hilo"
+  },
+  {
+    "id": 203,
+    "old_sku": "146",
+    "new_sku": "P-203-VESTIDO-CHALECO-HILO",
+    "name": "Vestido Chaleco Hilo"
+  },
+  {
+    "id": 204,
+    "old_sku": "147",
+    "new_sku": "P-204-SET-ESTILO-SIRENA",
+    "name": "Set Estilo Sirena Hilo"
+  },
+  {
+    "id": 205,
+    "old_sku": "148",
+    "new_sku": "P-205-CONJUNTO-LARGO-CRUZADO",
+    "name": "Conjunto Largo Cruzado Hilo"
+  },
+  {
+    "id": 206,
+    "old_sku": "149",
+    "new_sku": "P-206-CONJUNTO-LARGO-UNICOLOR",
+    "name": "Conjunto Largo Unicolor Hilo"
+  },
+  {
+    "id": 207,
+    "old_sku": "150",
+    "new_sku": "P-207-CONJUNTO-COLMENA-HILO",
+    "name": "Conjunto Colmena Hilo"
+  },
+  {
+    "id": 208,
+    "old_sku": "151",
+    "new_sku": "P-208-VESTIDO-MEDIA-LUNA",
+    "name": "Vestido Media Luna Hilo"
+  },
+  {
+    "id": 209,
+    "old_sku": "152",
+    "new_sku": "P-209-VESTIDO-COLMENA-LARGO",
+    "name": "Vestido Colmena Largo Hilo"
+  },
+  {
+    "id": 210,
+    "old_sku": "153",
+    "new_sku": "P-210-VESTIDO-UNICOLOR-LARGO",
+    "name": "Vestido Unicolor Largo Hilo"
+  },
+  {
+    "id": 211,
+    "old_sku": "154",
+    "new_sku": "P-211-VESTIDO-FRANJAS-HILO",
+    "name": "Vestido Franjas Hilo"
+  },
+  {
+    "id": 212,
+    "old_sku": "154b",
+    "new_sku": "P-212-VESTIDO-CHALECO-LARGO",
+    "name": "Vestido Chaleco Largo Hilo"
+  },
+  {
+    "id": 213,
+    "old_sku": "",
+    "new_sku": "P-213-ROPA-INTERIOR",
+    "name": "ROPA INTERIOR"
+  },
+  {
+    "id": 214,
+    "old_sku": "",
+    "new_sku": "P-214-ROPA-INTERIOR",
+    "name": "ROPA INTERIOR "
+  },
+  {
+    "id": 215,
+    "old_sku": "",
+    "new_sku": "P-215-ROPA-INTERIOR",
+    "name": "ROPA INTERIOR "
+  },
+  {
+    "id": 216,
+    "old_sku": "",
+    "new_sku": "P-216-ROPA-INTERIOR-BICH",
+    "name": "ROPA INTERIOR BICH"
+  },
+  {
+    "id": 217,
+    "old_sku": "",
+    "new_sku": "P-217-ROPA-INTERIOR-ZULM",
+    "name": "ROPA INTERIOR ZULM"
+  },
+  {
+    "id": 218,
+    "old_sku": "",
+    "new_sku": "P-218-ROPA-INTERIOR-ARIA",
+    "name": "ROPA INTERIOR ARIA"
+  },
+  {
+    "id": 219,
+    "old_sku": "",
+    "new_sku": "P-219-ROPA-INTERIOR-LAUR",
+    "name": "ROPA INTERIOR LAUR"
+  },
+  {
+    "id": 220,
+    "old_sku": "",
+    "new_sku": "P-220-ROPA-INTERIOR-BREN",
+    "name": "ROPA INTERIOR BREN"
+  },
+  {
+    "id": 221,
+    "old_sku": "",
+    "new_sku": "P-221-ROPA-INTERIOR-VICTORI",
+    "name": "ROPA INTERIOR VICTORI"
+  },
+  {
+    "id": 222,
+    "old_sku": "",
+    "new_sku": "P-222-ROPA-INTERIOR-VICTORI",
+    "name": "ROPA INTERIOR VICTORI"
+  },
+  {
+    "id": 223,
+    "old_sku": "",
+    "new_sku": "P-223-ROPA-INTERIOR-SALOM",
+    "name": "ROPA INTERIOR SALOM"
+  },
+  {
+    "id": 224,
+    "old_sku": "",
+    "new_sku": "P-224-ROPA-INTERIOR-KIM",
+    "name": "ROPA INTERIOR KIM"
+  },
+  {
+    "id": 225,
+    "old_sku": "",
+    "new_sku": "P-225-ROPA-INTERIOR-JULIANI",
+    "name": "ROPA INTERIOR JULIANI"
+  },
+  {
+    "id": 226,
+    "old_sku": "",
+    "new_sku": "P-226-ROPA-INTERIOR-CHANELA",
+    "name": "ROPA INTERIOR CHANELA"
+  },
+  {
+    "id": 227,
+    "old_sku": "",
+    "new_sku": "P-227-ROPA-INTERIOR-SIRENI",
+    "name": "ROPA INTERIOR SIRENI"
+  },
+  {
+    "id": 228,
+    "old_sku": "",
+    "new_sku": "P-228-ROPA-INTERIOR-ANIMADO",
+    "name": "ROPA INTERIOR ANIMADO"
+  },
+  {
+    "id": 229,
+    "old_sku": "",
+    "new_sku": "P-229-ROPA-INTERIOR-ANIMADA2",
+    "name": "ROPA INTERIOR ANIMADA-2 "
+  },
+  {
+    "id": 230,
+    "old_sku": "",
+    "new_sku": "P-230-ASOLEADOR",
+    "name": "ASOLEADOR"
+  },
+  {
+    "id": 231,
+    "old_sku": "",
+    "new_sku": "P-231-VESTIDO-BANO",
+    "name": "VESTIDO DE BAÑO"
+  },
+  {
+    "id": 232,
+    "old_sku": "",
+    "new_sku": "P-232-VESTIDO-BANO",
+    "name": "VESTIDO DE BAÑO"
+  },
+  {
+    "id": 233,
+    "old_sku": "",
+    "new_sku": "P-233-ROPA-INTERIOR-COPA",
+    "name": "ROPA INTERIOR COPA PRE HORMADA MAGI"
+  },
+  {
+    "id": 234,
+    "old_sku": "",
+    "new_sku": "P-234-ROPA-INTERIOR-COPA",
+    "name": "ROPA INTERIOR COPA PRE HORMADA SARI"
+  },
+  {
+    "id": 235,
+    "old_sku": "",
+    "new_sku": "P-235-ROPA-INTERIOR-COPA",
+    "name": "ROPA INTERIOR COPA PRE HORMADA SARI-2"
+  },
+  {
+    "id": 236,
+    "old_sku": "",
+    "new_sku": "P-236-ROPA-INTERIOR-COPA",
+    "name": "ROPA INTERIOR COPA PRE HORMADA GIRASOLI"
+  },
+  {
+    "id": 237,
+    "old_sku": "",
+    "new_sku": "P-237-ROPA-INTERIOR-IBIZA",
+    "name": "ROPA INTERIOR IBIZA"
+  },
+  {
+    "id": 238,
+    "old_sku": "",
+    "new_sku": "P-238-ROPA-INTERIOR-FRIDA",
+    "name": "ROPA INTERIOR FRIDA"
+  },
+  {
+    "id": 239,
+    "old_sku": "",
+    "new_sku": "P-239-ROPA-INTERIOR-FRIDA",
+    "name": "ROPA INTERIOR FRIDA "
+  },
+  {
+    "id": 240,
+    "old_sku": "",
+    "new_sku": "P-240-ROPA-INTERIOR-LIZ",
+    "name": "ROPA INTERIOR LIZ"
+  },
+  {
+    "id": 241,
+    "old_sku": "",
+    "new_sku": "P-241-ROPA-INTERIOR-LIZ",
+    "name": "ROPA INTERIOR LIZ "
+  },
+  {
+    "id": 242,
+    "old_sku": "",
+    "new_sku": "P-242-ROPA-INTERIOR-SELENI",
+    "name": "ROPA INTERIOR SELENI"
+  },
+  {
+    "id": 243,
+    "old_sku": "",
+    "new_sku": "P-243-ROPA-INTERIOR-SELENI",
+    "name": "ROPA INTERIOR SELENI"
+  },
+  {
+    "id": 244,
+    "old_sku": "",
+    "new_sku": "P-244-PRODUCTO-PRUEBA",
+    "name": "Producto Prueba"
+  },
+  {
+    "id": 245,
+    "old_sku": "",
+    "new_sku": "P-245-SILLA-EJECUTIVA-OFICINA",
+    "name": "SILLA EJECUTIVA OFICINA ESCRITORIO ERGONOMICA COLOR NEGRO"
+  },
+  {
+    "id": 246,
+    "old_sku": "",
+    "new_sku": "P-246-JUEGO-OLLAS-ACERO",
+    "name": "JUEGO DE OLLAS ACERO QUIRURGICO 12 PIEZAS"
+  }
+]

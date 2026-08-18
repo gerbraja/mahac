@@ -36,6 +36,8 @@ SIIGO_DOCUMENT_ID = int(os.getenv("SIIGO_DOCUMENT_ID", "0"))    # ID tipo compro
 SIIGO_SELLER_ID   = int(os.getenv("SIIGO_SELLER_ID", "0"))      # ID vendedor en Siigo
 SIIGO_COST_CENTER = os.getenv("SIIGO_COST_CENTER", "")          # (Opcional) Centro de costos
 SIIGO_PARTNER_ID  = os.getenv("SIIGO_PARTNER_ID", "TEIPlatform") # Partner ID registrado en Siigo
+SIIGO_TEST_MODE   = os.getenv("SIIGO_TEST_MODE", "false").lower() == "true"
+
 
 # ─────────────────────────────────────────────
 # Tabla: document_type texto → código numérico Siigo / DIAN
@@ -116,10 +118,23 @@ def get_siigo_token() -> str:
 def build_customer_payload(user: User) -> dict:
     doc_type_code = SIIGO_ID_TYPE_MAP.get((user.document_type or "CC").upper(), 13)
     check_digit = int(user.verification_digit) if user.verification_digit is not None and str(user.verification_digit).isdigit() else None
-    
-    first_name = (user.first_name or user.name or "").strip()
+    first_name = (user.first_name or "").strip()
     last_name  = (user.last_name or "").strip()
-    name_array = [first_name, last_name] if last_name else [first_name]
+    
+    if not first_name:
+        full_name = (user.name or "").strip()
+        parts = full_name.split()
+        if len(parts) >= 2:
+            first_name = parts[0]
+            last_name = " ".join(parts[1:])
+        else:
+            first_name = full_name if full_name else "Cliente"
+            last_name = "."
+
+    if not last_name:
+        last_name = "."
+
+    name_array = [first_name[:100], last_name[:100]]
     
     commercial_name = user.company_name if (user.document_type or "").upper() == "NIT" and user.company_name else f"{first_name} {last_name}".strip()
     person_type = "Company" if (user.person_type or "").lower() in ("juridica", "jurídica", "company") else "Person"
@@ -127,9 +142,16 @@ def build_customer_payload(user: User) -> dict:
     city_code  = (user.municipio_id or "").strip() or "11001"
     state_code = city_code[:2] if len(city_code) >= 5 else "11"
 
+    phone_clean = "".join(filter(str.isdigit, user.phone or ""))
+    if len(phone_clean) == 12 and phone_clean.startswith("57"):
+        phone_clean = phone_clean[2:]
+    if len(phone_clean) > 10:
+        phone_clean = phone_clean[-10:]
+    phones_list = [{"number": phone_clean, "indicative": "57"}] if phone_clean else []
+
     return {
-        "type": person_type, "person_type": person_type,
-        "id_type": {"id": doc_type_code},
+        "type": "Customer", "person_type": person_type,
+        "id_type": str(doc_type_code),
         "identification": (user.document_id or "").replace(".", "").replace(",", "").strip(),
         "check_digit": check_digit,
         "name": name_array, "commercial_name": commercial_name,
@@ -139,7 +161,7 @@ def build_customer_payload(user: User) -> dict:
             "address": (user.address or "").strip(),
             "city": {"country_code": "Co", "state_code": state_code, "city_code": city_code}
         },
-        "phones": [{"number": user.phone, "indicative": "57"}] if user.phone else [],
+        "phones": phones_list,
         "contacts": [{"first_name": first_name, "last_name": last_name, "email": user.email}]
     }
 
@@ -172,8 +194,15 @@ def build_invoice_payload(order: Order, user: User, payment_method: dict, due_da
         product = item.product
         tax_rate = getattr(product, "tax_rate", 0.0) or 0.0
         
+        # Determine code with fallback to the generic product configured in their Siigo Nube
+        product_code = getattr(product, "siigo_product_code", None) or getattr(product, "sku", None)
+        if not product_code or not str(product_code).strip():
+            product_code = "productogenericonube"
+        else:
+            product_code = str(product_code).strip()
+
         items.append({
-            "code": getattr(product, "siigo_product_code", None) or getattr(product, "sku", None) or str(product.id),
+            "code": product_code,
             "description": (item.product_name or product.name)[:200],
             "quantity": item.quantity,
             "price": float(u_price),
@@ -199,6 +228,21 @@ def build_invoice_payload(order: Order, user: User, payment_method: dict, due_da
 # ─────────────────────────────────────────────────────────────────
 def emit_invoice(order: Order, user: User, db: Session) -> dict:
     logger.info(f"📄 Iniciando facturación electrónica — Orden #{order.id}")
+    
+    if SIIGO_TEST_MODE:
+        logger.info(f"🧪 [SIIGO_TEST_MODE] Simulación de factura para Orden #{order.id} (Sin enviar a DIAN/Siigo)")
+        order.siigo_invoice_id = f"MOCK-INV-{order.id}"
+        order.cufe = f"mock-cufe-{order.id}-uuid-9999"
+        order.siigo_status = "emitida"
+        order.siigo_invoice_pdf_url = "https://storage.googleapis.com/tei-invoices/mock-invoice.pdf"
+        db.commit()
+        return {
+            "id": order.siigo_invoice_id,
+            "cufe": order.cufe,
+            "status": "emitida",
+            "message": "Facturación simulada con éxito"
+        }
+        
     token = get_siigo_token()
     get_or_create_siigo_customer(user, token, db=db)
     
@@ -269,17 +313,17 @@ def _get_tax_id_for_rate(rate: float) -> int:
     return 1
 
 def _map_payment_method(method: Optional[str]) -> dict:
-    # Mapea método de pago a ID de Siigo. Siempre de CONTADO.
+    # Mapea método de pago a ID de Siigo real de la empresa. Siempre de CONTADO.
     method = (method or "bank").lower()
     mapping = {
-        "bank":        {"id": 2, "contado": True},   # Transferencia
-        "wompi":       {"id": 1, "contado": True},   # Instrumento no definido (Online)
-        "pse":         {"id": 1, "contado": True},   # Instrumento no definido (Online)
-        "wallet":      {"id": 2, "contado": True},
-        "binance":     {"id": 2, "contado": True},
-        "pickup":      {"id": 1, "contado": True},   # Caja / Efectivo
-        "cash":        {"id": 1, "contado": True},
-        "credit_card": {"id": 3, "contado": True},   # Tarjeta
-        "debit_card":  {"id": 3, "contado": True},
+        "bank":        {"id": 12057, "contado": True},   # Transferencia
+        "wompi":       {"id": 12059, "contado": True},   # Otros / Online
+        "pse":         {"id": 12059, "contado": True},   # Otros
+        "wallet":      {"id": 12059, "contado": True},   # Otros
+        "binance":     {"id": 12059, "contado": True},   # Otros
+        "pickup":      {"id": 2395,  "contado": True},   # Efectivo
+        "cash":        {"id": 2395,  "contado": True},   # Efectivo
+        "credit_card": {"id": 2398,  "contado": True},   # Tarjeta Crédito
+        "debit_card":  {"id": 2397,  "contado": True},   # Tarjeta Débito
     }
-    return mapping.get(method, {"id": 2, "contado": True})
+    return mapping.get(method, {"id": 12059, "contado": True})

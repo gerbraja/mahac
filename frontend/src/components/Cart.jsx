@@ -53,10 +53,17 @@ export default function Cart() {
   // Final total
   const totalCOP = subtotalCOP + shippingCostCOP;
 
+  const MINIMUM_PURCHASE_COP = 37700;
+  const isActivationCart = cart.some(item => item.is_activation);
+  const isBelowMinimum = !isActivationCart && cart.length > 0 && subtotalCOP < MINIMUM_PURCHASE_COP;
+
   const navigate = useNavigate();
 
-
   const handleCheckout = () => {
+    if (isBelowMinimum) {
+      alert(`El monto mínimo de compra en la plataforma es de $37.700 COP. Te faltan $${(MINIMUM_PURCHASE_COP - subtotalCOP).toLocaleString()} COP.`);
+      return;
+    }
     navigate('/checkout');
   };
 
@@ -341,12 +348,19 @@ export default function Cart() {
 
               <button
                 onClick={handleCheckout}
-                disabled={loading || hasMissingOptions}
-                className={`w-full py-4 rounded-lg font-bold text-white text-lg transition ${loading || hasMissingOptions ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'
+                disabled={loading || hasMissingOptions || isBelowMinimum}
+                className={`w-full py-4 rounded-lg font-bold text-white text-lg transition ${loading || hasMissingOptions || isBelowMinimum ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'
                   }`}
               >
                 {loading ? '⏳ Procesando...' : '✅ Proceder al Pago'}
               </button>
+
+              {isBelowMinimum && (
+                <div className="bg-amber-50 border border-amber-300 text-amber-800 p-3 rounded-lg text-sm text-center mt-3">
+                  ⚠️ <strong>Monto Mínimo de Compra:</strong> $37.700 COP.<br/>
+                  Te faltan <strong>${(MINIMUM_PURCHASE_COP - subtotalCOP).toLocaleString()} COP</strong> para poder proceder al pago.
+                </div>
+              )}
 
               {hasMissingOptions && (
                 <p className="text-red-600 text-sm font-bold text-center mt-2">

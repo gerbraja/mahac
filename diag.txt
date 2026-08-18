@@ -1,0 +1,75 @@
+﻿=== COLUMNAS EN orders ===
+  completed_at                    timestamp with time zone  nullable=YES
+  created_at                      timestamp with time zone  nullable=YES
+  cufe                            character varying     nullable=YES
+  guest_info                      jsonb                 nullable=YES
+  id                              integer               nullable=NO
+  payment_confirmed_at            timestamp with time zone  nullable=YES
+  payment_method                  character varying     nullable=YES
+  shipped_at                      timestamp with time zone  nullable=YES
+  shipping_address                text                  nullable=YES
+  shipping_cost_base              double precision      nullable=YES
+  shipping_tax_amount             double precision      nullable=YES
+  siigo_invoice_id                character varying     nullable=YES
+  siigo_status                    character varying     nullable=YES
+  status                          character varying     nullable=YES
+  total_cop                       double precision      nullable=NO
+  total_pv                        double precision      nullable=NO
+  total_usd                       double precision      nullable=NO
+  tracking_number                 character varying     nullable=YES
+  user_id                         integer               nullable=YES
+
+=== COLUMNAS EN order_items ===
+  id                              integer               nullable=NO
+  is_ordered_from_supplier        boolean               nullable=YES
+  order_id                        integer               nullable=NO
+  product_id                      integer               nullable=NO
+  product_name                    character varying     nullable=NO
+  quantity                        integer               nullable=NO
+  selected_options                text                  nullable=YES
+  subtotal_cop                    double precision      nullable=NO
+  subtotal_pv                     double precision      nullable=NO
+  subtotal_usd                    double precision      nullable=NO
+
+=== SIMULANDO INSERT DE ORDER ===
+python : Traceback (most recent call last):
+En línea: 1 Carácter: 1
++ python backend/scripts/diagnose_prod_orders.py 2>&1 | 
+Out-File -Encod ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Traceback (most r 
+   ecent call last)::String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  File "C:\Users\mahac\multinivel\tiendavirtual\miweb\CentroCom
+ercialTEI\backend\scripts\diagnose_prod_orders.py", line 36, 
+in <module>
+    print(f"  \u2705 INSERT exitoso - Order ID serÝa: 
+{result[0]}")
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\mahac\AppData\Local\Programs\Python\Python314\
+Lib\encodings\cp1252.py", line 19, in encode
+    return 
+codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           
+~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode character 
+'\u2705' in position 2: character maps to <undefined>
+
+During handling of the above exception, another exception 
+occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\mahac\multinivel\tiendavirtual\miweb\CentroCom
+ercialTEI\backend\scripts\diagnose_prod_orders.py", line 39, 
+in <module>
+    print(f"  \u274c Error en INSERT: {e}")
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\mahac\AppData\Local\Programs\Python\Python314\
+Lib\encodings\cp1252.py", line 19, in encode
+    return 
+codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           
+~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode character 
+'\u274c' in position 2: character maps to <undefined>

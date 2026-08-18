@@ -43,11 +43,63 @@ app = FastAPI(
 )
 
 
+async def auto_sync_trm_task():
+    # Espera 5 segundos para que la app se inicie completamente
+    import asyncio
+    await asyncio.sleep(5)
+    
+    from backend.database.connection import SessionLocal
+    from backend.database.models.product import Product as ProductModel
+    from sqlalchemy import func
+    from datetime import datetime, timedelta
+    import httpx
+    
+    print("[TRM-AUTO-SYNC] Ejecutando verificación de TRM en inicio...", flush=True)
+    db = SessionLocal()
+    try:
+        # Consultar la última fecha de actualización de los productos
+        last_updated_product = db.query(ProductModel).order_by(ProductModel.updated_at.desc()).first()
+        if last_updated_product:
+            # Si se actualizó en las últimas 47 horas, omitir la sincronización automática
+            threshold = datetime.utcnow() - timedelta(hours=47)
+            if last_updated_product.updated_at > threshold:
+                print(f"[TRM-AUTO-SYNC] Omitido. Precios actualizados hace menos de 48 horas ({last_updated_product.updated_at})", flush=True)
+                return
+        
+        print("[TRM-AUTO-SYNC] Más de 48 horas desde la última sincronización. Obteniendo TRM...", flush=True)
+        
+        trm_value = None
+        async with httpx.AsyncClient() as client:
+            resp = await client.get("https://open.er-api.com/v6/latest/USD", timeout=10)
+            if resp.status_code == 200:
+                rates = resp.json().get("rates", {})
+                cop_rate = rates.get("COP")
+                if cop_rate:
+                    trm_value = float(cop_rate)
+                    
+        if trm_value:
+            from sqlalchemy import cast, Numeric
+            updated_count = db.query(ProductModel).filter(ProductModel.price_local > 0).update({
+                ProductModel.price_usd: func.round(cast(ProductModel.price_local / trm_value, Numeric), 2),
+                ProductModel.updated_at: datetime.utcnow()
+            }, synchronize_session=False)
+            db.commit()
+            print(f"[TRM-AUTO-SYNC] Éxito. {updated_count} productos actualizados con TRM {trm_value}", flush=True)
+        else:
+            print("[TRM-AUTO-SYNC] No se pudo obtener la TRM de la API pública", flush=True)
+            
+    except Exception as e:
+        db.rollback()
+        print(f"[TRM-AUTO-SYNC] Error durante la sincronización: {e}", flush=True)
+    finally:
+        db.close()
+
 @app.on_event("startup")
 def _log_startup():
     print("[MAIN] FastAPI startup event fired - SAFE MODE")
-    return
-    # ... logic commented out ...
+    import asyncio
+    asyncio.create_task(auto_sync_trm_task())
+
 
 # ========================================================
 # CORS - allow frontend development origins
@@ -195,6 +247,11 @@ print("DEBUG: [MAIN] Importing logistics router...", flush=True)
 # Logistics / Consolidated Shipping Router
 from backend.routers import logistics
 app.include_router(logistics.router)
+
+print("DEBUG: [MAIN] Importing promotions router...", flush=True)
+# Travel Promotions Router
+from backend.routers import promotions as promotions_router
+app.include_router(promotions_router.router)
 
 print("DEBUG: [MAIN] All routers imported. Startup complete.", flush=True)
 

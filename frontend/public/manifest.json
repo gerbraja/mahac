@@ -1,0 +1,27 @@
+{
+  "short_name": "TEI",
+  "name": "Centro Comercial TEI",
+  "description": "Tu Empresa Internacional - Centro Comercial Multidimensional",
+  "icons": [
+    {
+      "src": "/tei-logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/tei-logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/tei-logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "display": "standalone",
+  "orientation": "portrait"
+}

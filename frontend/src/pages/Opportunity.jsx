@@ -23,7 +23,7 @@ const Opportunity = () => {
   return (
     <div className="min-h-screen bg-slate-900 text-white overflow-x-hidden">
       {/* HERO SECTION */}
-      <section className="relative h-screen flex items-center justify-center overflow-hidden">
+      <section className="relative h-[85vh] flex items-center justify-center overflow-hidden">
         <img
           src="https://storage.googleapis.com/tuempresainternacional-assets/images/hero.jpg"
           alt="Tu Libertad Financiera"
@@ -47,21 +47,8 @@ const Opportunity = () => {
           >
             Eliminamos los intermediarios. ¿Te gustaría comprar directamente de las fabricas y Generar dinero por Recomendar? Imagine miles de Fabricas globales desde Electrodomésticos, vestuario, alta moda, tecnología, movilidad, etc. - Enviando sus productos directamente a la puerta de Tu Hogar.
           </motion.p>
-
-          <motion.button
-            onClick={scrollToRegister}
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.4, duration: 0.5 }}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="bg-gradient-to-r from-blue-500 to-purple-600 text-white font-bold py-4 px-10 rounded-full text-xl shadow-[0_0_20px_rgba(59,130,246,0.5)] border border-blue-400/30 backdrop-blur-sm transition-all animate-pulse"
-          >
-            🛡️ Reservar mi Posición GRATIS Ahora
-          </motion.button>
         </div>
       </section>
-
 
       {/* PRODUCT LINES / ECOSYSTEM */}
       <section className="py-20 bg-slate-800">
@@ -212,6 +199,26 @@ const Opportunity = () => {
                       ¿Te quedarías fuera de la sala sabiendo que se va a llenar de todos modos?
                     </p>
                   </div>
+
+                  {/* NUEVO VIDEO DE PRESENTACION Y COMPENSACION */}
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    whileInView={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.8 }}
+                    viewport={{ once: true }}
+                    className="w-full max-w-4xl mx-auto rounded-3xl overflow-hidden shadow-2xl border border-slate-700 bg-black aspect-video my-8"
+                  >
+                    <iframe
+                      width="100%"
+                      height="100%"
+                      src="https://www.youtube.com/embed/mode5j6H1Vg"
+                      title="Presentación del Negocio y Plan de Compensación"
+                      frameBorder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                      className="w-full h-full"
+                    ></iframe>
+                  </motion.div>
 
                   <div className="mt-12 text-center">
                     <motion.button

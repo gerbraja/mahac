@@ -249,10 +249,10 @@ export default function RegisterForm({ referralCode = "", onSuccess = null, onBa
                 onSuccess(response.data);
             }
 
-            // Redirect to dashboard after 3 seconds
+            // Redirect to dashboard after 12 seconds
             setTimeout(() => {
                 navigate("/dashboard");
-            }, 3000);
+            }, 12000);
         } catch (error) {
             console.error("Registration error:", error);
 
@@ -921,13 +921,55 @@ export default function RegisterForm({ referralCode = "", onSuccess = null, onBa
                 {message && (
                     <div style={{
                         marginTop: "1rem",
-                        padding: "1rem",
+                        padding: "1.25rem",
                         borderRadius: "0.75rem",
                         background: message.includes("Exitoso") ? "rgba(34, 197, 94, 0.2)" : "rgba(239, 68, 68, 0.2)",
                         color: message.includes("Exitoso") ? "#16a34a" : "#dc2626",
                         border: message.includes("Exitoso") ? "1px solid rgba(34, 197, 94, 0.5)" : "1px solid rgba(239, 68, 68, 0.5)"
                     }}>
-                        {message}
+                        <div>{message}</div>
+                        {message.includes("Exitoso") && (
+                            <div style={{ marginTop: "1rem", borderTop: "1px solid rgba(34, 197, 94, 0.3)", paddingTop: "1rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                                <p style={{ fontSize: "0.95rem", color: "#15803d", marginBottom: "0.25rem", fontWeight: "600" }}>
+                                    📱 ¡Recomendado! Instala nuestra aplicación móvil para una experiencia más cómoda:
+                                </p>
+                                <button
+                                    type="button"
+                                    onClick={() => window.dispatchEvent(new CustomEvent('trigger-pwa-install'))}
+                                    style={{
+                                        width: "100%",
+                                        padding: "0.75rem",
+                                        borderRadius: "0.5rem",
+                                        background: "linear-gradient(to right, #8b5cf6, #7c3aed)",
+                                        color: "white",
+                                        border: "none",
+                                        fontWeight: "bold",
+                                        cursor: "pointer",
+                                        fontSize: "0.95rem",
+                                        boxShadow: "0 2px 8px rgba(124, 58, 237, 0.25)"
+                                    }}
+                                >
+                                    📱 Instalar Aplicación Móvil
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => navigate("/dashboard")}
+                                    style={{
+                                        width: "100%",
+                                        padding: "0.625rem",
+                                        borderRadius: "0.5rem",
+                                        background: "transparent",
+                                        color: "#16a34a",
+                                        border: "1px solid #16a34a",
+                                        fontWeight: "500",
+                                        cursor: "pointer",
+                                        fontSize: "0.9rem"
+                                    }}
+                                >
+                                    Ir al Panel de Control ahora →
+                                </button>
+                            </div>
+                        )}
                     </div>
                 )}
             </form>

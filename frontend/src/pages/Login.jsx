@@ -40,24 +40,33 @@ export default function Login() {
                 console.warn("Could not fetch user info immediately, but proceeding.", err);
             }
 
-            const returnTo = localStorage.getItem('returnTo');
-            if (returnTo) {
-                localStorage.removeItem('returnTo');
-                navigate(returnTo);
-                return;
-            }
-
+            let returnTo = localStorage.getItem('returnTo');
+            let userIsAdmin = false;
+            
             try {
                 const base64Url = response.data.access_token.split('.')[1];
                 const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
                 const tokenPayload = JSON.parse(atob(base64));
-                if (tokenPayload.is_admin) {
+                userIsAdmin = !!tokenPayload.is_admin;
+            } catch (e) {
+                console.error("Error decoding token payload", e);
+            }
+
+            // Guard: If returnTo goes to admin path but user is not admin, discard it
+            if (returnTo && returnTo.startsWith('/admin') && !userIsAdmin) {
+                localStorage.removeItem('returnTo');
+                returnTo = null;
+            }
+
+            if (returnTo) {
+                localStorage.removeItem('returnTo');
+                navigate(returnTo);
+            } else {
+                if (userIsAdmin) {
                     navigate('/admin');
                 } else {
                     navigate('/dashboard');
                 }
-            } catch (e) {
-                navigate('/dashboard');
             }
         } catch (err) {
             console.error('Login error:', err);

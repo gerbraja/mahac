@@ -187,6 +187,19 @@ async def update_order_status(
     db.commit()
     db.refresh(order)
 
+    # Trigger Siigo Invoicing upon dispatch (enviado) or completion (completado)
+    if payload.status in ["enviado", "completado"] and not order.siigo_invoice_id and order.user_id:
+        try:
+            from backend.database.models.user import User
+            from backend.services.siigo_service import emit_invoice as emit_siigo_invoice
+            user_record = db.query(User).filter(User.id == order.user_id).first()
+            if user_record:
+                emit_siigo_invoice(order, user_record, db)
+                print(f"📄 Siigo Invoicing triggered on status '{payload.status}' for Order #{order.id}")
+        except Exception as e_siigo:
+            print(f"⚠️ Error triggering Siigo Invoice on status '{payload.status}': {e_siigo}")
+
+
     # EMAIL TRIGGER: Send Invoice/Shipping confirmation
     if payload.status == "completado" and order.user_id:
         from backend.database.models.user import User

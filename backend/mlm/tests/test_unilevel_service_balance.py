@@ -1,4 +1,5 @@
 import pytest
+from datetime import datetime, timedelta
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -24,33 +25,41 @@ def session():
 
 
 def test_unilevel_commissions_updates_balances(session):
-    # Create sponsor user and seller user
-    sponsor = User(id=1, name='Sponsor', email='sponsor@example.com')
-    seller = User(id=2, name='Seller', email='seller@example.com')
-    session.add_all([sponsor, seller])
+    # Crear la jerarquía de 3 niveles: Sponsor2 (id=1) -> Sponsor1 (id=2) -> Seller (id=3)
+    # Sponsor2 cobrará como Nivel 2 (2%). Sponsor1 cobrará como Nivel 1 (0%).
+    future_date = datetime.utcnow() + timedelta(days=30)
+    sponsor2 = User(id=1, name='Sponsor2', email='sponsor2@example.com', active_until=future_date)
+    sponsor1 = User(id=2, name='Sponsor1', email='sponsor1@example.com', active_until=future_date)
+    seller = User(id=3, name='Seller', email='seller@example.com')
+    
+    session.add_all([sponsor2, sponsor1, seller])
     session.flush()
 
-    # Create UnilevelMember entries: sponsor -> seller
-    sponsor_member = UnilevelMember(user_id=sponsor.id)
-    session.add(sponsor_member)
+    # Crear nodos unilevel
+    sponsor2_member = UnilevelMember(user_id=sponsor2.id)
+    session.add(sponsor2_member)
     session.flush()
 
-    seller_member = UnilevelMember(user_id=seller.id, sponsor_id=sponsor_member.id)
+    sponsor1_member = UnilevelMember(user_id=sponsor1.id, sponsor_id=sponsor2_member.id)
+    session.add(sponsor1_member)
+    session.flush()
+
+    seller_member = UnilevelMember(user_id=seller.id, sponsor_id=sponsor1_member.id)
     session.add(seller_member)
     session.flush()
 
-    # Call the service: sale amount 100.0
+    # Ejecutar cálculo de comisiones por una venta de 100.0 USD
     commissions = calculate_unilevel_commissions(session, seller.id, 100.0)
 
-    # There should be at least one unilevel commission and a matching commission
-    # Matching bonus is calculated based on downline commissions; ensure balances updated
     session.expire_all()
 
-    sponsor_db = session.query(User).filter(User.id == sponsor.id).first()
-    assert sponsor_db.available_balance > 0.0
-    assert sponsor_db.monthly_earnings > 0.0
-    assert sponsor_db.total_earnings > 0.0
+    # Sponsor2 (Nivel 2) debe recibir la comisión del 2% ($2.0 USD)
+    sponsor2_db = session.query(User).filter(User.id == sponsor2.id).first()
+    assert sponsor2_db.available_balance == 2.0
+    assert sponsor2_db.monthly_earnings == 2.0
+    assert sponsor2_db.total_earnings == 2.0
 
-    # Verify commissions were persisted
-    rows = session.query(UnilevelCommission).filter(UnilevelCommission.user_id == sponsor.id).all()
-    assert len(rows) >= 1
+    # Verificar que la comisión se guardó en la base de datos
+    rows = session.query(UnilevelCommission).filter(UnilevelCommission.user_id == sponsor2.id).all()
+    assert len(rows) == 1
+    assert rows[0].commission_amount == 2.0

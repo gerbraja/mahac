@@ -151,7 +151,7 @@ export default function AdminPayments() {
             </div>
 
             {/* Payments Table */}
-            <div style={{ background: 'white', borderRadius: '0.75rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', overflow: 'hidden' }}>
+            <div style={{ background: 'white', borderRadius: '0.75rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead style={{ background: '#f3f4f6' }}>
                         <tr>

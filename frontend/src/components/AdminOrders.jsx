@@ -115,7 +115,7 @@ const AdminOrders = () => {
                     body { font-family: sans-serif; padding: 0; margin: 0; color: #000; }
                     .remision-page { padding: 40px; box-sizing: border-box; height: 100vh; position: relative; }
                     .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px; }
-                    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+                    .info-grid { display: grid; grid-template-columns: 1.2fr 1fr 0.8fr; gap: 20px; margin-bottom: 20px; }
                     .section-title { font-weight: bold; border-bottom: 1px solid #ccc; margin-bottom: 10px; }
                     table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
                     th, td { border: 1px solid #000; padding: 8px; text-align: left; }
@@ -136,96 +136,101 @@ const AdminOrders = () => {
                     <button onclick="window.print()" style="padding: 10px 20px; font-size: 1.2em; cursor: pointer; background: #000; color: #fff; border: none; border-radius: 5px;">IMPRIMIR TODO</button>
                 </div>
 
-                ${ordersToPrint.map(order => `
-                    <div class="remision-page">
-                        <div class="header">
-                            <h1>ORDEN DE ALISTAMIENTO</h1>
-                            <h2>Pedido #${order.id}</h2>
-                            <p>Fecha Impresión: ${new Date().toLocaleDateString()}</p>
-                            <div style="font-size: 0.8em; margin-top: 5px; color: #555;">
-                                <strong>Remitente:</strong> Tu Empresa internacional <br/>
-                                <strong>Dirección:</strong> Calle 6 # 8 - 06 Piso 1
-                            </div>
-                        </div>
+                ${ordersToPrint.map(order => {
+                    let rName = 'Cliente General';
+                    let rAddress = order.shipping_address || 'No especificada';
+                    let rCity = '';
+                    let rPhone = 'N/A';
 
-                        <div class="info-grid">
-                            <div style="border: 2px solid #000; padding: 15px; background: #f9f9f9;">
-                                <div class="section-title" style="font-size: 1.2em; border-bottom: 2px solid #000;">DESTINATARIO (Entregar a:)</div>
-                                ${(() => {
-                let rName = 'Cliente General';
-                let rAddress = order.shipping_address || 'No especificada';
-                let rCity = '';
-                let rPhone = 'N/A';
-
-                if (order.user) {
-                    rName = order.user.name || rName;
-                    rAddress = order.user.address || rAddress;
-                    rCity = (order.user.city || '') + ' ' + (order.user.province || '');
-                    rPhone = order.user.phone || rPhone;
-                } else if (order.guest_info) {
-                    try {
-                        const guest = typeof order.guest_info === 'string' ? JSON.parse(order.guest_info) : order.guest_info;
-                        rName = guest.name || rName;
-                        rPhone = guest.phone || rPhone;
-                        // email?
-                    } catch (e) {
-                        console.error("Error parsing guest_info", e);
+                    if (order.user) {
+                        rName = order.user.name || rName;
+                        rAddress = order.user.address || rAddress;
+                        rCity = (order.user.city || '') + ' ' + (order.user.province || '');
+                        rPhone = order.user.phone || rPhone;
+                    } else if (order.guest_info) {
+                        try {
+                            const guest = typeof order.guest_info === 'string' ? JSON.parse(order.guest_info) : order.guest_info;
+                            rName = guest.name || rName;
+                            rPhone = guest.phone || rPhone;
+                        } catch (e) {
+                            console.error("Error parsing guest_info", e);
+                        }
                     }
-                }
 
-                return `
-                                        <p style="font-size: 1.3em; font-weight: bold; margin: 5px 0;">${rName}</p>
-                                        <p style="font-size: 1.1em; margin: 5px 0;"><strong>Dirección:</strong> <br/> ${rAddress} <br/> ${rCity}</p>
-                                        <p style="font-size: 1.2em; margin: 5px 0;"><strong>Teléfono:</strong> ${rPhone}</p>
-                                    `;
-            })()}
-                            </div>
-                            <div>
-                                <div class="section-title">DETALLES PEDIDO</div>
-                                <p><strong>Estado:</strong> ${order.status}</p>
-                                <p><strong>Guía:</strong> ${order.tracking_number || 'Pendiente'}</p>
-                                <p><strong>Método:</strong> ${order.payment_method || 'N/A'}</p>
-                                <p><strong>Fecha Pedido:</strong> ${new Date(order.created_at).toLocaleDateString()}</p>
-                            </div>
-                        </div>
+                    const qrText = `PEDIDO: #${order.id}\nREMITE: Tu Empresa Internacional\nDESTINATARIO: ${rName}\nDIRECCION: ${rAddress} ${rCity}\nTELEFONO: ${rPhone}\nGUIA: ${order.tracking_number || 'Pendiente'}`;
+                    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(qrText)}`;
 
-                        <div class="section-title">PRODUCTOS</div>
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th style="width: 50px;">Check</th>
-                                    <th>Producto</th>
-                                    <th style="width: 80px; text-align: center;">Cant.</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${order.items.map(item => `
+                    return `
+                        <div class="remision-page">
+                            <div class="header">
+                                <h1>ORDEN DE ALISTAMIENTO</h1>
+                                <h2>Pedido #${order.id}</h2>
+                                <p>Fecha Impresión: ${new Date().toLocaleDateString()}</p>
+                                <div style="font-size: 0.8em; margin-top: 5px; color: #555;">
+                                    <strong>Remitente:</strong> Tu Empresa internacional <br/>
+                                    <strong>Dirección:</strong> Calle 6 # 8 - 06 Piso 1
+                                </div>
+                            </div>
+
+                            <div class="info-grid">
+                                <div style="border: 2px solid #000; padding: 15px; background: #f9f9f9;">
+                                    <div class="section-title" style="font-size: 1.2em; border-bottom: 2px solid #000;">DESTINATARIO (Entregar a:)</div>
+                                    <p style="font-size: 1.3em; font-weight: bold; margin: 5px 0;">${rName}</p>
+                                    <p style="font-size: 1.1em; margin: 5px 0;"><strong>Dirección:</strong> <br/> ${rAddress} <br/> ${rCity}</p>
+                                    <p style="font-size: 1.2em; margin: 5px 0;"><strong>Teléfono:</strong> ${rPhone}</p>
+                                </div>
+                                <div style="border: 1px dashed #ccc; padding: 15px; background: #fff;">
+                                    <div class="section-title">DETALLES PEDIDO</div>
+                                    <p><strong>Estado:</strong> ${order.status}</p>
+                                    <p><strong>Guía:</strong> ${order.tracking_number || 'Pendiente'}</p>
+                                    <p><strong>Método:</strong> ${order.payment_method || 'N/A'}</p>
+                                    <p><strong>Fecha Pedido:</strong> ${new Date(order.created_at).toLocaleDateString()}</p>
+                                </div>
+                                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px solid #000; padding: 10px; background: #fff; text-align: center;">
+                                    <div style="font-size: 0.75em; font-weight: bold; margin-bottom: 5px; color: #000; letter-spacing: 1px;">ESCANEAR ENVÍO</div>
+                                    <img src="${qrUrl}" alt="QR" style="width: 110px; height: 110px; display: block;" />
+                                    <div style="font-size: 0.65em; margin-top: 5px; color: #555;">Control Interno</div>
+                                </div>
+                            </div>
+
+                            <div class="section-title">PRODUCTOS</div>
+                            <table>
+                                <thead>
                                     <tr>
-                                        <td style="text-align: center;"><div class="checkbox"></div></td>
-                                        <td>
-                                            ${item.product_name}
-                                            ${item.selected_options ? '<br><small style="color: blue;">Opción: ' + Object.entries(JSON.parse(item.selected_options)).map(arr => arr[0] + ': ' + arr[1]).join(', ') + '</small>' : ''}
-                                        </td>
-                                        <td style="text-align: center; font-weight: bold; font-size: 1.2em;">${item.quantity}</td>
+                                        <th style="width: 50px;">Check</th>
+                                        <th>Producto</th>
+                                        <th style="width: 80px; text-align: center;">Cant.</th>
                                     </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    ${order.items.map(item => `
+                                        <tr>
+                                            <td style="text-align: center;"><div class="checkbox"></div></td>
+                                            <td>
+                                                ${item.product_name}
+                                                ${item.selected_options ? '<br><small style="color: blue;">Opción: ' + Object.entries(JSON.parse(item.selected_options)).map(arr => arr[0] + ': ' + arr[1]).join(', ') + '</small>' : ''}
+                                            </td>
+                                            <td style="text-align: center; font-weight: bold; font-size: 1.2em;">${item.quantity}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
 
-                        <div class="info-grid" style="margin-top: 40px; border: 1px solid #000; padding: 20px;">
-                           <div>
-                               <strong>Alistado por:</strong> _________________
-                           </div>
-                           <div>
-                               <strong>Verificado por:</strong> _________________
-                           </div>
-                        </div>
+                            <div class="info-grid" style="margin-top: 40px; border: 1px solid #000; padding: 20px;">
+                               <div>
+                                   <strong>Alistado por:</strong> _________________
+                               </div>
+                               <div>
+                                   <strong>Verificado por:</strong> _________________
+                               </div>
+                            </div>
 
-                        <div class="footer">
-                            <p>Centro Comercial TEI - Control Interno</p>
+                            <div class="footer">
+                                <p>Centro Comercial TEI - Control Interno</p>
+                            </div>
                         </div>
-                    </div>
-                `).join('')}
+                    `;
+                }).join('')}
             </body>
             </html>
         `;
@@ -830,7 +835,7 @@ const handlePrintRemision = (order) => {
             <style>
                 body { font-family: sans-serif; padding: 20px; color: #000; }
                 .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px; }
-                .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+                .info-grid { display: grid; grid-template-columns: 1.2fr 1fr 0.8fr; gap: 20px; margin-bottom: 20px; }
                 .section-title { font-weight: bold; border-bottom: 1px solid #ccc; margin-bottom: 10px; }
                 table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
                 th, td { border: 1px solid #000; padding: 8px; text-align: left; }
@@ -850,44 +855,52 @@ const handlePrintRemision = (order) => {
                 </div>
             </div>
 
-            <div class="info-grid">
-                <div style="border: 2px solid #000; padding: 15px; background: #f9f9f9;">
-                    <div class="section-title" style="font-size: 1.2em; border-bottom: 2px solid #000;">DESTINATARIO (Entregar a:)</div>
-                ${(() => {
-            let rName = 'Cliente General';
-            let rAddress = order.shipping_address || 'No especificada';
-            let rCity = '';
-            let rPhone = 'N/A';
+            ${(() => {
+                let rName = 'Cliente General';
+                let rAddress = order.shipping_address || 'No especificada';
+                let rCity = '';
+                let rPhone = 'N/A';
 
-            if (order.user) {
-                rName = order.user.name || rName;
-                rAddress = order.user.address || rAddress;
-                rCity = (order.user.city || '') + ' ' + (order.user.province || '');
-                rPhone = order.user.phone || rPhone;
-            } else if (order.guest_info) {
-                try {
-                    const guest = typeof order.guest_info === 'string' ? JSON.parse(order.guest_info) : order.guest_info;
-                    rName = guest.name || rName;
-                    rPhone = guest.phone || rPhone;
-                } catch (e) {
-                    console.error("Error parsing guest_info", e);
+                if (order.user) {
+                    rName = order.user.name || rName;
+                    rAddress = order.user.address || rAddress;
+                    rCity = (order.user.city || '') + ' ' + (order.user.province || '');
+                    rPhone = order.user.phone || rPhone;
+                } else if (order.guest_info) {
+                    try {
+                        const guest = typeof order.guest_info === 'string' ? JSON.parse(order.guest_info) : order.guest_info;
+                        rName = guest.name || rName;
+                        rPhone = guest.phone || rPhone;
+                    } catch (e) {
+                        console.error("Error parsing guest_info", e);
+                    }
                 }
-            }
 
-            return `
-                        <p style="font-size: 1.3em; font-weight: bold; margin: 5px 0;">${rName}</p>
-                        <p style="font-size: 1.1em; margin: 5px 0;"><strong>Dirección:</strong> <br/> ${rAddress} <br/> ${rCity}</p>
-                        <p style="font-size: 1.2em; margin: 5px 0;"><strong>Teléfono:</strong> ${rPhone}</p>
-                    `;
-        })()}
-                </div>
-                <div>
-                    <div class="section-title">DETALLES DE ENVÍO</div>
-                    <p><strong>Estado Actual:</strong> ${order.status}</p>
-                    <p><strong>Guía:</strong> ${order.tracking_number || 'Pendiente'}</p>
-                    <p><strong>Fecha Pedido:</strong> ${new Date(order.created_at).toLocaleDateString()}</p>
-                </div>
-            </div>
+                const qrText = `PEDIDO: #${order.id}\nREMITE: Tu Empresa Internacional\nDESTINATARIO: ${rName}\nDIRECCION: ${rAddress} ${rCity}\nTELEFONO: ${rPhone}\nGUIA: ${order.tracking_number || 'Pendiente'}`;
+                const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(qrText)}`;
+
+                return `
+                    <div class="info-grid">
+                        <div style="border: 2px solid #000; padding: 15px; background: #f9f9f9;">
+                            <div class="section-title" style="font-size: 1.2em; border-bottom: 2px solid #000;">DESTINATARIO (Entregar a:)</div>
+                            <p style="font-size: 1.3em; font-weight: bold; margin: 5px 0;">${rName}</p>
+                            <p style="font-size: 1.1em; margin: 5px 0;"><strong>Dirección:</strong> <br/> ${rAddress} <br/> ${rCity}</p>
+                            <p style="font-size: 1.2em; margin: 5px 0;"><strong>Teléfono:</strong> ${rPhone}</p>
+                        </div>
+                        <div style="border: 1px dashed #ccc; padding: 15px; background: #fff;">
+                            <div class="section-title">DETALLES DE ENVÍO</div>
+                            <p><strong>Estado Actual:</strong> ${order.status}</p>
+                            <p><strong>Guía:</strong> ${order.tracking_number || 'Pendiente'}</p>
+                            <p><strong>Fecha Pedido:</strong> ${new Date(order.created_at).toLocaleDateString()}</p>
+                        </div>
+                        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px solid #000; padding: 10px; background: #fff; text-align: center;">
+                            <div style="font-size: 0.75em; font-weight: bold; margin-bottom: 5px; color: #000; letter-spacing: 1px;">ESCANEAR ENVÍO</div>
+                            <img src="${qrUrl}" alt="QR" style="width: 110px; height: 110px; display: block;" />
+                            <div style="font-size: 0.65em; margin-top: 5px; color: #555;">Control Interno</div>
+                        </div>
+                    </div>
+                `;
+            })()}
 
             <div class="section-title">PRODUCTOS A DESPACHAR</div>
             <table>

@@ -13,9 +13,9 @@ from backend.database.models.user import User
 
 # Default percentages by level (fractions)
 UNILEVEL_PERCENTAGES = {
-    1: 0.01,
+    1: 0.00,
     2: 0.02,
-    3: 0.02,
+    3: 0.03,
     4: 0.04,
     5: 0.05,
     6: 0.06,
