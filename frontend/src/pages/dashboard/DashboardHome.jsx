@@ -206,8 +206,8 @@ const DashboardHome = () => {
                 </div>
             )}
             {/* Travel Promotion Section */}
-            {promoData && promoData.eligible && (
-                <div className="bg-gradient-to-br from-indigo-900 to-blue-950 text-white rounded-3xl p-6 md:p-8 shadow-2xl relative overflow-hidden border border-indigo-800">
+            {promoData && (
+                <div className="bg-gradient-to-br from-indigo-900 to-blue-950 text-white rounded-3xl p-6 md:p-8 shadow-2xl relative overflow-hidden border border-indigo-800 mt-6">
                     {/* Decorative Background */}
                     <div className="absolute right-0 top-0 w-64 h-64 bg-teal-500 opacity-10 rounded-full blur-3xl"></div>
                     <div className="absolute left-1/4 bottom-0 w-48 h-48 bg-purple-500 opacity-10 rounded-full blur-2xl"></div>
@@ -232,6 +232,17 @@ const DashboardHome = () => {
                             </span>
                         </div>
                     </div>
+
+                    {!promoData.eligible && (
+                        <div className="mb-6 bg-red-500 bg-opacity-20 border border-red-400 text-red-100 rounded-xl p-4 text-sm font-semibold flex items-start gap-3 z-10 relative shadow-inner">
+                            <span className="text-xl mt-0.5">⚠️</span>
+                            <div>
+                                <h4 className="text-lg font-bold text-red-200 mb-1">Tu cuenta no está calificando aún</h4>
+                                <p>Para participar oficialmente y ganar los viajes, debes tener activo un <strong>Paquete de nivel 2, 3, 4 o 5</strong> durante el periodo de la campaña.</p>
+                                <p className="mt-2 text-xs opacity-90">¡Adquiere o mejora tu paquete ahora para que tu progreso y el de tu red cuenten!</p>
+                            </div>
+                        </div>
+                    )}
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 z-10 relative">
                         {/* Nacional Trip */}
