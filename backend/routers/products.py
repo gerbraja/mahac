@@ -149,7 +149,8 @@ def list_products(
             query = query.filter(
                 ProductModel.is_activation == False,
                 (ProductModel.is_upgrade == False) | 
-                (ProductModel.name.ilike('%CLÁSICO A PAQUETE FUNDADOR ELITE%'))
+                (ProductModel.name.ilike('%CLÁSICO%ELITE%')) |
+                (ProductModel.name.ilike('%CLASICO%ELITE%'))
             )
         else:
             # Usuario Activo Nivel 3 o 4 (Elite): Ve solo productos normales (Oculta Iniciales y Upgrades porque ya está al máximo)
