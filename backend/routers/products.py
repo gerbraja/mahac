@@ -144,8 +144,8 @@ def list_products(
                 (ProductModel.name.ilike('%FRANQUICIA INTERNACIONAL 1 A%')) |
                 (ProductModel.name.ilike('%$266.900%'))
             )
-        elif current_user.package_level == 2:
-            # Usuario Activo Nivel 2: Ve productos normales + Upgrades a Elite (Oculta Iniciales y Upgrades de niveles inferiores)
+        elif current_user.package_level in [2, 3]:
+            # Usuario Activo Nivel 2 o 3 (Clásico): Ve productos normales + Upgrades a Elite (Oculta Iniciales y Upgrades de niveles inferiores)
             query = query.filter(
                 ProductModel.is_activation == False,
                 (ProductModel.is_upgrade == False) | 
@@ -153,7 +153,7 @@ def list_products(
                 (ProductModel.name.ilike('%CLASICO%ELITE%'))
             )
         else:
-            # Usuario Activo Nivel 3 o 4 (Elite): Ve solo productos normales (Oculta Iniciales y Upgrades porque ya está al máximo)
+            # Usuario Activo Nivel 4 o superior (Elite): Ve solo productos normales (Oculta Iniciales y Upgrades porque ya está al máximo)
             query = query.filter(ProductModel.is_activation == False, ProductModel.is_upgrade == False)
             
     products = query.order_by(ProductModel.created_at.desc()).all()
