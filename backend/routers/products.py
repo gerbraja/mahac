@@ -117,6 +117,10 @@ def list_products(
 ):
     query = db.query(ProductModel)
     
+    # Enforce Country Admin constraints
+    if current_user and current_user.admin_role == 'country_admin' and current_user.admin_country:
+        country = current_user.admin_country
+        
     if country and country != 'Todos':
         query = query.filter(ProductModel.available_countries.ilike(f'%"{country}"%'))
     
@@ -133,10 +137,22 @@ def list_products(
             # Usuario inactivo / Visitante / Emprendedor Inicial (Nivel 0): Ve productos normales + Paquetes Iniciales (Oculta Upgrades)
             query = query.filter(ProductModel.is_upgrade == False)
         elif current_user.package_level == 1:
-            # Usuario Activo Nivel 1: Ve productos normales + Upgrades (Oculta Paquetes Iniciales)
-            query = query.filter(ProductModel.is_activation == False)
+            # Usuario Activo Nivel 1: Ve productos normales + Upgrades correspondientes a Nivel 1 (Oculta Paquetes Iniciales)
+            query = query.filter(
+                ProductModel.is_activation == False,
+                (ProductModel.is_upgrade == False) | 
+                (ProductModel.name.ilike('%FRANQUICIA INTERNACIONAL 1 A%')) |
+                (ProductModel.name.ilike('%$266.900%'))
+            )
+        elif current_user.package_level == 2:
+            # Usuario Activo Nivel 2: Ve productos normales + Upgrades a Elite (Oculta Iniciales y Upgrades de niveles inferiores)
+            query = query.filter(
+                ProductModel.is_activation == False,
+                (ProductModel.is_upgrade == False) | 
+                (ProductModel.name.ilike('%CLÁSICO A PAQUETE FUNDADOR ELITE%'))
+            )
         else:
-            # Usuario Activo Nivel 2 o 3: Ve solo productos normales (Oculta Iniciales y Upgrades)
+            # Usuario Activo Nivel 3 o 4 (Elite): Ve solo productos normales (Oculta Iniciales y Upgrades porque ya está al máximo)
             query = query.filter(ProductModel.is_activation == False, ProductModel.is_upgrade == False)
             
     products = query.order_by(ProductModel.created_at.desc()).all()
