@@ -133,27 +133,39 @@ def list_products(
     # Lógica de Visibilidad Dinámica para Tienda (Solo si NO filtramos por proveedor)
     # Bypass visibility rules for admin users so they can see all products in the Admin Panel
     if supplier_id is None and not (current_user and current_user.is_admin):
+        from sqlalchemy import or_, and_
+        
         if not current_user or current_user.status != 'active' or (current_user.package_level or 0) == 0:
-            # Usuario inactivo / Visitante / Emprendedor Inicial (Nivel 0): Ve productos normales + Paquetes Iniciales (Oculta Upgrades)
+            # Usuario inactivo / Nivel 0: Ve productos normales y Paquetes Iniciales
             query = query.filter(ProductModel.is_upgrade == False)
         elif current_user.package_level == 1:
-            # Usuario Activo Nivel 1: Ve productos normales + Upgrades correspondientes a Nivel 1 (Oculta Paquetes Iniciales)
+            # Nivel 1: Ve productos normales + Upgrades de Nivel 1
             query = query.filter(
-                ProductModel.is_activation == False,
-                (ProductModel.is_upgrade == False) | 
-                (ProductModel.name.ilike('%FRANQUICIA INTERNACIONAL 1 A%')) |
-                (ProductModel.name.ilike('%$266.900%'))
+                or_(
+                    and_(ProductModel.is_activation == False, ProductModel.is_upgrade == False),
+                    and_(
+                        ProductModel.is_upgrade == True,
+                        or_(
+                            ProductModel.name.ilike('%FRANQUICIA INTERNACIONAL 1 A%'),
+                            ProductModel.name.ilike('%$266.900%')
+                        )
+                    )
+                )
             )
         elif current_user.package_level in [2, 3]:
-            # Usuario Activo Nivel 2 o 3 (Clásico): Ve productos normales + Upgrades a Elite (Oculta Iniciales y Upgrades de niveles inferiores)
+            # Nivel 2 o 3 (Clásico): Ve productos normales + Upgrades a Elite (sin importar si marcaron is_activation por error)
             query = query.filter(
-                ProductModel.is_activation == False,
-                (ProductModel.is_upgrade == False) | 
-                (ProductModel.name.ilike('%CLÁSICO%ELITE%')) |
-                (ProductModel.name.ilike('%CLASICO%ELITE%'))
+                or_(
+                    and_(ProductModel.is_activation == False, ProductModel.is_upgrade == False),
+                    and_(
+                        ProductModel.is_upgrade == True,
+                        ProductModel.name.ilike('%ELITE%'),
+                        ~ProductModel.name.ilike('%FRANQUICIA%')
+                    )
+                )
             )
         else:
-            # Usuario Activo Nivel 4 o superior (Elite): Ve solo productos normales (Oculta Iniciales y Upgrades porque ya está al máximo)
+            # Nivel 4+ (Elite): Ve solo productos normales
             query = query.filter(ProductModel.is_activation == False, ProductModel.is_upgrade == False)
             
     products = query.order_by(ProductModel.created_at.desc()).all()
