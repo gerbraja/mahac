@@ -274,7 +274,7 @@ export default function AdminDashboard() {
 
         try {
             const response = await api.post('/api/admin/activate-user', {
-                user_id: parseInt(userIdToActivate),
+                user_identifier: userIdToActivate.toString(),
                 package_id: selectedPkg.id
             });
 
@@ -915,12 +915,12 @@ export default function AdminDashboard() {
                             {/* Fallback ID input */}
                             {!selectedUser && (
                                 <div style={{ marginTop: '0.5rem' }}>
-                                    <p style={{ fontSize: '0.8rem', color: '#6b7280' }}>O ingresa el ID directamente:</p>
+                                    <p style={{ fontSize: '0.8rem', color: '#6b7280' }}>O ingresa el ID o Username directamente:</p>
                                     <input
-                                        type="number"
+                                        type="text"
                                         value={activationData.userId}
                                         onChange={(e) => setActivationData({ ...activationData, userId: e.target.value })}
-                                        placeholder="ID Usuario"
+                                        placeholder="ID o Username"
                                         style={{
                                             width: '100%',
                                             padding: '0.5rem',

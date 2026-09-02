@@ -1231,7 +1231,7 @@ def update_sponsorship_commission_status(
 
 # --- Manual User Activation ---
 class ManualActivationData(BaseModel):
-    user_id: int
+    user_identifier: str
     package_id: int
 
 @router.post("/activate-user")
@@ -1251,9 +1251,15 @@ def activate_user_manually(
         from backend.mlm.services.payment_service import process_successful_payment
         
         # Validate user exists
-        user = db.query(User).filter(User.id == data.user_id).first()
+        uid = str(data.user_identifier).strip()
+        if uid.isdigit():
+            user = db.query(User).filter(User.id == int(uid)).first()
+        else:
+            # If not a digit, search by username
+            user = db.query(User).filter(User.username.ilike(uid)).first()
+            
         if not user:
-            raise HTTPException(status_code=404, detail="User not found")
+            raise HTTPException(status_code=404, detail=f"Usuario '{uid}' no encontrado")
             
         # Get product
         product = db.query(Product).filter(Product.id == data.package_id).first()
@@ -1276,10 +1282,6 @@ def activate_user_manually(
             status="pagado",  # Will be moved to en_preparacion by process_successful_payment
             shipping_type="delivery", # Default to delivery so it goes to shipments list
             shipping_address=user.address,
-            shipping_city=user.city,
-            shipping_state=user.province,
-            shipping_postal_code=user.postal_code,
-            shipping_country=user.country,
         )
         db.add(new_order)
         db.commit()

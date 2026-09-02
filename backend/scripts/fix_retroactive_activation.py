@@ -38,13 +38,9 @@ def fix_user_activation(user_id=15):
             total_usd=product.price_usd,
             total_cop=product.price_local,
             total_pv=product.pv,
-            status="en_preparacion",
-            shipping_type="delivery",
+            status="completado",
+            shipping_type="activation",
             shipping_address=user.address,
-            shipping_city=user.city,
-            shipping_state=user.province,
-            shipping_postal_code=user.postal_code,
-            shipping_country=user.country,
         )
         db.add(new_order)
         db.commit()
