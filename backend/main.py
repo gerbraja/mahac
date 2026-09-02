@@ -253,6 +253,21 @@ print("DEBUG: [MAIN] Importing promotions router...", flush=True)
 from backend.routers import promotions as promotions_router
 app.include_router(promotions_router.router)
 
+print("DEBUG: [MAIN] Importing merchants router...", flush=True)
+# Allied Merchants Router
+from backend.routers import merchants as merchants_router
+app.include_router(merchants_router.router, prefix="/api")
+
+print("DEBUG: [MAIN] Importing admin_merchants router...", flush=True)
+# Admin Allied Merchants Router
+from backend.routers import admin_merchants, admin_merchants_directory
+app.include_router(admin_merchants.router, prefix="/api")
+app.include_router(admin_merchants_directory.router, prefix="/api")
+
+print("DEBUG: [MAIN] Importing allied_commerce router...", flush=True)
+from backend.routers import allied_commerce
+app.include_router(allied_commerce.router)
+
 print("DEBUG: [MAIN] All routers imported. Startup complete.", flush=True)
 
 # ========================================================

@@ -365,7 +365,20 @@ export default function Checkout() {
                                                 const cityName = e.target.value;
                                                 setShippingCity(cityName);
                                                 if (selectedCountryCode === 'CO' && cityName) {
-                                                    const divipolaCode = COLOMBIA_DIVIPOLA_COMPLETO[selectedStateCode]?.[cityName];
+                                                    const normalizeString = (str) => {
+                                                        if (!str) return "";
+                                                        return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+                                                    };
+                                                    const stateCities = COLOMBIA_DIVIPOLA_COMPLETO[selectedStateCode] || {};
+                                                    const normalizedInputCity = normalizeString(cityName);
+                                                    
+                                                    let divipolaCode = stateCities[cityName];
+                                                    if (!divipolaCode) {
+                                                        const matchedKey = Object.keys(stateCities).find(
+                                                            key => normalizeString(key) === normalizedInputCity
+                                                        );
+                                                        if (matchedKey) divipolaCode = stateCities[matchedKey];
+                                                    }
                                                     if (divipolaCode) setShippingDivipola(divipolaCode);
                                                 }
                                             }}

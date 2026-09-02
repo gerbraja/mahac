@@ -16,13 +16,17 @@ class User(Base):
     admin_role = Column(String(50), default='user', nullable=True)
     admin_country = Column(String(100), nullable=True)
     
-    # Referral system
+    password = Column(String(255), nullable=True)
+    
+    # Relationships
     referral_code = Column(String(64), unique=True, index=True, nullable=True)
     referred_by_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
     referred_by = Column(String(150), nullable=True, index=True)
     referred_by_user = relationship("User", remote_side=[id])
     
-    password = Column(String(255), nullable=True)
+    # wallet = relationship("Wallet", back_populates="user", uselist=False)
+    # The physical purchases made by this user at allied merchants
+    physical_purchases = relationship("PhysicalTransaction", back_populates="user", foreign_keys="[PhysicalTransaction.user_id]")
 
     # Security
     transaction_pin = Column(String(255), nullable=True)  # Hashed transaction PIN
@@ -62,6 +66,7 @@ class User(Base):
     # Active Status expiration and Eligibility
     active_until = Column(DateTime, nullable=True) # If now() > active_until, user is inactive for commissions
     has_package = Column(Boolean, default=False)   # True if user has purchased an activation package
+    is_founder = Column(Boolean, default=False)    # True if user is one of the 770 Founders
     
     # New Bank Model Columns
     bank_balance = Column(Float, default=0.0)        # 🟡 Caja Fuerte

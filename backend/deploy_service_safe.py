@@ -16,10 +16,7 @@ def deploy_service():
 
     gemini_api_key = os.getenv("GEMINI_API_KEY", "AIzaSyABcha3m2_Pa-fIIKjf3lTIkZ_B2sMIWSE")
 
-    # Safety check: ensure they actually filled it out
-    if not email_sender or not email_password or "PEGAR" in email_password:
-        print("ERROR: Please configure EMAIL_SENDER and EMAIL_PASSWORD in backend/.env before deploying.")
-        return
+    # Safety check disabled for Mailgun
 
     cmd = [
         r"C:\Users\mahac\AppData\Local\Google\Cloud SDK\google-cloud-sdk\bin\gcloud.cmd",

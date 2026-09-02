@@ -74,6 +74,12 @@ def process_activation(db: Session, user_id: int, package_amount: float, pv: int
             
         if is_full_activation:
             user.has_package = True
+            
+            # Asignación automática al Club de Fundadores (Límite 770)
+            if package_level >= 2 and not user.is_founder:
+                founders_count = db.query(func.count(User.id)).filter(User.is_founder == True).scalar() or 0
+                if founders_count < 770:
+                    user.is_founder = True
 
         # write activation log
         activation_log = ActivationLog(user_id=user_id, package_amount=package_amount)

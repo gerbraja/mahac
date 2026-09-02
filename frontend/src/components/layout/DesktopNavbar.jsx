@@ -89,9 +89,11 @@ const DesktopNavbar = ({
 
     return (
         <header className="bg-white/80 backdrop-blur-md border-b border-gray-200 h-16 sticky top-0 z-40 px-6 flex items-center justify-between shadow-sm">
-            {/* Logo */}
+            {/* Logo — click goes to Dashboard Home */}
             <div className="flex-shrink-0 flex items-center gap-4">
-                <TeiLogo size="small" showSubtitle={false} />
+                <Link to="/dashboard" title="Ir a mi Oficina Virtual">
+                    <TeiLogo size="small" showSubtitle={false} />
+                </Link>
                 {localStorage.getItem('access_token') ? (
                     <span className="bg-green-100 text-green-800 text-xs font-bold px-2 py-1 rounded border border-green-200">
                         👤 Conectado

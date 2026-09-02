@@ -6,14 +6,19 @@ export default function AdminLayout() {
     const navigate = useNavigate();
     const location = useLocation();
     const [sidebarOpen, setSidebarOpen] = useState(true);
-    const { globalCountry, setGlobalCountry, countries, isCountryAdmin, isSuperAdmin } = useAdmin();
+    const { globalCountry, setGlobalCountry, countries, assignedCountries, isCountryAdmin, isSuperAdmin } = useAdmin();
 
     // Rutas exclusivas del Super Admin
-    const superAdminRoutes = ['/admin/country-stats', '/admin/taxes', '/admin/accounting'];
+    const superAdminRoutes = ['/admin/country-stats', '/admin/taxes', '/admin/accounting', '/admin/country-managers'];
 
     const allMenuItems = [
         { path: '/admin', label: 'Dashboard', icon: '📊' },
         { path: '/admin/users', label: 'Usuarios', icon: '👥' },
+        { path: '/admin/merchants-directory', label: 'Directorio Comercios', icon: '🏪' },
+        { path: '/admin/merchants', label: 'Pagos Comercios', icon: '💰' },
+        { path: '/admin/suppliers', label: 'Proveedores', icon: '🏢' },
+        { path: '/admin/orders', label: 'Órdenes/Envíos', icon: '📦' },
+        { path: '/admin/country-managers', label: 'Gerentes de País', icon: '👨‍💼' },
         { path: '/admin/promotions', label: 'Campaña Viajes', icon: '✈️' },
         { path: '/admin/reports', label: 'Reportes', icon: '📈' },
         { path: '/admin/logistics', label: 'Logística (Bultos)', icon: '🚛' },
@@ -94,11 +99,21 @@ export default function AdminLayout() {
                     <div style={{ padding: '0.5rem 1.25rem', borderBottom: '1px solid #e5e7eb', background: '#f8fafc' }}>
                         <label className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1 block">Filtro Global:</label>
                         {isCountryAdmin ? (
-                            <div className="w-full bg-gray-100 border border-gray-300 text-gray-700 text-sm py-1 px-2 rounded flex items-center gap-1">
-                                <span>📍</span>
-                                <span className="font-semibold">{globalCountry}</span>
-                                <span className="ml-auto text-gray-400 text-xs">🔒</span>
-                            </div>
+                            assignedCountries && assignedCountries.length > 1 ? (
+                                <select
+                                    value={globalCountry}
+                                    onChange={(e) => setGlobalCountry(e.target.value)}
+                                    className="w-full bg-white border border-gray-300 text-gray-800 text-sm py-1 px-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+                                >
+                                    {assignedCountries.map(c => <option key={c} value={c}>📍 {c}</option>)}
+                                </select>
+                            ) : (
+                                <div className="w-full bg-gray-100 border border-gray-300 text-gray-700 text-sm py-1 px-2 rounded flex items-center gap-1">
+                                    <span>📍</span>
+                                    <span className="font-semibold">{globalCountry}</span>
+                                    <span className="ml-auto text-gray-400 text-xs">🔒</span>
+                                </div>
+                            )
                         ) : (
                             <select
                                 value={globalCountry}

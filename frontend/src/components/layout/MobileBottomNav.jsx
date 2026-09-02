@@ -35,16 +35,16 @@ const MobileBottomNav = ({ currentPath, onOpenSheet }) => {
                 <span className="text-[10px] font-bold">Personal</span>
             </button>
 
-            {/* 3. Redes (Action Sheet Trigger) */}
-            <button
-                onClick={() => onOpenSheet('network')}
-                className={`${btnClass} ${isGroupActive(['/dashboard/unilevel', '/dashboard/directs', '/dashboard/binary', '/dashboard/matrix']) ? 'text-blue-600' : 'text-gray-500 hover:text-gray-800'}`}
+            {/* 3. Oficina Virtual (Direct Link to Dashboard Home) */}
+            <Link
+                to="/dashboard"
+                className={`${btnClass} ${isActive('/dashboard') ? 'text-blue-600' : 'text-gray-500 hover:text-gray-800'}`}
             >
-                <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg -mt-6 border-4 border-gray-50">
-                    <span className="text-xl">🌐</span>
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center shadow-lg -mt-6 border-4 border-gray-50 ${isActive('/dashboard') ? 'bg-gradient-to-r from-blue-600 to-indigo-600' : 'bg-gradient-to-r from-gray-600 to-slate-700'}`}>
+                    <span className="text-xl">🏠</span>
                 </div>
-                <span className="text-[10px] font-bold text-blue-800">Redes</span>
-            </button>
+                <span className={`text-[10px] font-bold ${isActive('/dashboard') ? 'text-blue-800' : 'text-gray-700'}`}>Oficina</span>
+            </Link>
 
             {/* 4. Más / Gestión (Action Sheet Trigger) */}
             <button

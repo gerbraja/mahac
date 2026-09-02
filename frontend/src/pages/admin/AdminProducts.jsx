@@ -708,6 +708,10 @@ const SimpleAdmin = () => {
                         <option value={1}>1 - Franquicia Nivel 1 (FDI 1)</option>
                         <option value={2}>2 - Franquicia Nivel 2 (FDI 2 / Upgrade)</option>
                         <option value={3}>3 - Franquicia Nivel 3</option>
+                        <option value={4}>4 - Franquicia Nivel 4</option>
+                        <option value={5}>5 - Franquicia Nivel 5</option>
+                        <option value={6}>6 - Franquicia Nivel 6</option>
+                        <option value={7}>7 - Franquicia Nivel 7</option>
                     </select>
                 </div>
 

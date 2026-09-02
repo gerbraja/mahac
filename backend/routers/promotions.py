@@ -103,3 +103,77 @@ def get_admin_travel_qualifiers(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error al obtener listado de calificados: {str(e)}"
         )
+
+@router.get("/founders-club")
+def get_founders_club_status(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Obtiene el estado actual de los cupos del Club de Fundadores.
+    """
+    try:
+        count = db.query(User).filter(User.is_founder == True).count()
+        
+        founder_tier = None
+        founder_percentage = None
+        
+        if current_user.is_founder:
+            if current_user.package_level >= 4:
+                founder_tier = "Fundador Élite"
+                founder_percentage = 2.7
+            else:
+                founder_tier = "Fundador Clásico"
+                founder_percentage = 1.2
+                
+        return {
+            "count": count,
+            "limit": 770,
+            "is_user_founder": current_user.is_founder,
+            "founder_tier": founder_tier,
+            "founder_percentage": founder_percentage
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error al obtener estado del club: {str(e)}"
+        )
+
+@router.get("/admin/founders-list")
+def get_admin_founders_list(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Endpoint administrativo para listar todos los miembros del Club de Fundadores.
+    """
+    if not current_user.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No tiene permisos para acceder a este reporte"
+        )
+        
+    try:
+        founders = db.query(User).filter(User.is_founder == True).order_by(User.id.asc()).all()
+        return {
+            "total_founders": len(founders),
+            "limit": 770,
+            "founders": [
+                {
+                    "user_id": f.id,
+                    "name": f.name,
+                    "username": f.username,
+                    "email": f.email,
+                    "phone": f.phone,
+                    "package_level": f.package_level,
+                    "membership_code": f.membership_code,
+                    "founder_tier": "Fundador Élite" if f.package_level >= 4 else "Fundador Clásico",
+                    "founder_percentage": 2.7 if f.package_level >= 4 else 1.2
+                } for f in founders
+            ]
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error al obtener listado de fundadores: {str(e)}"
+        )

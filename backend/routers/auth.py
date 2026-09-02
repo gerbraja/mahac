@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, status
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
@@ -6,6 +6,7 @@ from typing import Optional
 from argon2 import PasswordHasher
 from jose import jwt
 import os
+import secrets
 from datetime import datetime, timedelta
 
 from ..database.connection import get_db
@@ -15,6 +16,7 @@ from ..utils.websocket_manager import manager
 from ..database.models.honor_rank import HonorRank, UserHonor
 from ..utils.email_service import send_welcome_email
 from passlib.context import CryptContext
+from ..utils.email_service import send_password_reset_email
 
 # Password handling
 # Password handling
@@ -293,14 +295,28 @@ from ..utils.auth import get_current_user_object, oauth2_scheme, SECRET_KEY, ALG
 
 @router.get("/me")
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
-    """Get current user data from JWT token.
-    
-    NOTE: This is the ONLY /auth/me endpoint. A second definition existed below (now
-    removed) that FastAPI was silently ignoring. This merged version returns all fields
-    needed by the frontend: profile data AND wallet/admin info.
-    """
+    """Get current user data from JWT token."""
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        role = payload.get("role")
+        
+        if role == "merchant":
+            from ..database.models.merchant import Merchant
+            merchant_id = payload.get("merchant_id")
+            merchant = db.query(Merchant).filter(Merchant.id == merchant_id).first()
+            if not merchant:
+                raise HTTPException(status_code=401, detail="Merchant not found")
+            # Create a dict with enough fields for the frontend auth context
+            return {
+                "id": merchant.id,
+                "email": merchant.email,
+                "name": merchant.name,
+                "username": merchant.name,
+                "is_admin": False,
+                "admin_role": "merchant",
+                "status": merchant.status
+            }
+            
         user_id: int = payload.get("user_id")
         if user_id is None:
             raise HTTPException(status_code=401, detail="Invalid authentication credentials")
@@ -635,34 +651,153 @@ def reset_password(data: ResetPasswordData, db: Session = Depends(get_db)):
     # Find user by token
     user = db.query(UserModel).filter(UserModel.reset_token == data.token).first()
 
-    if not user or not user.reset_token_expires:
-        raise HTTPException(status_code=400, detail="El enlace de recuperación es inválido o ya fue utilizado.")
-
-    # Check expiration
-    if datetime.utcnow() > user.reset_token_expires:
-        raise HTTPException(status_code=400, detail="El enlace de recuperación ha expirado. Solicita uno nuevo.")
-
-    # Validate new password
-    if len(data.new_password) < 6:
-        raise HTTPException(status_code=400, detail="La contraseña debe tener al menos 6 caracteres.")
-
-    if len(data.new_password) > 72:
-        raise HTTPException(status_code=400, detail="La contraseña es demasiado larga. Máximo 72 caracteres.")
-
-    # Hash and save new password, clear token
+    if not user:
+        raise HTTPException(status_code=400, detail="Token inválido o expirado.")
+        
     try:
-        hashed = pwd_context.hash(data.new_password)
-    except Exception as e:
-        raise HTTPException(status_code=400, detail="Error al procesar la contraseña. Intenta con otra.")
-
-    user.password = hashed
-    user.reset_token = None
-    user.reset_token_expires = None
-
-    try:
+        # Hash new password
+        user.password = pwd_context.hash(data.new_password)
+        user.reset_token = None
         db.commit()
-        return {"message": "¡Contraseña restablecida con éxito! Ya puedes iniciar sesión."}
+        return {"message": "Contraseña actualizada exitosamente."}
     except Exception as e:
         db.rollback()
-        print(f"Error in reset_password: {e}")
-        raise HTTPException(status_code=500, detail="Error al guardar la nueva contraseña. Intenta de nuevo.")
+        print(f"Error resetting password: {e}")
+        raise HTTPException(status_code=500, detail="Error al restablecer la contraseña.")
+
+# NOTE: The second @router.get("/me") that was here has been REMOVED.
+# FastAPI was silently ignoring it because the first definition (above) takes
+# precedence. All its fields have been merged into the first endpoint.
+# See the get_current_user function above for the combined implementation.
+
+
+# ==================== SECURITY ENDPOINTS ====================
+
+class ChangePasswordData(BaseModel):
+    current_password: str
+    new_password: str
+
+
+class SetTransactionPinData(BaseModel):
+    current_password: str
+    transaction_pin: str
+
+
+@router.put("/change-password")
+def change_password(data: ChangePasswordData, current_user: UserModel = Depends(get_current_user_object), db: Session = Depends(get_db)):
+    """Change user's access password."""
+    
+    # Verify current password
+    if not pwd_context.verify(data.current_password, current_user.password):
+        raise HTTPException(
+            status_code=401,
+            detail="Contraseña actual incorrecta"
+        )
+    
+    # Hash new password
+    try:
+        hashed = pwd_context.hash(data.new_password)
+    except Exception as hash_error:
+        print(f"Password hashing error: {hash_error}")
+        raise HTTPException(
+            status_code=400,
+            detail="Error al procesar la nueva contraseña. Por favor intenta con una contraseña diferente."
+        )
+    
+    # Update password
+    current_user.password = hashed
+    
+    try:
+        db.commit()
+        db.refresh(current_user)
+        return {"message": "Contraseña actualizada exitosamente"}
+    except Exception as e:
+        db.rollback()
+        print(f"Error updating password: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al actualizar la contraseña: {str(e)}"
+        )
+
+
+@router.put("/set-transaction-pin")
+def set_transaction_pin(data: SetTransactionPinData, current_user: UserModel = Depends(get_current_user_object), db: Session = Depends(get_db)):
+    """Set or update user's transaction PIN."""
+    
+    # Verify current password
+    if not pwd_context.verify(data.current_password, current_user.password):
+        raise HTTPException(
+            status_code=401,
+            detail="Contraseña actual incorrecta"
+        )
+    
+    # Validate PIN format
+    if not data.transaction_pin.isdigit() or len(data.transaction_pin) != 6:
+        raise HTTPException(
+            status_code=400,
+            detail="La clave de transacción debe contener exactamente 6 dígitos numéricos"
+        )
+    
+    # Hash transaction PIN
+    try:
+        hashed_pin = pwd_context.hash(data.transaction_pin)
+    except Exception as hash_error:
+        print(f"PIN hashing error: {hash_error}")
+        raise HTTPException(
+            status_code=400,
+            detail="Error al procesar la clave de transacción. Por favor intenta de nuevo."
+        )
+    
+    # Update transaction PIN
+    current_user.transaction_pin = hashed_pin
+    
+    try:
+        db.commit()
+        db.refresh(current_user)
+        return {"message": "Clave de transacción configurada exitosamente"}
+    except Exception as e:
+        db.rollback()
+        print(f"Error setting transaction PIN: {str(e)}\")")
+        raise HTTPException(
+            status_code=500,
+            detail="Error al configurar la clave de transacción. Por favor intenta de nuevo."
+        )
+
+
+from ..database.models.merchant import Merchant
+
+class MagicTokenData(BaseModel):
+    token: str
+
+@router.post("/magic-merchant")
+def magic_merchant_login(data: MagicTokenData, db: Session = Depends(get_db)):
+    """
+    Login endpoint for allied merchants using their magic link token.
+    """
+    merchant = db.query(Merchant).filter(Merchant.magic_token == data.token).first()
+    
+    if not merchant:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token inválido o expirado"
+        )
+        
+    if merchant.status != 'active':
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Este comercio está inactivo"
+        )
+        
+    # Generate access token specific for merchant
+    token = jwt.encode({
+        "merchant_id": merchant.id,
+        "role": "merchant"
+    }, SECRET_KEY, algorithm=ALGORITHM)
+    
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "merchant_id": merchant.id,
+        "name": merchant.name,
+        "role": "merchant"
+    }

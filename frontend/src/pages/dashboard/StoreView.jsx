@@ -3,6 +3,7 @@ import { api } from '../../api/api';
 import { useCart } from '../../context/CartContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import ComercioAliadoView from '../../components/ComercioAliadoView';
 
 const CATEGORIES = [
     {
@@ -103,6 +104,7 @@ const StoreView = () => {
     const navigate = useNavigate();
     const [searchTerm, setSearchTerm] = useState('');
     const [activeSubcategory, setActiveSubcategory] = useState('all-sub');
+    const [viewMode, setViewMode] = useState('store'); // 'store' or 'allied'
 
     // Reset subcategory and search term when main category changes
     useEffect(() => {
@@ -186,26 +188,31 @@ const StoreView = () => {
     // Filter Starter Packages based on User Level
     let starterPackages = [];
 
+    const isActivationOrUpgrade = (p) => {
+        const nameUpper = (p.name || '').toUpperCase();
+        return p.is_activation || nameUpper.includes('UPGRADE') || nameUpper.includes('AVANCE');
+    };
+
     if (user) {
         if (user.status === 'pre-affiliate') {
             // Pre-affiliate sees all packages
-            starterPackages = products.filter(p => p.is_activation);
-        } else if (user.package_level === 1) {
-            // Level 1 sees ONLY upgrades (which are Level 2+ packages)
-            starterPackages = products.filter(p => p.is_activation && p.package_level >= 2);
-        } else if (user.package_level >= 2) {
-            // Level 2+ sees NO packages
-            starterPackages = [];
+            starterPackages = products.filter(isActivationOrUpgrade);
         } else {
-            // Fallback (e.g. active but level 0? show all just in case)
-            starterPackages = products.filter(p => p.is_activation);
+            // Active users see packages strictly higher than their current level as upgrades
+            // OR products explicitly named UPGRADE/AVANCE
+            starterPackages = products.filter(p => {
+                const nameUpper = (p.name || '').toUpperCase();
+                const isExplicitUpgrade = nameUpper.includes('UPGRADE') || nameUpper.includes('AVANCE');
+                if (isExplicitUpgrade) return true;
+                return p.is_activation && (p.package_level || 0) > (user.package_level || 0);
+            });
         }
     } else {
-        // Not logged in? Show all (or none, depending on global logic, but usually all)
-        starterPackages = products.filter(p => p.is_activation);
+        // Not logged in? Show all
+        starterPackages = products.filter(isActivationOrUpgrade);
     }
 
-    const regularProducts = products.filter(p => !p.is_activation);
+    const regularProducts = products.filter(p => !isActivationOrUpgrade(p));
 
     // Filter regular products by selected category and subcategory and search term
     const filteredRegularProducts = regularProducts.filter(product => {
@@ -305,6 +312,38 @@ const StoreView = () => {
 
     return (
         <div className="p-6 relative" style={{ maxWidth: '100%', width: '100%' }}>
+            {/* ─── Top Tabs ─── */}
+            <div className="flex justify-center mb-8">
+                <div className="bg-white p-1 rounded-full shadow-md border border-gray-100 inline-flex relative">
+                    <button
+                        onClick={() => setViewMode('store')}
+                        className={`px-8 py-3 rounded-full font-bold text-sm transition-all duration-300 relative z-10 ${
+                            viewMode === 'store' ? 'text-white' : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                    >
+                        {viewMode === 'store' && (
+                            <motion.div layoutId="activeTab" className="absolute inset-0 bg-blue-600 rounded-full -z-10 shadow-md" />
+                        )}
+                        🛍️ Productos TEI
+                    </button>
+                    <button
+                        onClick={() => setViewMode('allied')}
+                        className={`px-8 py-3 rounded-full font-bold text-sm transition-all duration-300 relative z-10 ${
+                            viewMode === 'allied' ? 'text-white' : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                    >
+                        {viewMode === 'allied' && (
+                            <motion.div layoutId="activeTab" className="absolute inset-0 bg-gradient-to-r from-orange-500 to-red-600 rounded-full -z-10 shadow-md" />
+                        )}
+                        🏪 Comercio Aliado
+                    </button>
+                </div>
+            </div>
+
+            {viewMode === 'allied' ? (
+                <ComercioAliadoView />
+            ) : (
+                <>
             {/* ─── Ruta hacia la Libertad Financiera ─── */}
             <motion.div
                 initial={{ opacity: 0, y: -20 }}
@@ -601,6 +640,8 @@ const StoreView = () => {
                     />
                 )}
             </AnimatePresence>
+                </>
+            )}
         </div>
     );
 };
@@ -628,6 +669,20 @@ const ProductCard = ({ product, addToCart, isSpecial, onClick }) => {
                     />
                 ) : (
                     <span className={`text-6xl ${isSpecial ? 'text-white' : 'text-gray-400'}`}>{isSpecial ? '💎' : '📦'}</span>
+                )}
+                {isSpecial && product.package_level >= 2 && product.package_level <= 3 && (
+                    <img 
+                        src="/sello_fundador.png" 
+                        alt="Sello Fundador Clásico"
+                        className="absolute -top-3 -left-3 w-32 h-32 z-10 transform -rotate-12 hover:scale-110 hover:rotate-0 transition-all duration-300 drop-shadow-[0_10px_15px_rgba(0,0,0,0.5)]"
+                    />
+                )}
+                {isSpecial && product.package_level >= 4 && (
+                    <img 
+                        src="/sello_elite.png" 
+                        alt="Sello Fundador Élite"
+                        className="absolute -top-3 -left-3 w-32 h-32 z-10 transform -rotate-12 hover:scale-110 hover:rotate-0 transition-all duration-300 drop-shadow-[0_10px_15px_rgba(0,0,0,0.5)]"
+                    />
                 )}
                 {isSpecial && product.is_upgrade && (
                     <span className="absolute top-2 right-2 bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full font-bold">Avance de Paquete</span>

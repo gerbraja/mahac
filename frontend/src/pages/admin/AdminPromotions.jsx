@@ -3,7 +3,9 @@ import { api } from '../../api/api';
 
 export default function AdminPromotions() {
     const [data, setData] = useState({ total_qualifiers: 0, qualifiers: [] });
+    const [foundersData, setFoundersData] = useState({ total_founders: 0, founders: [] });
     const [loading, setLoading] = useState(true);
+    const [foundersLoading, setFoundersLoading] = useState(true);
     const [search, setSearch] = useState('');
     const [selectedUser, setSelectedUser] = useState(null);
     const [userDetail, setUserDetail] = useState(null);
@@ -11,6 +13,7 @@ export default function AdminPromotions() {
 
     useEffect(() => {
         fetchQualifiers();
+        fetchFounders();
     }, []);
 
     const fetchQualifiers = async () => {
@@ -22,6 +25,18 @@ export default function AdminPromotions() {
             console.error("Error fetching qualifiers:", error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchFounders = async () => {
+        try {
+            setFoundersLoading(true);
+            const response = await api.get('/api/promotions/admin/founders-list');
+            setFoundersData(response.data);
+        } catch (error) {
+            console.error("Error fetching founders:", error);
+        } finally {
+            setFoundersLoading(false);
         }
     };
 
@@ -195,6 +210,68 @@ export default function AdminPromotions() {
                 </div>
             </div>
 
+            {/* Club de Fundadores Table */}
+            <div className="mt-12 mb-4">
+                <h2 className="text-2xl font-extrabold text-blue-900 flex items-center gap-2">
+                    <span>👑</span> Club de Fundadores ({foundersData.total_founders} / {foundersData.limit || 770})
+                </h2>
+                <p className="text-gray-600 mb-4">
+                    Listado de los primeros afiliados activos con paquete 2, 3, 4 o 5 que han asegurado su lugar en el Club.
+                </p>
+            </div>
+            
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden mb-12">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-sm text-left text-gray-500">
+                        <thead className="text-xs text-gray-700 uppercase bg-gray-50 border-b border-gray-200">
+                            <tr>
+                                <th className="px-6 py-4">Socio</th>
+                                <th className="px-6 py-4">Usuario</th>
+                                <th className="px-6 py-4 text-center">Nivel de Paquete</th>
+                                <th className="px-6 py-4 text-center">Beneficio Club</th>
+                                <th className="px-6 py-4">Contacto</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                            {foundersData.founders && foundersData.founders.length > 0 ? (
+                                foundersData.founders.filter(f => 
+                                    f.name.toLowerCase().includes(search.toLowerCase()) || 
+                                    (f.username && f.username.toLowerCase().includes(search.toLowerCase()))
+                                ).map((f) => (
+                                    <tr key={f.user_id} className="hover:bg-gray-50 transition">
+                                        <td className="px-6 py-4">
+                                            <div className="font-bold text-gray-900">{f.name}</div>
+                                            <div className="text-xs text-gray-500">Código: {f.membership_code || 'N/A'}</div>
+                                        </td>
+                                        <td className="px-6 py-4 font-mono text-gray-600">@{f.username}</td>
+                                        <td className="px-6 py-4 text-center">
+                                            <span className="bg-yellow-100 text-yellow-800 font-extrabold px-3 py-1 rounded-full text-xs">
+                                                Paquete {f.package_level}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 text-center">
+                                            <span className={`font-extrabold px-3 py-1 rounded-full text-xs ${f.founder_percentage > 2 ? 'bg-indigo-100 text-indigo-800' : 'bg-gray-200 text-gray-800'}`}>
+                                                {f.founder_tier} ({f.founder_percentage}%)
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="text-xs text-gray-600">{f.email}</div>
+                                            <div className="text-xs text-gray-600">{f.phone}</div>
+                                        </td>
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr>
+                                    <td colSpan="5" className="px-6 py-8 text-center text-gray-400">
+                                        {foundersLoading ? 'Cargando fundadores...' : 'No hay fundadores aún.'}
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
             {/* Audit Modal / Sidebar Drawer */}
             {selectedUser && (
                 <div className="fixed inset-0 bg-black bg-opacity-40 backdrop-blur-sm z-50 flex items-center justify-end">
@@ -223,12 +300,12 @@ export default function AdminPromotions() {
                                     <div className="bg-teal-50 p-4 rounded-xl border border-teal-100">
                                         <span className="text-xs text-teal-700 font-bold uppercase">Ramas Nacionales</span>
                                         <span className="block text-2xl font-black text-teal-950 mt-1">{userDetail.national_legs}</span>
-                                        <span className="text-[10px] text-teal-600 block mt-1">(Mínimo 3 frontales con 3+ indirectos)</span>
+                                        <span className="text-[10px] text-teal-600 block mt-1">(Mínimo 3 Directos con Paquete)</span>
                                     </div>
                                     <div className="bg-pink-50 p-4 rounded-xl border border-pink-100">
                                         <span className="text-xs text-pink-700 font-bold uppercase">Ramas Internacionales</span>
                                         <span className="block text-2xl font-black text-pink-955 mt-1">{userDetail.international_legs}</span>
-                                        <span className="text-[10px] text-pink-600 block mt-1">(Mínimo 5 frontales con 5+ indirectos)</span>
+                                        <span className="text-[10px] text-pink-600 block mt-1">(Mínimo 5 Directos con Paquete)</span>
                                     </div>
                                 </div>
 
@@ -245,7 +322,7 @@ export default function AdminPromotions() {
                                                         </span>
                                                     </div>
                                                     <div className="flex justify-between items-center text-sm">
-                                                        <span className="text-gray-500">Cantidad de indirectos válidos:</span>
+                                                        <span className="text-gray-500">Cantidad de directos válidos:</span>
                                                         <span className="font-bold text-indigo-700">{direct.downline_count}</span>
                                                     </div>
                                                 </div>

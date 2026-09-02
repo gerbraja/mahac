@@ -4,9 +4,13 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 function parseJwt(token) {
     try {
         const base64Url = token.split('.')[1];
-        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        let base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        while (base64.length % 4) {
+            base64 += '=';
+        }
         return JSON.parse(window.atob(base64));
-    } catch {
+    } catch (e) {
+        console.error("JWT Decode error:", e);
         return {};
     }
 }
@@ -45,12 +49,17 @@ export const AdminProvider = ({ children }) => {
 
     // Read role and assigned country from JWT token
     const getAdminInfo = () => {
-        const token = localStorage.getItem('token');
-        if (!token) return { role: 'user', assignedCountry: null };
+        const token = localStorage.getItem('access_token');
+        if (!token) return { role: 'user', assignedCountries: [] };
         const payload = parseJwt(token);
+        
+        let countries = [];
+        if (payload.admin_country) {
+            countries = payload.admin_country.split(',').map(c => c.trim()).filter(c => c);
+        }
         return {
             role: payload.admin_role || 'user',
-            assignedCountry: payload.admin_country || null,
+            assignedCountries: countries,
         };
     };
 
@@ -59,15 +68,15 @@ export const AdminProvider = ({ children }) => {
     const isSuperAdmin = adminInfo.role === 'superadmin';
 
     // País global seleccionado
-    // country_admin: locked to their assigned country
+    // country_admin: defaults to their FIRST assigned country
     // superadmin / no-role: defaults to 'Todos'
     const [globalCountry, _setGlobalCountry] = useState(
-        isCountryAdmin ? (adminInfo.assignedCountry || 'Todos') : 'Todos'
+        isCountryAdmin ? (adminInfo.assignedCountries[0] || 'Todos') : 'Todos'
     );
 
     const setGlobalCountry = (value) => {
-        // Country admins cannot change the country filter
-        if (isCountryAdmin) return;
+        // Country admins can ONLY select from their assigned countries
+        if (isCountryAdmin && !adminInfo.assignedCountries.includes(value)) return;
         _setGlobalCountry(value);
     };
 
@@ -77,7 +86,7 @@ export const AdminProvider = ({ children }) => {
             setGlobalCountry,
             countries,
             adminRole: adminInfo.role,
-            adminCountry: adminInfo.assignedCountry,
+            assignedCountries: adminInfo.assignedCountries,
             isCountryAdmin,
             isSuperAdmin,
         }}>

@@ -1,5 +1,5 @@
 $PROXY_PATH = "C:\Users\mahac\cloud-sql-proxy.exe"
-$CONNECTION_NAME = "tei-mlm-prod:southamerica-east1:mlm-db"
+$CONNECTION_NAME = "tei-mlm-prod:us-central1:mlm-db-us"
 $DB_URL = "postgresql://postgres:AdminPostgres2025@127.0.0.1:5432/tiendavirtual"
 
 Write-Host "Starting Cloud SQL Proxy..."
@@ -13,9 +13,8 @@ Start-Sleep -Seconds 5
 
 Write-Host "Running python script..."
 $env:DATABASE_URL = $DB_URL
-& "c:/Users/mahac/multinivel/tiendavirtual/.venv/Scripts/python.exe" "c:/Users/mahac/multinivel/tiendavirtual/miweb/CentroComercialTEI/backend/scripts/check_prod_flags.py"
+& "c:/Users/mahac/multinivel/tiendavirtual/.venv/Scripts/python.exe" "c:/Users/mahac/multinivel/tiendavirtual/miweb/CentroComercialTEI/backend/scripts/check_users.py"
 
 Write-Host "Stopping proxy..."
 Stop-Job $proxyJob
 Remove-Job $proxyJob
-Write-Host "Done"

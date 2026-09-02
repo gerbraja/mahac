@@ -86,22 +86,43 @@ const PersonalView = () => {
                 )}
             </div>
 
-            {/* Referral Link Card */}
-            <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-2xl p-6 border-2 border-orange-200 shadow-lg">
-                <div className="flex items-center justify-between gap-4">
-                    <div className="flex-1">
+            {/* Referral Link and QR Card */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-2xl p-6 border-2 border-orange-200 shadow-lg flex flex-col justify-between">
+                    <div>
                         <h2 className="text-xl font-bold text-gray-800 mb-2">🔗 Tu Link de Afiliado</h2>
                         <p className="text-sm text-gray-600 mb-3">Comparte este link con tus posibles afiliados</p>
-                        <div className="bg-white rounded-lg p-3 border border-orange-300 break-all">
+                        <div className="bg-white rounded-lg p-3 border border-orange-300 break-all mb-4">
                             <p className="text-gray-800 font-mono text-sm">{referralLink}</p>
                         </div>
                     </div>
                     <button
                         onClick={handleCopyReferralLink}
-                        className="bg-gradient-to-r from-orange-600 to-red-600 text-white px-6 py-3 rounded-lg hover:from-orange-700 hover:to-red-700 transition-all duration-300 whitespace-nowrap h-fit"
+                        className="bg-gradient-to-r from-orange-600 to-red-600 text-white px-6 py-3 rounded-lg hover:from-orange-700 hover:to-red-700 transition-all duration-300 w-full font-bold"
                     >
-                        📋 Copiar
+                        📋 Copiar Link
                     </button>
+                </div>
+                
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border-2 border-blue-200 shadow-lg flex flex-col md:flex-row items-center gap-6">
+                    <div className="flex-1">
+                        <h2 className="text-xl font-bold text-gray-800 mb-2">📱 Mi Código TEI</h2>
+                        <p className="text-sm text-gray-600 mb-3">
+                            Muestra este código QR en los <strong>Comercios Aliados</strong> de TEI (restaurantes, odontólogos, tiendas) para recibir tus comisiones por cada compra física.
+                        </p>
+                        <p className="text-xs text-blue-800 bg-blue-100/60 p-2 rounded-lg inline-block border border-blue-200">
+                            💡 Si no pueden escanear tu QR, indícales tu código: <strong>TEI-USER-{user.id}</strong> o tu usuario: <strong>{user.username}</strong>
+                        </p>
+                    </div>
+                    <div className="bg-white p-3 rounded-xl shadow-md shrink-0 flex flex-col items-center gap-2">
+                        <img 
+                            src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=TEI-USER-${user.id}`} 
+                            alt="Mi Código TEI" 
+                            className="w-32 h-32"
+                        />
+                        <span className="text-xs font-mono font-bold text-gray-600 bg-gray-100 px-2 py-0.5 rounded">TEI-USER-{user.id}</span>
+                        <span className="text-xs text-gray-500 font-semibold">@{user.username}</span>
+                    </div>
                 </div>
             </div>
 

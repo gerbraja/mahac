@@ -53,7 +53,9 @@ def get_dashboard_stats(
 
     # country_admin: always lock to their country
     if getattr(current_user, 'admin_role', '') == 'country_admin':
-        country = getattr(current_user, 'admin_country', country)
+        admin_countries = [c.strip() for c in (current_user.admin_country or "").split(',') if c.strip()]
+        if not country or country not in admin_countries:
+            country = admin_countries[0] if admin_countries else None
 
     apply_country = country and country != 'Todos'
 
@@ -183,8 +185,10 @@ def get_supplier_orders(
     }
 
     try:
-        if getattr(current_user, 'admin_role', '') == 'country_admin' and getattr(current_user, 'admin_country', ''):
-            country = current_user.admin_country
+        if getattr(current_user, 'admin_role', '') == 'country_admin':
+            admin_countries = [c.strip() for c in (current_user.admin_country or "").split(',') if c.strip()]
+            if not country or country not in admin_countries:
+                country = admin_countries[0] if admin_countries else None
 
         # Find all paid orders
         query = db.query(Order).filter(Order.status.in_(["pagado", "paid", "shipped", "delivered", "en_preparacion"]))
@@ -383,8 +387,10 @@ def get_pending_payments(
         .filter(PaymentTransaction.status == "pending")
     )
 
-    if getattr(current_user, 'admin_role', '') == 'country_admin' and getattr(current_user, 'admin_country', ''):
-        country = current_user.admin_country
+    if getattr(current_user, 'admin_role', '') == 'country_admin':
+        admin_countries = [c.strip() for c in (current_user.admin_country or "").split(',') if c.strip()]
+        if not country or country not in admin_countries:
+            country = admin_countries[0] if admin_countries else None
 
     if country and country != 'Todos':
         query = query.filter(User.country.ilike(f"%{country}%"))
@@ -515,11 +521,17 @@ class UserUpdateData(BaseModel):
     document_type: Optional[str] = None
     company_name: Optional[str] = None
     tax_regime: Optional[str] = None
+    
+    # Comercios Aliados
+    commission_margin: Optional[float] = None
+    merchant_tax_pct: Optional[float] = None
+    merchant_withholding_pct: Optional[float] = None
 
 @router.get("/users")
 def get_users(
     search: Optional[str] = None, 
     country: Optional[str] = None,
+    role: Optional[str] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_admin_user)
 ):
@@ -528,8 +540,13 @@ def get_users(
     """
     query = db.query(User)
     
-    if getattr(current_user, 'admin_role', '') == 'country_admin' and getattr(current_user, 'admin_country', ''):
-        country = current_user.admin_country
+    if getattr(current_user, 'admin_role', '') == 'country_admin':
+        admin_countries = [c.strip() for c in (current_user.admin_country or "").split(',') if c.strip()]
+        if not country or country not in admin_countries:
+            country = admin_countries[0] if admin_countries else None
+        
+    if role:
+        query = query.filter(User.admin_role == role)
         
     if search:
         search_pattern = f"%{search}%"
@@ -560,7 +577,11 @@ def get_users(
         "created_at": u.created_at,
         "is_admin": u.is_admin,
         "is_kyc_verified": u.is_kyc_verified,
-        "package_level": u.package_level
+        "package_level": u.package_level,
+        "admin_role": getattr(u, 'admin_role', None),
+        "commission_margin": getattr(u, 'commission_margin', 20.0),
+        "merchant_tax_pct": getattr(u, 'merchant_tax_pct', 0.0),
+        "merchant_withholding_pct": getattr(u, 'merchant_withholding_pct', 0.0)
     } for u in users]
 
 @router.put("/users/{user_id}")
@@ -577,8 +598,10 @@ def update_user(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
         
-    if getattr(current_user, 'admin_role', '') == 'country_admin' and getattr(current_user, 'admin_country', '') and user.country != current_user.admin_country:
-        raise HTTPException(status_code=403, detail="No tienes permiso para editar usuarios de otros países")
+    if getattr(current_user, 'admin_role', '') == 'country_admin':
+        admin_countries = [c.strip() for c in (current_user.admin_country or "").split(',') if c.strip()]
+        if user.country not in admin_countries:
+            raise HTTPException(status_code=403, detail="No tienes permiso para editar usuarios de otros países")
     
     # Check if a structural/role field is being changed
     role_fields_present = (data.status is not None) or (data.package_level is not None)
@@ -618,6 +641,13 @@ def update_user(
         user.company_name = data.company_name
     if data.tax_regime is not None:
         user.tax_regime = data.tax_regime
+        
+    if data.commission_margin is not None:
+        user.commission_margin = data.commission_margin
+    if data.merchant_tax_pct is not None:
+        user.merchant_tax_pct = data.merchant_tax_pct
+    if data.merchant_withholding_pct is not None:
+        user.merchant_withholding_pct = data.merchant_withholding_pct
         
     # Admin role fields — only super admins can modify these
     if data.admin_role is not None:
@@ -2207,9 +2237,13 @@ def get_country_stats(country: str = "Todos", db: Session = Depends(get_db), cur
     
     # Base queries
     q_users = db.query(User)
-    q_suppliers = db.query(Supplier) # Suppliers might not have country, returning total
+    q_suppliers = db.query(Supplier)
     q_products = db.query(Product).filter(Product.active == True)
     
+    if country and country != "Todos":
+        q_suppliers = q_suppliers.filter(func.trim(Supplier.country) == country.strip())
+        q_products = q_products.filter(Product.available_countries.ilike(f'%"{country}"%'))
+
     # Revenue: sum over paid orders. If filtering by country, join User.
     q_revenue = db.query(func.sum(Order.total_cop)).filter(Order.status.in_(paid_statuses))
     if country and country != "Todos":
@@ -2457,7 +2491,9 @@ def get_accounting_report(
     
     # Check country_admin permissions
     if getattr(current_user, 'admin_role', '') == 'country_admin':
-        country = getattr(current_user, 'admin_country', country)
+        admin_countries = [c.strip() for c in (current_user.admin_country or "").split(',') if c.strip()]
+        if not country or country not in admin_countries:
+            country = admin_countries[0] if admin_countries else None
         
     return calculate_financial_statement(db, period=period, country=country)
 
@@ -2484,7 +2520,9 @@ def create_operating_expense(
     Register a new manual operating expense.
     """
     if getattr(current_user, 'admin_role', '') == 'country_admin':
-        data.country = getattr(current_user, 'admin_country', data.country)
+        admin_countries = [c.strip() for c in (current_user.admin_country or "").split(',') if c.strip()]
+        if not data.country or data.country not in admin_countries:
+            data.country = admin_countries[0] if admin_countries else None
         
     expense = OperatingExpense(
         concept=data.concept,
@@ -2522,7 +2560,9 @@ def get_operating_expenses(
     start_dt, end_dt = get_period_dates(period)
     
     if getattr(current_user, 'admin_role', '') == 'country_admin':
-        country = getattr(current_user, 'admin_country', country)
+        admin_countries = [c.strip() for c in (current_user.admin_country or "").split(',') if c.strip()]
+        if not country or country not in admin_countries:
+            country = admin_countries[0] if admin_countries else None
         
     query = db.query(OperatingExpense).filter(
         OperatingExpense.created_at >= start_dt,
@@ -2556,8 +2596,10 @@ def delete_operating_expense(
     if not expense:
         raise HTTPException(status_code=404, detail="Gasto no encontrado")
         
-    if getattr(current_user, 'admin_role', '') == 'country_admin' and expense.country != getattr(current_user, 'admin_country', ''):
-        raise HTTPException(status_code=403, detail="No tienes permisos para eliminar gastos de otros países")
+    if getattr(current_user, 'admin_role', '') == 'country_admin':
+        admin_countries = [c.strip() for c in (current_user.admin_country or "").split(',') if c.strip()]
+        if expense.country not in admin_countries:
+            raise HTTPException(status_code=403, detail="No tienes permisos para eliminar gastos de otros países")
         
     db.delete(expense)
     db.commit()

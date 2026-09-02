@@ -1,4 +1,4 @@
-const CACHE_NAME = "tei-cache-v1";
+const CACHE_NAME = "tei-cache-v2";
 const ASSETS_TO_CACHE = [
   "/",
   "/index.html",
@@ -11,7 +11,7 @@ const ASSETS_TO_CACHE = [
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log("[Service Worker] Caching app shell");
+      console.log("[Service Worker] Caching app shell v2");
       return cache.addAll(ASSETS_TO_CACHE);
     })
   );
@@ -35,8 +35,7 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
-// Fetch: Network First strategy with Cache fallback
-// Exclude api requests and assets served from other hosts to prevent caching conflicts
+// Fetch: Network First for HTML/Navigate, Stale-While-Revalidate for JS/CSS
 self.addEventListener("fetch", (event) => {
   const requestUrl = new URL(event.request.url);
 
@@ -45,39 +44,48 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Skip non-GET requests (POST, PUT, DELETE should never be cached)
+  // Skip non-GET requests
   if (event.request.method !== "GET") {
     return;
   }
 
+  // Network First strategy for navigation requests (HTML)
+  if (event.request.mode === "navigate" || requestUrl.pathname === "/" || requestUrl.pathname === "/index.html") {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          const responseToCache = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseToCache);
+          });
+          return response;
+        })
+        .catch(() => {
+          // If network fails, try cache
+          return caches.match(event.request).then((cachedResponse) => {
+            return cachedResponse || caches.match("/");
+          });
+        })
+    );
+    return;
+  }
+
+  // For JS, CSS, and other static assets, use Cache First with Network Fallback
   event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        // If we got a valid response, clone and cache it for static web assets
-        if (
-          response &&
-          response.status === 200 &&
-          response.type === "basic" &&
-          !requestUrl.pathname.startsWith("/api")
-        ) {
+    caches.match(event.request).then((cachedResponse) => {
+      if (cachedResponse) {
+        return cachedResponse;
+      }
+      return fetch(event.request).then((response) => {
+        // Cache new assets if they are basic GETs
+        if (response && response.status === 200 && response.type === "basic") {
           const responseToCache = response.clone();
           caches.open(CACHE_NAME).then((cache) => {
             cache.put(event.request, responseToCache);
           });
         }
         return response;
-      })
-      .catch(() => {
-        // Offline or Network error: fallback to Cache
-        return caches.match(event.request).then((cachedResponse) => {
-          if (cachedResponse) {
-            return cachedResponse;
-          }
-          // If a page route is requested and fails, return the index.html fallback
-          if (event.request.mode === "navigate") {
-            return caches.match("/index.html");
-          }
-        });
-      })
+      });
+    })
   );
 });

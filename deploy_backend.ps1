@@ -40,7 +40,7 @@ Write-Host "Building and deploying backend..." -ForegroundColor Cyan
     --source . `
     --region $REGION `
     --allow-unauthenticated `
-    --update-env-vars="CLOUD_SQL_CONNECTION_NAME=$CONNECTION_NAME,DB_USER=postgres,DB_PASS=$DB_PASSWORD_PLAIN,DB_NAME=$DB_NAME,MAILGUN_API_KEY=REDACTED,MAILGUN_DOMAIN=tuempresainternacional.online,MAILGUN_API_URL=https://api.mailgun.net,EMAIL_SENDER=soporte@tuempresainternacional.online,SMTP_SERVER=smtp.mailgun.org,SMTP_PORT=587,EMAIL_PASSWORD=,GEMINI_API_KEY=REDACTED" `
+    --update-env-vars="CLOUD_SQL_CONNECTION_NAME=$CONNECTION_NAME,DB_USER=postgres,DB_PASS=$DB_PASSWORD_PLAIN,DB_NAME=$DB_NAME,MAILGUN_DOMAIN=tuempresainternacional.online,MAILGUN_API_URL=https://api.mailgun.net,EMAIL_SENDER=soporte@tuempresainternacional.online,SMTP_SERVER=smtp.mailgun.org,SMTP_PORT=587,EMAIL_PASSWORD=" `
     --add-cloudsql-instances=$CONNECTION_NAME `
     --port=8000
 

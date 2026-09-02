@@ -59,13 +59,13 @@ def validate_documents_with_gemini(rut_tuple, cedula_tuple, bank_tuple, user_dat
     try:
         # Prepare the prompt
         prompt = f"""
-        You are an expert KYC (Know Your Customer) identity verification AI.
-        Your task is to analyze three documents provided: 
+        You are an expert KYC (Know Your Customer) identity verification AI with a MAXIMUM PRECISION REQUIREMENT.
+        Your task is to perform an exhaustive, pixel-perfect analysis of three documents provided: 
         1. A RUT (Tax ID) document from Colombia.
         2. A Cédula de Ciudadanía (National ID) from Colombia.
         3. A Bank Account Certification.
 
-        You must compare the information visible in these documents against the provided Profile Data and the User's Manual Inputted Name below.
+        You must meticulously compare the information visible in these documents against the provided Profile Data and the User's Manual Inputted Name below.
         
         Profile Data (from Virtual Office):
         - Full Name (profile): {user_data.get('name', 'N/A')}
@@ -74,17 +74,17 @@ def validate_documents_with_gemini(rut_tuple, cedula_tuple, bank_tuple, user_dat
         - Manual Input - Full Name (as on Cédula): {user_data.get('input_full_name_cedula', 'N/A')}
 
         Instructions:
-        1. Extract the Full Name and Document Number (digits only) from the Cédula.
-        2. Extract the Name, NIT/ID (digits only), and the Municipality/City (Municipio / Ciudad / Dirección) and Tax Regime (Responsabilidades Fiscales / Régimen, e.g. "Responsable de IVA", "No Responsable de IVA", "Régimen Simplificado") from the RUT.
+        1. Extract the Full Name and Document Number (digits only) from the Cédula. Verify that all digits are correct without hallucinating.
+        2. Extract the Name, NIT/ID (digits only), and the Municipality/City (Municipio / Ciudad / Dirección) and Tax Regime (Responsabilidades Fiscales / Régimen, e.g. "Responsable de IVA", "No Responsable de IVA", "Régimen Simplificado", "O-47", "RST") from the RUT.
         3. Extract the Bank Name, Account Holder Name, Account Number (numbers only, digits only), and Account Type (Ahorros / Savings or Corriente / Checking) from the Bank Certificate.
-           - CRITICAL: Locate the exact bank account number (usually labeled as "Número de Cuenta", "No. de Cuenta", "Cuenta de Ahorros", "Ahorros N°", "Cuenta Corriente", or similar). 
-           - WARNING: A standard Colombian bank account number should be extracted in full. If your extracted account number has few digits, you may have missed or misread some digits. Look very closely at the certificate (including hyphens or spaces) and extract all digits.
-           - WARNING: Do NOT confuse the account number with phone numbers or system reference numbers.
-           - Extract the number blindly based *only* on the text visible in the document. Do not guess or truncate.
+           - CRITICAL PRECISION RULE: Locate the exact bank account number (usually labeled as "Número de Cuenta", "No. de Cuenta", "Cuenta de Ahorros", "Ahorros N°", "Cuenta Corriente", or similar). 
+           - DOUBLE-CHECK: Read the account number twice. A standard Colombian bank account number typically has between 9 and 16 digits. If your extracted account number has few digits, you have likely missed some. Look very closely at the certificate (including hyphens or spaces) and extract ALL digits correctly.
+           - ZERO-TOLERANCE: Do NOT confuse the account number with phone numbers, system reference numbers, or branch codes.
+           - Extract the number blindly based *only* on the text visible in the document. Do not guess, do not truncate, and do not round.
         4. Cross-verify the names:
-           - The Cédula extracted name, RUT extracted name, and Bank Certification account holder name MUST all match each other and match `Manual Input - Full Name`.
+           - The Cédula extracted name, RUT extracted name, and Bank Certification account holder name MUST all match each other exactly (ignoring casing and minor accents) and match `Manual Input - Full Name`.
         5. CRITICAL VALIDATION RULE: 
-           - If there is any mismatch between the names across the three documents, set "valid": false in the output JSON.
+           - If there is any mismatch between the names across the three documents, you MUST set "valid": false in the output JSON.
            - SPECIAL EXCEPTION FOR DEVELOPMENT TESTING: If the extracted name matches all documents and the user's manual input, but mismatches the virtual office profile's Full Name (e.g. Lauren vs Alexis), you may set "valid": true as long as the documents themselves are authentic and matching. Explain this in the "reason" field.
         6. Return a strict JSON object (no markdown formatting, no code blocks) with the following structure:
         {{
@@ -98,13 +98,13 @@ def validate_documents_with_gemini(rut_tuple, cedula_tuple, bank_tuple, user_dat
                 "extracted_name_rut": "...",
                 "extracted_name_bank": "...",
                 "bank_name": "...", // e.g. Bancolombia, Banco de Bogota
-                "bank_account_number": "...", // numbers only
+                "bank_account_number": "...", // numbers only, double-checked for precision
                 "bank_account_type": "...", // Ahorros or Corriente
                 "rut_nit": "...", // NIT number format
                 "rut_city": "...", // e.g. Medellin, Bogota, Cali
-                "rut_regime": "..." // e.g. Responsable de IVA, No Responsable
+                "rut_regime": "..." // e.g. Responsable de IVA, No Responsable, 47, RST
             }},
-            "reason": "Short explanation of success or failure, detailing any name/ID mismatches found."
+            "reason": "Detailed explanation of success or failure, specifying any exact name, ID, or account number mismatches found."
         }}
         """
 
@@ -149,7 +149,7 @@ def validate_documents_with_gemini(rut_tuple, cedula_tuple, bank_tuple, user_dat
         if not api_key:
             raise ValueError("GEMINI_API_KEY environment variable is not configured.")
 
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key={api_key}"
         headers = {"Content-Type": "application/json"}
 
         logger.info("Sending documents directly to Gemini API via HTTP POST...")

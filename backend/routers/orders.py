@@ -87,18 +87,30 @@ def my_orders(db: Session = Depends(get_db), current_user=Depends(get_current_us
 
 
 from typing import Optional
+from backend.database.models.user import User
+from backend.database.models.order_item import OrderItem
 
 @router.get("/", response_model=List[OrderOut])
-def list_orders(country: Optional[str] = None, db: Session = Depends(get_db)):
-    from sqlalchemy.orm import joinedload
-    from backend.database.models.user import User
+def list_orders(country: Optional[str] = None, db: Session = Depends(get_db), current_user=Depends(get_current_user_optional)):
+    """Lista todas las órdenes (para el admin). Filtrado opcional por país."""
+    query = db.query(Order).order_by(Order.created_at.desc())
     
-    query = db.query(Order).options(joinedload(Order.user))
-    
+    # Enforce Country Admin constraints
+    if current_user and getattr(current_user, 'admin_role', None) == 'country_admin' and getattr(current_user, 'admin_country', None):
+        country = current_user.admin_country
+
     if country and country != 'Todos':
-        query = query.join(User, Order.user_id == User.id).filter(User.country.ilike(f"%{country}%"))
+        # Find users in that country to filter their orders
+        # Un join con User sería ideal, pero usando in_ es más simple para parches rápidos:
+        users_in_country = db.query(User.id).filter(User.country == country).all()
+        user_ids = [u[0] for u in users_in_country]
+        query = query.filter(Order.user_id.in_(user_ids))
         
-    orders = query.order_by(Order.created_at.desc()).all()
+    orders = query.all()
+    # Populate items
+    for o in orders:
+        items = db.query(OrderItem).filter(OrderItem.order_id == o.id).all()
+        o.items = items
     return orders
 
 

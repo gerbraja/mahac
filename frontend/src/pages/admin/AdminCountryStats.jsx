@@ -89,54 +89,56 @@ export default function AdminCountryStats() {
             </div>
 
             {/* Gráficos */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
+            {globalCountry === 'Todos' && (
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
 
-                {/* Gráfico de Barras: Ranking por Afiliados e Ingresos */}
-                <div className="bg-white p-6 rounded-lg shadow border border-gray-100 lg:col-span-2">
-                    <h2 className="text-lg font-bold text-gray-700 mb-4">Ranking Top 5 Países (Afiliados vs Ingresos)</h2>
-                    <div className="h-80">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={countryRanking} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                <XAxis dataKey="name" />
-                                <YAxis yAxisId="left" orientation="left" stroke="#8884d8" />
-                                <YAxis yAxisId="right" orientation="right" stroke="#82ca9d" tickFormatter={(val) => `$${val / 1000000}M`} />
-                                <Tooltip />
-                                <Legend />
-                                <Bar yAxisId="left" dataKey="afiliados" name="Nº Afiliados" fill="#8884d8" radius={[4, 4, 0, 0]} />
-                                <Bar yAxisId="right" dataKey="ingresos" name="Ingresos (COP)" fill="#82ca9d" radius={[4, 4, 0, 0]} />
-                            </BarChart>
-                        </ResponsiveContainer>
+                    {/* Gráfico de Barras: Ranking por Afiliados e Ingresos */}
+                    <div className="bg-white p-6 rounded-lg shadow border border-gray-100 lg:col-span-2">
+                        <h2 className="text-lg font-bold text-gray-700 mb-4">Ranking Top 5 Países (Afiliados vs Ingresos)</h2>
+                        <div className="h-80">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={countryRanking} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                    <XAxis dataKey="name" />
+                                    <YAxis yAxisId="left" orientation="left" stroke="#8884d8" />
+                                    <YAxis yAxisId="right" orientation="right" stroke="#82ca9d" tickFormatter={(val) => `$${val / 1000000}M`} />
+                                    <Tooltip />
+                                    <Legend />
+                                    <Bar yAxisId="left" dataKey="afiliados" name="Nº Afiliados" fill="#8884d8" radius={[4, 4, 0, 0]} />
+                                    <Bar yAxisId="right" dataKey="ingresos" name="Ingresos (COP)" fill="#82ca9d" radius={[4, 4, 0, 0]} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+
+                    {/* Gráfico de Pastel: Ingresos Nacionales vs Internacionales */}
+                    <div className="bg-white p-6 rounded-lg shadow border border-gray-100 lg:col-span-1">
+                        <h2 className="text-lg font-bold text-gray-700 mb-4">Ingresos: Local vs Internacional</h2>
+                        <div className="h-80">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                    <Pie
+                                        data={revenueSplit}
+                                        cx="50%"
+                                        cy="50%"
+                                        labelLine={true}
+                                        outerRadius={90}
+                                        fill="#8884d8"
+                                        dataKey="value"
+                                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                                    >
+                                        {revenueSplit.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={index === 0 ? '#10b981' : '#f59e0b'} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip />
+                                    <Legend />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        </div>
                     </div>
                 </div>
-
-                {/* Gráfico de Pastel: Ingresos Nacionales vs Internacionales */}
-                <div className="bg-white p-6 rounded-lg shadow border border-gray-100 lg:col-span-1">
-                    <h2 className="text-lg font-bold text-gray-700 mb-4">Ingresos: Local vs Internacional</h2>
-                    <div className="h-80">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                                <Pie
-                                    data={revenueSplit}
-                                    cx="50%"
-                                    cy="50%"
-                                    labelLine={true}
-                                    outerRadius={90}
-                                    fill="#8884d8"
-                                    dataKey="value"
-                                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                                >
-                                    {revenueSplit.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={index === 0 ? '#10b981' : '#f59e0b'} />
-                                    ))}
-                                </Pie>
-                                <Tooltip />
-                                <Legend />
-                            </PieChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
-            </div>
+            )}
         </div>
     );
 }

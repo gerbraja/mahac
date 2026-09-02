@@ -195,8 +195,27 @@ export default function RegisterForm({ referralCode = "", onSuccess = null, onBa
         let newMunicipioId = formData.municipio_id;
 
         if (selectedCountryCode === 'CO') {
-            // Auto-fill código DIVIPOLA/DANE (5 dígitos, DIAN obligatorio)
-            const divipolaCode = COLOMBIA_DIVIPOLA_COMPLETO[selectedStateCode]?.[cityName];
+            // Normalize strings to ignore accents and case for better matching
+            const normalizeString = (str) => {
+                if (!str) return "";
+                return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+            };
+
+            const stateCities = COLOMBIA_DIVIPOLA_COMPLETO[selectedStateCode] || {};
+            const normalizedInputCity = normalizeString(cityName);
+            
+            let divipolaCode = stateCities[cityName]; // Try exact match first
+            
+            if (!divipolaCode) {
+                // Try fuzzy/normalized match
+                const matchedKey = Object.keys(stateCities).find(
+                    key => normalizeString(key) === normalizedInputCity
+                );
+                if (matchedKey) {
+                    divipolaCode = stateCities[matchedKey];
+                }
+            }
+
             if (divipolaCode) {
                 newMunicipioId = divipolaCode;
                 newPostalCode = divipolaCode; // Use DIVIPOLA as the postal code
@@ -824,7 +843,7 @@ export default function RegisterForm({ referralCode = "", onSuccess = null, onBa
                                         outline: "none",
                                         color: "#333"
                                     }}
-                                    placeholder="Código postal"
+                                    placeholder={selectedCountryCode === "CO" ? "Ej: 11001" : "Código postal"}
                                 />
                             </div>
                         </div>

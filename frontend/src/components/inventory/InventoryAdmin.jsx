@@ -1,18 +1,24 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { useAdmin } from "../../context/AdminContext";
 
 const BASE = process.env.REACT_APP_API_BASE || "http://localhost:8000";
 
 export default function InventoryAdmin() {
+  const { globalCountry } = useAdmin();
   const [products, setProducts] = useState([]);
   const [adjust, setAdjust] = useState({ product_id: null, qty: 0 });
 
   useEffect(()=> {
     fetchProducts();
-  }, []);
+  }, [globalCountry]);
 
   const fetchProducts = async () => {
-    const res = await axios.get(`${BASE}/api/products`);
+    const queryParams = new URLSearchParams();
+    if (globalCountry && globalCountry !== 'Todos') {
+      queryParams.append('country', globalCountry);
+    }
+    const res = await axios.get(`${BASE}/api/products?${queryParams.toString()}`);
     setProducts(res.data);
   };
 

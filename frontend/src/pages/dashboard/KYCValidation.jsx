@@ -132,11 +132,30 @@ const KYCValidation = () => {
     };
 
     const handleCityChange = (cityName) => {
-        const divipolaCode = selectedStateCode === 'DC' ? '11001' : (COLOMBIA_DIVIPOLA_COMPLETO[selectedStateCode]?.[cityName] || '');
+        let divipolaCode = "";
+        if (selectedStateCode === 'DC') {
+            divipolaCode = '11001';
+        } else {
+            const normalizeString = (str) => {
+                if (!str) return "";
+                return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+            };
+            const stateCities = COLOMBIA_DIVIPOLA_COMPLETO[selectedStateCode] || {};
+            const normalizedInputCity = normalizeString(cityName);
+            
+            divipolaCode = stateCities[cityName];
+            if (!divipolaCode) {
+                const matchedKey = Object.keys(stateCities).find(
+                    key => normalizeString(key) === normalizedInputCity
+                );
+                if (matchedKey) divipolaCode = stateCities[matchedKey];
+            }
+        }
+
         setFormData(prev => ({
             ...prev,
             input_city: cityName,
-            municipio_id: divipolaCode
+            municipio_id: divipolaCode || ''
         }));
     };
 

@@ -6,20 +6,30 @@ const DashboardHome = () => {
     const [user, setUser] = useState(null);
     const [walletData, setWalletData] = useState(null);
     const [promoData, setPromoData] = useState(null);
+    const [foundersData, setFoundersData] = useState(null);
+    const [myMerchant, setMyMerchant] = useState(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [userResponse, walletResponse, promoResponse] = await Promise.all([
+                const [userResponse, walletResponse, promoResponse, foundersResponse, merchantResponse] = await Promise.all([
                     api.get('/auth/me'),
                     api.get('/api/wallet/summary').catch(() => ({ data: null })),
-                    api.get('/api/promotions/travel-status').catch(() => ({ data: null }))
+                    api.get('/api/promotions/travel-status').catch(() => ({ data: null })),
+                    api.get('/api/promotions/founders-club').catch(() => ({ data: null })),
+                    api.get('/api/merchants/my-merchant').catch(() => ({ data: null }))
                 ]);
                 setUser(userResponse.data);
                 setWalletData(walletResponse.data);
                 if (promoResponse && promoResponse.data) {
                     setPromoData(promoResponse.data);
+                }
+                if (foundersResponse && foundersResponse.data) {
+                    setFoundersData(foundersResponse.data);
+                }
+                if (merchantResponse && merchantResponse.data && merchantResponse.data.status !== 'none') {
+                    setMyMerchant(merchantResponse.data);
                 }
             } catch (error) {
                 console.error("Error fetching data:", error);
@@ -101,6 +111,172 @@ const DashboardHome = () => {
                 <p className="text-gray-600 text-lg">Bienvenido a tu oficina virtual</p>
             </div>
 
+            {/* Club de Fundadores Widget */}
+            {foundersData && (
+                <div className="bg-gradient-to-br from-gray-900 to-black text-yellow-500 rounded-2xl p-6 shadow-2xl border border-yellow-600/30 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-600/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
+                    <div className="relative z-10 flex flex-col md:flex-row items-center gap-6">
+                        <div className="text-6xl drop-shadow-[0_0_15px_rgba(234,179,8,0.5)]">👑</div>
+                        <div className="flex-1 text-center md:text-left">
+                            <h2 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-yellow-600 mb-2 uppercase tracking-widest">Club de Fundadores</h2>
+                            
+                            {foundersData.is_user_founder ? (
+                                <p className="text-yellow-100 font-medium">
+                                    ¡Felicidades! Eres un miembro exclusivo {foundersData.founder_tier ? `del nivel ${foundersData.founder_tier}` : 'del Club de Fundadores'}. Disfrutarás del {foundersData.founder_percentage || '1.2'}% de las ganancias globales hasta el 2034.
+                                </p>
+                            ) : (
+                                foundersData.count < 386 ? (
+                                    <p className="text-yellow-100 font-medium">
+                                        Activa un Paquete 2 o 3 para ganar el 1.2%, o un Paquete 4 en adelante para asegurar el 2.7% de ganancias globales. ¡Cupos súper limitados!
+                                    </p>
+                                ) : foundersData.count < 770 ? (
+                                    <>
+                                        <p className="text-yellow-100 font-medium mb-3">
+                                            ¡Última oportunidad! Ingresa al Club Exclusivo de Fundadores: 1.2% (P. 2 y 3) o 2.7% (P. 4+).
+                                        </p>
+                                        <div className="bg-black/50 rounded-lg p-3 inline-block border border-yellow-500/30">
+                                            <span className="text-white font-bold">🔥 Quedan solo <span className="text-yellow-400 text-xl mx-1">{770 - foundersData.count}</span> de 770 cupos disponibles.</span>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <p className="text-red-400 font-bold">
+                                        El Club de Fundadores ha alcanzado su límite de 770 miembros. Los cupos están agotados.
+                                    </p>
+                                )
+                            )}
+                        </div>
+                        
+                        {!foundersData.is_user_founder && foundersData.count < 770 && (
+                            <Link to="/dashboard/store" className="whitespace-nowrap px-6 py-3 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-400 hover:to-yellow-500 text-black font-black uppercase text-sm rounded-xl shadow-[0_0_20px_rgba(234,179,8,0.4)] transition-all hover:scale-105 active:scale-95">
+                                Asegurar mi cupo
+                            </Link>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* Travel Promotion Section */}
+            {promoData && (
+                <div className="bg-gradient-to-br from-indigo-900 to-blue-950 text-white rounded-3xl p-6 md:p-8 shadow-2xl relative overflow-hidden border border-indigo-800 mt-6">
+                    {/* Decorative Background */}
+                    <div className="absolute right-0 top-0 w-64 h-64 bg-teal-500 opacity-10 rounded-full blur-3xl"></div>
+                    <div className="absolute left-1/4 bottom-0 w-48 h-48 bg-purple-500 opacity-10 rounded-full blur-2xl"></div>
+
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-6">
+                        <div>
+                            <span className="bg-teal-400 text-teal-950 font-bold px-4 py-1.5 rounded-full text-xs uppercase tracking-wider mb-3 inline-block">
+                                ✈️ Gran Campaña de Viajes
+                            </span>
+                            <h2 className="text-3xl font-extrabold tracking-tight">¡Próximo Destino: Punta Cana o San Andrés! 🏖️</h2>
+                            <p className="text-blue-200 mt-1">Periodo de calificación: 4 de Septiembre al 3 de Noviembre de 2026</p>
+                        </div>
+                        {/* Countdown */}
+                        <div className="bg-white bg-opacity-10 backdrop-blur-md rounded-2xl p-4 border border-white border-opacity-20 text-center min-w-[150px] z-10">
+                            <span className="text-xs text-blue-200 block uppercase font-semibold">Tiempo Restante</span>
+                            <span className="text-2xl font-bold block mt-1">
+                                {(() => {
+                                    const diff = new Date('2026-11-03T23:59:59') - new Date();
+                                    const days = Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+                                    return days > 0 ? `${days} Días` : '¡Finalizado!';
+                                })()}
+                            </span>
+                        </div>
+                    </div>
+
+                    {!promoData.eligible && (
+                        <div className="mb-6 bg-red-500 bg-opacity-20 border border-red-400 text-red-100 rounded-xl p-4 text-sm font-semibold flex items-start gap-3 z-10 relative shadow-inner">
+                            <span className="text-xl mt-0.5">⚠️</span>
+                            <div>
+                                <h4 className="text-lg font-bold text-red-200 mb-1">Tu cuenta no está calificando aún</h4>
+                                <p>Para participar oficialmente y ganar los viajes, debes tener activo un <strong>Paquete de nivel 4, 5, 6 o 7 en adelante</strong> durante el periodo de la campaña.</p>
+                                <p className="mt-2 text-xs opacity-90">¡Adquiere o mejora tu paquete ahora para que tu progreso y el de tu red cuenten!</p>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 z-10 relative">
+                        {/* Nacional Trip */}
+                        <div className="bg-white bg-opacity-5 rounded-2xl p-6 border border-white border-opacity-10">
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="text-xl font-bold text-teal-300 flex items-center gap-2">
+                                    🇨🇴 Viaje Nacional (San Andrés / Sta. Marta)
+                                </h3>
+                                <span className="bg-teal-400 text-teal-950 font-extrabold px-3 py-1 rounded-lg text-sm">
+                                    Ganados: {promoData.national_won} / 2 🎟️
+                                </span>
+                            </div>
+                            
+                            <div className="space-y-4">
+                                <div>
+                                    <div className="flex justify-between text-sm mb-1 text-gray-200">
+                                        <span>Líneas Calificadas (mín. 3 Directos)</span>
+                                        <span className="font-bold text-teal-300">{promoData.national_legs} / 3 (para 1 viaje) o 6 (para 2)</span>
+                                    </div>
+                                    <div className="w-full bg-blue-950 bg-opacity-80 rounded-full h-3 overflow-hidden border border-white border-opacity-5">
+                                        <div 
+                                            className="bg-gradient-to-r from-teal-400 to-emerald-400 h-full rounded-full transition-all duration-500" 
+                                            style={{ width: `${Math.min(100, (promoData.national_legs / 6) * 100)}%` }}
+                                        ></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Internacional Trip */}
+                        <div className="bg-white bg-opacity-5 rounded-2xl p-6 border border-white border-opacity-10">
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="text-xl font-bold text-pink-300 flex items-center gap-2">
+                                    🌴 Viaje Internacional (Punta Cana)
+                                </h3>
+                                <span className="bg-pink-400 text-pink-950 font-extrabold px-3 py-1 rounded-lg text-sm">
+                                    Ganados: {promoData.international_won} / 2 🎟️
+                                </span>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div>
+                                    <div className="flex justify-between text-sm mb-1 text-gray-200">
+                                        <span>Líneas Calificadas (mín. 5 Directos)</span>
+                                        <span className="font-bold text-pink-300">{promoData.international_legs} / 5 (para 1 viaje) o 10 (para 2)</span>
+                                    </div>
+                                    <div className="w-full bg-blue-950 bg-opacity-80 rounded-full h-3 overflow-hidden border border-white border-opacity-5">
+                                        <div 
+                                            className="bg-gradient-to-r from-pink-400 to-rose-400 h-full rounded-full transition-all duration-500" 
+                                            style={{ width: `${Math.min(100, (promoData.international_legs / 10) * 100)}%` }}
+                                        ></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Directs List details */}
+                    {promoData.directs_details && promoData.directs_details.length > 0 && (
+                        <div className="mt-8 pt-6 border-t border-white border-opacity-10 z-10 relative">
+                            <h4 className="font-bold text-lg text-blue-200 mb-4 flex items-center gap-2">
+                                👥 Desglose de tus Ramas Unilevel (Periodo Campaña):
+                            </h4>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                                {promoData.directs_details.map((direct, i) => (
+                                    <div key={i} className="bg-blue-950 bg-opacity-40 p-4 rounded-xl border border-white border-opacity-5">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <span className="font-bold block truncate max-w-[120px]" title={direct.name}>{direct.name}</span>
+                                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${direct.active_in_period ? 'bg-green-500 text-green-950' : 'bg-gray-600 text-gray-200'}`}>
+                                                {direct.active_in_period ? 'Frontal Activo' : 'Inactivo'}
+                                            </span>
+                                        </div>
+                                        <div className="text-sm text-gray-300 flex justify-between">
+                                            <span>Directos válidos:</span>
+                                            <span className="font-bold text-teal-400">{direct.downline_count}</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+
             {/* Statistics Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {statsCards.map((stat, index) => (
@@ -124,6 +300,63 @@ const DashboardHome = () => {
                     </div>
                 ))}
             </div>
+
+            {/* Merchant Application Banner */}
+            {!myMerchant ? (
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-2xl p-6 flex flex-col md:flex-row justify-between items-center gap-4 shadow-sm text-left">
+                    <div className="flex items-center gap-4">
+                        <span className="text-4xl">🏪</span>
+                        <div>
+                            <h3 className="text-lg font-bold text-blue-900">¿Tienes un negocio abierto al público?</h3>
+                            <p className="text-sm text-gray-600 font-normal">Hazte Comercio Aliado y atrae a toda la comunidad TEI a tu establecimiento para multiplicar tus ventas.</p>
+                        </div>
+                    </div>
+                    <Link to="/dashboard/merchant-apply" className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-2.5 rounded-xl shadow-md transition-all text-sm whitespace-nowrap">
+                        🏪 Postular mi Negocio
+                    </Link>
+                </div>
+            ) : myMerchant.status === 'pending' ? (
+                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 flex items-center gap-4 shadow-sm text-left">
+                    <span className="text-3xl">⏳</span>
+                    <div>
+                        <h3 className="text-lg font-bold text-amber-800">Postulación de Comercio en Revisión</h3>
+                        <p className="text-sm text-gray-600 font-normal">
+                            Estamos revisando la solicitud de tu negocio <strong>"{myMerchant.name}"</strong>. Te notificaremos por correo cuando el portal de ventas esté activo.
+                        </p>
+                    </div>
+                </div>
+            ) : myMerchant.status === 'active' ? (
+                <div className="bg-green-50 border border-green-200 rounded-2xl p-6 flex flex-col md:flex-row justify-between items-center gap-4 shadow-sm text-left">
+                    <div className="flex items-center gap-4">
+                        <span className="text-4xl">🏪</span>
+                        <div>
+                            <h3 className="text-lg font-bold text-green-900">Comercio Aliado Activo: {myMerchant.name}</h3>
+                            <p className="text-sm text-gray-600 font-normal">El portal de tu negocio está listo para que tus cajeros registren ventas y acumulen cashback.</p>
+                        </div>
+                    </div>
+                    <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+                        <button 
+                            type="button"
+                            onClick={() => {
+                                const url = `${window.location.origin}/magic-merchant/${myMerchant.magic_token}`;
+                                navigator.clipboard.writeText(url);
+                                alert('¡Enlace Mágico de Caja copiado al portapapeles!');
+                            }}
+                            className="bg-white border border-green-200 hover:bg-green-100 text-green-700 font-semibold px-4 py-2.5 rounded-xl text-sm transition-all"
+                        >
+                            🔗 Copiar Link de Caja
+                        </button>
+                        <a 
+                            href={`${window.location.origin}/magic-merchant/${myMerchant.magic_token}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="bg-green-600 hover:bg-green-700 text-white font-semibold px-5 py-2.5 rounded-xl text-sm text-center shadow-md transition-all whitespace-nowrap"
+                        >
+                            💻 Abrir Caja
+                        </a>
+                    </div>
+                </div>
+            ) : null}
 
             {/* Pre-Affiliate Alert or Active Status */}
             {isPreAffiliate ? (
@@ -205,128 +438,6 @@ const DashboardHome = () => {
                     </div>
                 </div>
             )}
-            {/* Travel Promotion Section */}
-            {promoData && (
-                <div className="bg-gradient-to-br from-indigo-900 to-blue-950 text-white rounded-3xl p-6 md:p-8 shadow-2xl relative overflow-hidden border border-indigo-800 mt-6">
-                    {/* Decorative Background */}
-                    <div className="absolute right-0 top-0 w-64 h-64 bg-teal-500 opacity-10 rounded-full blur-3xl"></div>
-                    <div className="absolute left-1/4 bottom-0 w-48 h-48 bg-purple-500 opacity-10 rounded-full blur-2xl"></div>
-
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-6">
-                        <div>
-                            <span className="bg-teal-400 text-teal-950 font-bold px-4 py-1.5 rounded-full text-xs uppercase tracking-wider mb-3 inline-block">
-                                ✈️ Gran Campaña de Viajes
-                            </span>
-                            <h2 className="text-3xl font-extrabold tracking-tight">¡Próximo Destino: Punta Cana o San Andrés! 🏖️</h2>
-                            <p className="text-blue-200 mt-1">Periodo de calificación: 4 de Septiembre al 3 de Noviembre de 2026</p>
-                        </div>
-                        {/* Countdown */}
-                        <div className="bg-white bg-opacity-10 backdrop-blur-md rounded-2xl p-4 border border-white border-opacity-20 text-center min-w-[150px] z-10">
-                            <span className="text-xs text-blue-200 block uppercase font-semibold">Tiempo Restante</span>
-                            <span className="text-2xl font-bold block mt-1">
-                                {(() => {
-                                    const diff = new Date('2026-11-03T23:59:59') - new Date();
-                                    const days = Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
-                                    return days > 0 ? `${days} Días` : '¡Finalizado!';
-                                })()}
-                            </span>
-                        </div>
-                    </div>
-
-                    {!promoData.eligible && (
-                        <div className="mb-6 bg-red-500 bg-opacity-20 border border-red-400 text-red-100 rounded-xl p-4 text-sm font-semibold flex items-start gap-3 z-10 relative shadow-inner">
-                            <span className="text-xl mt-0.5">⚠️</span>
-                            <div>
-                                <h4 className="text-lg font-bold text-red-200 mb-1">Tu cuenta no está calificando aún</h4>
-                                <p>Para participar oficialmente y ganar los viajes, debes tener activo un <strong>Paquete de nivel 3, 4 o 5 en adelante</strong> durante el periodo de la campaña.</p>
-                                <p className="mt-2 text-xs opacity-90">¡Adquiere o mejora tu paquete ahora para que tu progreso y el de tu red cuenten!</p>
-                            </div>
-                        </div>
-                    )}
-
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 z-10 relative">
-                        {/* Nacional Trip */}
-                        <div className="bg-white bg-opacity-5 rounded-2xl p-6 border border-white border-opacity-10">
-                            <div className="flex justify-between items-center mb-4">
-                                <h3 className="text-xl font-bold text-teal-300 flex items-center gap-2">
-                                    🇨🇴 Viaje Nacional (San Andrés / Sta. Marta)
-                                </h3>
-                                <span className="bg-teal-400 text-teal-950 font-extrabold px-3 py-1 rounded-lg text-sm">
-                                    Ganados: {promoData.national_won} / 2 🎟️
-                                </span>
-                            </div>
-                            
-                            <div className="space-y-4">
-                                <div>
-                                    <div className="flex justify-between text-sm mb-1 text-gray-200">
-                                        <span>Líneas Calificadas (min. 3 indirectos)</span>
-                                        <span className="font-bold text-teal-300">{promoData.national_legs} / 3 (para 1 viaje) o 6 (para 2)</span>
-                                    </div>
-                                    <div className="w-full bg-blue-950 bg-opacity-80 rounded-full h-3 overflow-hidden border border-white border-opacity-5">
-                                        <div 
-                                            className="bg-gradient-to-r from-teal-400 to-emerald-400 h-full rounded-full transition-all duration-500" 
-                                            style={{ width: `${Math.min(100, (promoData.national_legs / 6) * 100)}%` }}
-                                        ></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Internacional Trip */}
-                        <div className="bg-white bg-opacity-5 rounded-2xl p-6 border border-white border-opacity-10">
-                            <div className="flex justify-between items-center mb-4">
-                                <h3 className="text-xl font-bold text-pink-300 flex items-center gap-2">
-                                    🌴 Viaje Internacional (Punta Cana)
-                                </h3>
-                                <span className="bg-pink-400 text-pink-950 font-extrabold px-3 py-1 rounded-lg text-sm">
-                                    Ganados: {promoData.international_won} / 2 🎟️
-                                </span>
-                            </div>
-
-                            <div className="space-y-4">
-                                <div>
-                                    <div className="flex justify-between text-sm mb-1 text-gray-200">
-                                        <span>Líneas Calificadas (min. 5 indirectos)</span>
-                                        <span className="font-bold text-pink-300">{promoData.international_legs} / 5 (para 1 viaje) o 10 (para 2)</span>
-                                    </div>
-                                    <div className="w-full bg-blue-950 bg-opacity-80 rounded-full h-3 overflow-hidden border border-white border-opacity-5">
-                                        <div 
-                                            className="bg-gradient-to-r from-pink-400 to-rose-400 h-full rounded-full transition-all duration-500" 
-                                            style={{ width: `${Math.min(100, (promoData.international_legs / 10) * 100)}%` }}
-                                        ></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Directs List details */}
-                    {promoData.directs_details && promoData.directs_details.length > 0 && (
-                        <div className="mt-8 pt-6 border-t border-white border-opacity-10 z-10 relative">
-                            <h4 className="font-bold text-lg text-blue-200 mb-4 flex items-center gap-2">
-                                👥 Desglose de tus Ramas Unilevel (Periodo Campaña):
-                            </h4>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                                {promoData.directs_details.map((direct, i) => (
-                                    <div key={i} className="bg-blue-950 bg-opacity-40 p-4 rounded-xl border border-white border-opacity-5">
-                                        <div className="flex items-center justify-between mb-2">
-                                            <span className="font-bold block truncate max-w-[120px]" title={direct.name}>{direct.name}</span>
-                                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${direct.active_in_period ? 'bg-green-500 text-green-950' : 'bg-gray-600 text-gray-200'}`}>
-                                                {direct.active_in_period ? 'Frontal Activo' : 'Inactivo'}
-                                            </span>
-                                        </div>
-                                        <div className="text-sm text-gray-300 flex justify-between">
-                                            <span>Indirectos válidos:</span>
-                                            <span className="font-bold text-teal-400">{direct.downline_count}</span>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-                </div>
-            )}
-
             {/* Quick Actions */}
             <div>
                 <h2 className="text-2xl font-bold text-gray-800 mb-4">Acciones Rápidas</h2>

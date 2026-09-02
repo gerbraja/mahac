@@ -82,30 +82,37 @@ def send_welcome_email(to_email: str, username: str, full_name: str, referral_li
     try:
         html = f"""
         <html>
-          <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-            <div style="max-width: 600px; margin: 0 auto; border: 1px solid #eee; border-radius: 10px; overflow: hidden;">
-              <div style="background-color: #4F46E5; padding: 20px; text-align: center; color: white;">
-                <h1 style="margin: 0;">¡Bienvenido a la Familia TEI!</h1>
+          <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; background-color: #f3f4f6; margin: 0; padding: 20px;">
+            <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+              <div style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 30px; text-align: center; color: white;">
+                <div style="font-size: 40px; margin-bottom: 10px;">🌟</div>
+                <h1 style="margin: 0; font-size: 26px;">¡Felicidades y Bienvenido!</h1>
+                <p style="margin: 8px 0 0; opacity: 0.9; font-size: 16px;">Hoy comienza tu camino hacia la libertad financiera.</p>
               </div>
-              <div style="padding: 30px;">
-                <p>Hola <strong>{full_name}</strong>,</p>
-                <p>¡Estamos muy emocionados de tenerte con nosotros! Tu registro en <strong>Centro Comercial Virtual TEI</strong> ha sido exitoso.</p>
+              <div style="padding: 35px 30px;">
+                <p style="font-size: 16px;">Hola <strong>{full_name}</strong>,</p>
+                <p style="font-size: 16px;">Nos llena de emoción darte la bienvenida a la <strong>Familia TEI (Centro Comercial Virtual)</strong>. Has tomado una de las decisiones más importantes para tu futuro: <strong>has dado el primer paso hacia la construcción de tus sueños.</strong></p>
                 
-                <div style="background-color: #f9fafb; border-left: 4px solid #4F46E5; padding: 15px; margin: 20px 0;">
-                  <p style="margin: 0;"><strong>Tu Usuario:</strong> {username}</p>
-                  <p style="margin: 5px 0 0;"><strong>Tu Enlace de Referido:</strong></p>
-                  <a href="{referral_link}" style="color: #4F46E5; text-decoration: none;">{referral_link}</a>
+                <p style="font-size: 16px;">A partir de hoy, cuentas con todas las herramientas para generar ingresos, crecer profesionalmente y alcanzar esa libertad financiera que tanto anhelas. ¡Nosotros estamos aquí para apoyarte en cada etapa de tu éxito!</p>
+                
+                <div style="background-color: #f0f9ff; border: 1px solid #bae6fd; border-left: 4px solid #3b82f6; border-radius: 4px; padding: 20px; margin: 25px 0;">
+                  <h4 style="margin: 0 0 15px 0; color: #0369a1; font-size: 16px;">Tus Credenciales de Acceso</h4>
+                  <p style="margin: 0 0 10px 0; font-size: 15px;">👤 <strong>Usuario:</strong> {username}</p>
+                  <p style="margin: 0; font-size: 15px;">🔗 <strong>Tu Enlace de Referido Exclusivo:</strong><br/>
+                  <a href="{referral_link}" style="color: #2563eb; text-decoration: none; word-break: break-all;">{referral_link}</a></p>
                 </div>
 
-                <p>Estás a un paso de comenzar a generar ingresos. Explora tu oficina virtual y completa tu perfil para comenzar.</p>
+                <p style="font-size: 16px; text-align: center; font-weight: bold; color: #1e3a8a;">¡Tu negocio ya está en marcha! Explora tu oficina virtual y prepárate para brillar.</p>
                 
-                <div style="text-align: center; margin-top: 30px;">
-                  <a href="https://tuempresainternacional.com/login" style="background-color: #4F46E5; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;">Ingresar a mi Cuenta</a>
+                <div style="text-align: center; margin-top: 35px;">
+                  <a href="https://tuempresainternacional.com/login" style="background: linear-gradient(to right, #3b82f6, #1e40af); color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px; display: inline-block; box-shadow: 0 4px 6px rgba(59,130,246,0.3);">
+                    Ingresar a mi Oficina Virtual
+                  </a>
                 </div>
               </div>
-              <div style="background-color: #f3f4f6; padding: 15px; text-align: center; font-size: 12px; color: #666;">
-                <p>&copy; {datetime.now().year} Centro Comercial Virtual TEI. Todos los derechos reservados.</p>
-                <p>Esta empresa es de Dios y para su Gloria.</p>
+              <div style="background-color: #1f2937; padding: 20px; text-align: center; font-size: 12px; color: #9ca3af;">
+                <p style="margin: 0;">&copy; {datetime.now().year} Centro Comercial Virtual TEI. Todos los derechos reservados.</p>
+                <p style="margin: 5px 0 0;">Esta empresa es de Dios y para su Gloria.</p>
               </div>
             </div>
           </body>
@@ -293,3 +300,54 @@ def send_admin_alert_email(subject: str, alert_message: str):
         )
     except Exception as e:
         logger.error(f"Failed in send_admin_alert_email process: {str(e)}")
+
+
+def send_physical_sale_confirmation_email(
+    to_email: str,
+    user_name: str,
+    merchant_name: str,
+    sale_amount: float,
+    commission_amount: float,
+    transaction_id: int
+):
+    try:
+        html = f"""
+        <html>
+          <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; background-color: #f3f4f6; margin: 0; padding: 20px;">
+            <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+              <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 30px; text-align: center; color: white;">
+                <div style="font-size: 40px; margin-bottom: 10px;">🛍️</div>
+                <h1 style="margin: 0; font-size: 24px;">¡Compra Registrada Exitosamente!</h1>
+                <p style="margin: 8px 0 0; opacity: 0.9; font-size: 16px;">Centro Comercial Virtual TEI</p>
+              </div>
+              <div style="padding: 35px 30px;">
+                <p style="font-size: 16px;">Hola <strong>{user_name}</strong>,</p>
+                <p style="font-size: 16px;">Te informamos que se ha registrado una compra física asociada a tu cuenta de afiliado:</p>
+                
+                <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-left: 4px solid #10b981; border-radius: 4px; padding: 20px; margin: 25px 0;">
+                  <h4 style="margin: 0 0 15px 0; color: #166534; font-size: 16px;">Detalle de la Compra</h4>
+                  <p style="margin: 0 0 10px 0; font-size: 15px;">🏢 <strong>Establecimiento:</strong> {merchant_name}</p>
+                  <p style="margin: 0 0 10px 0; font-size: 15px;">💰 <strong>Monto de la Compra:</strong> ${sale_amount:,.2f} COP</p>
+                  <p style="margin: 0 0 10px 0; font-size: 15px;">🎟️ <strong>Transacción ID:</strong> #{transaction_id}</p>
+                  <p style="margin: 0; font-size: 15px;">📈 <strong>Comisión para Puntos/Red:</strong> Generada y pendiente de liberación</p>
+                </div>
+
+                <p style="font-size: 16px; text-align: center; font-weight: bold; color: #15803d;">¡Gracias por comprar en nuestros comercios aliados y seguir creciendo con la red TEI!</p>
+              </div>
+              <div style="background-color: #1f2937; padding: 20px; text-align: center; font-size: 12px; color: #9ca3af;">
+                <p style="margin: 0;">&copy; {datetime.now().year} Centro Comercial Virtual TEI. Todos los derechos reservados.</p>
+                <p style="margin: 5px 0 0;">Esta empresa es de Dios y para su Gloria.</p>
+              </div>
+            </div>
+          </body>
+        </html>
+        """
+        _send_email_message(
+            to_email=to_email,
+            subject=f"🛍️ Compra registrada en {merchant_name} - Centro Comercial TEI",
+            html_content=html,
+            from_name="Notificaciones TEI",
+            from_email="notificaciones@tuempresainternacional.online"
+        )
+    except Exception as e:
+        logger.error(f"Failed in send_physical_sale_confirmation_email: {str(e)}")

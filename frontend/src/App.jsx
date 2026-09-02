@@ -6,6 +6,7 @@ import CartPage from "./pages/CartPage";
 import DashboardLayout from "./components/layout/DashboardLayout";
 import MarketingBubbles from "./components/MarketingBubbles";
 import PwaInstallPrompt from "./components/PwaInstallPrompt";
+import MagicMerchantLogin from "./pages/auth/MagicMerchantLogin";
 
 // Lazy imports for pages
 const MatrixView = React.lazy(() => import("./pages/dashboard/MatrixView"));
@@ -35,6 +36,8 @@ const CompleteRegistration = React.lazy(() => import("./pages/CompleteRegistrati
 const Opportunity = React.lazy(() => import("./pages/Opportunity"));
 const Checkout = React.lazy(() => import("./pages/Checkout"));
 const SupplierInventory = React.lazy(() => import("./pages/SupplierInventory"));
+const MerchantPortal = React.lazy(() => import("./pages/merchant/MerchantPortal"));
+const MerchantApply = React.lazy(() => import("./pages/dashboard/MerchantApply"));
 
 // Admin imports and lazy components
 import AdminLayout from './components/layout/AdminLayout';
@@ -60,6 +63,9 @@ const AdminCountryStats = React.lazy(() => import('./pages/admin/AdminCountrySta
 const AdminTaxes = React.lazy(() => import('./pages/admin/AdminTaxes'));
 const AdminAccounting = React.lazy(() => import('./pages/admin/AdminAccounting'));
 const AdminPromotions = React.lazy(() => import('./pages/admin/AdminPromotions'));
+const AdminCountryManagers = React.lazy(() => import('./pages/admin/AdminCountryManagers'));
+const AdminMerchants = React.lazy(() => import('./pages/admin/AdminMerchants'));
+const AdminMerchantsList = React.lazy(() => import('./pages/admin/AdminMerchantsList'));
 
 // Component to capture username from URL and redirect to home with ref parameter
 function ReferralRedirect() {
@@ -131,15 +137,18 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/opportunity" element={<Opportunity />} />
           <Route path="/personal" element={<Personal />} />
-          <Route path="/register" element={<RegisterRedirect />} />
+          {/* <Route path="/register" element={<React.Suspense fallback={<div className="flex h-screen items-center justify-center">Cargando...</div>}><Register /></React.Suspense>} />
+          <Route path="/forgot-password" element={<React.Suspense fallback={<div className="flex h-screen items-center justify-center">Cargando...</div>}><ForgotPassword /></React.Suspense>} /> */}
+          <Route path="/reset-password" element={<React.Suspense fallback={<div className="flex h-screen items-center justify-center">Cargando...</div>}><ResetPassword /></React.Suspense>} />
+          <Route path="/magic-merchant/:token" element={<MagicMerchantLogin />} />
           <Route path="/usuario/:username" element={<ReferralRedirect />} />
           <Route path="/complete-registration" element={<CompleteRegistration />} />
           <Route path="/cart" element={<CartPage />} />
           <Route path="/checkout" element={<Checkout />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/order-confirmation/:orderId" element={<OrderConfirmation />} />
           <Route path="/supplier-inventory/:token" element={<SupplierInventory />} />
           <Route path="/punto-de-entrega/:token" element={<PickupPointPortal />} />
+          <Route path="/merchant" element={<MerchantPortal />} />
 
           {/* Admin Routes */}
           <Route path="/admin" element={
@@ -168,6 +177,9 @@ export default function App() {
             <Route path="taxes" element={<AdminTaxes />} />
             <Route path="accounting" element={<AdminAccounting />} />
             <Route path="promotions" element={<AdminPromotions />} />
+            <Route path="country-managers" element={<AdminCountryManagers />} />
+            <Route path="merchants" element={<AdminMerchants />} />
+            <Route path="merchants-directory" element={<AdminMerchantsList />} />
           </Route>
 
           {/* User Dashboard Routes */}
@@ -190,6 +202,7 @@ export default function App() {
             <Route path="unilevel" element={<UnilevelView />} />
             <Route path="upgrade" element={<UpgradePackage />} />
             <Route path="kyc" element={<KYCValidation />} />
+            <Route path="merchant-apply" element={<MerchantApply />} />
             <Route path="binary" element={<div><h2>Binary Tree</h2><p>Coming soon...</p></div>} />
           </Route>
         </Routes>

@@ -173,7 +173,12 @@ export const COLOMBIA_DIVIPOLA_COMPLETO = {
         "Tubará": "08832",
         "Usiacurí": "08849"
     },
-    "DC": {},
+    "DC": {
+        "Bogotá, D.C.": "11001",
+        "Bogotá D.C.": "11001",
+        "Bogota": "11001",
+        "Bogotá": "11001"
+    },
     "BOL": {
         "Achí": "13006",
         "Altos del Rosario": "13030",
@@ -517,6 +522,10 @@ export const COLOMBIA_DIVIPOLA_COMPLETO = {
         "Unión Panamericana": "27810"
     },
     "CUN": {
+        "Bogotá, D.C.": "11001",
+        "Bogotá D.C.": "11001",
+        "Bogota": "11001",
+        "Bogotá": "11001",
         "Agua de Dios": "25001",
         "Albán": "25019",
         "Anapoima": "25035",

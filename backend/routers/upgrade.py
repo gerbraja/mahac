@@ -170,6 +170,14 @@ def purchase_upgrade(
 
     # 4. Update User Level
     current_user.package_level = data.target_level
+    
+    # Asignación al Club de Fundadores si es nivel >= 2 y no lo era
+    if data.target_level >= 2 and not current_user.is_founder:
+        from sqlalchemy import func
+        founders_count = db.query(func.count(User.id)).filter(User.is_founder == True).scalar() or 0
+        if founders_count < 770:
+            current_user.is_founder = True
+            
     db.commit()
     
     return {

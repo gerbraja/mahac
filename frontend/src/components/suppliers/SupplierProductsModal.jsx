@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../../api/api';
+import { useAdmin } from '../../context/AdminContext';
 
 const DEFAULT_CATEGORIES = [
     'Ropa y Accesorios', 'Calzado', 'Electrónica', 'Informática',
@@ -41,6 +42,7 @@ const labelStyle = {
 };
 
 export default function SupplierProductsModal({ supplier, onClose }) {
+    const { globalCountry } = useAdmin();
     const [tab, setTab] = useState('list'); // 'list' | 'create' | 'link'
     const [supplierProducts, setSupplierProducts] = useState([]);
     const [allProducts, setAllProducts] = useState([]);
@@ -72,7 +74,12 @@ export default function SupplierProductsModal({ supplier, onClose }) {
 
     const fetchSupplierProducts = async () => {
         try {
-            const res = await api.get(`/api/products/?supplier_id=${supplier.id}`);
+            const queryParams = new URLSearchParams();
+            queryParams.append('supplier_id', supplier.id);
+            if (globalCountry && globalCountry !== 'Todos') {
+                queryParams.append('country', globalCountry);
+            }
+            const res = await api.get(`/api/products/?${queryParams.toString()}`);
             setSupplierProducts(res.data);
         } catch (e) {
             console.error('Error fetching supplier products', e);
@@ -81,7 +88,11 @@ export default function SupplierProductsModal({ supplier, onClose }) {
 
     const fetchAllProducts = async () => {
         try {
-            const res = await api.get('/api/products/');
+            const queryParams = new URLSearchParams();
+            if (globalCountry && globalCountry !== 'Todos') {
+                queryParams.append('country', globalCountry);
+            }
+            const res = await api.get(`/api/products/?${queryParams.toString()}`);
             setAllProducts(res.data);
         } catch (e) {
             console.error('Error fetching all products', e);

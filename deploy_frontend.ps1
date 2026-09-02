@@ -4,7 +4,7 @@
 $ErrorActionPreference = "Stop"
 
 $PROJECT_ID = "tei-mlm-prod"
-$REGION = "southamerica-east1"
+$REGION = "us-central1"
 $FRONTEND_SERVICE = "tei-frontend-us"
 $FRONTEND_REGION = "us-central1"
 $FRONTEND_BUCKET = "tuempresainternacional-frontend"
