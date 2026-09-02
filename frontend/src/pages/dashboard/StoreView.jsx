@@ -160,8 +160,13 @@ const StoreView = () => {
                 if (fetchedUser && fetchedUser.status === 'active' && fetchedUser.package_level === 1) {
                     fetchedProducts = fetchedProducts.map(p => {
                         if (p.is_activation && p.package_level >= 2) {
+                            let newName = p.name;
+                            if (!newName.toUpperCase().includes('UPGRADE') && !newName.toUpperCase().includes('AVANCE')) {
+                                newName = `UPGRADE (AVANCE) FRANQUICIA INTERNACIONAL 1 A ${p.name}`;
+                            }
                             return {
                                 ...p,
+                                name: newName,
                                 price_local: Math.max(0, (p.price_local || 0) - 287000),
                                 original_price_local: p.price_local,
                                 is_upgrade: true

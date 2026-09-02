@@ -11,16 +11,16 @@ from backend.database.models.special_bonuses import SpecialBonus, TravelBonus, B
 
 # PERIODO DE LA CAMPAÑA DE VIAJES
 PROMO_START = datetime(2026, 9, 4, 0, 0, 0)
-PROMO_END = datetime(2026, 11, 3, 23, 59, 59)
+PROMO_END = datetime(2026, 12, 3, 23, 59, 59)
 
 
 def has_activation_or_upgrade_in_period(db: Session, user_id: int) -> bool:
     """
     Verifica si un usuario activó su membresía o compró un upgrade
-    a los paquetes 3, 4 o 5 dentro del periodo de promoción.
+    a los paquetes 4, 5, 6 o 7 dentro del periodo de promoción.
     """
     user = db.query(User).filter(User.id == user_id).first()
-    if not user or user.package_level not in [3, 4, 5]:
+    if not user or user.package_level not in [4, 5, 6, 7]:
         return False
         
     # Caso 1: Activación por primera vez en el periodo
@@ -55,17 +55,16 @@ def has_activation_or_upgrade_in_period(db: Session, user_id: int) -> bool:
 
 def is_qualifier_eligible(db: Session, user_id: int) -> bool:
     """
-    Verifica si el usuario calificador tiene activo el paquete 2, 3, 4 o 5.
-    Si ya tenía el paquete 2 desde antes de la promoción, es elegible.
-    Si estaba inactivo, debe haberse activado durante la promoción.
+    Verifica si el usuario calificador tiene activo un paquete nivel 4, 5, 6, 7 (Fundador Élite).
+    Si ya lo tenía desde antes de la promoción, es elegible.
     """
     user = db.query(User).filter(User.id == user_id).first()
-    if not user or user.package_level not in [3, 4, 5]:
+    if not user or user.package_level not in [4, 5, 6, 7]:
         return False
         
-    # Si tiene paquete activo en el momento de consulta (has_package=True y nivel >= 3)
+    # Si tiene paquete activo en el momento de consulta (has_package=True y nivel >= 4)
     # y no está suspendido, es elegible para participar.
-    if user.has_package and user.package_level >= 3 and user.status == "active":
+    if user.has_package and user.package_level >= 4 and user.status == "active":
         return True
         
     return False

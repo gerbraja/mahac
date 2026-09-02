@@ -168,14 +168,14 @@ const DashboardHome = () => {
                                 ✈️ Gran Campaña de Viajes
                             </span>
                             <h2 className="text-3xl font-extrabold tracking-tight">¡Próximo Destino: Punta Cana o San Andrés! 🏖️</h2>
-                            <p className="text-blue-200 mt-1">Periodo de calificación: 4 de Septiembre al 3 de Noviembre de 2026</p>
+                            <p className="text-blue-200 mt-1">Periodo de calificación: 4 de Septiembre al 3 de Diciembre de 2026</p>
                         </div>
                         {/* Countdown */}
                         <div className="bg-white bg-opacity-10 backdrop-blur-md rounded-2xl p-4 border border-white border-opacity-20 text-center min-w-[150px] z-10">
                             <span className="text-xs text-blue-200 block uppercase font-semibold">Tiempo Restante</span>
                             <span className="text-2xl font-bold block mt-1">
                                 {(() => {
-                                    const diff = new Date('2026-11-03T23:59:59') - new Date();
+                                    const diff = new Date('2026-12-03T23:59:59') - new Date();
                                     const days = Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
                                     return days > 0 ? `${days} Días` : '¡Finalizado!';
                                 })()}
