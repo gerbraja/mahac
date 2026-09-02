@@ -112,6 +112,7 @@ def list_products(
     supplier_id: int = None,
     include_inactive: bool = False,
     country: str = None,
+    admin_bypass: bool = False,
     db: Session = Depends(get_db),
     current_user: Optional[User] = Depends(get_current_user_optional)
 ):
@@ -132,7 +133,7 @@ def list_products(
         
     # Lógica de Visibilidad Dinámica para Tienda (Solo si NO filtramos por proveedor)
     # Bypass visibility rules for admin users so they can see all products in the Admin Panel
-    if supplier_id is None and not (current_user and current_user.is_admin):
+    if supplier_id is None and not admin_bypass and not (current_user and current_user.is_admin):
         from sqlalchemy import or_, and_
         
         if not current_user or current_user.status != 'active' or (current_user.package_level or 0) == 0:

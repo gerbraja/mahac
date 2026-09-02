@@ -217,6 +217,7 @@ export default function AdminDashboard() {
             if (globalCountry && globalCountry !== 'Todos') {
                 queryParams.append('country', globalCountry);
             }
+            queryParams.append('admin_bypass', 'true');
             const queryStr = queryParams.toString() ? `?${queryParams.toString()}` : '';
             const response = await api.get(`/api/products/${queryStr}`);
             const packages = response.data.filter(p => p.is_activation === true || p.is_upgrade === true);
