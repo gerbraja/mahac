@@ -46,6 +46,29 @@ def process_post_payment_commissions(db: Session, user_id: int, total_pv: int, i
              process_activation(
                  db, user_id, float(total_cop), pv=total_pv, is_full_activation=is_activation, package_level=package_level
              )
+             
+        # Distribute PV-based commissions for ALL orders with PV (Activations and Upgrades)
+        if total_pv > 0:
+            # 1. Unilevel Commissions
+            try:
+                from backend.mlm.services.unilevel_service import calculate_unilevel_commissions
+                calculate_unilevel_commissions(db, user_id, total_pv, max_levels=7)
+                print(f"✓ Distributed Unilevel commissions for {total_pv} PV")
+            except Exception as e:
+                print(f"⚠️ Error distributing Unilevel commissions: {e}")
+
+            # 2. Binary Millionaire Commissions
+            try:
+                from backend.mlm.services.binary_millionaire_service import distribute_millionaire_commissions
+                millionaire_member = db.query(BinaryMillionaireMember).filter(BinaryMillionaireMember.user_id == user_id).first()
+                if millionaire_member:
+                    distribute_millionaire_commissions(db, millionaire_member, total_pv)
+                    print(f"✓ Distributed Binary Millionaire commissions for {total_pv} PV")
+                else:
+                    print(f"⚠️ User {user_id} not found in Binary Millionaire, skipping Millionaire commissions.")
+            except Exception as e:
+                print(f"⚠️ Error distributing Binary Millionaire commissions: {e}")
+
     except Exception as e:
         print(f"❌ Error in process_activation call or vigencia extension: {e}")
 
@@ -123,15 +146,21 @@ def process_successful_payment(db: Session, order_id: int, transaction_id: int =
     total_cop = order.total_cop or 0.0
     needs_physical_delivery = False
     max_package_level = 0
+    is_merchant_billing = False
+    merchant_billing_base = 0.0
 
     items = db.query(OrderItem).filter(OrderItem.order_id == order.id).all()
     for item in items:
         prod = db.query(Product).filter(Product.id == item.product_id).first()
         if prod:
-            if prod.is_activation:
+            if prod.sku == 'CA-91_5-RC':
+                is_merchant_billing = True
+                merchant_billing_base = item.subtotal_cop / 1.19  # Calculate base without IVA
+                
+            if prod.is_activation or prod.is_upgrade:
                 is_activation = True
                 needs_physical_delivery = True # Legal compliance in Colombia
-            else:
+            elif prod.sku != 'CA-91_5-RC':
                 needs_physical_delivery = True
             
             total_pv += (prod.pv or 0) * item.quantity
@@ -147,6 +176,14 @@ def process_successful_payment(db: Session, order_id: int, transaction_id: int =
                     current_level = user.package_level or 0
                     if prod.package_level > current_level:
                         user.package_level = prod.package_level
+                        
+                        # Asignación automática al Club de Fundadores (Límite 770)
+                        if user.package_level >= 2 and not user.is_founder:
+                            from sqlalchemy import func
+                            founders_count = db.query(func.count(User.id)).filter(User.is_founder == True).scalar() or 0
+                            if founders_count < 770:
+                                user.is_founder = True
+                                
                         db.add(user)
 
     # 1. Update Order Status
@@ -197,5 +234,17 @@ def process_successful_payment(db: Session, order_id: int, transaction_id: int =
 
     # 5. Process Commissions (MLM)
     process_post_payment_commissions(db, order.user_id, total_pv, is_activation, total_cop, total_direct_bonus, max_package_level)
+    
+    # 6. Process Merchant Billing if CA-91_5-RC
+    if is_merchant_billing:
+        try:
+            from backend.mlm.services.physical_commission_service import distribute_physical_commissions_from_billing
+            distribute_physical_commissions_from_billing(db, order.user_id, merchant_billing_base)
+            order.status = "completado" # Finalizado, sin envío
+            db.add(order)
+            db.commit()
+            print(f"✓ Merchant Billing Processed for Order #{order.id}")
+        except Exception as e:
+            print(f"⚠️ Error Processing Merchant Billing: {e}")
 
     return True

@@ -12,8 +12,10 @@ router = APIRouter(prefix="/api/pickup-points", tags=["Pickup Points"])
 
 # MIGRATION: Add missing columns to pickup_points table
 @router.get("/migrate")
-def migrate_pickup_table(db: Session = Depends(get_db)):
+def migrate_pickup_table(db: Session = Depends(get_db), current_user = Depends(get_current_user)):
     """Migration endpoint: adds missing columns (country, active) to pickup_points table."""
+    if not getattr(current_user, "is_admin", False):
+        raise HTTPException(status_code=403, detail="Not authorized")
     results = []
     try:
         inspector = inspect(engine)
@@ -60,8 +62,10 @@ def migrate_pickup_table(db: Session = Depends(get_db)):
 
 # DIAGNOSTIC: Check table health and fix active=NULL rows
 @router.get("/check")
-def check_pickup_table(db: Session = Depends(get_db)):
+def check_pickup_table(db: Session = Depends(get_db), current_user = Depends(get_current_user)):
     """Diagnostic endpoint: runs migration first, then verifies the pickup_points table."""
+    if not getattr(current_user, "is_admin", False):
+        raise HTTPException(status_code=403, detail="Not authorized")
     try:
         inspector = inspect(engine)
         tables = inspector.get_table_names()

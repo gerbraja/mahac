@@ -125,15 +125,22 @@ def list_products(
     if country and country != 'Todos':
         query = query.filter(ProductModel.available_countries.ilike(f'%"{country}"%'))
     
-    # Cuando se filtra por proveedor, mostramos todos los estados (activo+suspendido)
+    is_admin_user = bool(current_user and getattr(current_user, "is_admin", False))
+    if not is_admin_user:
+        include_inactive = False
+        admin_bypass = False
+
+    # Cuando se filtra por proveedor, mostramos todos los estados (activo+suspendido) solo si es admin
     if supplier_id is not None:
         query = query.filter(ProductModel.supplier_id == supplier_id)
+        if not is_admin_user:
+            query = query.filter(ProductModel.active == True)
     elif not include_inactive:
         query = query.filter(ProductModel.active == True)
         
     # Lógica de Visibilidad Dinámica para Tienda (Solo si NO filtramos por proveedor)
     # Bypass visibility rules for admin users so they can see all products in the Admin Panel
-    if supplier_id is None and not admin_bypass and not (current_user and current_user.is_admin):
+    if supplier_id is None and not (admin_bypass and is_admin_user) and not is_admin_user:
         from sqlalchemy import or_, and_
         
         if not current_user or current_user.status != 'active' or (current_user.package_level or 0) == 0:
@@ -173,8 +180,8 @@ def list_products(
     return products
 
 @router.post("/fix-images-batch")
-def fix_images_batch(db: Session = Depends(get_db)):
-    """Endpoint temporal para actualizar imágenes de productos específicos."""
+def fix_images_batch(db: Session = Depends(get_db), current_user: User = Depends(get_current_admin_user)):
+    """Endpoint administrativo para actualizar imágenes de productos específicos."""
     updates = {
         "bon-21022": "https://storage.googleapis.com/tuempresainternacional-assets/images/REF-bon-21022-vestido-deportivo-verde-hilo-acanalado.png",
         "bon-21023": "https://storage.googleapis.com/tuempresainternacional-assets/images/bon-21023.png",
@@ -198,7 +205,7 @@ def fix_images_batch(db: Session = Depends(get_db)):
     return {"results": results}
 
 @router.get("/debug-reports")
-def debug_reports(db: Session = Depends(get_db)):
+def debug_reports(db: Session = Depends(get_db), current_user: User = Depends(get_current_admin_user)):
     from backend.database.models.order import Order
     from backend.database.models.order_item import OrderItem
     from backend.database.models.user import User

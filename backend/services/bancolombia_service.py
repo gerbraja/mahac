@@ -133,8 +133,8 @@ def verify_webhook_signature(body: bytes, signature_header: str) -> bool:
     Usar en POST /api/payments/webhook/breb
     """
     if not WEBHOOK_SECRET:
-        logger.warning("⚠️ BANCOLOMBIA_WEBHOOK_SECRET no configurado. Webhook no validado.")
-        return True  # En desarrollo aceptamos sin firma
+        logger.error("❌ BANCOLOMBIA_WEBHOOK_SECRET no configurado. Rechazando webhook por seguridad.")
+        return False
 
     expected = hmac.new(
         WEBHOOK_SECRET.encode(),

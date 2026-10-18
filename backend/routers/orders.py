@@ -91,8 +91,10 @@ from backend.database.models.user import User
 from backend.database.models.order_item import OrderItem
 
 @router.get("/", response_model=List[OrderOut])
-def list_orders(country: Optional[str] = None, db: Session = Depends(get_db), current_user=Depends(get_current_user_optional)):
+def list_orders(country: Optional[str] = None, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
     """Lista todas las órdenes (para el admin). Filtrado opcional por país."""
+    if not getattr(current_user, "is_admin", False):
+        raise HTTPException(status_code=403, detail="Solo administradores pueden listar todos los pedidos")
     query = db.query(Order).order_by(Order.created_at.desc())
     
     # Enforce Country Admin constraints

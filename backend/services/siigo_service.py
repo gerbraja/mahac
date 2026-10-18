@@ -327,3 +327,93 @@ def _map_payment_method(method: Optional[str]) -> dict:
         "debit_card":  {"id": 2397,  "contado": True},   # Tarjeta Débito
     }
     return mapping.get(method, {"id": 12059, "contado": True})
+
+
+def emit_consolidated_monthly_invoice(closing_record, user: User, db: Session) -> dict:
+    """
+    Emite la Factura Electrónica Consolidada Mensual (Conductores TEI RIDE o Negocios Aliados)
+    en Siigo -> DIAN, discriminando en Observaciones Legales el Mandato y Recaudo para Terceros
+    (Recaudo Bruto, Comisión Pasarela Wompi 2.65% + $700, y 91.5% Comunidad de Consumidores),
+    y facturando como ingreso propio gravado de TEI únicamente el 8.5% (Base Gravable + IVA 19%).
+    """
+    entity_label = "conductor TEI RIDE" if closing_record.entity_type == "driver" else "Negocio Aliado"
+    observations = (
+        f"Observaciones Legales / Detalle de Mandato y Recaudo para Terceros ({closing_record.period_key}): "
+        f"Queda discriminado en el cuerpo de la factura el total recaudado del {entity_label} "
+        f"(${closing_record.gross_collected_cop:,.2f} COP en {closing_record.movements_count} movimientos), "
+        f"el descuento real de pasarela Wompi 2.65% + $700 COP (${closing_record.wompi_fee_cop:,.2f} COP) "
+        f"y el recaudo destinado a la Comunidad de Consumidores 91.5% (${closing_record.network_91_5_cop:,.2f} COP: "
+        f"50% Caja Fuerte ${closing_record.vault_50_cop:,.2f} COP y 50% Bolsa Fidelización TEI ${closing_record.loyalty_bag_50_cop:,.2f} COP), "
+        f"dejando trazabilidad contable completa tanto para el conductor, Negocio Aliado, como para el Revisor Fiscal."
+    )
+    closing_record.legal_observations = observations
+
+    if SIIGO_TEST_MODE or not SIIGO_USERNAME or not SIIGO_ACCESS_KEY or not user or not (user.document_id or "").strip():
+        closing_record.siigo_invoice_id = f"FE-TEI-{closing_record.period_key}-{closing_record.entity_type.upper()[:3]}-{closing_record.id}"
+        closing_record.cufe = f"cufe-dian-{closing_record.period_key}-{closing_record.id}-tei-mandato"
+        closing_record.siigo_status = "simulada" if SIIGO_TEST_MODE else "emitida_local"
+        db.commit()
+        return {
+            "id": closing_record.siigo_invoice_id,
+            "cufe": closing_record.cufe,
+            "status": closing_record.siigo_status,
+            "observations": observations
+        }
+
+    token = get_siigo_token()
+    get_or_create_siigo_customer(user, token, db=db)
+
+    invoice_date = date.today().strftime("%Y-%m-%d")
+    base_price = round(float(closing_record.tei_taxable_base_cop), 2)
+    total_tei_8_5 = round(float(closing_record.tei_gross_8_5_cop), 2)
+
+    payload = {
+        "document": {"id": SIIGO_DOCUMENT_ID},
+        "date": invoice_date,
+        "customer": {
+            "identification": (user.document_id or "").replace(".", "").replace(",", "").strip(),
+            "branch_office": 0
+        },
+        "seller": SIIGO_SELLER_ID,
+        "observations": observations[:3900],
+        "items": [
+            {
+                "code": "CA-91_5-RC" if closing_record.entity_type == "merchant" else "TEI-RIDE-FEE",
+                "description": f"Comisión Uso Plataforma y Gestión Tecnológica TEI (8.5% Propio) - Periodo {closing_record.period_key} - {closing_record.entity_name}"[:200],
+                "quantity": 1,
+                "price": base_price,
+                "unit": {"code": "94"},
+                "taxes": [{"id": _get_tax_id_for_rate(19.0)}]
+            }
+        ],
+        "payments": [{"id": 12059, "value": total_tei_8_5, "due_date": invoice_date}]
+    }
+
+    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json", "Partner-Id": SIIGO_PARTNER_ID}
+    try:
+        resp = httpx.post(f"{SIIGO_API_URL}v1/invoices", json=payload, headers=headers, timeout=30)
+        resp.raise_for_status()
+        data = resp.json()
+        closing_record.siigo_invoice_id = str(data.get("id", ""))
+        closing_record.cufe = data.get("cufe", "") or data.get("uuid", "")
+        closing_record.siigo_status = "emitida"
+        db.commit()
+        _write_log(
+            db,
+            "emit_consolidated_monthly_invoice",
+            "success",
+            payload,
+            data,
+            resp.status_code,
+            siigo_invoice_id=closing_record.siigo_invoice_id,
+            cufe=closing_record.cufe
+        )
+        return data
+    except Exception as e:
+        error_msg = getattr(e.response, "text", str(e)) if hasattr(e, "response") else str(e)
+        closing_record.siigo_status = "error"
+        closing_record.error_message = error_msg[:1000]
+        db.commit()
+        _write_log(db, "emit_consolidated_monthly_invoice", "error", payload, error_msg)
+        return {"status": "error", "error": error_msg}
+

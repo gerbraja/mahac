@@ -6,6 +6,7 @@ class AlliedCommerce(Base):
     __tablename__ = "allied_commerces"
 
     id = Column(Integer, primary_key=True, index=True)
+    merchant_id = Column(Integer, unique=True, nullable=True, index=True)
     name = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
     address = Column(String(255), nullable=False)

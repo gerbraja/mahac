@@ -26,18 +26,9 @@ router = APIRouter()
 
 def verify_wompi_signature(payload: dict, secret: str | None) -> bool:
     """Verifica la firma del webhook de Wompi de acuerdo a su documentación oficial.
-    
-    Concatenación:
-    1. Propiedades de 'signature.properties' en el orden listado.
-    2. timestamp del evento.
-    3. Events Secret de Wompi.
-    
-    Calcula SHA256 y compara con 'signature.checksum'.
+    Si WOMPI_EVENTS_SECRET no está configurado en el entorno, verifica la autenticidad
+    de la transacción consultando directamente la API oficial de Wompi.
     """
-    if not secret:
-        # Si no hay secreto configurado, aceptar (útil para desarrollo/sandbox local)
-        return True
-        
     signature_data = payload.get("signature", {})
     checksum = signature_data.get("checksum")
     properties = signature_data.get("properties", [])
@@ -45,6 +36,30 @@ def verify_wompi_signature(payload: dict, secret: str | None) -> bool:
     
     if not checksum or not properties or timestamp is None:
         return False
+
+    if not secret:
+        # Si no hay WOMPI_EVENTS_SECRET configurado, verificar directamente contra la API de Wompi
+        tx_data = payload.get("data", {}).get("transaction", {})
+        wompi_id = tx_data.get("id")
+        expected_status = tx_data.get("status")
+        expected_ref = tx_data.get("reference")
+        if not wompi_id or not expected_status:
+            return False
+        pub_key = os.getenv("WOMPI_PUBLIC_KEY", "")
+        base_api = "https://sandbox.wompi.co/v1" if pub_key.startswith("pub_test_") else "https://production.wompi.co/v1"
+        try:
+            resp = requests.get(f"{base_api}/transactions/{wompi_id}", timeout=8)
+            if resp.status_code != 200:
+                return False
+            remote_tx = (resp.json() or {}).get("data", {})
+            return (
+                str(remote_tx.get("id")) == str(wompi_id)
+                and remote_tx.get("status") == expected_status
+                and remote_tx.get("reference") == expected_ref
+            )
+        except Exception as e:
+            logger.error(f"Error validating Wompi transaction {wompi_id} against API: {e}")
+            return False
         
     # Obtener valores de las propiedades indicadas
     concat_str = ""
@@ -222,6 +237,15 @@ def get_payment(payment_id: int, db: Session = Depends(get_db), user=Depends(get
     tx = db.query(PaymentTransaction).filter(PaymentTransaction.id == payment_id).first()
     if not tx:
         raise HTTPException(status_code=404, detail="Payment not found")
+    if not getattr(user, "is_admin", False):
+        if tx.order_id:
+            order = db.query(Order).filter(Order.id == tx.order_id).first()
+            if not order or order.user_id != user.id:
+                raise HTTPException(status_code=403, detail="Not authorized")
+        else:
+            meta_uid = (tx.metadata_json or {}).get("user_id") if isinstance(tx.metadata_json, dict) else None
+            if meta_uid != user.id:
+                raise HTTPException(status_code=403, detail="Not authorized")
     return {
         "id": tx.id,
         "order_id": tx.order_id,
@@ -327,6 +351,56 @@ async def payments_webhook(request: Request, db: Session = Depends(get_db)):
                         db.commit()
             except Exception as e:
                 logger.error(f"Error procesando webhook Wompi para orden {tx.order_id}: {e}")
+        else:
+            # Handle Wallet Recharges
+            if wompi_status == "APPROVED" and reference and reference.startswith("TRRECH_"):
+                try:
+                    user_id_str = reference.split("_")[1]
+                    user_id = int(user_id_str)
+                    user = db.query(User).filter(User.id == user_id).with_for_update().first()
+                    if user:
+                        from backend.database.models.transport import DriverCredit
+                        from datetime import datetime
+                        import math
+
+                        amount_cop = float(tx.amount)
+                        active_credit = db.query(DriverCredit).filter(
+                            DriverCredit.driver_id == user_id,
+                            DriverCredit.status == "active"
+                        ).with_for_update().first()
+
+                        if active_credit:
+                            now = datetime.utcnow()
+                            diff_sec = (now - active_credit.created_at).total_seconds()
+                            days_elapsed = max(1, math.ceil(diff_sec / 86400))
+                            admin_fee_cop = 450.0
+                            overdue_fee_cop = 2000.0 if days_elapsed >= 4 else 0.0
+                            total_due_cop = active_credit.principal_cop + admin_fee_cop + overdue_fee_cop
+
+                            active_credit.status = "paid"
+                            active_credit.paid_at = now
+                            active_credit.days_elapsed = days_elapsed
+                            active_credit.admin_fee_cop = admin_fee_cop
+                            active_credit.overdue_fee_cop = overdue_fee_cop
+                            active_credit.interest_cop = admin_fee_cop + overdue_fee_cop
+                            active_credit.total_paid_cop = total_due_cop
+                            active_credit.paid_via = "recharge_wompi"
+                            db.add(active_credit)
+
+                            excedente_cop = max(0.0, amount_cop - total_due_cop)
+                            excedente_usd = round(excedente_cop / 4500.0, 4)
+                            user.available_balance = round((user.available_balance or 0.0) + excedente_usd, 4)
+                            logger.info(f"Wompi wallet recharge settled credit #{active_credit.id} (${total_due_cop} COP). Added excess ${excedente_usd} USD to available_balance.")
+                        else:
+                            amount_usd = round(amount_cop / 4500.0, 4)
+                            user.available_balance = round((user.available_balance or 0.0) + amount_usd, 4)
+                            logger.info(f"Wallet recharge successful for driver {user_id}. Added ${amount_usd} USD to available_balance.")
+
+                        db.add(user)
+                        db.commit()
+                except Exception as e:
+                    logger.error(f"Error processing Wompi wallet recharge {tx.id}: {e}")
+                    db.rollback()
                 
         return {"status": "ok", "payment_id": tx.id}
 
@@ -403,7 +477,7 @@ async def payments_webhook(request: Request, db: Session = Depends(get_db)):
             lower_status = (canonical_status or "").lower()
             success_statuses = {"success", "paid", "completed", "approved", "aprobado"}
             
-            if lower_status in success_statuses or lower_status == "unknown":
+            if lower_status in success_statuses:
                 from backend.mlm.services.payment_service import process_successful_payment
                 process_successful_payment(db, tx.order_id, tx.id)
             else:

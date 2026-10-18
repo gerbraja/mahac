@@ -4,15 +4,18 @@ from sqlalchemy import func
 from backend.database.connection import get_db
 from backend.database.models.sponsorship import SponsorshipCommission
 from backend.database.models.user import User
+from backend.utils.auth import get_current_user
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
 @router.post("/fix-balance")
-def fix_sponsorship_balance_endpoint(db: Session = Depends(get_db)):
+def fix_sponsorship_balance_endpoint(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """
     Execute the retroactive fix for sponsorship commissions.
     Updates sponsor's total_earnings and available_balance for 'pending' commissions.
     """
+    if not getattr(current_user, "is_admin", False) or getattr(current_user, "admin_role", "") != "superadmin":
+        raise HTTPException(status_code=403, detail="Superadmin privileges required")
     try:
         # DIAGNOSTIC: Print Users (first 5 admin/active) allows verifying DB state
         users = db.query(User).filter(User.status == 'active').limit(5).all()

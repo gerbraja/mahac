@@ -137,7 +137,8 @@ async def validate_kyc_documents(
         "input_bank_account_type": data.get("input_bank_account_type"),
         "input_bank_account_number": data.get("input_bank_account_number")
     }
-    # 1. AI Validation
+
+    # 1. AI Validation
     validation_result = validate_documents_with_gemini(
         (rut_content, rut.content_type or "image/jpeg"), 
         (cedula_content, cedula.content_type or "image/jpeg"), 
@@ -197,8 +198,9 @@ async def validate_kyc_documents(
     # 3. Create or update ComplianceRecord
     record = db.query(ComplianceRecord).filter(ComplianceRecord.user_id == current_user.id).first()
     if not record:
-        record = ComplianceRecord(user_id=current_user.id)
+        record = ComplianceRecord(user_id=current_user.id, country=data.get("country", "Colombia"))
         db.add(record)
+        db.flush()
     
     # Populate SAGRILAFT & Legal fields
     record.country = data.get("country", "Colombia")
@@ -225,6 +227,7 @@ async def validate_kyc_documents(
     record.input_department = data.get("input_department")
     record.input_city = data.get("input_city")
     record.input_bank_name = data.get("input_bank_name")
+    record.input_bank_ach_code = data.get("input_bank_ach_code")
     record.input_bank_account_type = data.get("input_bank_account_type")
     record.input_bank_account_number = data.get("input_bank_account_number")
     
@@ -251,10 +254,10 @@ async def validate_kyc_documents(
     if base_url.startswith("http://") and "localhost" not in base_url and "127.0.0.1" not in base_url:
         base_url = "https://" + base_url[7:]
         
-    record.rut_url = f"{base_url}/api/kyc/document/{record.id}/rut"
-    record.cedula_url = f"{base_url}/api/kyc/document/{record.id}/cedula"
-    record.bank_certificate_url = f"{base_url}/api/kyc/document/{record.id}/bank"
-    record.profile_photo_url = f"{base_url}/api/kyc/document/{record.id}/photo"
+    record.rut_url = f"{base_url}/api/kyc/document/{record.id}/rut?sig={_sign_kyc_doc(record.id, 'rut')}"
+    record.cedula_url = f"{base_url}/api/kyc/document/{record.id}/cedula?sig={_sign_kyc_doc(record.id, 'cedula')}"
+    record.bank_certificate_url = f"{base_url}/api/kyc/document/{record.id}/bank?sig={_sign_kyc_doc(record.id, 'bank')}"
+    record.profile_photo_url = f"{base_url}/api/kyc/document/{record.id}/photo?sig={_sign_kyc_doc(record.id, 'photo')}"
     
     # Save AI Extracted & Verified Details
     record.bank_name = details.get("bank_name")
@@ -285,15 +288,35 @@ async def validate_kyc_documents(
     }
 
 
+def _sign_kyc_doc(record_id: int, doc_type: str) -> str:
+    import hmac
+    import hashlib
+    from ..utils.auth import SECRET_KEY
+    msg = f"kyc_doc:{record_id}:{doc_type}".encode("utf-8")
+    return hmac.new(SECRET_KEY.encode("utf-8"), msg, hashlib.sha256).hexdigest()
+
+
 @router.get("/document/{record_id}/{doc_type}")
 def get_kyc_document(
     record_id: int,
     doc_type: str,
+    sig: Optional[str] = None,
+    current_user: Optional[User] = Depends(
+        __import__("backend.utils.auth", fromlist=["get_current_user_optional"]).get_current_user_optional
+    ),
     db: Session = Depends(get_db)
 ):
+    import hmac
     record = db.query(ComplianceRecord).filter(ComplianceRecord.id == record_id).first()
     if not record:
         raise HTTPException(status_code=404, detail="Record not found")
+
+    expected_sig = _sign_kyc_doc(record_id, doc_type)
+    has_valid_sig = bool(sig and hmac.compare_digest(sig, expected_sig))
+    has_valid_user = bool(current_user and (getattr(current_user, "is_admin", False) or current_user.id == record.user_id))
+
+    if not has_valid_sig and not has_valid_user:
+        raise HTTPException(status_code=403, detail="Acceso denegado a documento confidencial KYC")
         
     # Retrieve bytes and metadata directly from the database columns
     if doc_type == "rut":
@@ -345,6 +368,7 @@ def get_kyc_status(current_user: User = Depends(get_current_user), db: Session =
 
 @router.get("/admin/records")
 def get_all_compliance_records(
+    request: Request,
     country: Optional[str] = None,
     current_user: User = Depends(get_current_user), 
     db: Session = Depends(get_db)
@@ -361,6 +385,10 @@ def get_all_compliance_records(
         query = query.filter(User.country == country)
         
     records = query.all()
+    
+    base_url = str(request.base_url).rstrip("/")
+    if base_url.startswith("http://") and "localhost" not in base_url and "127.0.0.1" not in base_url:
+        base_url = "https://" + base_url[7:]
     
     result = []
     for r in records:
@@ -379,10 +407,11 @@ def get_all_compliance_records(
             "ai_validation_status": r.ai_validation_status or "passed",
             "rejection_reason": r.rejection_reason,
             
-            # Document URLs
-            "rut_url": r.rut_url,
-            "cedula_url": r.cedula_url,
-            "bank_certificate_url": r.bank_certificate_url,
+            # Document URLs (HMAC-signed)
+            "rut_url": f"{base_url}/api/kyc/document/{r.id}/rut?sig={_sign_kyc_doc(r.id, 'rut')}",
+            "cedula_url": f"{base_url}/api/kyc/document/{r.id}/cedula?sig={_sign_kyc_doc(r.id, 'cedula')}",
+            "bank_certificate_url": f"{base_url}/api/kyc/document/{r.id}/bank?sig={_sign_kyc_doc(r.id, 'bank')}",
+            "profile_photo_url": f"{base_url}/api/kyc/document/{r.id}/photo?sig={_sign_kyc_doc(r.id, 'photo')}", 
             
             # User Inputted Details (for verification cross-check)
             "input_full_name_cedula": r.input_full_name_cedula,
@@ -391,11 +420,13 @@ def get_all_compliance_records(
             "input_department": r.input_department,
             "input_city": r.input_city,
             "input_bank_name": r.input_bank_name,
+            "input_bank_ach_code": r.input_bank_ach_code,
             "input_bank_account_type": r.input_bank_account_type,
             "input_bank_account_number": r.input_bank_account_number,
             
             # AI Extracted & Verified Details
             "bank_name": r.bank_name,
+            "bank_ach_code": r.bank_ach_code,
             "bank_account_number": r.bank_account_number,
             "bank_account_type": r.bank_account_type,
             "rut_nit": r.rut_nit,
@@ -427,6 +458,7 @@ class ApproveKYCRequest(BaseModel):
     department: str
     city: str
     bank_name: str
+    bank_ach_code: Optional[str] = None
     bank_account_type: str
     bank_account_number: str
     
@@ -463,6 +495,7 @@ def approve_kyc(
     record.input_department = payload.department
     record.input_city = payload.city
     record.input_bank_name = payload.bank_name
+    record.input_bank_ach_code = payload.bank_ach_code
     record.input_bank_account_type = payload.bank_account_type
     record.input_bank_account_number = payload.bank_account_number
     
@@ -480,6 +513,7 @@ def approve_kyc(
     # 3. Propagate to User profile
     user.is_kyc_verified = True
     user.document_id = payload.document_id_rut
+    user.bank_ach_code = payload.bank_ach_code
     user.address = payload.address
     user.city = payload.city
     user.province = payload.department
@@ -521,3 +555,6 @@ def reject_kyc(
     
     db.commit()
     return {"status": "success", "message": "KYC rechazado exitosamente."}
+
+
+

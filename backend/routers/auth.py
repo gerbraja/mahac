@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, status
 from sqlalchemy import func
 from sqlalchemy.orm import Session
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, validator
 from typing import Optional
 from argon2 import PasswordHasher
 from jose import jwt
@@ -30,11 +30,11 @@ class LoginData(BaseModel):
 
 class RegisterData(BaseModel):
     # Nombre separado para Siigo (evita errores con nombres largos)
-    first_name: str           # Nombres
-    last_name: str            # Apellidos
+    first_name: str = Field(..., max_length=18)
+    last_name: str = Field(..., max_length=18)
     name: Optional[str] = None  # Campo heredado (se auto-construye si no se envía)
-    email: str
-    username: str
+    email: str = Field(..., pattern=r"^[\w\.-]+@[\w\.-]+\.\w+$")
+    username: str = Field(..., max_length=14, pattern=r"^[a-zA-Z0-9_]+$")
     password: str
     confirm_password: str
     referral_code: str
@@ -51,6 +51,12 @@ class RegisterData(BaseModel):
     postal_code: str
     municipio_id: Optional[str] = None  # Código DIVIPOLA/DANE 5 dígitos (DIAN obligatorio)
     country: str
+
+    @validator('first_name', 'last_name', 'phone', 'address', 'document_id', pre=True)
+    def no_html(cls, v):
+        if v and ('<' in v or '>' in v):
+            raise ValueError('Caracteres no permitidos detectados.')
+        return v
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -244,8 +250,11 @@ def register(data: RegisterData, background_tasks: BackgroundTasks, db: Session 
             referral_link=referral_link_url
         )
 
-        # Generate token for auto-login
-        token = jwt.encode({"user_id": new_user.id}, SECRET_KEY, algorithm=ALGORITHM)
+        # Generate token for auto-login (valid for 7 days)
+        token = jwt.encode({
+            "user_id": new_user.id,
+            "exp": datetime.utcnow() + timedelta(days=7)
+        }, SECRET_KEY, algorithm=ALGORITHM)
         
         return {
             "message": "¡Registro exitoso!", 
@@ -338,6 +347,11 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
             return "female"
         return "other"
 
+    # Check if user has an active merchant account
+    from backend.database.models.merchant import Merchant
+    merchant = db.query(Merchant).filter(Merchant.user_id == user.id, Merchant.status == 'active').first()
+    is_merchant = merchant is not None
+
     return {
         "id": user.id,
         "name": user.name,
@@ -350,6 +364,7 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         "is_admin": user.is_admin,
         "admin_role": getattr(user, 'admin_role', None),
         "admin_country": getattr(user, 'admin_country', None),
+        "is_merchant": is_merchant,
         # Personal Info (normalize gender for UI)
         "gender": _gender_for_client(user.gender),
         "birth_date": user.birth_date,
@@ -367,6 +382,7 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         "has_transaction_pin": bool(getattr(user, 'transaction_pin', None)),
         "bank_balance": getattr(user, 'bank_balance', 0.0) or 0.0,
         "available_balance": getattr(user, 'available_balance', 0.0) or 0.0,
+        "verified_balance": getattr(user, 'verified_balance', 0.0) or 0.0,
         "rank": _get_user_honor_rank(db, user.id)
     }
 
@@ -459,9 +475,6 @@ def login(data: LoginData, db: Session = Depends(get_db)):
         password_to_verify = data.password[:72] if data.password else ''
         stored_hash = getattr(user, 'password', '')
         
-        print(f"   Password to verify: '{password_to_verify}'")
-        print(f"   Stored hash (first 50 chars): {stored_hash[:50] if stored_hash else 'NONE'}")
-        
         try:
             # passlib handles checking the hash type automatically (bcrypt or argon2)
             valid = pwd_context.verify(password_to_verify, stored_hash)
@@ -472,16 +485,17 @@ def login(data: LoginData, db: Session = Depends(get_db)):
                 raise HTTPException(status_code=401, detail="Invalid credentials")
         except Exception as verify_error:
             # Any verification error
-            print(f"Password verification ERROR: {type(verify_error).__name__}: {verify_error}")
+            print(f"Password verification ERROR: {type(verify_error).__name__}")
             raise HTTPException(status_code=401, detail="Invalid credentials")
         
         
-        # Include is_admin and roles in token for admin panel access
+        # Include is_admin and roles in token for admin panel access (valid for 7 days)
         token = jwt.encode({
             "user_id": user.id,
             "is_admin": user.is_admin,
             "admin_role": user.admin_role,
-            "admin_country": user.admin_country
+            "admin_country": user.admin_country,
+            "exp": datetime.utcnow() + timedelta(days=7)
         }, SECRET_KEY, algorithm=ALGORITHM)
         
         print(f"Login successful - Token generated")
@@ -560,15 +574,20 @@ def set_transaction_pin(data: SetTransactionPinData, current_user: UserModel = D
     if not pwd_context.verify(data.current_password, current_user.password):
         raise HTTPException(
             status_code=401,
-            detail="Contraseña actual incorrecta"
+            detail="Contraseña actual incorrecta. Debes ingresar la contraseña con la que inicias sesión en la plataforma."
         )
     
     # Validate PIN format
-    if not data.transaction_pin.isdigit() or len(data.transaction_pin) != 6:
-        raise HTTPException(
-            status_code=400,
-            detail="La clave de transacción debe contener exactamente 6 dígitos numéricos"
-        )
+    import re
+    pin = data.transaction_pin
+    if not pin or len(pin) < 8 or len(pin) > 12:
+        raise HTTPException(status_code=400, detail=f"La clave de transacción debe tener entre 8 y 12 caracteres (actualmente tiene {len(pin) if pin else 0}).")
+    if not re.search(r'[A-ZÁÉÍÓÚÑ]', pin):
+        raise HTTPException(status_code=400, detail="Falta una letra mayúscula (A-Z) en la clave de transacción.")
+    if not re.search(r'[0-9]', pin):
+        raise HTTPException(status_code=400, detail="Falta un número (0-9) en la clave de transacción.")
+    if not re.search(r'[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s]', pin):
+        raise HTTPException(status_code=400, detail="Falta un símbolo especial (*, #, $, %, &, /, @, !, ?, ., etc.) en la clave de transacción.")
     
     # Hash transaction PIN
     try:
@@ -589,7 +608,7 @@ def set_transaction_pin(data: SetTransactionPinData, current_user: UserModel = D
         return {"message": "Clave de transacción configurada exitosamente"}
     except Exception as e:
         db.rollback()
-        print(f"Error setting transaction PIN: {str(e)}\")")
+        print(f"Error setting transaction PIN: {str(e)}")
         raise HTTPException(
             status_code=500,
             detail="Error al configurar la clave de transacción. Por favor intenta de nuevo."
@@ -648,16 +667,29 @@ def forgot_password(data: ForgotPasswordData, background_tasks: BackgroundTasks,
 @router.post("/reset-password")
 def reset_password(data: ResetPasswordData, db: Session = Depends(get_db)):
     """Reset password using a valid, non-expired token."""
+    if not data.token or not data.token.strip():
+        raise HTTPException(status_code=400, detail="Token inválido o expirado.")
+
     # Find user by token
-    user = db.query(UserModel).filter(UserModel.reset_token == data.token).first()
+    user = db.query(UserModel).filter(UserModel.reset_token == data.token.strip()).first()
 
     if not user:
         raise HTTPException(status_code=400, detail="Token inválido o expirado.")
+
+    if not user.reset_token_expires or user.reset_token_expires < datetime.utcnow():
+        user.reset_token = None
+        user.reset_token_expires = None
+        db.commit()
+        raise HTTPException(status_code=400, detail="El enlace de recuperación ha expirado. Por favor solicita uno nuevo.")
+
+    if not data.new_password or len(data.new_password) < 6:
+        raise HTTPException(status_code=400, detail="La nueva contraseña debe tener al menos 6 caracteres.")
         
     try:
         # Hash new password
-        user.password = pwd_context.hash(data.new_password)
+        user.password = pwd_context.hash(data.new_password[:72])
         user.reset_token = None
+        user.reset_token_expires = None
         db.commit()
         return {"message": "Contraseña actualizada exitosamente."}
     except Exception as e:
@@ -671,97 +703,6 @@ def reset_password(data: ResetPasswordData, db: Session = Depends(get_db)):
 # See the get_current_user function above for the combined implementation.
 
 
-# ==================== SECURITY ENDPOINTS ====================
-
-class ChangePasswordData(BaseModel):
-    current_password: str
-    new_password: str
-
-
-class SetTransactionPinData(BaseModel):
-    current_password: str
-    transaction_pin: str
-
-
-@router.put("/change-password")
-def change_password(data: ChangePasswordData, current_user: UserModel = Depends(get_current_user_object), db: Session = Depends(get_db)):
-    """Change user's access password."""
-    
-    # Verify current password
-    if not pwd_context.verify(data.current_password, current_user.password):
-        raise HTTPException(
-            status_code=401,
-            detail="Contraseña actual incorrecta"
-        )
-    
-    # Hash new password
-    try:
-        hashed = pwd_context.hash(data.new_password)
-    except Exception as hash_error:
-        print(f"Password hashing error: {hash_error}")
-        raise HTTPException(
-            status_code=400,
-            detail="Error al procesar la nueva contraseña. Por favor intenta con una contraseña diferente."
-        )
-    
-    # Update password
-    current_user.password = hashed
-    
-    try:
-        db.commit()
-        db.refresh(current_user)
-        return {"message": "Contraseña actualizada exitosamente"}
-    except Exception as e:
-        db.rollback()
-        print(f"Error updating password: {str(e)}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error al actualizar la contraseña: {str(e)}"
-        )
-
-
-@router.put("/set-transaction-pin")
-def set_transaction_pin(data: SetTransactionPinData, current_user: UserModel = Depends(get_current_user_object), db: Session = Depends(get_db)):
-    """Set or update user's transaction PIN."""
-    
-    # Verify current password
-    if not pwd_context.verify(data.current_password, current_user.password):
-        raise HTTPException(
-            status_code=401,
-            detail="Contraseña actual incorrecta"
-        )
-    
-    # Validate PIN format
-    if not data.transaction_pin.isdigit() or len(data.transaction_pin) != 6:
-        raise HTTPException(
-            status_code=400,
-            detail="La clave de transacción debe contener exactamente 6 dígitos numéricos"
-        )
-    
-    # Hash transaction PIN
-    try:
-        hashed_pin = pwd_context.hash(data.transaction_pin)
-    except Exception as hash_error:
-        print(f"PIN hashing error: {hash_error}")
-        raise HTTPException(
-            status_code=400,
-            detail="Error al procesar la clave de transacción. Por favor intenta de nuevo."
-        )
-    
-    # Update transaction PIN
-    current_user.transaction_pin = hashed_pin
-    
-    try:
-        db.commit()
-        db.refresh(current_user)
-        return {"message": "Clave de transacción configurada exitosamente"}
-    except Exception as e:
-        db.rollback()
-        print(f"Error setting transaction PIN: {str(e)}\")")
-        raise HTTPException(
-            status_code=500,
-            detail="Error al configurar la clave de transacción. Por favor intenta de nuevo."
-        )
 
 
 from ..database.models.merchant import Merchant
@@ -788,10 +729,11 @@ def magic_merchant_login(data: MagicTokenData, db: Session = Depends(get_db)):
             detail="Este comercio está inactivo"
         )
         
-    # Generate access token specific for merchant
+    # Generate access token specific for merchant (valid for 7 days)
     token = jwt.encode({
         "merchant_id": merchant.id,
-        "role": "merchant"
+        "role": "merchant",
+        "exp": datetime.utcnow() + timedelta(days=7)
     }, SECRET_KEY, algorithm=ALGORITHM)
     
     return {
@@ -801,3 +743,30 @@ def magic_merchant_login(data: MagicTokenData, db: Session = Depends(get_db)):
         "name": merchant.name,
         "role": "merchant"
     }
+
+@router.get("/firebase-token")
+def get_firebase_token(current_user: UserModel = Depends(get_current_user_object)):
+    """Generate a Firebase Custom Token for the authenticated user to access Realtime Database securely."""
+    import firebase_admin
+    from firebase_admin import auth as firebase_auth
+    
+    # Initialize if not already initialized (should be initialized by transport router usually)
+    if not firebase_admin._apps:
+        try:
+            import os
+            from firebase_admin import credentials
+            base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            cert_path = os.path.join(base_dir, 'database', 'firebase-key.json')
+            cred = credentials.Certificate(cert_path)
+            firebase_admin.initialize_app(cred, options={
+                'databaseURL': 'https://tei-transport-493e7-default-rtdb.firebaseio.com'
+            })
+        except Exception as e:
+            print(f"Error initializing Firebase in auth: {e}")
+            
+    try:
+        custom_token = firebase_auth.create_custom_token(str(current_user.id))
+        return {"token": custom_token.decode('utf-8') if isinstance(custom_token, bytes) else custom_token}
+    except Exception as e:
+        print(f"Error creating Firebase token: {e}")
+        raise HTTPException(status_code=500, detail="Error generating secure token")

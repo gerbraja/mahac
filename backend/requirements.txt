@@ -1,4 +1,5 @@
 fastapi>=0.95.0
+firebase-admin
 google-generativeai
 uvicorn[standard]>=0.22.0
 pydantic>=1.10.0,<2.0.0
@@ -16,7 +17,8 @@ pytest
 python-multipart
 argon2-cffi
 bcrypt==4.0.1
-# Force rebuild 2025-03-06 fixing dateutil
+# Force rebuild 2026-10-16 with google-cloud-storage>=3.7.0 CRC32c checksum validation
 python-dateutil>=2.9.0
-google-cloud-storage
+google-cloud-storage>=3.7.0
+google-crc32c>=1.5.0
 pypdf

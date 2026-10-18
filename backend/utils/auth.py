@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from backend.database.connection import get_db
 from backend.database.models.user import User
 
-SECRET_KEY = os.getenv("SECRET_KEY", "secret123")
+SECRET_KEY = os.getenv("SECRET_KEY", "tei_prod_jwt_9f8e7d6c5b4a3f2e1d0c9b8a7f6e5d4c3b2a1f0e9d8c7b6a5f4e3d2c1b")
 ALGORITHM = os.getenv("ALGORITHM", "HS256")
 
 

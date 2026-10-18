@@ -106,17 +106,7 @@ def process_activation(db: Session, user_id: int, package_amount: float, pv: int
             print(f"Warning: Failed to create Unilevel member: {e}")
             pass
 
-        # GENERATE UNILEVEL COMMISSIONS based on PV
-        # When a user activates with 3 PV, their upline should receive Unilevel commissions
-        try:
-            from backend.mlm.services.unilevel_service import calculate_unilevel_commissions
-            # Use PV value for Unilevel commissions (3 PV by default)
-            unilevel_comms = calculate_unilevel_commissions(db, user_id, pv, max_levels=7)
-            db.flush()  # Ensure commissions are saved
-        except Exception as e:
-            # Log error but don't fail activation
-            print(f"Warning: Failed to calculate Unilevel commissions: {e}")
-            pass
+        # UNILEVEL COMMISSIONS REMOVED: Now handled in payment_service.py for all PV-generating orders
 
         # 1) signup distribution (Binary Global Commission - 7% of package value)
         signup_comms = calculate_binary_global_commissions(db, user_id, package_amount, signup_percent=signup_percent or None)
@@ -130,13 +120,11 @@ def process_activation(db: Session, user_id: int, package_amount: float, pv: int
             activate_binary_global(db, user_id, plan_file=plan_file)
 
         # 2.5) TRIGGER: Activate in Binary Millionaire (Automatic Global Placement)
-        from backend.mlm.services.binary_millionaire_service import register_in_millionaire, distribute_millionaire_commissions
+        from backend.mlm.services.binary_millionaire_service import register_in_millionaire
         try:
             millionaire_member = register_in_millionaire(db, user_id)
-            # Distribute commissions immediately using PV (default 3 PV for activation package)
-            distribute_millionaire_commissions(db, millionaire_member, pv)
             print(f"✓ User {user_id} registered in Binary Millionaire at position {millionaire_member.global_position}")
-            print(f"✓ Distributed Binary Millionaire commissions for {pv} PV")
+            # COMMISSIONS REMOVED: Now handled in payment_service.py for all PV-generating orders
         except Exception as e:
             print(f"⚠️ WARNING: Error registering user {user_id} in millionaire plan: {str(e)}")
             import traceback

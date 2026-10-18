@@ -18,8 +18,8 @@ def verify_signature(body: bytes, headers: dict, secret: str | None) -> bool:
     This helper is intentionally generic so you can adapt header name per provider.
     """
     if not secret:
-        # No secret configured -> allow local/dev payloads
-        return True
+        # Security: Fail closed if webhook secret is not configured
+        return False
 
     signature = None
     for key in ("x-signature", "x-wompi-signature", "signature"):

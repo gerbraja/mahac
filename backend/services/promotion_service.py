@@ -17,40 +17,10 @@ PROMO_END = datetime(2026, 12, 3, 23, 59, 59)
 def has_activation_or_upgrade_in_period(db: Session, user_id: int) -> bool:
     """
     Verifica si un usuario activó su membresía o compró un upgrade
-    a los paquetes 4, 5, 6 o 7 dentro del periodo de promoción.
+    a los paquetes 4, 5, 6 o 7. (Actualizado para aceptar calificados
+    previos al periodo también).
     """
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user or user.package_level not in [4, 5, 6, 7]:
-        return False
-        
-    # Caso 1: Activación por primera vez en el periodo
-    activation = db.query(ActivationLog).filter(
-        and_(
-            ActivationLog.user_id == user_id,
-            ActivationLog.processed_at >= PROMO_START,
-            ActivationLog.processed_at <= PROMO_END
-        )
-    ).first()
-    if activation:
-        return True
-        
-    # Caso 2: Compra de Upgrade o activación vía órdenes en el periodo
-    upgrade_order = db.query(Order).join(OrderItem).filter(
-        and_(
-            Order.user_id == user_id,
-            Order.created_at >= PROMO_START,
-            Order.created_at <= PROMO_END,
-            Order.status != "cancelado",
-            or_(
-                OrderItem.product_name.like("%Upgrade%"),
-                OrderItem.product_name.like("%Franquicia%")
-            )
-        )
-    ).first()
-    if upgrade_order:
-        return True
-        
-    return False
+    return is_qualifier_eligible(db, user_id)
 
 
 def is_qualifier_eligible(db: Session, user_id: int) -> bool:

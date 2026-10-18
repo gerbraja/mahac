@@ -46,3 +46,16 @@ try:
     from . import physical_transaction
 except Exception:
     pass
+
+try:
+    from . import transport
+except Exception:
+    pass
+try:
+    from . import wallet_transfer
+except Exception:
+    pass
+try:
+    from . import payment_request
+except Exception:
+    pass

@@ -30,6 +30,8 @@ class User(Base):
 
     # Security
     transaction_pin = Column(String(255), nullable=True)  # Hashed transaction PIN
+    pin_failed_attempts = Column(Integer, default=0, nullable=True)  # Failed PIN attempts
+    pin_locked_until = Column(DateTime, nullable=True)  # Lockout expiration if 3 failed attempts
     
     # Password Reset
     reset_token = Column(String(128), nullable=True, index=True)  # Token for password recovery
@@ -86,11 +88,16 @@ class User(Base):
     
     # Financial Info
     crypto_wallet = Column(String(255), nullable=True) # User's crypto wallet address (e.g. USDT TRC20)
+    bank_ach_code = Column(String(10), nullable=True)  # ACH Bank Code (e.g., 1007 for Bancolombia, 1507 for Nequi)
     
     # Package Level (1=Franq 1, 2=Franq 2, 3=Franq 3)
     # Default is 1 (Digital) if not specified for active users. 
     # 0 might be used for pre-affiliates.
     package_level = Column(Integer, default=0)
+
+    # Ratings (Driver)
+    rating_avg = Column(Float, default=5.0)  # Starting at 5.0 out of 7.0
+    rating_count = Column(Integer, default=0)
 
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

@@ -7,7 +7,14 @@ from pydantic import BaseModel
 from ..database.connection import get_db
 from ..database.models.supplier import Supplier
 from ..database.models.product import Product
+from ..database.models.user import User
+from ..utils.auth import get_current_user
 from ..schemas.supplier import Supplier as SupplierSchema, SupplierCreate, SupplierUpdate
+
+def get_current_admin_user(current_user: User = Depends(get_current_user)) -> User:
+    if not getattr(current_user, "is_admin", False):
+        raise HTTPException(status_code=403, detail="Not authorized")
+    return current_user
 
 class StockUpdateItem(BaseModel):
     product_id: int
@@ -24,7 +31,7 @@ router = APIRouter(
 )
 
 @router.post("/", response_model=SupplierSchema)
-def create_supplier(supplier: SupplierCreate, db: Session = Depends(get_db)):
+def create_supplier(supplier: SupplierCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_admin_user)):
     db_supplier = Supplier(**supplier.dict())
     db.add(db_supplier)
     db.commit()
@@ -35,21 +42,22 @@ def create_supplier(supplier: SupplierCreate, db: Session = Depends(get_db)):
 def read_suppliers(
     skip: int = 0, 
     limit: int = 100, 
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user)
 ):
     query = db.query(Supplier)
     suppliers = query.offset(skip).limit(limit).all()
     return suppliers
 
 @router.get("/{supplier_id}", response_model=SupplierSchema)
-def read_supplier(supplier_id: int, db: Session = Depends(get_db)):
+def read_supplier(supplier_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_admin_user)):
     db_supplier = db.query(Supplier).filter(Supplier.id == supplier_id).first()
     if db_supplier is None:
         raise HTTPException(status_code=404, detail="Supplier not found")
     return db_supplier
 
 @router.put("/{supplier_id}", response_model=SupplierSchema)
-def update_supplier(supplier_id: int, supplier_update: SupplierUpdate, db: Session = Depends(get_db)):
+def update_supplier(supplier_id: int, supplier_update: SupplierUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_admin_user)):
     db_supplier = db.query(Supplier).filter(Supplier.id == supplier_id).first()
     if db_supplier is None:
         raise HTTPException(status_code=404, detail="Supplier not found")
@@ -64,7 +72,7 @@ def update_supplier(supplier_id: int, supplier_update: SupplierUpdate, db: Sessi
     return db_supplier
 
 @router.delete("/{supplier_id}")
-def delete_supplier(supplier_id: int, db: Session = Depends(get_db)):
+def delete_supplier(supplier_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_admin_user)):
     db_supplier = db.query(Supplier).filter(Supplier.id == supplier_id).first()
     if db_supplier is None:
         raise HTTPException(status_code=404, detail="Supplier not found")
@@ -76,7 +84,7 @@ def delete_supplier(supplier_id: int, db: Session = Depends(get_db)):
 # --- Supplier Inventory Magic Link Endpoints ---
 
 @router.post("/{supplier_id}/generate-token")
-def generate_inventory_token(supplier_id: int, db: Session = Depends(get_db)):
+def generate_inventory_token(supplier_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_admin_user)):
     """Admin endpoint to generate a new magic link token for a supplier."""
     supplier = db.query(Supplier).filter(Supplier.id == supplier_id).first()
     if not supplier:

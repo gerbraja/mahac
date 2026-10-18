@@ -51,10 +51,12 @@ def fix_user_activation(user_id=15):
             product_id=product.id,
             product_name=product.name,
             quantity=1,
-            price_usd=product.price_usd,
-            price_local=product.price_local
+            subtotal_usd=product.price_usd,
+            subtotal_cop=product.price_local,
+            subtotal_pv=product.pv
         )
         db.add(new_item)
+        db.commit()
         print(f"✅ Orden de envío generada con éxito (ID: {new_order.id}).")
         
         # 3. Pagar Bono Directo al Patrocinador

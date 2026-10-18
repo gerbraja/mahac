@@ -48,6 +48,7 @@ class ComplianceRecord(Base):
     
     # AI Extracted & Verified Information
     bank_name = Column(String(150), nullable=True)
+    bank_ach_code = Column(String(10), nullable=True)
     bank_account_number = Column(String(100), nullable=True)
     bank_account_type = Column(String(50), nullable=True)
     rut_nit = Column(String(100), nullable=True)
@@ -61,6 +62,8 @@ class ComplianceRecord(Base):
     input_department = Column(String(100), nullable=True)
     input_city = Column(String(100), nullable=True)
     input_bank_name = Column(String(150), nullable=True)
+    input_bank_ach_code = Column(String(10), nullable=True)
+    bank_ach_code = Column(String(10), nullable=True)
     input_bank_account_type = Column(String(50), nullable=True)
     input_bank_account_number = Column(String(100), nullable=True)
     
@@ -98,3 +101,4 @@ class ComplianceRecord(Base):
  
     # Relationship
     user = relationship("User", backref="compliance_record")
+

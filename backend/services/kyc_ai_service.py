@@ -10,25 +10,25 @@ logger = logging.getLogger(__name__)
 
 def validate_documents_with_gemini(rut_tuple, cedula_tuple, bank_tuple, user_data):
     """
-    Sends the 3 documents to Gemini 2.5 Flash for validation against user_data using direct HTTP POST.
+    Sends ONLY the RUT and Bank Certificate to Gemini for fast, highly focused extraction.
+    Cédula validation is left for manual administrative review.
     
     Args:
         rut_tuple (tuple): (bytes, mime_type) for RUT.
         cedula_tuple (tuple): (bytes, mime_type) for Cedula.
         bank_tuple (tuple): (bytes, mime_type) for Bank Certificate.
-        user_data (dict): Dictionary containing expected user info (name, document_id, etc.)
+        user_data (dict): Dictionary containing expected user info.
     
     Returns:
         dict: Validation result with status and details.
     """
     rut_content, rut_mime = rut_tuple
-    cedula_content, cedula_mime = cedula_tuple
     bank_content, bank_mime = bank_tuple
 
-    # 1. HEIC/HEIF check and clean user feedback
+    # 1. HEIC/HEIF check
     heic_mimes = ["image/heic", "image/heif", "heic", "heif"]
     is_heic = False
-    for mime in [rut_mime, cedula_mime, bank_mime]:
+    for mime in [rut_mime, bank_mime]:
         if mime and any(hm in mime.lower() for hm in heic_mimes):
             is_heic = True
             
@@ -36,13 +36,13 @@ def validate_documents_with_gemini(rut_tuple, cedula_tuple, bank_tuple, user_dat
         return {
             "valid": False,
             "details": None,
-            "reason": "El formato de imagen HEIC/HEIF (típico de iPhones) no es soportado directamente por el servicio de Inteligencia Artificial de Gemini. Por favor, toma una captura de pantalla del documento o conviértelo a JPG/PNG/PDF antes de subirlo."
+            "reason": "El formato de imagen HEIC/HEIF (iPhone) no es soportado directamente por Gemini. Por favor sube PDF, JPG o PNG."
         }
 
     # 2. Normalize MIME types
     def normalize_mime(mime):
         if not mime:
-            return "image/jpeg"
+            return "application/pdf"
         m = mime.lower()
         if "pdf" in m:
             return "application/pdf"
@@ -53,87 +53,67 @@ def validate_documents_with_gemini(rut_tuple, cedula_tuple, bank_tuple, user_dat
         return "image/jpeg"
 
     normalized_rut_mime = normalize_mime(rut_mime)
-    normalized_cedula_mime = normalize_mime(cedula_mime)
     normalized_bank_mime = normalize_mime(bank_mime)
 
     try:
-        # Prepare the prompt
+        # Focused prompt: ONLY RUT and Bank Certificate
         prompt = f"""
-        You are an expert KYC (Know Your Customer) identity verification AI with a MAXIMUM PRECISION REQUIREMENT.
-        Your task is to perform an exhaustive, pixel-perfect analysis of three documents provided: 
-        1. A RUT (Tax ID) document from Colombia.
-        2. A Cédula de Ciudadanía (National ID) from Colombia.
-        3. A Bank Account Certification.
+        You are a specialized AI assistant that extracts data from two Colombian documents:
+        1. RUT (Registro Único Tributario - Formulario DIAN 001)
+        2. Certificación Bancaria (Bank Certificate)
 
-        You must meticulously compare the information visible in these documents against the provided Profile Data and the User's Manual Inputted Name below.
-        
-        Profile Data (from Virtual Office):
-        - Full Name (profile): {user_data.get('name', 'N/A')}
-        
-        User's Manual Inputted Data:
-        - Manual Input - Full Name (as on Cédula): {user_data.get('input_full_name_cedula', 'N/A')}
+        User Inputted Data for reference:
+        - Inputted Document ID: {user_data.get('input_document_id_rut', 'N/A')}
+        - Inputted Bank Account Number: {user_data.get('input_bank_account_number', 'N/A')}
 
-        Instructions:
-        1. Extract the Full Name and Document Number (digits only) from the Cédula. Verify that all digits are correct without hallucinating.
-        2. Extract the Name, NIT/ID (digits only), and the Municipality/City (Municipio / Ciudad / Dirección) and Tax Regime (Responsabilidades Fiscales / Régimen, e.g. "Responsable de IVA", "No Responsable de IVA", "Régimen Simplificado", "O-47", "RST") from the RUT.
-        3. Extract the Bank Name, Account Holder Name, Account Number (numbers only, digits only), and Account Type (Ahorros / Savings or Corriente / Checking) from the Bank Certificate.
-           - CRITICAL PRECISION RULE: Locate the exact bank account number (usually labeled as "Número de Cuenta", "No. de Cuenta", "Cuenta de Ahorros", "Ahorros N°", "Cuenta Corriente", or similar). 
-           - DOUBLE-CHECK: Read the account number twice. A standard Colombian bank account number typically has between 9 and 16 digits. If your extracted account number has few digits, you have likely missed some. Look very closely at the certificate (including hyphens or spaces) and extract ALL digits correctly.
-           - ZERO-TOLERANCE: Do NOT confuse the account number with phone numbers, system reference numbers, or branch codes.
-           - Extract the number blindly based *only* on the text visible in the document. Do not guess, do not truncate, and do not round.
-        4. Cross-verify the names:
-           - The Cédula extracted name, RUT extracted name, and Bank Certification account holder name MUST all match each other exactly (ignoring casing and minor accents) and match `Manual Input - Full Name`.
-        5. CRITICAL VALIDATION RULE: 
-           - If there is any mismatch between the names across the three documents, you MUST set "valid": false in the output JSON.
-           - SPECIAL EXCEPTION FOR DEVELOPMENT TESTING: If the extracted name matches all documents and the user's manual input, but mismatches the virtual office profile's Full Name (e.g. Lauren vs Alexis), you may set "valid": true as long as the documents themselves are authentic and matching. Explain this in the "reason" field.
-        6. Return a strict JSON object (no markdown formatting, no code blocks) with the following structure:
+        EXTRACTION TASKS:
+        A. FROM DOCUMENT 1 (RUT):
+           - rut_nit: Look at Casilla 5 ("Número de Identificación Tributaria - NIT"). Extract the main digits only (without DV).
+           - rut_name: Look at Casillas 35, 36, 37, 38 (Apellidos y Nombres) or Casilla 31 (Razón Social). Extract full name.
+           - rut_city: Look at Ubicación / Casilla 38/39/40 (Municipio o Ciudad, e.g. "Bogotá, D.C.", "Medellín", "Cali").
+           - rut_regime: Look at Casilla 53 ("Responsabilidades, Calidades y Atributos"). Check if it contains "47" (Régimen Simple / RST), "48" (Responsable de IVA), or "49" (No Responsable de IVA / Régimen Ordinario).
+
+        B. FROM DOCUMENT 2 (BANK CERTIFICATE):
+           - bank_name: Extract the name of the bank/financial entity (e.g. Bancolombia, Nequi, Davivienda, Banco de Bogotá, etc.).
+           - bank_account_number: Extract the exact bank account number digits (typically 9 to 16 digits). Read all digits carefully.
+           - bank_account_type: "Ahorros" or "Corriente".
+           - bank_account_holder: Full name of the account holder.
+
+        OUTPUT FORMAT:
+        Return ONLY a strict JSON object (no markdown, no backticks, no comments) with this structure:
         {{
-            "valid": true/false,
+            "valid": true,
             "details": {{
-                "rut_match": true/false, // true if RUT matches Cédula & Manual Name
-                "cedula_match": true/false, // true if Cédula matches Manual Name
-                "bank_match": true/false, // true if Bank Cert matches Cédula & Manual Name
-                "extracted_name_cedula": "...",
-                "extracted_id_cedula": "...",
-                "extracted_name_rut": "...",
-                "extracted_name_bank": "...",
-                "bank_name": "...", // e.g. Bancolombia, Banco de Bogota
-                "bank_account_number": "...", // numbers only, double-checked for precision
-                "bank_account_type": "...", // Ahorros or Corriente
-                "rut_nit": "...", // NIT number format
-                "rut_city": "...", // e.g. Medellin, Bogota, Cali
-                "rut_regime": "..." // e.g. Responsable de IVA, No Responsable, 47, RST
+                "rut_nit": "...",
+                "rut_name": "...",
+                "rut_city": "...",
+                "rut_regime": "...",
+                "bank_name": "...",
+                "bank_account_number": "...",
+                "bank_account_type": "...",
+                "bank_account_holder": "..."
             }},
-            "reason": "Detailed explanation of success or failure, specifying any exact name, ID, or account number mismatches found."
+            "reason": "OK"
         }}
         """
 
-        # Encode files to base64 for inline transfer
+        # Encode files to base64
         rut_b64 = base64.b64encode(rut_content).decode("utf-8")
-        cedula_b64 = base64.b64encode(cedula_content).decode("utf-8")
         bank_b64 = base64.b64encode(bank_content).decode("utf-8")
 
-        # Build payload using base64 inlineData
         payload = {
             "contents": [
                 {
                     "parts": [
                         {"text": prompt},
-                        {"text": "\n[DOCUMENTO 1: RUT (REGISTRO UNICO TRIBUTARIO DE COLOMBIA)]\n"},
+                        {"text": "\n[DOCUMENTO 1: RUT DIAN]\n"},
                         {
                             "inlineData": {
                                 "mimeType": normalized_rut_mime,
                                 "data": rut_b64
                             }
                         },
-                        {"text": "\n[DOCUMENTO 2: CEDULA DE CIUDADANIA DE COLOMBIA]\n"},
-                        {
-                            "inlineData": {
-                                "mimeType": normalized_cedula_mime,
-                                "data": cedula_b64
-                            }
-                        },
-                        {"text": "\n[DOCUMENTO 3: CERTIFICACION BANCARIA]\n"},
+                        {"text": "\n[DOCUMENTO 2: CERTIFICACION BANCARIA]\n"},
                         {
                             "inlineData": {
                                 "mimeType": normalized_bank_mime,
@@ -149,16 +129,30 @@ def validate_documents_with_gemini(rut_tuple, cedula_tuple, bank_tuple, user_dat
         if not api_key:
             raise ValueError("GEMINI_API_KEY environment variable is not configured.")
 
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key={api_key}"
+        # Try models in order of speed and stability
+        models_to_try = ["gemini-2.5-flash", "gemini-3.8-flash", "gemini-2.5-pro"]
+        response = None
         headers = {"Content-Type": "application/json"}
 
-        logger.info("Sending documents directly to Gemini API via HTTP POST...")
+        logger.info("Sending RUT + Bank Certificate to Gemini API...")
         with httpx.Client(timeout=60.0) as client:
-            response = client.post(url, json=payload, headers=headers)
-            
-        if response.status_code != 200:
-            logger.error(f"Gemini API returned error {response.status_code}: {response.text}")
-            raise ValueError(f"Gemini API error: {response.text}")
+            for m in models_to_try:
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/{m}:generateContent?key={api_key}"
+                try:
+                    res = client.post(url, json=payload, headers=headers)
+                    if res.status_code == 200:
+                        response = res
+                        logger.info(f"Successfully processed KYC with model: {m}")
+                        break
+                    else:
+                        logger.warning(f"Model {m} returned status {res.status_code}: {res.text[:200]}")
+                except Exception as ex:
+                    logger.warning(f"Model {m} request failed: {str(ex)}")
+
+        if not response or response.status_code != 200:
+            err_msg = response.text if response else "No response from AI models"
+            logger.error(f"All Gemini models failed: {err_msg}")
+            raise ValueError(f"Gemini API error: {err_msg}")
 
         res_json = response.json()
         

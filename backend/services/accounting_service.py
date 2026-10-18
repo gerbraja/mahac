@@ -168,7 +168,8 @@ def calculate_financial_statement(db: Session, period: str = "30d", country: str
     # 4. PASIVOS (LIABILITIES) - Cumulative (All time)
     # ─────────────────────────────────────────────────────────────────
     # Affiliate Wallets: sum of available_balance of users (convert USD wallets to COP)
-    wallets_q = db.query(func.sum(User.available_balance))
+    # Important: Exclude administrators from affiliate liabilities
+    wallets_q = db.query(func.sum(User.available_balance)).filter(User.is_admin == False)
     if country and country != "Todos":
         wallets_q = wallets_q.filter(func.trim(User.country) == country.strip())
     
@@ -190,21 +191,24 @@ def calculate_financial_statement(db: Session, period: str = "30d", country: str
     
     withholdings_cop = float(taxes_q.scalar() or 0.0)
 
-    # Accrued IVA: Estimated from sales using country rules
-    # In Colombia: 19% IVA, for our simplified P&L we estimate cumulative IVA on sales
-    # (Since IVA collected is a liability until paid)
-    # Get all successful sales cumulative (all time)
-    sales_cum_q = db.query(func.sum(Order.total_cop)).filter(Order.status.in_(paid_statuses))
+    # Accrued IVA: Calculated strictly from products sold that have an explicit tax_rate > 0
+    # (If products are sold without IVA or are exempt, accrued IVA liability is $0)
+    items_cum_q = db.query(OrderItem).join(Order, OrderItem.order_id == Order.id).filter(Order.status.in_(paid_statuses))
     if country and country != "Todos":
-        sales_cum_q = sales_cum_q.join(User, Order.user_id == User.id).filter(func.trim(User.country) == country.strip())
-    sales_cum = float(sales_cum_q.scalar() or 0.0)
+        items_cum_q = items_cum_q.join(User, Order.user_id == User.id).filter(func.trim(User.country) == country.strip())
     
-    # We estimate IVA collected as 19% for Colombia or default 19% of sales
-    # (In Colombia, IVA is included in final price or added, here we assume it is part of revenue as liability)
-    tax_rate = 0.19 if country == "Colombia" else 0.19
-    estimated_iva_cum = sales_cum * (tax_rate / (1.0 + tax_rate)) # IVA included in gross sales
+    items_cum = items_cum_q.all()
+    actual_iva_cum = 0.0
+    for it in items_cum:
+        prod = it.product
+        rate = getattr(prod, 'tax_rate', 0.0) or 0.0
+        if rate > 0:
+            rate_dec = rate / 100.0 if rate > 1.0 else rate
+            actual_iva_cum += (it.subtotal_cop or 0.0) * (rate_dec / (1.0 + rate_dec))
 
-    total_pasivos = affiliate_wallets_cop + pending_withdrawals_cop + withholdings_cop + estimated_iva_cum
+    iva_acumulado = round(actual_iva_cum, 2)
+
+    total_pasivos = affiliate_wallets_cop + pending_withdrawals_cop + withholdings_cop + iva_acumulado
 
     # ─────────────────────────────────────────────────────────────────
     # 5. PATRIMONIO (EQUITY) - Cumulative (All time)
@@ -245,7 +249,7 @@ def calculate_financial_statement(db: Session, period: str = "30d", country: str
                 "billeteras_afiliados": affiliate_wallets_cop,
                 "retiros_pendientes": pending_withdrawals_cop,
                 "retenciones_retefuente": withholdings_cop,
-                "iva_acumulado": estimated_iva_cum,
+                "iva_acumulado": iva_acumulado,
                 "total": total_pasivos
             },
             "patrimonio": {

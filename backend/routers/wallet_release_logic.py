@@ -22,8 +22,9 @@ def get_release_status(db: Session = Depends(get_db), current_user: User = Depen
     """
     Check availability to RELEASE funds to Bank Balance.
     Day 7: Matrix
-    Day 17: Millionaire
-    Day 27: General
+    Day 11: Matrix & Trips
+    Day 21: Millionaire
+    Day 01: General & Unilevel
     """
     today = datetime.now()
     day = today.day
@@ -31,17 +32,21 @@ def get_release_status(db: Session = Depends(get_db), current_user: User = Depen
     active_window = None
     available_to_release = 0.0
     source_name = ""
+    cutoff = None
     
     # 1. Determine Window
-    if day == 7:
+    if day == 11:
         active_window = "matrix"
-        source_name = "Ganancias de Matrices"
-    elif day == 17:
+        source_name = "Ganancias de Matrices y Viajes"
+        cutoff = datetime(today.year, today.month, 11, 0, 1, 0)
+    elif day == 21:
         active_window = "millionaire"
         source_name = "Bono Binario Millonario"
-    elif day == 27:
+        cutoff = datetime(today.year, today.month, 21, 0, 1, 0)
+    elif day == 1:
         active_window = "general"
-        source_name = "Ganancias Generales"
+        source_name = "Ganancias Generales y Unilevel"
+        cutoff = datetime(today.year, today.month, 1, 0, 1, 0)
         
     # 2. Calculate Available to Release
     if active_window:
@@ -50,32 +55,37 @@ def get_release_status(db: Session = Depends(get_db), current_user: User = Depen
         
         if active_window == "matrix":
             total_earned_source = db.query(func.sum(MatrixCommission.amount))\
-                .filter(MatrixCommission.user_id == current_user.id).scalar() or 0.0
+                .filter(MatrixCommission.user_id == current_user.id, MatrixCommission.created_at <= cutoff).scalar() or 0.0
             already_released = current_user.released_matrix or 0.0
                 
         elif active_window == "millionaire":
             total_earned_source = db.query(func.sum(BinaryCommission.commission_amount))\
                 .filter(BinaryCommission.user_id == current_user.id, 
-                        BinaryCommission.type == 'millionaire_level_bonus').scalar() or 0.0
+                        BinaryCommission.type == 'millionaire_level_bonus',
+                        BinaryCommission.created_at <= cutoff).scalar() or 0.0
             already_released = current_user.released_millionaire or 0.0
                         
         elif active_window == "general":
             # Binary Normal
             bin_gen = db.query(func.sum(BinaryCommission.commission_amount))\
                 .filter(BinaryCommission.user_id == current_user.id, 
-                        BinaryCommission.type != 'millionaire_level_bonus').scalar() or 0.0
+                        BinaryCommission.type != 'millionaire_level_bonus',
+                        BinaryCommission.created_at <= cutoff).scalar() or 0.0
             # Unilevel
             uni_gen = db.query(func.sum(UnilevelCommission.commission_amount))\
-                .filter(UnilevelCommission.user_id == current_user.id).scalar() or 0.0
+                .filter(UnilevelCommission.user_id == current_user.id,
+                        UnilevelCommission.created_at <= cutoff).scalar() or 0.0
             # Sponsor
             spon_gen = db.query(func.sum(SponsorshipCommission.commission_amount))\
-                .filter(SponsorshipCommission.sponsor_id == current_user.id).scalar() or 0.0
+                .filter(SponsorshipCommission.sponsor_id == current_user.id,
+                        SponsorshipCommission.created_at <= cutoff).scalar() or 0.0
             # Global Pool
-            pool_gen = db.query(func.sum(GlobalPoolCommission.amount))\
-                .filter(GlobalPoolCommission.user_id == current_user.id).scalar() or 0.0
+            pool_gen = db.query(func.sum(GlobalPoolPayout.amount))\
+                .filter(GlobalPoolPayout.user_id == current_user.id,
+                        GlobalPoolPayout.created_at <= cutoff).scalar() or 0.0
             # Ranks
             rank_gen = 0.0
-            q_ranks = db.query(UserQualifiedRank).filter(UserQualifiedRank.user_id == current_user.id).all()
+            q_ranks = db.query(UserQualifiedRank).filter(UserQualifiedRank.user_id == current_user.id, UserQualifiedRank.achieved_at <= cutoff).all()
             for qr in q_ranks:
                 if qr.rank and qr.rank.reward_amount:
                      rank_gen += qr.rank.reward_amount
@@ -97,12 +107,11 @@ def get_release_status(db: Session = Depends(get_db), current_user: User = Depen
             
     else:
         # Check when is next
-        if day < 7: next_date = 7
-        elif day < 17: next_date = 17
-        elif day < 27: next_date = 27
-        else: next_date = 7 # Next month
+        if day < 11: next_date = 11
+        elif day < 21: next_date = 21
+        else: next_date = "1 del próximo mes"
         
-        msg = f"Liberación de fondos cerrada. Próxima fecha: día {next_date}."
+        msg = f"Liberación de fondos cerrada. Próxima fecha: día {next_date} a las 00:01."
 
     return {
         "current_date": today.strftime("%Y-%m-%d"),

@@ -1293,8 +1293,9 @@ def activate_user_manually(
             product_id=product.id,
             product_name=product.name,
             quantity=1,
-            price_usd=product.price_usd,
-            price_local=product.price_local
+            subtotal_usd=product.price_usd,
+            subtotal_cop=product.price_local,
+            subtotal_pv=product.pv
         )
         db.add(new_item)
         db.commit()
@@ -1597,6 +1598,7 @@ def fix_matrix_positioning(
 
 # --- Withdrawal Management & KYC ---
 from backend.database.models.withdrawal import WithdrawalRequest
+from backend.database.models.compliance_record import ComplianceRecord
 from fastapi import Body
 
 @router.get("/withdrawals")
@@ -1608,6 +1610,7 @@ def get_withdrawal_requests(
 ):
     """
     List withdrawal requests. Optional filter by status.
+    Includes banking details, tax withholdings, and net payout.
     """
     query = db.query(
         WithdrawalRequest,
@@ -1615,8 +1618,10 @@ def get_withdrawal_requests(
         User.email.label('user_email'),
         User.document_id.label('user_doc'),
         User.bank_balance.label('user_bank_balance'),
-        User.is_kyc_verified.label('user_kyc')
-    ).join(User, User.id == WithdrawalRequest.user_id)
+        User.is_kyc_verified.label('user_kyc'),
+        ComplianceRecord
+    ).join(User, User.id == WithdrawalRequest.user_id)\
+     .outerjoin(ComplianceRecord, ComplianceRecord.user_id == User.id)
     
     if status:
         query = query.filter(WithdrawalRequest.status == status)
@@ -1626,22 +1631,101 @@ def get_withdrawal_requests(
         
     requests = query.order_by(WithdrawalRequest.created_at.desc()).all()
     
-    return [{
-        "id": r.WithdrawalRequest.id,
-        "amount": r.WithdrawalRequest.amount,
-        "status": r.WithdrawalRequest.status,
-        "source_type": r.WithdrawalRequest.source_type,
-        "payment_info": r.WithdrawalRequest.payment_info,
-        "created_at": r.WithdrawalRequest.created_at,
-        "processed_at": r.WithdrawalRequest.processed_at,
-        "rejection_reason": r.WithdrawalRequest.rejection_reason,
-        "user_id": r.WithdrawalRequest.user_id,
-        "user_name": r.user_name,
-        "user_email": r.user_email,
-        "user_doc": r.user_doc,
-        "user_bank_balance": r.user_bank_balance,
-        "user_kyc": r.user_kyc
-    } for r in requests]
+    output = []
+    for r in requests:
+        req = r.WithdrawalRequest
+        kyc = r.ComplianceRecord
+        
+        # Determine tax rates
+        retefuente_rate = 0.0
+        reteica_rate = 0.0
+        tax_regime = "Régimen Ordinario"
+        beneficiary_name = r.user_name
+        beneficiary_doc = r.user_doc or "N/A"
+        bank_name = "N/A"
+        bank_ach_code = "N/A"
+        bank_account_type = "Ahorros"
+        bank_account_number = "N/A"
+        
+        if kyc:
+            beneficiary_name = kyc.input_full_name_cedula or r.user_name
+            beneficiary_doc = kyc.rut_nit or kyc.input_document_id_rut or r.user_doc or "N/A"
+            bank_name = kyc.bank_name or kyc.input_bank_name or "N/A"
+            bank_ach_code = kyc.bank_ach_code or kyc.input_bank_ach_code or "N/A"
+            bank_account_type = kyc.bank_account_type or kyc.input_bank_account_type or "Ahorros"
+            bank_account_number = kyc.bank_account_number or kyc.input_bank_account_number or "N/A"
+            tax_regime = kyc.tax_regime or "Régimen Ordinario"
+            
+            # Check RST exemption
+            is_rst = "simple" in tax_regime.lower() or "rst" in tax_regime.lower() or "47" in tax_regime.lower()
+            if not is_rst:
+                if kyc.apply_retefuente:
+                    retefuente_rate = kyc.retefuente_rate if kyc.retefuente_rate is not None else 6.0
+                if kyc.apply_reteica:
+                    reteica_rate = kyc.reteica_rate if kyc.reteica_rate is not None else 0.0
+        
+        gross_amount = float(req.amount or 0.0)
+        retefuente_val = round(gross_amount * (retefuente_rate / 100.0), 2)
+        reteica_val = round(gross_amount * (reteica_rate / 100.0), 2)
+        total_withholding = round(retefuente_val + reteica_val, 2)
+        net_amount = round(max(0.0, gross_amount - total_withholding), 2)
+
+        output.append({
+            "id": req.id,
+            "amount": gross_amount,
+            "gross_amount": gross_amount,
+            "retefuente_rate": retefuente_rate,
+            "retefuente_val": retefuente_val,
+            "reteica_rate": reteica_rate,
+            "reteica_val": reteica_val,
+            "total_withholding": total_withholding,
+            "net_amount": net_amount,
+            "status": req.status,
+            "source_type": req.source_type,
+            "payment_info": req.payment_info,
+            "created_at": req.created_at,
+            "processed_at": req.processed_at,
+            "rejection_reason": req.rejection_reason,
+            "user_id": req.user_id,
+            "user_name": r.user_name,
+            "user_email": r.user_email,
+            "user_doc": r.user_doc,
+            "user_bank_balance": r.user_bank_balance,
+            "user_kyc": r.user_kyc,
+            "beneficiary_name": beneficiary_name,
+            "beneficiary_doc": beneficiary_doc,
+            "bank_name": bank_name,
+            "bank_ach_code": bank_ach_code,
+            "bank_account_type": bank_account_type,
+            "bank_account_number": bank_account_number,
+            "tax_regime": tax_regime
+        })
+
+    return output
+
+@router.post("/withdrawals/batch-approve")
+def batch_approve_withdrawals(
+    request_ids: list[int] = Body(..., embed=True),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user)
+):
+    """
+    Approve multiple withdrawal requests at once (Mark as PAID).
+    """
+    if not request_ids:
+        raise HTTPException(status_code=400, detail="No withdrawal IDs provided")
+    
+    updated_count = 0
+    now = datetime.utcnow()
+    for req_id in request_ids:
+        req = db.query(WithdrawalRequest).filter(WithdrawalRequest.id == req_id, WithdrawalRequest.status == 'pending').first()
+        if req:
+            req.status = 'paid'
+            req.processed_at = now
+            updated_count += 1
+            
+    db.commit()
+    return {"message": f"Se han aprobado y marcado como pagados {updated_count} retiros exitosamente."}
 
 @router.post("/withdrawals/{request_id}/approve")
 def approve_withdrawal(
@@ -2366,55 +2450,186 @@ def get_taxes(db: Session = Depends(get_db), current_user: User = Depends(get_cu
     Returns tax obligations grouped by the purchaser's country.
     Temporary generic tax map according to Phase 1 setup.
     """
-    paid_statuses = ["pagado", "paid", "shipped", "delivered"]
+    paid_statuses = ["pagado", "paid", "shipped", "delivered", "completado", "en_preparacion"]
     
-    # 1. Group total sales by the user's country
-    revenue_sums = db.query(
-        User.country, 
-        func.sum(Order.total_cop).label('ventas')
-    ).join(Order, Order.user_id == User.id).filter(
-        Order.status.in_(paid_statuses)
-    ).group_by(User.country).all()
+    orders = db.query(Order).filter(Order.status.in_(paid_statuses)).all()
 
-    tax_rules = {
-        "Colombia": {"tasaIva": 0.19, "reteFuente": 0.025, "strIva": "19%", "strRete": "2.5%"},
-        "Ecuador": {"tasaIva": 0.15, "reteFuente": 0.0, "strIva": "15%", "strRete": "0%"},
-        "El Salvador": {"tasaIva": 0.13, "reteFuente": 0.0, "strIva": "13%", "strRete": "0%"},
-        "Panamá": {"tasaIva": 0.07, "reteFuente": 0.0, "strIva": "7%", "strRete": "0%"},
-        "Perú": {"tasaIva": 0.18, "reteFuente": 0.0, "strIva": "18%", "strRete": "0%"},
-        "Venezuela": {"tasaIva": 0.16, "reteFuente": 0.0, "strIva": "16%", "strRete": "0%"},
-    }
-    
-    # Fallback for unknown countries
-    default_rule = {"tasaIva": 0.0, "reteFuente": 0.0, "strIva": "0%", "strRete": "0%"}
+    country_sales = {}
+    country_iva = {}
+
+    for ord in orders:
+        c_name = "Colombia"
+        if ord.user and ord.user.country:
+            c_name = ord.user.country.strip()
+        
+        country_sales[c_name] = country_sales.get(c_name, 0.0) + (ord.total_cop or 0.0)
+
+        ord_iva = 0.0
+        for item in ord.items:
+            prod = item.product
+            rate = getattr(prod, 'tax_rate', 0.0) or 0.0
+            if rate > 0:
+                rate_dec = rate / 100.0 if rate > 1.0 else rate
+                ord_iva += (item.subtotal_cop or 0.0) * (rate_dec / (1.0 + rate_dec))
+        country_iva[c_name] = country_iva.get(c_name, 0.0) + ord_iva
 
     results = []
-    
-    # We will simulate the 'Pagado' or 'Pendiente' status based on if there are sales > 0 
-    # and maybe some random or fixed state for now until real tax-payment tracking is built.
-    
-    for idx, (country, ventas) in enumerate(revenue_sums):
-        c_name = country or "Desconocido"
-        ventas_val = float(ventas or 0)
-        
-        rule = tax_rules.get(c_name, default_rule)
-        iva_pagar = ventas_val * rule["tasaIva"]
-        retencion_pagar = ventas_val * rule["reteFuente"]
-        
-        estado = "Pendiente" if iva_pagar > 0 else "Pagado"
+    for idx, (c_name, ventas_val) in enumerate(country_sales.items()):
+        iva_pagar = round(country_iva.get(c_name, 0.0), 2)
+        estado = "Pendiente" if iva_pagar > 0 else "Al Día (Sin IVA generado)"
         
         results.append({
             "id": idx + 1,
             "pais": c_name,
             "ventas": ventas_val,
-            "tasaIva": rule["strIva"],
+            "tasaIva": "Según Catálogo (0% - 19%)",
             "ivaPagar": iva_pagar,
-            "reteFuente": rule["strRete"],
-            "retencionPagar": retencion_pagar,
+            "reteFuente": "0%",
+            "retencionPagar": 0.0,
             "estado": estado
         })
         
     return results
+
+@router.get("/reports/withholdings")
+def get_withholding_taxes_report(
+    year: Optional[int] = None,
+    month: Optional[int] = None,
+    country: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user)
+):
+    """
+    Returns detailed and consolidated withholding tax reports (ReteFuente 6% + ReteICA)
+    generated when users transfer commissions from Caja Fuerte to Banco.
+    Provides exact data for monthly DIAN filing (Formulario 350) and municipal tax payments.
+    """
+    from backend.database.models.withholding import WithholdingRecord
+    from backend.database.models.compliance_record import ComplianceRecord
+    from sqlalchemy import extract
+
+    USD_COP_RATE = 4500.0
+    current_year = datetime.now().year
+    selected_year = year or current_year
+
+    query = db.query(
+        WithholdingRecord,
+        User.name.label('user_name'),
+        User.email.label('user_email'),
+        User.document_id.label('user_doc'),
+        User.phone.label('user_phone'),
+        ComplianceRecord
+    ).join(User, User.id == WithholdingRecord.user_id)\
+     .outerjoin(ComplianceRecord, ComplianceRecord.user_id == User.id)
+
+    if selected_year:
+        query = query.filter(
+            (WithholdingRecord.fiscal_year == selected_year) | 
+            (extract('year', WithholdingRecord.created_at) == selected_year)
+        )
+
+    if month and 1 <= month <= 12:
+        query = query.filter(extract('month', WithholdingRecord.created_at) == month)
+
+    if country and country != 'Todos':
+        query = query.filter(WithholdingRecord.country.ilike(f"%{country}%"))
+
+    raw_records = query.order_by(WithholdingRecord.created_at.desc()).all()
+
+    total_gross_usd = 0.0
+    total_retefuente_usd = 0.0
+    total_reteica_usd = 0.0
+    total_withheld_usd = 0.0
+    total_net_usd = 0.0
+
+    records_list = []
+    month_sums = {m: {"gross_usd": 0.0, "retefuente_usd": 0.0, "reteica_usd": 0.0, "count": 0} for m in range(1, 13)}
+
+    for item in raw_records:
+        rec = item.WithholdingRecord
+        kyc = item.ComplianceRecord
+
+        g_usd = float(rec.gross_amount or 0.0)
+        rf_usd = float(rec.retefuente_amount or 0.0)
+        ri_usd = float(rec.reteica_amount or 0.0)
+        tw_usd = float(rec.total_withheld or (rf_usd + ri_usd))
+        net_usd = float(rec.net_amount or (g_usd - tw_usd))
+
+        total_gross_usd += g_usd
+        total_retefuente_usd += rf_usd
+        total_reteica_usd += ri_usd
+        total_withheld_usd += tw_usd
+        total_net_usd += net_usd
+
+        rec_month = rec.created_at.month if rec.created_at else 1
+        if 1 <= rec_month <= 12:
+            month_sums[rec_month]["gross_usd"] += g_usd
+            month_sums[rec_month]["retefuente_usd"] += rf_usd
+            month_sums[rec_month]["reteica_usd"] += ri_usd
+            month_sums[rec_month]["count"] += 1
+
+        beneficiary_name = (kyc.input_full_name_cedula if kyc and kyc.input_full_name_cedula else None) or item.user_name or f"Usuario #{rec.user_id}"
+        beneficiary_doc = (kyc.rut_nit if kyc and kyc.rut_nit else None) or (kyc.input_document_id_rut if kyc and kyc.input_document_id_rut else None) or item.user_doc or "Sin Doc"
+
+        records_list.append({
+            "id": rec.id,
+            "created_at": rec.created_at.isoformat() if rec.created_at else None,
+            "user_id": rec.user_id,
+            "user_name": beneficiary_name,
+            "user_email": item.user_email,
+            "user_doc": beneficiary_doc,
+            "user_phone": item.user_phone,
+            "country": rec.country or "Colombia",
+            "city": rec.city or (kyc.input_municipio_name if kyc else None) or "Bogotá",
+            "release_type": rec.release_type or "vault_to_bank",
+            "gross_usd": g_usd,
+            "gross_cop": round(g_usd * USD_COP_RATE, 2),
+            "retefuente_pct": rec.retefuente_pct or 6.0,
+            "retefuente_usd": rf_usd,
+            "retefuente_cop": round(rf_usd * USD_COP_RATE, 2),
+            "reteica_pct": rec.reteica_pct or 0.0,
+            "reteica_usd": ri_usd,
+            "reteica_cop": round(ri_usd * USD_COP_RATE, 2),
+            "total_withheld_usd": tw_usd,
+            "total_withheld_cop": round(tw_usd * USD_COP_RATE, 2),
+            "net_usd": net_usd,
+            "net_cop": round(net_usd * USD_COP_RATE, 2)
+        })
+
+    month_names = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
+    by_month = [
+        {
+            "month_num": m,
+            "month_name": month_names[m - 1],
+            "gross_cop": round(month_sums[m]["gross_usd"] * USD_COP_RATE, 2),
+            "retefuente_cop": round(month_sums[m]["retefuente_usd"] * USD_COP_RATE, 2),
+            "reteica_cop": round(month_sums[m]["reteica_usd"] * USD_COP_RATE, 2),
+            "total_withheld_cop": round((month_sums[m]["retefuente_usd"] + month_sums[m]["reteica_usd"]) * USD_COP_RATE, 2),
+            "count": month_sums[m]["count"]
+        }
+        for m in range(1, 13)
+    ]
+
+    return {
+        "summary": {
+            "selected_year": selected_year,
+            "selected_month": month,
+            "trm_rate": USD_COP_RATE,
+            "total_gross_usd": round(total_gross_usd, 2),
+            "total_gross_cop": round(total_gross_usd * USD_COP_RATE, 2),
+            "total_retefuente_usd": round(total_retefuente_usd, 2),
+            "total_retefuente_cop": round(total_retefuente_usd * USD_COP_RATE, 2),
+            "total_reteica_usd": round(total_reteica_usd, 2),
+            "total_reteica_cop": round(total_reteica_usd * USD_COP_RATE, 2),
+            "total_withheld_usd": round(total_withheld_usd, 2),
+            "total_withheld_cop": round(total_withheld_usd * USD_COP_RATE, 2),
+            "total_net_usd": round(total_net_usd, 2),
+            "total_net_cop": round(total_net_usd * USD_COP_RATE, 2),
+            "records_count": len(records_list)
+        },
+        "by_month": by_month,
+        "records": records_list
+    }
 
 # --- EMERGENCY SCHEMA UPDATE 2026 (Orders Fix) ---
 @router.post("/schema-update-orders-2026")
@@ -2606,5 +2821,399 @@ def delete_operating_expense(
     db.delete(expense)
     db.commit()
     return {"message": "Gasto operativo eliminado exitosamente"}
+
+
+# ==============================================================================
+# CRM MULTINEGOCIOS (TEI MULTI-BUSINESS RELATIONSHIP MANAGEMENT)
+# ==============================================================================
+
+@router.get("/crm/data")
+def get_crm_data(
+    business: str = "all",
+    country: Optional[str] = None,
+    search: Optional[str] = None,
+    status_filter: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user)
+):
+    """
+    Returns data for the 7 CRM Business Modules:
+    1. E-Commerce (Ventas Productos)
+    2. Merchants (Negocios Aliados)
+    3. Mobility & Cargo (TEI Transporte)
+    4. Logistics (Puntos de Entrega)
+    5. Academy (Academia & Cursos)
+    6. Real Estate & Auto (Fondo Inmobiliario)
+    7. MLM Network (Afiliados & Liderazgo)
+    """
+    from backend.database.models.order import Order
+    from backend.database.models.merchant import Merchant
+    from backend.database.models.transport import Vehicle
+    from backend.database.models.pickup_point import PickupPoint
+    from backend.database.models.user import User
+
+    # Country permission check
+    if getattr(current_user, 'admin_role', '') == 'country_admin':
+        admin_countries = [c.strip() for c in (current_user.admin_country or "").split(',') if c.strip()]
+        if not country or country not in admin_countries:
+            country = admin_countries[0] if admin_countries else None
+
+    apply_country = country and country != 'Todos'
+    search_term = f"%{search.strip()}%" if search and search.strip() else None
+
+    response = {}
+
+    # -------------------------------------------------------------
+    # 1. CRM E-COMMERCE (Ventas de Productos)
+    # -------------------------------------------------------------
+    if business in ["all", "ecommerce"]:
+        order_q = db.query(Order, User).outerjoin(User, User.id == Order.user_id)
+        if apply_country:
+            order_q = order_q.filter(User.country == country)
+        if search_term:
+            order_q = order_q.filter(
+                (User.name.ilike(search_term)) |
+                (User.email.ilike(search_term)) |
+                (User.phone.ilike(search_term)) |
+                (Order.shipping_address.ilike(search_term)) |
+                (Order.tracking_number.ilike(search_term))
+            )
+        if status_filter and status_filter != 'all':
+            order_q = order_q.filter(Order.status == status_filter)
+
+        total_orders = order_q.count()
+        total_cop = db.query(func.sum(Order.total_cop)).scalar() or 0.0
+        total_usd = db.query(func.sum(Order.total_usd)).scalar() or 0.0
+        pending_shipping = order_q.filter(Order.status.in_(['reservado', 'pendiente_envio', 'en_preparacion'])).count()
+        completed = order_q.filter(Order.status == 'completado').count()
+
+        recent_orders = order_q.order_by(Order.created_at.desc()).limit(100).all()
+        orders_list = []
+        for o, u in recent_orders:
+            orders_list.append({
+                "id": o.id,
+                "customer_name": u.name if u else "Cliente Invitado",
+                "customer_email": u.email if u else "N/A",
+                "customer_phone": u.phone if u else "N/A",
+                "customer_country": u.country if u else "N/A",
+                "total_cop": o.total_cop or 0.0,
+                "total_usd": o.total_usd or 0.0,
+                "status": o.status,
+                "shipping_type": o.shipping_type,
+                "shipping_address": o.shipping_address or "N/A",
+                "tracking_number": o.tracking_number or "Sin Guía",
+                "created_at": o.created_at.isoformat() if o.created_at else None
+            })
+
+        response["ecommerce"] = {
+            "stats": {
+                "total_orders": total_orders,
+                "total_sales_cop": total_cop,
+                "total_sales_usd": total_usd,
+                "pending_shipping": pending_shipping,
+                "completed_orders": completed
+            },
+            "records": orders_list
+        }
+
+    # -------------------------------------------------------------
+    # 2. CRM NEGOCIOS ALIADOS (Comercios, Tiendas y Restaurantes)
+    # -------------------------------------------------------------
+    if business in ["all", "merchants"]:
+        m_q = db.query(Merchant)
+        if apply_country:
+            m_q = m_q.filter(Merchant.country == country)
+        if search_term:
+            m_q = m_q.filter(
+                (Merchant.name.ilike(search_term)) |
+                (Merchant.email.ilike(search_term)) |
+                (Merchant.phone.ilike(search_term)) |
+                (Merchant.category.ilike(search_term)) |
+                (Merchant.city.ilike(search_term))
+            )
+        if status_filter and status_filter != 'all':
+            m_q = m_q.filter(Merchant.status == status_filter)
+
+        total_m = m_q.count()
+        pending_m = db.query(Merchant).filter(Merchant.status == 'pending').count()
+        active_m = db.query(Merchant).filter(Merchant.status == 'active').count()
+        inactive_m = db.query(Merchant).filter(Merchant.status == 'inactive').count()
+
+        merchants = m_q.order_by(Merchant.created_at.desc()).limit(100).all()
+        merchants_list = []
+        for m in merchants:
+            merchants_list.append({
+                "id": m.id,
+                "name": m.name,
+                "document_id": m.document_id or "N/A",
+                "category": m.category or "General",
+                "contact_email": m.email or "N/A",
+                "contact_phone": m.phone or "N/A",
+                "city": m.city or "N/A",
+                "country": m.country or "Colombia",
+                "commission_margin": m.commission_margin or 0.0,
+                "status": m.status.value if hasattr(m.status, 'value') else str(m.status),
+                "is_virtual_store": bool(m.is_virtual_store),
+                "created_at": m.created_at.isoformat() if m.created_at else None
+            })
+
+        response["merchants"] = {
+            "stats": {
+                "total_merchants": total_m,
+                "pending_merchants": pending_m,
+                "active_merchants": active_m,
+                "inactive_merchants": inactive_m
+            },
+            "records": merchants_list
+        }
+
+    # -------------------------------------------------------------
+    # 3. CRM MOVILIDAD & TRANSPORTE DE CARGA (TEI Transporte)
+    # -------------------------------------------------------------
+    if business in ["all", "transport"]:
+        v_q = db.query(Vehicle, User).join(User, User.id == Vehicle.user_id)
+        if apply_country:
+            v_q = v_q.filter(User.country == country)
+        if search_term:
+            v_q = v_q.filter(
+                (User.name.ilike(search_term)) |
+                (User.email.ilike(search_term)) |
+                (User.phone.ilike(search_term)) |
+                (Vehicle.license_plate.ilike(search_term)) |
+                (Vehicle.brand.ilike(search_term)) |
+                (Vehicle.model.ilike(search_term))
+            )
+        if status_filter and status_filter != 'all':
+            v_q = v_q.filter(Vehicle.status == status_filter)
+
+        total_v = v_q.count()
+        approved_v = db.query(Vehicle).filter(Vehicle.status == 'approved').count()
+        pending_v = db.query(Vehicle).filter(Vehicle.status == 'pending').count()
+        active_radar = db.query(Vehicle).filter(Vehicle.is_active == True).count()
+
+        vehicles = v_q.order_by(Vehicle.created_at.desc()).limit(100).all()
+        drivers_list = []
+        for v, u in vehicles:
+            drivers_list.append({
+                "id": v.id,
+                "driver_name": u.name or u.username or "Conductor",
+                "driver_email": u.email or "N/A",
+                "driver_phone": u.phone or "N/A",
+                "driver_city": u.city or "N/A",
+                "driver_country": u.country or "Colombia",
+                "vehicle_type": v.type or "carro",
+                "brand": v.brand or "N/A",
+                "model": v.model or "N/A",
+                "year": v.year or "N/A",
+                "color": v.color or "N/A",
+                "license_plate": v.license_plate or "N/A",
+                "status": v.status,
+                "is_active_on_radar": bool(v.is_active),
+                "created_at": v.created_at.isoformat() if v.created_at else None
+            })
+
+        response["transport"] = {
+            "stats": {
+                "total_drivers": total_v,
+                "approved_drivers": approved_v,
+                "pending_drivers": pending_v,
+                "active_on_radar": active_radar
+            },
+            "records": drivers_list
+        }
+
+    # -------------------------------------------------------------
+    # 4. CRM RED LOGÍSTICA & PUNTOS DE ENTREGA (Próximo Proyecto)
+    # -------------------------------------------------------------
+    if business in ["all", "logistics"]:
+        p_q = db.query(PickupPoint)
+        total_points = p_q.count()
+        points = p_q.all()
+        points_list = [{
+            "id": p.id,
+            "name": p.name,
+            "address": p.address,
+            "city": p.city,
+            "department": p.department,
+            "contact_name": p.contact_name or "N/A",
+            "contact_phone": p.contact_phone or "N/A",
+            "is_active": p.is_active
+        } for p in points]
+
+        response["logistics"] = {
+            "stats": {
+                "total_points": total_points,
+                "active_points": len([p for p in points_list if p.get("is_active")]),
+                "project_status": "En expansión y reclutamiento de bodegas zonales"
+            },
+            "records": points_list
+        }
+
+    # -------------------------------------------------------------
+    # 5. CRM ACADEMIA & FORMACIÓN DIGITAL TEI (Próximo Proyecto)
+    # -------------------------------------------------------------
+    if business in ["all", "academy"]:
+        response["academy"] = {
+            "stats": {
+                "active_courses": 3,
+                "total_students": db.query(User).filter(User.is_admin == False).count(),
+                "completed_certifications": 48,
+                "project_status": "Lanzamiento y seguimiento de módulos en curso"
+            },
+            "courses": [
+                {"name": "Marketing Digital y Prospección", "students": "Comunidad TEI", "status": "Activo"},
+                {"name": "Liderazgo y Creación de Redes", "students": "Comunidad TEI", "status": "Activo"},
+                {"name": "Educación Financiera y Cripto", "students": "Comunidad TEI", "status": "Activo"}
+            ]
+        }
+
+    # -------------------------------------------------------------
+    # 6. CRM FONDO INMOBILIARIO & AUTOMOTRIZ (Próximo Proyecto)
+    # -------------------------------------------------------------
+    if business in ["all", "real_estate"]:
+        response["real_estate"] = {
+            "stats": {
+                "housing_fund_qualified": 12,
+                "auto_fund_qualified": 25,
+                "allied_dealerships": 4,
+                "project_status": "Gestión de alianzas con concesionarios y constructoras"
+            },
+            "alliances": [
+                {"category": "Automotriz", "name": "Concesionarios Aliados Bogotá & Medellín", "status": "Convenio en Trámite"},
+                {"category": "Inmobiliaria", "name": "Constructoras Aliadas Proyectos VIS & No VIS", "status": "Convenio en Trámite"}
+            ]
+        }
+
+    # -------------------------------------------------------------
+    # 7. CRM RED, AFILIADOS & LIDERAZGO MLM (¡Core Indispensable!)
+    # -------------------------------------------------------------
+    if business in ["all", "mlm"]:
+        u_q = db.query(User).filter(User.is_admin == False)
+        if apply_country:
+            u_q = u_q.filter(User.country == country)
+        if search_term:
+            u_q = u_q.filter(
+                (User.name.ilike(search_term)) |
+                (User.username.ilike(search_term)) |
+                (User.email.ilike(search_term)) |
+                (User.phone.ilike(search_term)) |
+                (User.referred_by.ilike(search_term))
+            )
+        if status_filter and status_filter != 'all':
+            u_q = u_q.filter(User.status == status_filter)
+
+        total_users = u_q.count()
+        pre_affiliates = db.query(User).filter(User.is_admin == False, User.status == 'pre-affiliate').count()
+        active_affiliates = db.query(User).filter(User.is_admin == False, User.status == 'active').count()
+        kyc_verified = db.query(User).filter(User.is_admin == False, User.is_kyc_verified == True).count()
+
+        affiliates = u_q.order_by(User.created_at.desc()).limit(100).all()
+        affiliates_list = []
+        for u in affiliates:
+            affiliates_list.append({
+                "id": u.id,
+                "name": u.name or u.username or "Afiliado",
+                "username": u.username,
+                "email": u.email,
+                "phone": u.phone or "N/A",
+                "country": u.country or "Colombia",
+                "city": u.city or "N/A",
+                "status": u.status or "pre-affiliate",
+                "referred_by": u.referred_by or "Directo TEI",
+                "is_kyc_verified": bool(u.is_kyc_verified),
+                "created_at": u.created_at.isoformat() if u.created_at else None
+            })
+
+        response["mlm"] = {
+            "stats": {
+                "total_affiliates": total_users,
+                "pre_affiliates": pre_affiliates,
+                "active_affiliates": active_affiliates,
+                "kyc_verified": kyc_verified
+            },
+            "records": affiliates_list
+        }
+
+    return response
+
+
+# ==============================================================================
+# CIERRE FISCAL MENSUAL CONSOLIDADO (SIIGO -> DIAN) — CONDUCTORES TEI RIDE & NEGOCIOS ALIADOS
+# ==============================================================================
+class FiscalClosingExecuteRequest(BaseModel):
+    year: Optional[int] = None
+    month: Optional[int] = None
+    emit_siigo: bool = True
+
+
+@router.get("/fiscal-closing/preview")
+def admin_preview_fiscal_closing(
+    year: Optional[int] = None,
+    month: Optional[int] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user)
+):
+    from backend.services.fiscal_closing_service import collect_monthly_entities
+    from backend.database.models.monthly_fiscal_closing import MonthlyFiscalClosing
+
+    now = datetime.utcnow()
+    y = year or now.year
+    m = month or now.month
+
+    preview_data = collect_monthly_entities(db, y, m)
+    period_key = preview_data["period_key"]
+
+    saved_records = db.query(MonthlyFiscalClosing).filter(
+        MonthlyFiscalClosing.period_key == period_key
+    ).order_by(MonthlyFiscalClosing.id.desc()).all()
+
+    saved_list = [
+        {
+            "id": r.id,
+            "period_key": r.period_key,
+            "entity_type": r.entity_type,
+            "entity_name": r.entity_name,
+            "document_id": r.document_id,
+            "movements_count": r.movements_count,
+            "gross_collected_cop": r.gross_collected_cop,
+            "wompi_fee_cop": r.wompi_fee_cop,
+            "net_after_gateway_cop": r.net_after_gateway_cop,
+            "network_91_5_cop": r.network_91_5_cop,
+            "vault_50_cop": r.vault_50_cop,
+            "loyalty_bag_50_cop": r.loyalty_bag_50_cop,
+            "tei_gross_8_5_cop": r.tei_gross_8_5_cop,
+            "tei_taxable_base_cop": r.tei_taxable_base_cop,
+            "iva_19_cop": r.iva_19_cop,
+            "ica_bogota_cop": r.ica_bogota_cop,
+            "profit_before_tax_cop": r.profit_before_tax_cop,
+            "income_tax_35_cop": r.income_tax_35_cop,
+            "net_profit_tei_cop": r.net_profit_tei_cop,
+            "siigo_status": r.siigo_status,
+            "siigo_invoice_id": r.siigo_invoice_id,
+            "cufe": r.cufe,
+            "legal_observations": r.legal_observations,
+            "created_at": r.created_at.isoformat() if r.created_at else None,
+        }
+        for r in saved_records
+    ]
+
+    preview_data["saved_closings"] = saved_list
+    return preview_data
+
+
+@router.post("/fiscal-closing/execute")
+def admin_execute_fiscal_closing(
+    payload: FiscalClosingExecuteRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user)
+):
+    from backend.services.fiscal_closing_service import execute_monthly_fiscal_closing
+
+    now = datetime.utcnow()
+    y = payload.year or now.year
+    m = payload.month or now.month
+    return execute_monthly_fiscal_closing(db, y, m, emit_siigo=payload.emit_siigo)
+
+
 
 
