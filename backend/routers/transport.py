@@ -1364,6 +1364,24 @@ def get_driver_wallet_info(db: Session = Depends(get_db), current_user: User = D
                 "is_credit": True
             })
 
+    # Movimientos de transferencia hacia Saldo Banco TEI
+    to_bank_tx = db.query(PaymentTransaction).filter(
+        PaymentTransaction.provider == "driver_to_banco"
+    ).order_by(PaymentTransaction.created_at.desc()).all()
+    user_to_bank = [
+        tx_b for tx_b in to_bank_tx
+        if tx_b.metadata_json and isinstance(tx_b.metadata_json, dict) and tx_b.metadata_json.get("user_id") == user_id
+    ]
+    for tb in user_to_bank[:10]:
+        movements.append({
+            "id": f"tbank_{tb.id}",
+            "type": "transfer_to_bank",
+            "title": "Transferencia a Saldo Banco TEI",
+            "date": tb.created_at.strftime("%Y-%m-%d %H:%M") if tb.created_at else "",
+            "amount_cop": -tb.amount,
+            "is_credit": False
+        })
+
     # Movimientos de créditos del conductor
     user_credits = db.query(DriverCredit).filter(DriverCredit.driver_id == current_user.id).order_by(DriverCredit.created_at.desc()).limit(10).all()
     for c in user_credits:
@@ -1867,6 +1885,75 @@ def recharge_wallet_internal(
         "new_caja_balance_cop": round((current_user.bank_balance or 0.0) * EXCHANGE_RATE),
         "is_first_recharge": False
     }
+
+
+class DriverTransferToBankRequest(BaseModel):
+    amount_cop: float
+
+
+@router.post("/driver-wallet/transfer-to-bank")
+def transfer_driver_wallet_to_bank(
+    payload: DriverTransferToBankRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Permite al conductor transferir fondos desde su Saldo Disponible para Viajes (available_balance)
+    hacia su Saldo Banco TEI (verified_balance) de forma inmediata y sin costo.
+    """
+    EXCHANGE_RATE = 4500.0
+    if not payload.amount_cop or payload.amount_cop < 1000:
+        raise HTTPException(
+            status_code=400,
+            detail="El monto mínimo para transferir a Banco TEI es de $1.000 COP."
+        )
+
+    locked_user = db.query(User).filter(User.id == current_user.id).with_for_update().first()
+    if not locked_user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado.")
+
+    available_usd = locked_user.available_balance or 0.0
+    available_cop = round(available_usd * EXCHANGE_RATE)
+
+    if payload.amount_cop > available_cop:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Saldo insuficiente en Saldo Disponible para Viajes. Tienes ${available_cop:,.0f} COP (${available_usd:.2f} USD) disponibles."
+        )
+
+    amount_usd = round(payload.amount_cop / EXCHANGE_RATE, 4)
+    if amount_usd > available_usd:
+        amount_usd = available_usd
+
+    locked_user.available_balance = max(0.0, round(available_usd - amount_usd, 4))
+    locked_user.verified_balance = round((locked_user.verified_balance or 0.0) + amount_usd, 4)
+
+    tx = PaymentTransaction(
+        amount=payload.amount_cop,
+        currency="COP",
+        status="approved",
+        provider="driver_to_banco",
+        metadata_json={
+            "user_id": locked_user.id,
+            "amount_usd": amount_usd,
+            "type": "transfer_to_tei_bank"
+        },
+        order_id=None
+    )
+    db.add(tx)
+    db.commit()
+    db.refresh(locked_user)
+
+    return {
+        "message": f"¡Transferencia exitosa! Se pasaron ${payload.amount_cop:,.0f} COP (${amount_usd:.2f} USD) desde tu Saldo Disponible para Viajes hacia tu Saldo Banco TEI.",
+        "amount_cop": payload.amount_cop,
+        "amount_usd": amount_usd,
+        "new_available_balance_cop": round((locked_user.available_balance or 0.0) * EXCHANGE_RATE),
+        "new_available_balance_usd": locked_user.available_balance,
+        "new_banco_balance_cop": round((locked_user.verified_balance or 0.0) * EXCHANGE_RATE),
+        "new_banco_balance_usd": locked_user.verified_balance
+    }
+
 
 @router.post("/recharge", response_model=dict)
 def recharge_wallet(payload: RechargeRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):

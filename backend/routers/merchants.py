@@ -445,7 +445,10 @@ def get_user_merchant(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    merchant = db.query(Merchant).filter(Merchant.user_id == current_user.id).order_by(Merchant.id.desc()).first()
+    merchant = db.query(Merchant).filter(
+        Merchant.user_id == current_user.id,
+        Merchant.status != "inactive"
+    ).order_by(Merchant.id.desc()).first()
     if not merchant:
         return {"status": "none"}
 

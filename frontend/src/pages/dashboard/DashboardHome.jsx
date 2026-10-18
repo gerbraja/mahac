@@ -1,24 +1,28 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../../api/api';
+import PaymentRequestModal from './components/PaymentRequestModal';
 
 const DashboardHome = () => {
+    const navigate = useNavigate();
     const [user, setUser] = useState(null);
     const [walletData, setWalletData] = useState(null);
     const [promoData, setPromoData] = useState(null);
     const [foundersData, setFoundersData] = useState(null);
     const [myMerchant, setMyMerchant] = useState(null);
+    const [driverVehicle, setDriverVehicle] = useState(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [userResponse, walletResponse, promoResponse, foundersResponse, merchantResponse] = await Promise.all([
+                const [userResponse, walletResponse, promoResponse, foundersResponse, merchantResponse, driverResponse] = await Promise.all([
                     api.get('/auth/me'),
                     api.get('/api/wallet/summary').catch(() => ({ data: null })),
                     api.get('/api/promotions/travel-status').catch(() => ({ data: null })),
                     api.get('/api/promotions/founders-club').catch(() => ({ data: null })),
-                    api.get('/api/merchants/my-merchant').catch(() => ({ data: null }))
+                    api.get('/api/merchants/my-merchant').catch(() => ({ data: null })),
+                    api.get('/api/transport/vehicle/me').catch(() => ({ data: null }))
                 ]);
                 setUser(userResponse.data);
                 setWalletData(walletResponse.data);
@@ -28,8 +32,11 @@ const DashboardHome = () => {
                 if (foundersResponse && foundersResponse.data) {
                     setFoundersData(foundersResponse.data);
                 }
-                if (merchantResponse && merchantResponse.data && merchantResponse.data.status !== 'none') {
+                if (merchantResponse && merchantResponse.data && merchantResponse.data.status !== 'none' && merchantResponse.data.status !== 'inactive') {
                     setMyMerchant(merchantResponse.data);
+                }
+                if (driverResponse && driverResponse.data) {
+                    setDriverVehicle(driverResponse.data);
                 }
             } catch (error) {
                 console.error("Error fetching data:", error);
@@ -43,6 +50,7 @@ const DashboardHome = () => {
 
     if (loading) {
         return (
+
             <div className="p-8">
                 <div className="animate-pulse space-y-6">
                     <div className="h-8 bg-gray-200 rounded w-1/3"></div>
@@ -102,13 +110,25 @@ const DashboardHome = () => {
     ];
 
     return (
+        <>
         <div className="p-6 space-y-8">
             {/* Welcome Section */}
-            <div>
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent mb-2">
-                    ¡Hola, {user.name}! 👋
-                </h1>
-                <p className="text-gray-600 text-lg">Bienvenido a tu oficina virtual</p>
+            <div className="flex items-center justify-between flex-wrap gap-4">
+                <div>
+                    <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent mb-2">
+                        ¡Hola, {user.name}! 👋
+                    </h1>
+                    <p className="text-gray-600 text-lg">Bienvenido a tu oficina virtual</p>
+                </div>
+                {foundersData?.is_user_founder && (
+                    <div className="flex-shrink-0 animate-fade-in-up">
+                        <img 
+                            src={foundersData.founder_tier?.includes('Élite') ? "/sello_elite.png" : "/sello_fundador.png"} 
+                            alt={foundersData.founder_tier || "Sello Fundador"} 
+                            className="h-24 md:h-32 object-contain drop-shadow-[0_10px_15px_rgba(234,179,8,0.3)] hover:scale-110 transition-transform duration-300"
+                        />
+                    </div>
+                )}
             </div>
 
             {/* Club de Fundadores Widget */}
@@ -116,8 +136,23 @@ const DashboardHome = () => {
                 <div className="bg-gradient-to-br from-gray-900 to-black text-yellow-500 rounded-2xl p-6 shadow-2xl border border-yellow-600/30 relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-600/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
                     <div className="relative z-10 flex flex-col md:flex-row items-center gap-6">
-                        <div className="text-6xl drop-shadow-[0_0_15px_rgba(234,179,8,0.5)]">👑</div>
-                        <div className="flex-1 text-center md:text-left">
+                        {foundersData.is_user_founder ? (
+                            <div className="relative group">
+                                <div className="text-6xl drop-shadow-[0_0_15px_rgba(234,179,8,0.5)] transform transition-transform group-hover:scale-110">
+                                    {foundersData.founder_tier?.includes('Élite') ? '💎' : '👑'}
+                                </div>
+                                <div className={`absolute -bottom-3 left-1/2 -translate-x-1/2 whitespace-nowrap text-[10px] font-black px-3 py-1 rounded-full border shadow-lg ${
+                                    foundersData.founder_tier?.includes('Élite') 
+                                        ? 'bg-gradient-to-r from-purple-700 to-indigo-700 text-white border-purple-400 shadow-purple-500/50' 
+                                        : 'bg-gradient-to-r from-yellow-700 to-yellow-600 text-white border-yellow-300 shadow-yellow-500/50'
+                                }`}>
+                                    {foundersData.founder_tier?.toUpperCase() || 'FUNDADOR'}
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="text-6xl drop-shadow-[0_0_15px_rgba(234,179,8,0.5)]">👑</div>
+                        )}
+                        <div className="flex-1 text-center md:text-left mt-2 md:mt-0">
                             <h2 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-yellow-600 mb-2 uppercase tracking-widest">Club de Fundadores</h2>
                             
                             {foundersData.is_user_founder ? (
@@ -338,25 +373,73 @@ const DashboardHome = () => {
                         <button 
                             type="button"
                             onClick={() => {
-                                const url = `${window.location.origin}/magic-merchant/${myMerchant.magic_token}`;
+                                const token = myMerchant.magic_token;
+                                if (!token || token === 'null' || token.trim() === '') {
+                                    alert('El enlace de caja se está sincronizando. Por favor actualiza la página en unos segundos.');
+                                    return;
+                                }
+                                const url = `${window.location.origin}/magic-merchant/${token}`;
                                 navigator.clipboard.writeText(url);
                                 alert('¡Enlace Mágico de Caja copiado al portapapeles!');
                             }}
-                            className="bg-white border border-green-200 hover:bg-green-100 text-green-700 font-semibold px-4 py-2.5 rounded-xl text-sm transition-all"
+                            className="bg-white border border-green-200 hover:bg-green-100 text-green-700 font-semibold px-4 py-2.5 rounded-xl text-sm transition-all shadow-sm"
                         >
                             🔗 Copiar Link de Caja
                         </button>
-                        <a 
-                            href={`${window.location.origin}/magic-merchant/${myMerchant.magic_token}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="bg-green-600 hover:bg-green-700 text-white font-semibold px-5 py-2.5 rounded-xl text-sm text-center shadow-md transition-all whitespace-nowrap"
+                        <button 
+                            type="button"
+                            onClick={() => navigate('/merchant')}
+                            className="bg-green-600 hover:bg-green-700 text-white font-semibold px-5 py-2.5 rounded-xl text-sm text-center shadow-md transition-all whitespace-nowrap flex items-center justify-center gap-1.5"
                         >
                             💻 Abrir Caja
-                        </a>
+                        </button>
                     </div>
                 </div>
             ) : null}
+
+            {/* Passenger Action Banner */}
+            <div className="bg-gradient-to-r from-violet-50 to-purple-50 border border-violet-100 rounded-2xl p-6 flex flex-col md:flex-row justify-between items-center gap-4 shadow-sm text-left mb-6">
+                <div className="flex items-center gap-4">
+                    <span className="text-4xl">🚖</span>
+                    <div>
+                        <h3 className="text-lg font-bold text-violet-900">¿Necesitas movilizarte o enviar algo?</h3>
+                        <p className="text-sm text-gray-600 font-normal">Solicita un vehículo seguro y al mejor precio con TEI Transport. Tú decides cuánto pagar.</p>
+                    </div>
+                </div>
+                <Link to="/transport/passenger" className="bg-violet-600 hover:bg-violet-700 text-white font-semibold px-5 py-2.5 rounded-xl shadow-md transition-all text-sm whitespace-nowrap">
+                    🚖 Pedir un Vehículo
+                </Link>
+            </div>
+
+            {/* Driver Registration Banner */}
+            <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-100 rounded-2xl p-6 flex flex-col md:flex-row justify-between items-center gap-4 shadow-sm text-left mb-6">
+                <div className="flex items-center gap-4">
+                    <span className="text-4xl">🚗</span>
+                    <div>
+                        <h3 className="text-lg font-bold text-emerald-900">¿Tienes vehículo y quieres generar ingresos?</h3>
+                        <p className="text-sm text-gray-600 font-normal">Regístrate como Conductor TEI y presta el servicio de arrendamiento de vehículo con conductor. Aprobación rápida y ganancias directas.</p>
+                    </div>
+                </div>
+                <Link to="/transport/driver/register" className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-5 py-2.5 rounded-xl shadow-md transition-all text-sm whitespace-nowrap">
+                    🚗 Registrarme como Conductor
+                </Link>
+            </div>
+
+            {/* Driver Radar Link */}
+            {driverVehicle && driverVehicle.status === 'approved' && (
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-2xl p-6 flex flex-col md:flex-row justify-between items-center gap-4 shadow-sm text-left mb-6">
+                    <div className="flex items-center gap-4">
+                        <span className="text-4xl">📡</span>
+                        <div>
+                            <h3 className="text-lg font-bold text-blue-900">¿Ya eres Conductor TEI?</h3>
+                            <p className="text-sm text-gray-600 font-normal">Abre tu Radar, actívate y comienza a recibir solicitudes de viajes cercanos de forma inmediata.</p>
+                        </div>
+                    </div>
+                    <Link to="/transport/driver" className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-2.5 rounded-xl shadow-md transition-all text-sm whitespace-nowrap">
+                        📡 Ir a mi Radar
+                    </Link>
+                </div>
+            )}
 
             {/* Pre-Affiliate Alert or Active Status */}
             {isPreAffiliate ? (
@@ -438,6 +521,28 @@ const DashboardHome = () => {
                     </div>
                 </div>
             )}
+            {/* Mi Código TEI (QR Code) */}
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border-2 border-blue-200 shadow-lg flex flex-col md:flex-row items-center gap-6">
+                <div className="flex-1">
+                    <h2 className="text-xl font-bold text-gray-800 mb-2">📱 Mi Código TEI</h2>
+                    <p className="text-sm text-gray-600 mb-3">
+                        Muestra este código QR en los <strong>Comercios Aliados</strong> de TEI (restaurantes, odontólogos, tiendas) para recibir tus comisiones por cada compra física.
+                    </p>
+                    <p className="text-xs text-blue-800 bg-blue-100/60 p-2 rounded-lg inline-block border border-blue-200">
+                        💡 Si no pueden escanear tu QR, indícales tu código: <strong>TEI-USER-{user.id}</strong> o tu usuario: <strong>{user.username}</strong>
+                    </p>
+                </div>
+                <div className="bg-white p-3 rounded-xl shadow-md shrink-0 flex flex-col items-center gap-2">
+                    <img 
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=TEI-USER-${user.id}`} 
+                        alt="Mi Código TEI" 
+                        className="w-32 h-32"
+                    />
+                    <span className="text-xs font-mono font-bold text-gray-600 bg-gray-100 px-2 py-0.5 rounded">TEI-USER-{user.id}</span>
+                    <span className="text-xs text-gray-500 font-semibold">@{user.username}</span>
+                </div>
+            </div>
+
             {/* Quick Actions */}
             <div>
                 <h2 className="text-2xl font-bold text-gray-800 mb-4">Acciones Rápidas</h2>
@@ -487,6 +592,8 @@ const DashboardHome = () => {
                 </div>
             </div>
         </div>
+            <PaymentRequestModal />
+        </>
     );
 };
 
