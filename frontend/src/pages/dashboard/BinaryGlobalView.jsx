@@ -364,62 +364,6 @@ const BinaryGlobalView = () => {
                     </div>
                 </div>
 
-                {/* Commission Levels */}
-                <div className="bg-white shadow-md rounded-xl p-4 md:p-6 md:col-span-2">
-                    <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                        📊 Niveles de Comisión
-                    </h3>
-                    <div className="overflow-x-auto">
-                        <table className="w-full border-collapse text-sm">
-                            <thead>
-                                <tr className="bg-gray-100">
-                                    <th className="p-3 text-left border-b-2 border-gray-200">Nivel</th>
-                                    <th className="p-3 text-left border-b-2 border-gray-200">Personas</th>
-                                    <th className="p-3 text-right border-b-2 border-gray-200">Comisión</th>
-                                    <th className="p-3 text-center border-b-2 border-gray-200">Estado</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {[
-                                    { level: 1, persons: 2, commission: '$0.00', pays: false },
-                                    { level: 2, persons: 4, commission: '$0.00', pays: false },
-                                    { level: 3, persons: 8, commission: '$0.50', pays: true },
-                                    { level: 5, persons: 32, commission: '$0.50', pays: true },
-                                    { level: 7, persons: 128, commission: '$0.50', pays: true },
-                                    { level: 9, persons: 512, commission: '$0.50', pays: true },
-                                    { level: 11, persons: '2,048', commission: '$0.50', pays: true },
-                                    { level: 13, persons: '8,192', commission: '$0.50', pays: true },
-                                    { level: 15, persons: '32,768', commission: '$1.00', pays: true },
-                                    { level: 17, persons: '131,072', commission: '$1.00', pays: true },
-                                    { level: 19, persons: '524,288', commission: '$1.00', pays: true },
-                                    { level: 21, persons: '2,097,152', commission: '$1.00', pays: true },
-                                ].map((row, idx) => (
-                                    <tr key={idx} className="border-b border-gray-200 hover:bg-gray-50">
-                                        <td className="p-3 font-semibold">Nivel {row.level}</td>
-                                        <td className="p-3">{row.persons}</td>
-                                        <td className="p-3 text-right font-mono font-semibold">
-                                            {row.commission}
-                                        </td>
-                                        <td className="p-3 text-center">
-                                            {row.pays ? (
-                                                <span className="text-emerald-600 font-semibold">✅ SE PAGA</span>
-                                            ) : (
-                                                <span className="text-red-600 font-semibold">❌ NO PAGA</span>
-                                            )}
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                    <div className="mt-4 p-4 bg-gray-100 rounded-lg">
-                        <p className="text-sm text-gray-600 m-0">
-                            💡 <strong>Nota:</strong> Las comisiones se pagan UNA VEZ al año por cada miembro activo en niveles impares.
-                            Total máximo teórico: <span className="font-bold text-emerald-600">$2,790,740.00</span>
-                        </p>
-                    </div>
-                </div>
-
                 {/* Resumen Completo de Ganancias por Nivel */}
                 <div className="bg-white shadow-md rounded-xl p-4 md:p-6 md:col-span-2">
                     <h3 className="text-xl md:text-2xl font-bold mb-6 flex items-center gap-2">
@@ -430,7 +374,6 @@ const BinaryGlobalView = () => {
                             <thead>
                                 <tr className="bg-gradient-to-br from-indigo-500 to-purple-600 text-white">
                                     <th className="p-3 md:p-4 text-left rounded-tl-lg">Nivel</th>
-                                    <th className="p-3 md:p-4 text-right hidden md:table-cell">Comisión/Persona</th>
                                     <th className="p-3 md:p-4 text-right">Activos</th>
                                     <th className="p-3 md:p-4 text-right">Ganado (Mes)</th>
                                     <th className="p-3 md:p-4 text-right rounded-tr-lg">Potencial Máximo</th>
@@ -461,9 +404,6 @@ const BinaryGlobalView = () => {
                                                 <span className="mr-2">{row.emoji}</span>
                                                 <span className="block md:inline">Nivel {row.level}</span>
                                             </td>
-                                            <td className="p-3 md:p-4 text-right font-mono font-bold text-emerald-600 hidden md:table-cell">
-                                                ${row.commission.toFixed(2)}
-                                            </td>
                                             <td className="p-3 md:p-4 text-right font-mono font-semibold">
                                                 {active.toLocaleString()}
                                             </td>
@@ -480,7 +420,6 @@ const BinaryGlobalView = () => {
                                     <td colSpan="2" className="p-3 md:p-4 text-sm md:text-base">
                                         💰 TOTAL MES ACTUAL:
                                     </td>
-                                    <td className="hidden md:table-cell"></td>
                                     <td className="p-3 md:p-4 text-right text-base md:text-lg">
                                         ${thisYearEarnings.toFixed(2)}
                                     </td>
@@ -496,7 +435,6 @@ const BinaryGlobalView = () => {
                             📝 Notas Importantes:
                         </h4>
                         <ul className="list-disc pl-5 text-green-800 text-sm space-y-1">
-                            <li><strong>Ciclo Mensual:</strong> Del día 28 al día 27 del mes siguiente (Hora Colombia).</li>
                             <li><strong>Activos Actuales:</strong> Número de personas en este nivel que están activas en tu red</li>
                             <li><strong>Ganado Este Mes:</strong> Total de comisiones recibidas en este ciclo</li>
                             <li><strong>Potencial Máximo:</strong> Ganancia si todos los slots del nivel estuvieran llenos con miembros activos</li>
