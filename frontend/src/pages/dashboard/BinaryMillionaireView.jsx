@@ -320,8 +320,6 @@ const BinaryMillionaireView = () => {
                         📝 Notas Importantes:
                     </h4>
                     <ul className="list-disc pl-5 text-amber-900 text-sm space-y-1">
-                        <li><strong>Ciclo Mensual:</strong> Del día 18 al día 17 del mes siguiente (Hora Colombia).</li>
-                        <li><strong>Niveles Impares:</strong> Solo los niveles impares (1, 3, 5, 7...) generan comisiones</li>
                         <li><strong>Fórmula:</strong> Comisión = (PV × %) × Valor del Punto (USD) por cada miembro activo</li>
                         <li><strong>PV (Puntos de Volumen):</strong> Determinado por el paquete comprado por cada usuario</li>
                         <li><strong>Hasta Nivel 27:</strong> El plan paga comisiones hasta el nivel 27 de profundidad</li>
