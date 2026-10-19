@@ -111,13 +111,19 @@ except Exception as _err:
     print(f"⚠️ Could not ensure membership_number_seq: {_err}", flush=True)
 
 # ========================================================
-# INITIALIZE FASTAPI APPLICATION
+# INITIALIZE FASTAPI APPLICATION (BLINDAJE ANTI-INGENIERÍA INVERSA / REA)
 # ========================================================
+ENABLE_API_DOCS = os.getenv("ENABLE_API_DOCS", "false").lower() == "true"
+
 app = FastAPI(
     title="TEI Backend API",
     description="TEI Shopping Center - Multi-Level Marketing System with Virtual Store",
     version="1.0.0",
+    docs_url="/docs" if ENABLE_API_DOCS else None,
+    redoc_url="/redoc" if ENABLE_API_DOCS else None,
+    openapi_url="/openapi.json" if ENABLE_API_DOCS else None,
 )
+
 
 
 async def auto_sync_trm_task():
@@ -333,11 +339,77 @@ if env_allowed_origins:
 app.add_middleware(
     CORSMiddleware,
     allow_origins=FRONTEND_ORIGINS,
-    allow_origin_regex=r"https://.*\.run\.app",
+    allow_origin_regex=r"https://(tei-frontend-us|mlm-frontend|mlm-backend)(-[a-z0-9-]+)?\.(us-central1|southamerica-east1)\.run\.app",
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
+
+# ========================================================
+# BLINDAJE ANTI-CLONACIÓN IA (REA) Y CABECERAS DE SEGURIDAD
+# ========================================================
+BLOCKED_BOT_SIGNATURES = (
+    "readev", "rea-ai", "rea/", "gptbot", "chatgpt-user", "oai-searchbot",
+    "ccbot", "claudebot", "anthropic-ai", "cohere-ai", "bytespider",
+    "petalbot", "scrapy", "httrack", "webcopier", "teleport", "wget/",
+    "sqlmap", "nikto", "nmap", "masscan", "zgrab", "nuclei", "dirbuster",
+    "gobuster", "acunetix", "nessus", "wpscan", "feroxbuster",
+)
+
+BLOCKED_SCHEMA_PATHS = {
+    "/openapi.json", "/docs", "/docs/oauth2-redirect", "/redoc",
+    "/swagger.json", "/swagger.yaml", "/api-docs", "/v1/openapi.json",
+    "/.env", "/.git/config", "/wp-admin", "/phpmyadmin",
+}
+
+
+@app.middleware("http")
+async def security_and_anti_scraping_middleware(request, call_next):
+    from fastapi.responses import JSONResponse
+
+    path_lower = request.url.path.lower()
+
+    # 1. Bloquear acceso a mapas de esquema o rutas de reconocimiento si no están explícitamente habilitados
+    if not ENABLE_API_DOCS and path_lower in BLOCKED_SCHEMA_PATHS:
+        return JSONResponse(status_code=404, content={"detail": "Not Found"})
+
+    # 2. Bloquear User-Agents de IAs de ingeniería inversa, clonadores web y escáneres de vulnerabilidades
+    user_agent = (request.headers.get("user-agent") or "").lower()
+    if any(sig in user_agent for sig in BLOCKED_BOT_SIGNATURES):
+        return JSONResponse(
+            status_code=403,
+            content={"detail": "Access denied by TEI Security Shield."},
+        )
+
+    # 3. Verificación estricta de Origin cuando la petición proviene de un navegador externo no autorizado
+    origin = request.headers.get("origin")
+    if origin and not path_lower.startswith("/api/payment/wompi") and not path_lower.startswith("/payment/wompi"):
+        import re
+        allowed_run_app = re.match(
+            r"^https://(tei-frontend-us|mlm-frontend|mlm-backend)(-[a-z0-9-]+)?\.(us-central1|southamerica-east1)\.run\.app$",
+            origin,
+        )
+        if origin not in FRONTEND_ORIGINS and not allowed_run_app:
+            return JSONResponse(
+                status_code=403,
+                content={"detail": "Origin not authorized."},
+            )
+
+    response = await call_next(request)
+
+    # 4. Cabeceras de blindaje HTTP contra incrustación, sniffing e indexación por bots de IA
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "geolocation=(self), camera=(self), microphone=()"
+    response.headers["X-Robots-Tag"] = "noindex, nofollow, noarchive, nosnippet, noimageindex"
+    response.headers["Content-Security-Policy"] = "frame-ancestors 'none';"
+    if "server" in response.headers:
+        del response.headers["server"]
+
+    return response
+
 
 
 print("DEBUG: [MAIN] Importing payments router...", flush=True)

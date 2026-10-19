@@ -7,6 +7,10 @@ import DashboardLayout from "./components/layout/DashboardLayout";
 import MarketingBubbles from "./components/MarketingBubbles";
 import PwaInstallPrompt from "./components/PwaInstallPrompt";
 import MagicMerchantLogin from "./pages/auth/MagicMerchantLogin";
+import StoreDirectory from './pages/stores/StoreDirectory';
+import Storefront from './pages/stores/Storefront';
+import StoreCheckout from './pages/stores/StoreCheckout';
+import ProtectedRoute from './components/ProtectedRoute';
 
 // Lazy imports for pages
 const MatrixView = React.lazy(() => import("./pages/dashboard/MatrixView"));
@@ -23,7 +27,6 @@ const SecurityView = React.lazy(() => import("./pages/dashboard/SecurityView"));
 const StoreView = React.lazy(() => import("./pages/dashboard/StoreView"));
 const DashboardHome = React.lazy(() => import("./pages/dashboard/DashboardHome"));
 const Login = React.lazy(() => import("./pages/Login"));
-const ResetPassword = React.lazy(() => import("./pages/ResetPassword"));
 const Personal = React.lazy(() => import("./pages/Personal"));
 const OrderConfirmation = React.lazy(() => import("./pages/OrderConfirmation"));
 const QualifiedRanksView = React.lazy(() => import("./pages/dashboard/QualifiedRanksView"));
@@ -38,6 +41,14 @@ const Checkout = React.lazy(() => import("./pages/Checkout"));
 const SupplierInventory = React.lazy(() => import("./pages/SupplierInventory"));
 const MerchantPortal = React.lazy(() => import("./pages/merchant/MerchantPortal"));
 const MerchantApply = React.lazy(() => import("./pages/dashboard/MerchantApply"));
+
+// Transport Module Imports
+const PassengerDashboard = React.lazy(() => import("./components/transport/PassengerDashboard"));
+const DriverRadar = React.lazy(() => import("./components/transport/DriverRadar"));
+const DriverRegistration = React.lazy(() => import("./components/transport/DriverRegistration"));
+const DriverWallet = React.lazy(() => import("./components/transport/DriverWallet"));
+const AdminTransportKYC = React.lazy(() => import("./pages/admin/AdminTransportKYC"));
+const AdminTransportDrivers = React.lazy(() => import("./pages/admin/AdminTransportDrivers"));
 
 // Admin imports and lazy components
 import AdminLayout from './components/layout/AdminLayout';
@@ -66,6 +77,7 @@ const AdminPromotions = React.lazy(() => import('./pages/admin/AdminPromotions')
 const AdminCountryManagers = React.lazy(() => import('./pages/admin/AdminCountryManagers'));
 const AdminMerchants = React.lazy(() => import('./pages/admin/AdminMerchants'));
 const AdminMerchantsList = React.lazy(() => import('./pages/admin/AdminMerchantsList'));
+const AdminCRM = React.lazy(() => import('./pages/admin/AdminCRM'));
 
 // Component to capture username from URL and redirect to home with ref parameter
 function ReferralRedirect() {
@@ -92,26 +104,62 @@ class ErrorBoundary extends React.Component {
   componentDidCatch(error, errorInfo) {
     console.error("Uncaught error:", error, errorInfo);
     this.setState({ error, errorInfo });
+
+    // Auto-recuperación ante despliegues nuevos (chunk desactualizado)
+    const isChunkError = error?.message && (
+      error.message.includes("Failed to fetch dynamically imported module") ||
+      error.message.includes("Importing a module script failed") ||
+      error.message.includes("Loading chunk") ||
+      error.message.includes("error loading dynamically imported module")
+    );
+
+    if (isChunkError) {
+      const lastReload = sessionStorage.getItem("tei_chunk_reload");
+      const now = Date.now();
+      if (!lastReload || (now - parseInt(lastReload, 10)) > 15000) {
+        sessionStorage.setItem("tei_chunk_reload", now.toString());
+        console.warn("Detectada nueva versión desplegada. Actualizando automáticamente...");
+        window.location.reload();
+      }
+    }
   }
 
   render() {
     if (this.state.hasError) {
+      const isChunkError = this.state.error?.message && (
+        this.state.error.message.includes("Failed to fetch dynamically imported module") ||
+        this.state.error.message.includes("Importing a module script failed") ||
+        this.state.error.message.includes("Loading chunk")
+      );
+
       return (
         <div className="flex items-center justify-center h-screen bg-gray-100 flex-col p-4">
-          <h1 className="text-3xl font-bold text-red-600 mb-4">¡Algo salió mal!</h1>
+          <h1 className="text-3xl font-bold text-blue-900 mb-2">
+            {isChunkError ? "¡Nueva versión disponible!" : "¡Algo salió mal!"}
+          </h1>
           <p className="text-gray-700 mb-6 text-center max-w-md">
-            Ha ocurrido un error inesperado en la aplicación. Por favor, recarga la página.
+            {isChunkError 
+              ? "Hemos actualizado la plataforma con nuevas mejoras. Haz clic en el botón para cargar la última versión."
+              : "Ha ocurrido un error inesperado en la aplicación. Por favor, recarga la página."}
           </p>
           <button
-            onClick={() => window.location.reload()}
-            className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            onClick={() => {
+              // Limpiar cachés y recargar
+              if ('caches' in window) {
+                caches.keys().then((keys) => {
+                  keys.forEach((key) => caches.delete(key));
+                });
+              }
+              window.location.reload();
+            }}
+            className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded-xl shadow-lg hover:from-blue-700 hover:to-indigo-700 transition"
           >
-            Recargar Página
+            {isChunkError ? "Actualizar Ahora" : "Recargar Página"}
           </button>
-          {true && (
+          {import.meta.env.DEV && (
             <details className="mt-8 p-4 bg-white rounded shadow max-w-4xl overflow-auto text-left w-full">
-              <summary className="cursor-pointer font-bold text-red-600">Ver Detalles del Error (Haga clic aquí)</summary>
-              <pre className="text-red-500 text-sm mt-2 whitespace-pre-wrap">
+              <summary className="cursor-pointer font-bold text-gray-500 text-xs">Ver Detalles Técnicos</summary>
+              <pre className="text-red-500 text-xs mt-2 whitespace-pre-wrap">
                 {this.state.error && this.state.error.toString()}
                 <br />
                 {this.state.errorInfo && this.state.errorInfo.componentStack}
@@ -137,9 +185,14 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/opportunity" element={<Opportunity />} />
           <Route path="/personal" element={<Personal />} />
-          {/* <Route path="/register" element={<React.Suspense fallback={<div className="flex h-screen items-center justify-center">Cargando...</div>}><Register /></React.Suspense>} />
-          <Route path="/forgot-password" element={<React.Suspense fallback={<div className="flex h-screen items-center justify-center">Cargando...</div>}><ForgotPassword /></React.Suspense>} /> */}
-          <Route path="/reset-password" element={<React.Suspense fallback={<div className="flex h-screen items-center justify-center">Cargando...</div>}><ResetPassword /></React.Suspense>} />
+          
+          <Route path="/comercios-virtuales" element={<StoreDirectory />} />
+          <Route path="/tienda/:slug" element={<Storefront />} />
+          <Route path="/tienda/:slug/checkout" element={
+            <ProtectedRoute>
+              <StoreCheckout />
+            </ProtectedRoute>
+          } />
           <Route path="/magic-merchant/:token" element={<MagicMerchantLogin />} />
           <Route path="/usuario/:username" element={<ReferralRedirect />} />
           <Route path="/complete-registration" element={<CompleteRegistration />} />
@@ -149,6 +202,28 @@ export default function App() {
           <Route path="/supplier-inventory/:token" element={<SupplierInventory />} />
           <Route path="/punto-de-entrega/:token" element={<PickupPointPortal />} />
           <Route path="/merchant" element={<MerchantPortal />} />
+
+          {/* Transport Routes (Full Screen) */}
+          <Route path="/transport/passenger" element={
+            <ProtectedRoute>
+              <PassengerDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/transport/driver" element={
+            <ProtectedRoute>
+              <DriverRadar />
+            </ProtectedRoute>
+          } />
+          <Route path="/transport/driver/register" element={
+            <ProtectedRoute>
+              <DriverRegistration />
+            </ProtectedRoute>
+          } />
+          <Route path="/transport/driver/wallet" element={
+            <ProtectedRoute>
+              <DriverWallet />
+            </ProtectedRoute>
+          } />
 
           {/* Admin Routes */}
           <Route path="/admin" element={
@@ -180,6 +255,9 @@ export default function App() {
             <Route path="country-managers" element={<AdminCountryManagers />} />
             <Route path="merchants" element={<AdminMerchants />} />
             <Route path="merchants-directory" element={<AdminMerchantsList />} />
+            <Route path="transport-kyc" element={<AdminTransportKYC />} />
+            <Route path="transport-drivers" element={<AdminTransportDrivers />} />
+            <Route path="crm" element={<AdminCRM />} />
           </Route>
 
           {/* User Dashboard Routes */}

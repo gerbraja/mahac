@@ -13,7 +13,14 @@ export default defineConfig({
   server: {
     port: 5173,
   },
+  esbuild: {
+    drop: ["console", "debugger"],
+    legalComments: "none",
+  },
   build: {
     target: "es2015",
+    sourcemap: false,
+    minify: "esbuild",
   },
 });
+
