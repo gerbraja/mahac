@@ -330,51 +330,7 @@ const BinaryMillionaireView = () => {
                 </div>
             </div>
 
-            {/* Resumen Detallado por Nivel Individual */}
-            <div className="bg-white shadow-md rounded-xl p-4 md:p-6 mt-6">
-                <h3 className="text-xl md:text-2xl font-bold mb-6 flex items-center gap-2">
-                    📊 Resumen Detallado por Nivel (Niveles Impares)
-                </h3>
-                <div className="overflow-x-auto">
-                    <table className="w-full border-collapse text-sm">
-                        <thead>
-                            <tr className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white">
-                                <th className="p-3 md:p-4 text-left rounded-tl-lg">Nivel</th>
-                                <th className="p-3 md:p-4 text-center">%</th>
-                                <th className="p-3 md:p-4 text-right">Activos</th>
-                                <th className="p-3 md:p-4 text-right rounded-tr-lg">Ganado (USD)</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {[1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27].map((level, idx) => {
-                                const percent = level <= 9 ? 3.0 : level <= 17 ? 2.0 : level <= 23 ? 1.0 : 0.5;
-                                const possible = Math.pow(2, level);
-                                const levelStat = stats?.level_stats?.find(s => s.level === level);
-                                const active = levelStat?.active_members || 0;
-                                const pv = levelStat?.total_pv || 0;
-                                const earned = levelStat?.earned_amount || 0;
 
-                                return (
-                                    <tr key={idx} className="border-b border-gray-200 bg-amber-50 hover:bg-amber-100 transition-colors">
-                                        <td className="p-3 md:p-4 font-semibold">
-                                            Nivel {level}
-                                        </td>
-                                        <td className="p-3 md:p-4 text-center font-mono font-semibold text-emerald-600">
-                                            {percent}%
-                                        </td>
-                                        <td className="p-3 md:p-4 text-right font-mono font-semibold">
-                                            {active.toLocaleString()}
-                                        </td>
-                                        <td className="p-3 md:p-4 text-right font-mono font-bold text-emerald-700">
-                                            ${earned.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                        </td>
-                                    </tr>
-                                );
-                            })}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
         </div>
     );
 };
