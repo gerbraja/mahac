@@ -13,6 +13,27 @@ router = APIRouter(prefix="/media", tags=["media"])
 ALLOWED_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif", "application/pdf"}
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
 
+def is_valid_file_signature(content: bytes, content_type: str) -> bool:
+    """ Valida la firma binaria real (magic bytes) del archivo para evitar suplantación de tipo. """
+    if len(content) < 4:
+        return False
+    # JPEG (FF D8 FF)
+    if content_type == "image/jpeg" and content[:3] == b"\xff\xd8\xff":
+        return True
+    # PNG (89 50 4E 47)
+    if content_type == "image/png" and content[:4] == b"\x89PNG":
+        return True
+    # GIF (GIF87a / GIF89a)
+    if content_type == "image/gif" and content[:4] in (b"GIF8", b"GIF7"):
+        return True
+    # WEBP (RIFF....WEBP)
+    if content_type == "image/webp" and len(content) >= 12 and content[:4] == b"RIFF" and content[8:12] == b"WEBP":
+        return True
+    # PDF (%PDF)
+    if content_type == "application/pdf" and content[:4] == b"%PDF":
+        return True
+    return False
+
 @router.post("/upload")
 async def upload_media_file(
     file: UploadFile = File(...),
@@ -30,6 +51,13 @@ async def upload_media_file(
         raise HTTPException(
             status_code=400, 
             detail="El archivo no debe superar los 10 MB."
+        )
+
+    # Validar firma binaria real (Magic Bytes) para impedir archivos ejecutables o scripts disfrazados
+    if not is_valid_file_signature(content, file.content_type):
+        raise HTTPException(
+            status_code=400,
+            detail="El contenido del archivo no coincide con un formato de imagen o PDF legítimo."
         )
 
     media = MediaFile(

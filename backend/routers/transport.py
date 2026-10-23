@@ -82,12 +82,16 @@ def register_vehicle(payload: VehicleCreate, db: Session = Depends(get_db), curr
     if plate_exists:
         raise HTTPException(status_code=400, detail="License plate already registered.")
 
+    calculated_year = payload.year
+    if not calculated_year and payload.model and str(payload.model).isdigit():
+        calculated_year = int(payload.model)
+
     vehicle = Vehicle(
         user_id=current_user.id,
         type=payload.type,
         brand=payload.brand,
         model=payload.model,
-        year=payload.year,
+        year=calculated_year,
         color=payload.color,
         license_plate=payload.license_plate,
         cargo_capacity_kg=payload.cargo_capacity_kg,
