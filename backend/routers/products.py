@@ -81,6 +81,13 @@ def create_product(
             is_upgrade=getattr(prod, 'is_upgrade', False),
             # New Fields
             cost_price=prod.cost_price,
+            supplier_has_iva=getattr(prod, 'supplier_has_iva', False),
+            supplier_iva_rate=getattr(prod, 'supplier_iva_rate', 0.0),
+            supplier_withholding_rate=getattr(prod, 'supplier_withholding_rate', 0.0),
+            compensation_budget_cop=getattr(prod, 'compensation_budget_cop', 0.0),
+            matrix_reserve_cop=getattr(prod, 'matrix_reserve_cop', 0.0),
+            travel_pool_cop=getattr(prod, 'travel_pool_cop', 0.0),
+            company_profit_cop=getattr(prod, 'company_profit_cop', 0.0),
             tei_pv=prod.tei_pv,
             tax_rate=prod.tax_rate,
             public_price=prod.public_price,

@@ -7,6 +7,7 @@ export default function AdminAccounting() {
     const { globalCountry } = useAdmin();
     const [loading, setLoading] = useState(true);
     const [financialData, setFinancialData] = useState(null);
+    const [monthlyEarnings, setMonthlyEarnings] = useState(null);
     const [expensesList, setExpensesList] = useState([]);
     const [period, setPeriod] = useState('30d');
 
@@ -32,14 +33,18 @@ export default function AdminAccounting() {
                 params.country = globalCountry;
             }
 
-            // Fetch reports and expenses in parallel
-            const [accResponse, expResponse] = await Promise.all([
+            // Fetch reports, monthly earnings, and expenses in parallel
+            const [accResponse, expResponse, monthlyResponse] = await Promise.all([
                 api.get('/api/admin/reports/accounting', { params }),
-                api.get('/api/admin/expenses', { params })
+                api.get('/api/admin/expenses', { params }),
+                api.get('/api/admin/reports/monthly-earnings', {
+                    params: globalCountry && globalCountry !== 'Todos' ? { country: globalCountry } : {}
+                })
             ]);
 
             setFinancialData(accResponse.data);
             setExpensesList(expResponse.data || []);
+            setMonthlyEarnings(monthlyResponse.data || null);
         } catch (error) {
             console.error("Error fetching accounting data:", error);
         } finally {
@@ -123,6 +128,18 @@ export default function AdminAccounting() {
         csvContent += `REPORTE FINANCIERO Y CONTABLE\n`;
         csvContent += `Pais,${period_info.country}\n`;
         csvContent += `Periodo,${period_info.start_date} al ${period_info.end_date}\n\n`;
+
+        if (monthlyEarnings && monthlyEarnings.months) {
+            csvContent += `ACUMULADO DE GANANCIAS DE LA EMPRESA TEI MES A MES\n`;
+            csvContent += `Mes,Ventas Totales (COP),Costo Fabricantes (COP),Retenciones Fabricante (COP),Planes Compensacion (COP),Reserva Matrices (COP),Premios en Viajes (COP),Ganancia Neta Empresa TEI (COP),Margen %\n`;
+            monthlyEarnings.months.forEach(m => {
+                csvContent += `${m.month_label},${m.total_sales_cop},${m.supplier_total_cost_cop},${m.supplier_withheld_cop},${m.compensation_plans_cop},${m.matrix_reserve_cop},${m.travel_pool_cop},${m.company_net_profit_cop},${m.margin_percent}%\n`;
+            });
+            if (monthlyEarnings.totals) {
+                const t = monthlyEarnings.totals;
+                csvContent += `GRAN TOTAL ACUMULADO,${t.total_sales_cop},${t.supplier_total_cost_cop},${t.supplier_withheld_cop},${t.compensation_plans_cop},${t.matrix_reserve_cop},${t.travel_pool_cop},${t.company_net_profit_cop},${t.margin_percent}%\n\n`;
+            }
+        }
         
         // P&L Section
         csvContent += `ESTADO DE RESULTADOS (P&L)\n`;
@@ -295,6 +312,158 @@ export default function AdminAccounting() {
                     color={pnl.utilidad_neta >= 0 ? "bg-blue-50 text-blue-700 border-blue-100" : "bg-orange-50 text-orange-700 border-orange-100"}
                 />
             </div>
+
+            {/* ================================================================================= */}
+            {/* NUEVA SECCIÓN: ACUMULADO DE GANANCIAS DE LA EMPRESA TEI MES A MES                 */}
+            {/* ================================================================================= */}
+            {monthlyEarnings && monthlyEarnings.months && (
+                <div className="bg-white rounded-lg shadow border border-indigo-100 overflow-hidden print-full-width">
+                    <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 px-6 py-4 flex flex-wrap justify-between items-center gap-4">
+                        <div>
+                            <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                                📅 Acumulado de Ganancias de la Empresa TEI Mes a Mes
+                            </h2>
+                            <p className="text-indigo-200 text-xs mt-0.5">
+                                Desglose real descontando Costo de Fabricante (+IVA / Retención), Planes de Compensación (Productos), Activación de Matrices y Premios en Viajes (Paquetes).
+                            </p>
+                        </div>
+                        {monthlyEarnings.totals && (
+                            <div className="bg-emerald-500/20 border border-emerald-400/40 rounded-lg px-4 py-2 text-right">
+                                <span className="text-xs uppercase tracking-wider text-emerald-200 font-bold block">
+                                    Gran Acumulado Ganancia Empresa TEI
+                                </span>
+                                <span className="text-xl font-extrabold text-emerald-300">
+                                    {formatCOP(monthlyEarnings.totals.company_net_profit_cop)}
+                                </span>
+                                <span className="text-xs text-emerald-200 ml-2">
+                                    ({monthlyEarnings.totals.margin_percent}%)
+                                </span>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Mini Tarjetas de Resumen Acumulado */}
+                    {monthlyEarnings.totals && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4 bg-slate-50 border-b border-gray-200">
+                            <div className="bg-white p-3.5 rounded border border-gray-200">
+                                <span className="text-xs font-bold text-gray-500 uppercase block">🏭 Total Costo Fabricantes</span>
+                                <span className="text-lg font-extrabold text-amber-700">{formatCOP(monthlyEarnings.totals.supplier_total_cost_cop)}</span>
+                                <span className="text-xs text-gray-500 block mt-0.5">
+                                    Giro neto: {formatCOP(monthlyEarnings.totals.supplier_net_payout_cop)} | Retenido: {formatCOP(monthlyEarnings.totals.supplier_withheld_cop)}
+                                </span>
+                            </div>
+                            <div className="bg-white p-3.5 rounded border border-gray-200">
+                                <span className="text-xs font-bold text-gray-500 uppercase block">🤝 Total Planes de Compensación</span>
+                                <span className="text-lg font-extrabold text-pink-700">{formatCOP(monthlyEarnings.totals.compensation_plans_cop)}</span>
+                                <span className="text-xs text-gray-500 block mt-0.5">
+                                    Destinado por venta de Productos
+                                </span>
+                            </div>
+                            <div className="bg-white p-3.5 rounded border border-gray-200">
+                                <span className="text-xs font-bold text-gray-500 uppercase block">🔷 Total Activación de Matrices</span>
+                                <span className="text-lg font-extrabold text-purple-700">{formatCOP(monthlyEarnings.totals.matrix_reserve_cop)}</span>
+                                <span className="text-xs text-gray-500 block mt-0.5">
+                                    Destinado por venta de Paquetes
+                                </span>
+                            </div>
+                            <div className="bg-white p-3.5 rounded border border-gray-200">
+                                <span className="text-xs font-bold text-gray-500 uppercase block">✈️ Total Premios en Viajes / Fondos</span>
+                                <span className="text-lg font-extrabold text-sky-700">{formatCOP(monthlyEarnings.totals.travel_pool_cop)}</span>
+                                <span className="text-xs text-gray-500 block mt-0.5">
+                                    Reserva acumulada para Viajes
+                                </span>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Tabla Mes a Mes */}
+                    <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-200 text-sm">
+                            <thead className="bg-gray-100 text-gray-700 font-bold">
+                                <tr>
+                                    <th className="py-3 px-4 text-left">Mes / Año</th>
+                                    <th className="py-3 px-4 text-right">Ventas Totales</th>
+                                    <th className="py-3 px-4 text-right">Costo Fabricante</th>
+                                    <th className="py-3 px-4 text-right">Planes Compensación</th>
+                                    <th className="py-3 px-4 text-right">Activar Matrices</th>
+                                    <th className="py-3 px-4 text-right">Premios en Viajes</th>
+                                    <th className="py-3 px-4 text-right bg-emerald-50 text-emerald-900">Ganancia Neta TEI</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100">
+                                {monthlyEarnings.months.map((m) => (
+                                    <tr key={m.month_key} className="hover:bg-gray-50">
+                                        <td className="py-3 px-4">
+                                            <div className="font-bold text-gray-900">{m.month_label}</div>
+                                            <div className="text-xs text-gray-500">
+                                                {m.orders_count} pedidos ({m.units_sold} uds)
+                                            </div>
+                                        </td>
+                                        <td className="py-3 px-4 text-right">
+                                            <div className="font-bold text-gray-900">{formatCOP(m.total_sales_cop)}</div>
+                                            <div className="text-xs text-gray-500">
+                                                Cat: {formatCOP(m.catalog_sales_cop)} | Paq: {formatCOP(m.package_sales_cop)}
+                                            </div>
+                                        </td>
+                                        <td className="py-3 px-4 text-right">
+                                            <div className="font-semibold text-amber-700">{formatCOP(m.supplier_total_cost_cop)}</div>
+                                            {m.supplier_withheld_cop > 0 && (
+                                                <div className="text-xs text-amber-600">
+                                                    Retenido: {formatCOP(m.supplier_withheld_cop)}
+                                                </div>
+                                            )}
+                                        </td>
+                                        <td className="py-3 px-4 text-right font-medium text-pink-700">
+                                            {formatCOP(m.compensation_plans_cop)}
+                                        </td>
+                                        <td className="py-3 px-4 text-right font-medium text-purple-700">
+                                            {formatCOP(m.matrix_reserve_cop)}
+                                        </td>
+                                        <td className="py-3 px-4 text-right font-medium text-sky-700">
+                                            {formatCOP(m.travel_pool_cop)}
+                                        </td>
+                                        <td className="py-3 px-4 text-right bg-emerald-50/50">
+                                            <div className={`font-extrabold text-base ${m.company_net_profit_cop >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>
+                                                {formatCOP(m.company_net_profit_cop)}
+                                            </div>
+                                            <div className="text-xs font-semibold text-emerald-600">
+                                                Margen: {m.margin_percent}%
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                            {monthlyEarnings.totals && (
+                                <tfoot className="bg-slate-900 text-white font-bold">
+                                    <tr>
+                                        <td className="py-3.5 px-4">
+                                            TOTAL ACUMULADO ({monthlyEarnings.totals.orders_count} pedidos)
+                                        </td>
+                                        <td className="py-3.5 px-4 text-right">
+                                            {formatCOP(monthlyEarnings.totals.total_sales_cop)}
+                                        </td>
+                                        <td className="py-3.5 px-4 text-right text-amber-300">
+                                            {formatCOP(monthlyEarnings.totals.supplier_total_cost_cop)}
+                                        </td>
+                                        <td className="py-3.5 px-4 text-right text-pink-300">
+                                            {formatCOP(monthlyEarnings.totals.compensation_plans_cop)}
+                                        </td>
+                                        <td className="py-3.5 px-4 text-right text-purple-300">
+                                            {formatCOP(monthlyEarnings.totals.matrix_reserve_cop)}
+                                        </td>
+                                        <td className="py-3.5 px-4 text-right text-sky-300">
+                                            {formatCOP(monthlyEarnings.totals.travel_pool_cop)}
+                                        </td>
+                                        <td className="py-3.5 px-4 text-right text-emerald-400 text-base">
+                                            {formatCOP(monthlyEarnings.totals.company_net_profit_cop)} ({monthlyEarnings.totals.margin_percent}%)
+                                        </td>
+                                    </tr>
+                                </tfoot>
+                            )}
+                        </table>
+                    </div>
+                </div>
+            )}
 
             {/* Gráficos de pastel */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 no-print">

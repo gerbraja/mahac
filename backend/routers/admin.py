@@ -2715,6 +2715,26 @@ def get_accounting_report(
     return calculate_financial_statement(db, period=period, country=country)
 
 
+@router.get("/reports/monthly-earnings")
+def get_monthly_company_earnings_report(
+    country: str = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user)
+):
+    """
+    Exposes cumulative month-by-month company earnings breakdown (manufacturer costs, withholdings,
+    compensation plans, matrices, travel pools, and net company profit).
+    """
+    from backend.services.accounting_service import calculate_monthly_company_earnings
+
+    if getattr(current_user, 'admin_role', '') == 'country_admin':
+        admin_countries = [c.strip() for c in (current_user.admin_country or "").split(',') if c.strip()]
+        if not country or country not in admin_countries:
+            country = admin_countries[0] if admin_countries else None
+
+    return calculate_monthly_company_earnings(db, country=country)
+
+
 # ─────────────────────────────────────────────────────────────────
 # OPERATING EXPENSES CRUD ROUTES
 # ─────────────────────────────────────────────────────────────────

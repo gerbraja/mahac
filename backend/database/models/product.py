@@ -27,10 +27,17 @@ class Product(Base):
     # Política de Envíos
     shipping_class = Column(String(50), default="normal") # normal, subsidized, free
     
-    # New Fields
-    cost_price = Column(Float, nullable=True) # Precio Producto (Costo)
+    # Costos de Fabricante, Impuestos y Distribución de Ganancia TEI
+    cost_price = Column(Float, nullable=True, default=0.0) # Precio Producto / Fabricante base (COP)
+    supplier_has_iva = Column(Boolean, default=False) # ¿El fabricante cobra IVA?
+    supplier_iva_rate = Column(Float, default=0.0) # % IVA del fabricante (ej: 0.19)
+    supplier_withholding_rate = Column(Float, default=0.0) # % Retención practicada al fabricante si no cobra IVA (ej: 0.025, 0.035)
+    compensation_budget_cop = Column(Float, default=0.0) # Dinero destinado a Planes de Compensación (Productos)
+    matrix_reserve_cop = Column(Float, default=0.0) # Dinero destinado para activar Matrices (Paquetes)
+    travel_pool_cop = Column(Float, default=0.0) # Dinero dispuesto para Premios en Viajes / Bóvedas (Paquetes)
+    company_profit_cop = Column(Float, default=0.0) # Ganancia Neta estimada por unidad para la Empresa TEI
     tei_pv = Column(Integer, default=0) # P.V TEI
-    tax_rate = Column(Float, default=0.0) # IVA %
+    tax_rate = Column(Float, default=0.0) # IVA % Venta al Público
     public_price = Column(Float, nullable=True) # Precio Publico
     sku = Column(String, nullable=True) # Referencia
     
@@ -48,7 +55,6 @@ class Product(Base):
     
     # Países donde el producto está disponible (JSON Array string, ej: '["Colombia", "Panamá"]')
     available_countries = Column(String, default='["Colombia"]')
-    
     
     # Rating/Reviews
     average_rating = Column(Float, default=0.0)
