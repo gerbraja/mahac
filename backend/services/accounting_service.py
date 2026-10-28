@@ -156,21 +156,12 @@ def calculate_financial_statement(db: Session, period: str = "30d", country: str
                        .filter(func.trim(User.country) == country.strip())
     cash_balance = float(cash_q.scalar() or 0.0)
 
-    # Inventory Valuation: sum of (cost_price * stock) of active products
-    prod_inv_q = db.query(Product).filter(Product.active == True)
-    if country and country != "Todos":
-        prod_inv_q = prod_inv_q.filter(Product.available_countries.ilike(f'%"{country}"%'))
-    
-    active_products = prod_inv_q.all()
-    inventory_valuation = sum((p.cost_price or 0.0) * (p.stock or 0) for p in active_products)
+    # En TEI el stock de la tienda virtual es cupo disponible de los fabricantes (bajo pedido),
+    # no inventario pre-comprado por la empresa. Tampoco se suman pedidos no pagados como dinero real.
+    inventory_valuation = 0.0
+    accounts_receivable = 0.0
 
-    # Accounts receivable: created unpaid orders (reservado, pendiente)
-    unpaid_q = db.query(func.sum(Order.total_cop)).filter(Order.status.in_(["reservado", "pendiente"]))
-    if country and country != "Todos":
-        unpaid_q = unpaid_q.join(User, Order.user_id == User.id).filter(func.trim(User.country) == country.strip())
-    accounts_receivable = float(unpaid_q.scalar() or 0.0)
-
-    total_activos = cash_balance + inventory_valuation + accounts_receivable
+    total_activos = cash_balance
 
     # ─────────────────────────────────────────────────────────────────
     # 4. PASIVOS (LIABILITIES) - Cumulative (All time)
@@ -308,6 +299,7 @@ def calculate_monthly_company_earnings(db: Session, country: str = None) -> dict
                 "supplier_withheld_cop": 0.0,
                 "supplier_net_payout_cop": 0.0,
                 "supplier_total_cost_cop": 0.0,
+                "shipping_cost_cop": 0.0,
                 "compensation_plans_cop": 0.0,
                 "matrix_reserve_cop": 0.0,
                 "travel_pool_cop": 0.0,
@@ -363,8 +355,16 @@ def calculate_monthly_company_earnings(db: Session, country: str = None) -> dict
             sup_net_payout = base_cost_total + sup_iva_cop - sup_wh_cop
             sup_total_cost = base_cost_total + sup_iva_cop
 
-            # Fondos de Red / Matrices / Viajes
+            # Costo de envío asignado al producto
+            ship_unit = float(getattr(prod, 'shipping_cost_cop', 0.0) or 0.0) if prod else 0.0
+            shipping_total = ship_unit * qty
+
+            # Fondos de Red (PV + Bono Directo PV en productos y paquetes) / Matrices / Viajes
             comp_unit = float(getattr(prod, 'compensation_budget_cop', 0.0) or 0.0) if prod else 0.0
+            if comp_unit <= 0.0 and prod:
+                pv_total = float(getattr(prod, 'pv', 0.0) or 0.0) + float(getattr(prod, 'direct_bonus_pv', 0.0) or 0.0)
+                if pv_total > 0:
+                    comp_unit = round(pv_total * 4500.0, 2)
             matrix_unit = float(getattr(prod, 'matrix_reserve_cop', 0.0) or 0.0) if prod else 0.0
             travel_unit = float(getattr(prod, 'travel_pool_cop', 0.0) or 0.0) if prod else 0.0
 
@@ -373,7 +373,7 @@ def calculate_monthly_company_earnings(db: Session, country: str = None) -> dict
             travel_total = travel_unit * qty
 
             # Ganancia Neta para la Empresa TEI en esta venta
-            item_company_profit = net_sale_cop - sup_total_cost - comp_total - matrix_total - travel_total
+            item_company_profit = net_sale_cop - sup_total_cost - shipping_total - comp_total - matrix_total - travel_total
 
             m["units_sold"] += qty
             m["total_sales_cop"] += subtotal_cop
@@ -388,6 +388,7 @@ def calculate_monthly_company_earnings(db: Session, country: str = None) -> dict
             m["supplier_withheld_cop"] += sup_wh_cop
             m["supplier_net_payout_cop"] += sup_net_payout
             m["supplier_total_cost_cop"] += sup_total_cost
+            m["shipping_cost_cop"] += shipping_total
             m["compensation_plans_cop"] += comp_total
             m["matrix_reserve_cop"] += matrix_total
             m["travel_pool_cop"] += travel_total
@@ -399,7 +400,7 @@ def calculate_monthly_company_earnings(db: Session, country: str = None) -> dict
         for k in [
             "total_sales_cop", "catalog_sales_cop", "package_sales_cop", "sales_tax_iva_cop",
             "supplier_base_cost_cop", "supplier_iva_cop", "supplier_withheld_cop",
-            "supplier_net_payout_cop", "supplier_total_cost_cop", "compensation_plans_cop",
+            "supplier_net_payout_cop", "supplier_total_cost_cop", "shipping_cost_cop", "compensation_plans_cop",
             "matrix_reserve_cop", "travel_pool_cop", "company_net_profit_cop"
         ]:
             m[k] = round(m[k], 2)
@@ -418,6 +419,7 @@ def calculate_monthly_company_earnings(db: Session, country: str = None) -> dict
         "supplier_withheld_cop": round(sum(m["supplier_withheld_cop"] for m in sorted_months), 2),
         "supplier_net_payout_cop": round(sum(m["supplier_net_payout_cop"] for m in sorted_months), 2),
         "supplier_total_cost_cop": round(sum(m["supplier_total_cost_cop"] for m in sorted_months), 2),
+        "shipping_cost_cop": round(sum(m["shipping_cost_cop"] for m in sorted_months), 2),
         "compensation_plans_cop": round(sum(m["compensation_plans_cop"] for m in sorted_months), 2),
         "matrix_reserve_cop": round(sum(m["matrix_reserve_cop"] for m in sorted_months), 2),
         "travel_pool_cop": round(sum(m["travel_pool_cop"] for m in sorted_months), 2),

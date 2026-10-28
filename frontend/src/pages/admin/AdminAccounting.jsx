@@ -286,7 +286,7 @@ export default function AdminAccounting() {
                 <MetricCard
                     title="Activos Totales"
                     value={formatCOP(balance.activos.total)}
-                    subtitle="Disponible, inventarios y CxC"
+                    subtitle="Dinero real disponible en Caja y Bancos"
                     icon="💵"
                     color="bg-emerald-50 text-emerald-700 border-emerald-100"
                 />
@@ -383,7 +383,7 @@ export default function AdminAccounting() {
                                 <tr>
                                     <th className="py-3 px-4 text-left">Mes / Año</th>
                                     <th className="py-3 px-4 text-right">Ventas Totales</th>
-                                    <th className="py-3 px-4 text-right">Costo Fabricante</th>
+                                    <th className="py-3 px-4 text-right">Costo Fab. y Envío</th>
                                     <th className="py-3 px-4 text-right">Planes Compensación</th>
                                     <th className="py-3 px-4 text-right">Activar Matrices</th>
                                     <th className="py-3 px-4 text-right">Premios en Viajes</th>
@@ -406,7 +406,12 @@ export default function AdminAccounting() {
                                             </div>
                                         </td>
                                         <td className="py-3 px-4 text-right">
-                                            <div className="font-semibold text-amber-700">{formatCOP(m.supplier_total_cost_cop)}</div>
+                                            <div className="font-semibold text-amber-700">{formatCOP((m.supplier_total_cost_cop || 0) + (m.shipping_cost_cop || 0))}</div>
+                                            {(m.shipping_cost_cop || 0) > 0 && (
+                                                <div className="text-xs text-orange-600">
+                                                    Envío: {formatCOP(m.shipping_cost_cop)}
+                                                </div>
+                                            )}
                                             {m.supplier_withheld_cop > 0 && (
                                                 <div className="text-xs text-amber-600">
                                                     Retenido: {formatCOP(m.supplier_withheld_cop)}
@@ -443,7 +448,7 @@ export default function AdminAccounting() {
                                             {formatCOP(monthlyEarnings.totals.total_sales_cop)}
                                         </td>
                                         <td className="py-3.5 px-4 text-right text-amber-300">
-                                            {formatCOP(monthlyEarnings.totals.supplier_total_cost_cop)}
+                                            {formatCOP((monthlyEarnings.totals.supplier_total_cost_cop || 0) + (monthlyEarnings.totals.shipping_cost_cop || 0))}
                                         </td>
                                         <td className="py-3.5 px-4 text-right text-pink-300">
                                             {formatCOP(monthlyEarnings.totals.compensation_plans_cop)}
