@@ -90,7 +90,7 @@ class Trip(Base):
     # Financials
     proposed_price = Column(Float, nullable=False)
     final_price = Column(Float, nullable=True)
-    platform_fee = Column(Float, nullable=True) # The 15% commission
+    platform_fee = Column(Float, nullable=True) # The 10% commission
     driver_earnings = Column(Float, nullable=True) # Ganancia neta para el conductor
     payment_method = Column(String(50), default="cash") # "cash" (Efectivo) o "tei_bank" (Saldo Banco TEI)
     

@@ -477,7 +477,7 @@ export default function DriverRadar() {
       const finalAmt = parseFloat(finishedTripForRating.final_price || finishedTripForRating.price || 0);
       const feeAmt = finishedTripForRating.platform_fee !== undefined 
         ? parseFloat(finishedTripForRating.platform_fee) 
-        : Math.round(finalAmt * 0.15);
+        : Math.round(finalAmt * 0.10);
       
       const receiptData = {
         id: finishedTripForRating.id,
@@ -725,7 +725,7 @@ export default function DriverRadar() {
                 <span className="font-bold text-white">${parseFloat(recentSettlement.total_fare || 0).toLocaleString('es-CO')} COP</span>
               </div>
               <div className="flex justify-between text-rose-300">
-                <span>(-) Comisión TEI ({recentSettlement.platform_fee_percent || 15}%):</span>
+                <span>(-) Comisión TEI ({recentSettlement.platform_fee_percent || 10}%):</span>
                 <span className="font-bold">-${parseFloat(recentSettlement.platform_fee || 0).toLocaleString('es-CO')} COP</span>
               </div>
               <div className="flex justify-between text-emerald-400 font-black border-t border-gray-800 pt-1.5 text-sm">
@@ -1096,7 +1096,7 @@ export default function DriverRadar() {
                   <span className="font-bold text-white">${parseFloat(completedSettlement.total_fare || 0).toLocaleString('es-CO')} COP</span>
                 </div>
                 <div className="flex justify-between text-rose-300">
-                  <span>(-) Comisión TEI ({completedSettlement.platform_fee_percent || 15}%):</span>
+                  <span>(-) Comisión TEI ({completedSettlement.platform_fee_percent || 10}%):</span>
                   <span>-${parseFloat(completedSettlement.platform_fee || 0).toLocaleString('es-CO')} COP</span>
                 </div>
                 <div className="flex justify-between text-emerald-400 font-black border-t border-gray-800 pt-1 text-sm">

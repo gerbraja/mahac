@@ -52,8 +52,8 @@ function TermsModal({ onClose }) {
           </div>
 
           <div>
-            <h4 className="font-bold text-white mb-2">CLÁUSULA CUARTA – COMISIÓN DE INTERMEDIACIÓN (15%) Y BILLETERA PREPAGO</h4>
-            <p>El CONDUCTOR ARRENDADOR se obliga a pagar a LA EMPRESA una tarifa de intermediación tecnológica equivalente al <strong className="text-emerald-400">quince por ciento (15%)</strong> sobre el valor total del canon por cada servicio completado. Dicho cobro se debita automáticamente de la billetera prepago del conductor. En caso de saldo insuficiente, la cuenta se pausará automáticamente.</p>
+            <h4 className="font-bold text-white mb-2">CLÁUSULA CUARTA – COMISIÓN DE INTERMEDIACIÓN (10%) Y BILLETERA PREPAGO</h4>
+            <p>El CONDUCTOR ARRENDADOR se obliga a pagar a LA EMPRESA una tarifa de intermediación tecnológica equivalente al <strong className="text-emerald-400">diez por ciento (10%)</strong> sobre el valor total del canon por cada servicio completado. Dicho cobro se debita automáticamente de la billetera prepago del conductor. En caso de saldo insuficiente, la cuenta se pausará automáticamente.</p>
           </div>
 
           <div>
@@ -93,7 +93,7 @@ function TermsModal({ onClose }) {
 
             <p className="mb-3"><strong className="text-white">Indemnidad Total por Sanciones Administrativas:</strong> El conductor mantendrá totalmente indemne a LA EMPRESA, sus accionistas, representantes legales y directivos frente a cualquier investigación administrativa, sanción o multa impuesta por la <strong className="text-gray-200">Superintendencia de Transporte, secretarías de movilidad locales o inspectores de policía</strong>, derivada del incumplimiento de normas del servicio público de transporte o regulaciones gremiales.</p>
 
-            <p><strong className="text-white">Comisión del 15% — Aplicación Universal:</strong> El pago del quince por ciento (15%) a favor de LA EMPRESA se causará de manera <strong className="text-white">indistinta e invariable</strong>, sin importar si el vehículo es particular o de servicio público, remunerando estrictamente el acceso a la tecnología telemática y la intermediación mercantil digital.</p>
+            <p><strong className="text-white">Comisión del 10% — Aplicación Universal:</strong> El pago del diez por ciento (10%) a favor de LA EMPRESA se causará de manera <strong className="text-white">indistinta e invariable</strong>, sin importar si el vehículo es particular o de servicio público, remunerando estrictamente el acceso a la tecnología telemática y la intermediación mercantil digital.</p>
           </div>
 
           <div>
@@ -573,7 +573,7 @@ export default function DriverRegistration() {
                 className="mt-0.5 w-5 h-5 shrink-0 accent-emerald-500 cursor-pointer"
               />
               <label htmlFor="terms-checkbox" className="text-sm text-gray-300 leading-relaxed cursor-pointer">
-                <strong className="text-white">Acepto las condiciones comerciales:</strong> Autorizo el descuento automático del <strong className="text-emerald-400">15% de comisión de software</strong> sobre cada servicio completado y acepto los{' '}
+                <strong className="text-white">Acepto las condiciones comerciales:</strong> Autorizo el descuento automático del <strong className="text-emerald-400">10% de comisión de software</strong> sobre cada servicio completado y acepto los{' '}
                 <button type="button" onClick={() => setShowTermsModal(true)} className="text-emerald-400 hover:text-emerald-300 underline font-semibold transition-colors">
                   Términos y Condiciones de Uso
                 </button>{' '}

@@ -469,7 +469,7 @@ export default function DriverWallet() {
                 <span className="font-bold text-white">${parseFloat(recentSettlement.total_fare || 0).toLocaleString('es-CO')} COP</span>
               </div>
               <div className="flex justify-between text-rose-300">
-                <span>(-) Comisión TEI ({recentSettlement.platform_fee_percent || 15}%):</span>
+                <span>(-) Comisión TEI ({recentSettlement.platform_fee_percent || 10}%):</span>
                 <span className="font-bold">-${parseFloat(recentSettlement.platform_fee || 0).toLocaleString('es-CO')} COP</span>
               </div>
               <div className="flex justify-between text-emerald-400 font-black border-t border-gray-800 pt-1.5 text-sm">

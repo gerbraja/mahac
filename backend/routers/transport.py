@@ -17,6 +17,21 @@ import logging
 router = APIRouter(prefix="/transport", tags=["Transport"])
 logger = logging.getLogger(__name__)
 
+CARGO_VEHICLE_TYPES = {
+    VehicleType.CAMION, VehicleType.MOTO_CARGA, VehicleType.CARGA_LIVIANA,
+    VehicleType.FURGON, VehicleType.CAMION_PESADO, 'camion', 'moto_carga',
+    'carga_liviana', 'furgon', 'camion_pesado'
+}
+
+
+def _get_commission_rate(trip: Trip) -> float:
+    """Devuelve la tasa de comisión: 9% para carga intermunicipal (>35 km) y 10% estándar."""
+    is_cargo = trip.vehicle_type_requested in CARGO_VEHICLE_TYPES
+    dist_km = trip.distance_km or 0.0
+    if is_cargo and dist_km > 35.0:
+        return 0.09
+    return 0.10
+
 import os
 # Initialize Firebase Admin if not already initialized
 if not firebase_admin._apps:
@@ -446,19 +461,8 @@ def accept_trip(payload: TripAcceptRequest, db: Session = Depends(get_db), curre
     if trip.passenger_id == current_user.id:
         raise HTTPException(status_code=400, detail="Cannot accept your own trip.")
         
-    # Determine commission percentage:
-    # Para Carga: 15% para trayectos urbanos (<= 35km) y 9% para trayectos intermunicipales (> 35km o intermunicipal).
-    # Para otros vehículos (carro, moto, taxi): 15% estándar.
-    is_cargo = trip.vehicle_type_requested in [
-        VehicleType.CAMION, VehicleType.MOTO_CARGA, VehicleType.CARGA_LIVIANA,
-        VehicleType.FURGON, VehicleType.CAMION_PESADO, 'camion', 'moto_carga',
-        'carga_liviana', 'furgon', 'camion_pesado'
-    ]
-    dist_km = trip.distance_km or 0.0
-    if is_cargo and dist_km > 35.0:
-        commission_rate = 0.09 # 9% Intermunicipal para Carga
-    else:
-        commission_rate = 0.15 # 15% Urbano estándar
+    # Comisión: 10% estándar, 9% para carga intermunicipal (> 35km).
+    commission_rate = _get_commission_rate(trip)
 
     trip.driver_id = current_user.id
     trip.status = TripStatus.ASSIGNED
@@ -692,13 +696,7 @@ def passenger_accept_offer(payload: PassengerAcceptOfferRequest, db: Session = D
     if not vehicle or vehicle.status != VehicleStatus.APPROVED:
         raise HTTPException(status_code=400, detail="El vehículo del conductor no está aprobado.")
 
-    is_cargo = trip.vehicle_type_requested in [
-        VehicleType.CAMION, VehicleType.MOTO_CARGA, VehicleType.CARGA_LIVIANA,
-        VehicleType.FURGON, VehicleType.CAMION_PESADO, 'camion', 'moto_carga',
-        'carga_liviana', 'furgon', 'camion_pesado'
-    ]
-    dist_km = trip.distance_km or 0.0
-    commission_rate = 0.09 if (is_cargo and dist_km > 35.0) else 0.15
+    commission_rate = _get_commission_rate(trip)
 
     trip.driver_id = driver.id
     trip.status = TripStatus.ASSIGNED
@@ -880,13 +878,7 @@ def finish_trip(trip_id: int, db: Session = Depends(get_db), current_user: User 
     if trip.status != TripStatus.IN_PROGRESS:
         raise HTTPException(status_code=400, detail="Trip is not in progress.")
         
-    is_cargo = trip.vehicle_type_requested in [
-        VehicleType.CAMION, VehicleType.MOTO_CARGA, VehicleType.CARGA_LIVIANA,
-        VehicleType.FURGON, VehicleType.CAMION_PESADO, 'camion', 'moto_carga',
-        'carga_liviana', 'furgon', 'camion_pesado'
-    ]
-    dist_km = trip.distance_km or 0.0
-    commission_rate = 0.09 if (is_cargo and dist_km > 35.0) else 0.15
+    commission_rate = _get_commission_rate(trip)
     
     final_price = trip.final_price or trip.proposed_price or 0.0
     platform_fee = final_price * commission_rate
