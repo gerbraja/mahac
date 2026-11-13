@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { api } from '../api/api';
 import TeiLogo from '../components/TeiLogo';
@@ -14,6 +14,14 @@ export default function Login() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [successMsg, setSuccessMsg] = useState('');
+
+    useEffect(() => {
+        const queryReturnTo = new URLSearchParams(location.search).get('returnTo');
+        const target = location.state?.from || queryReturnTo;
+        if (target && target.startsWith('/') && target !== '/login') {
+            localStorage.setItem('returnTo', target);
+        }
+    }, [location.state, location.search]);
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -40,7 +48,11 @@ export default function Login() {
                 console.warn("Could not fetch user info immediately, but proceeding.", err);
             }
 
-            let returnTo = localStorage.getItem('returnTo');
+            const queryReturnTo = new URLSearchParams(location.search).get('returnTo');
+            let returnTo = location.state?.from || queryReturnTo || localStorage.getItem('returnTo');
+            if (returnTo && (!returnTo.startsWith('/') || returnTo.startsWith('//'))) {
+                returnTo = null;
+            }
             let userIsAdmin = false;
             
             try {

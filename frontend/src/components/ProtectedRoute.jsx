@@ -1,16 +1,17 @@
 import React from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 
 /**
  * ProtectedRoute: Verifica si el usuario está autenticado (tiene token en localStorage)
- * Si no está autenticado, redirige a /login
+ * Si no está autenticado, redirige a /login guardando la ruta de origen para regresar después
  */
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem('access_token');
+  const location = useLocation();
 
   if (!token) {
-    // No hay token, redirige a login
-    return <Navigate to="/login" replace />;
+    const targetPath = `${location.pathname}${location.search || ''}`;
+    return <Navigate to="/login" state={{ from: targetPath }} replace />;
   }
 
   // Token existe, muestra el contenido

@@ -1033,9 +1033,9 @@ export default function PassengerDashboard() {
           {!passengerBalance?.is_authenticated && !localStorage.getItem('access_token') && (
             <div className="mt-2 pt-2 border-t border-gray-700/60 flex items-center justify-between text-xs text-amber-300">
               <span className="text-[11px]">⚠️ Sin sesión activa. Inicia sesión con tu usuario TEI.</span>
-              <a href="/login" className="px-2 py-0.5 bg-amber-500 text-gray-950 font-bold rounded text-[11px] hover:bg-amber-400 transition">
+              <Link to="/login?returnTo=/transport/passenger" className="px-2 py-0.5 bg-amber-500 text-gray-950 font-bold rounded text-[11px] hover:bg-amber-400 transition">
                 Iniciar Sesión
-              </a>
+              </Link>
             </div>
           )}
         </div>
