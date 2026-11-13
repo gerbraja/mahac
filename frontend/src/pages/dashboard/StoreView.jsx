@@ -234,11 +234,17 @@ const StoreView = () => {
 
         // 2. Category Filter
         let matchesCategory = false;
+        const catNameLower = (product.category || '').toLowerCase().trim();
+        const nameLower = (product.name || '').toLowerCase();
+        
         if (activeCategory === 'all') {
             matchesCategory = true;
+            // Hide Ropa Interior from 'all' view by default (unless user specifically searches for it)
+            if (searchTerm.trim() === '') {
+                const isUnderwear = catNameLower.includes('ropa interior') || catNameLower.includes('lencer') || nameLower.includes('panty') || nameLower.includes('panties') || nameLower.includes('tanga') || nameLower.includes('cachetero') || nameLower.includes('brassier') || nameLower.includes('sosten') || nameLower.includes('interior');
+                if (isUnderwear) matchesCategory = false;
+            }
         } else {
-            const catNameLower = (product.category || '').toLowerCase().trim();
-            const nameLower = (product.name || '').toLowerCase();
             
             // 2.1. Direct category match via dbNames
             const selectedCatConfig = CATEGORIES.find(c => c.id === activeCategory);
@@ -309,6 +315,37 @@ const StoreView = () => {
                 const nameLower = (product.name || '').toLowerCase();
                 const matchesSub = subConfig.keywords.some(kw => nameLower.includes(kw));
                 if (!matchesSub) return false;
+            }
+        }
+        // 4. Gender Filter
+        if (user && user.gender) {
+            const catLower = (product.category || '').toLowerCase().trim();
+            const nameLowerForGen = (product.name || '').toLowerCase();
+            
+            const isUnderwearCat = catLower.includes('ropa interior') || catLower.includes('lencer') || activeCategory === 'ropa-interior' || 
+                                   nameLowerForGen.includes('interior') || nameLowerForGen.includes('lence') || nameLowerForGen.includes('panty') || 
+                                   nameLowerForGen.includes('panties') || nameLowerForGen.includes('tanga') || nameLowerForGen.includes('cachetero') || 
+                                   nameLowerForGen.includes('sosten') || nameLowerForGen.includes('brassier') || nameLowerForGen.includes('hilo ') || 
+                                   nameLowerForGen.includes('copa pre');
+                                   
+            const isSwimwearCat = catLower.includes('baño') || catLower.includes('bano') || activeCategory === 'vestidos-bano' || 
+                                  nameLowerForGen.includes('baño') || nameLowerForGen.includes('bano') || nameLowerForGen.includes('bañador') || 
+                                  nameLowerForGen.includes('bikini') || nameLowerForGen.includes('asoleador');
+                                  
+            const isBodysuit = nameLowerForGen.includes('bodi') || nameLowerForGen.includes('body');
+            const isMenProduct = nameLowerForGen.includes('hombre') || nameLowerForGen.includes('caballero') || nameLowerForGen.includes('boxer') || nameLowerForGen.includes('bóxer');
+
+            const uGender = user.gender.toLowerCase();
+            if (uGender === 'male' || uGender === 'm') {
+                // Men should NOT see female underwear, bodysuits, or swimwear
+                if ((isUnderwearCat || isSwimwearCat || isBodysuit) && !isMenProduct) {
+                    return false;
+                }
+            } else if (uGender === 'female' || uGender === 'f') {
+                // Women should NOT see men's underwear or swimwear
+                if ((isUnderwearCat || isSwimwearCat) && isMenProduct) {
+                    return false;
+                }
             }
         }
 

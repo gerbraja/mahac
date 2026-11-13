@@ -11,13 +11,14 @@ steps:
     args: ['run', 'build']
     env:
       - 'VITE_API_BASE=https://api.tuempresainternacional.com'
+      - 'NODE_OPTIONS=--max-old-space-size=4096'
 
   # 3. Upload to GCS Bucket
   # -m = multi-threaded/parallel (faster)
   # -r = recursive
-  # -d = delete extraneous files in destination (clean sync)
+  # Note: -d is omitted so existing chunks are retained for active users, avoiding broken lazy routes
   - name: 'gcr.io/cloud-builders/gsutil'
-    args: ['-m', 'rsync', '-r', '-d', 'dist', 'gs://tuempresainternacional-frontend']
+    args: ['-m', 'rsync', '-r', 'dist', 'gs://tuempresainternacional-frontend']
 
   # 4. Configure website serving (Main page and 404 error page)
   - name: 'gcr.io/cloud-builders/gsutil'
@@ -26,3 +27,6 @@ steps:
   # 5. Set Cache-Control to ensure updates are seen quickly (NO CACHE for HTML)
   - name: 'gcr.io/cloud-builders/gsutil'
     args: ['-m', 'setmeta', '-h', 'Cache-Control:no-cache, no-store, must-revalidate', 'gs://tuempresainternacional-frontend/**/*.html']
+
+options:
+  machineType: 'E2_HIGHCPU_8'

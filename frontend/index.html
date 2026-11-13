@@ -12,7 +12,7 @@
   <meta http-equiv="Expires" content="0" />
   
   <!-- PWA configurations -->
-  <link rel="manifest" href="/manifest.json" />
+  <link id="pwa-manifest" rel="manifest" href="/manifest.json" />
   <meta name="theme-color" content="#0f172a" />
   
   <!-- Apple/iOS Web App optimization -->
@@ -20,6 +20,23 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="TEI" />
   <link rel="apple-touch-icon" href="/tei-logo.png" />
+
+  <script>
+    (function () {
+      var p = window.location.pathname || "";
+      var manifestLink = document.getElementById("pwa-manifest");
+      var appleTitle = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+      if (p.indexOf("/transport/driver") === 0) {
+        if (manifestLink) manifestLink.setAttribute("href", "/manifest-driver.json");
+        if (appleTitle) appleTitle.setAttribute("content", "TEI Conductor");
+        document.title = "TEI Conductor";
+      } else if (p.indexOf("/transport/passenger") === 0) {
+        if (manifestLink) manifestLink.setAttribute("href", "/manifest-passenger.json");
+        if (appleTitle) appleTitle.setAttribute("content", "TEI Pasajero");
+        document.title = "TEI Pasajero";
+      }
+    })();
+  </script>
   
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">

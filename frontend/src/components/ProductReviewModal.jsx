@@ -20,11 +20,18 @@ const ProductReviewModal = ({ isOpen, onClose, orderItem, onReviewSubmitted }) =
         setLoading(true);
         setError(null);
         try {
-            await api.post(`/api/products/${orderItem.product_id}/reviews`, {
-                order_item_id: orderItem.id,
-                rating: rating,
-                comment: comment
-            });
+            if (orderItem.isStore) {
+                await api.post(`/api/store/orders/${orderItem.orderId}/rate`, {
+                    rating: rating,
+                    comment: comment
+                });
+            } else {
+                await api.post(`/api/products/${orderItem.product_id}/reviews`, {
+                    order_item_id: orderItem.id,
+                    rating: rating,
+                    comment: comment
+                });
+            }
             onReviewSubmitted();
             onClose();
             alert("¡Gracias por tu calificación!");
@@ -55,14 +62,14 @@ const ProductReviewModal = ({ isOpen, onClose, orderItem, onReviewSubmitted }) =
                     <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-6 text-white text-center relative">
                         <button onClick={onClose} className="absolute top-4 right-4 text-white/70 hover:text-white">✕</button>
                         <span className="text-4xl block mb-2">⭐</span>
-                        <h2 className="text-xl font-bold">Calificar Producto</h2>
-                        <p className="text-blue-100 text-sm mt-1">{orderItem.product_name}</p>
+                        <h2 className="text-xl font-bold">{orderItem.isStore ? 'Calificar Comercio' : 'Calificar Producto'}</h2>
+                        <p className="text-blue-100 text-sm mt-1">{orderItem.isStore ? orderItem.merchant_name : orderItem.product_name}</p>
                     </div>
 
                     <div className="p-6">
                         <div className="text-center mb-6">
-                            <p className="text-gray-700 font-medium mb-1">¿Qué tan satisfecho estás con la relación Calidad/Precio de este producto?</p>
-                            <p className="text-xs text-gray-500 mb-4">(Esta calificación es solo para el producto, no incluye tiempos de entrega de la transportadora)</p>
+                            <p className="text-gray-700 font-medium mb-1">¿Qué tan satisfecho estás con la experiencia de compra?</p>
+                            <p className="text-xs text-gray-500 mb-4">(Tus calificaciones ayudan a mantener una red de alta calidad)</p>
                             
                             <div className="flex justify-center gap-1 mb-2">
                                 {[1, 2, 3, 4, 5, 6, 7].map((star) => (

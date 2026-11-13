@@ -81,6 +81,7 @@ def create_product(
             is_upgrade=getattr(prod, 'is_upgrade', False),
             # New Fields
             cost_price=prod.cost_price,
+            shipping_cost_cop=getattr(prod, 'shipping_cost_cop', 0.0),
             supplier_has_iva=getattr(prod, 'supplier_has_iva', False),
             supplier_iva_rate=getattr(prod, 'supplier_iva_rate', 0.0),
             supplier_withholding_rate=getattr(prod, 'supplier_withholding_rate', 0.0),

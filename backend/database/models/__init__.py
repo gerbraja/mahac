@@ -59,3 +59,8 @@ try:
     from . import payment_request
 except Exception:
     pass
+try:
+    from . import monthly_fiscal_closing
+except Exception:
+    pass
+

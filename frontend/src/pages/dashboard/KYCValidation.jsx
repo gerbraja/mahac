@@ -72,6 +72,34 @@ const LATAM_COUNTRIES = [
     { name: 'Venezuela', flag: '🇻🇪' }
 ];
 
+const COLOMBIA_BANKS = [
+    { code: "1001", name: "Banco de Bogot�" },
+    { code: "1002", name: "Banco Popular" },
+    { code: "1006", name: "Banco Ita�" },
+    { code: "1007", name: "Bancolombia" },
+    { code: "1009", name: "Citibank" },
+    { code: "1012", name: "Banco GNB Sudameris" },
+    { code: "1013", name: "BBVA Colombia" },
+    { code: "1019", name: "Scotiabank Colpatria" },
+    { code: "1023", name: "Banco de Occidente" },
+    { code: "1032", name: "Banco Caja Social" },
+    { code: "1040", name: "Banco Agrario" },
+    { code: "1047", name: "Banco Mundo Mujer" },
+    { code: "1051", name: "Banco Davivienda" },
+    { code: "1052", name: "Banco AV Villas" },
+    { code: "1059", name: "Bancam�a" },
+    { code: "1060", name: "Banco Pichincha" },
+    { code: "1061", name: "Bancoomeva" },
+    { code: "1062", name: "Banco Falabella" },
+    { code: "1063", name: "Banco Finandina" },
+    { code: "1066", name: "Banco Coopcentral" },
+    { code: "1070", name: "Lulo Bank" },
+    { code: "1507", name: "Nequi" },
+    { code: "1551", name: "DaviPlata" },
+    { code: "1809", name: "Nu Colombia" },
+    { code: "1811", name: "RappiPay" }
+];
+
 const KYCValidation = () => {
     const [step, setStep] = useState(1); // 1: Country, 2: Form
     const [country, setCountry] = useState(null);
@@ -87,6 +115,7 @@ const KYCValidation = () => {
         input_department: '',
         input_city: '',
         input_bank_name: '',
+        input_bank_ach_code: '',
         input_bank_account_type: '',
         input_bank_account_number: '',
         municipio_id: '',
@@ -214,6 +243,7 @@ const KYCValidation = () => {
             input_department: '',
             input_city: '',
             input_bank_name: '',
+        input_bank_ach_code: '',
             input_bank_account_type: '',
             input_bank_account_number: '',
             municipio_id: '',
@@ -413,6 +443,35 @@ const KYCValidation = () => {
                     Con el objetivo de realizar los procedimientos de conocimiento aplicables a TEI S.A.S. y establecidos en el SAGRILAFT, por favor proporcione la siguiente información.
                 </p>
 
+                {/* Aviso Informativo Programa Juvenil (15 a 17 anos) */}
+                <div className="mb-8 p-4 rounded-xl border border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 shadow-sm text-left">
+                    <div className="flex items-start gap-3">
+                        <span className="text-2xl flex-shrink-0">🎓</span>
+                        <div className="text-xs space-y-1.5 w-full">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                                <h4 className="font-bold text-blue-900 text-sm">
+                                    Programa Juvenil de Consumo y Recomendación (15 a 17 años)
+                                </h4>
+                                <span className="inline-block px-2 py-0.5 rounded text-[11px] font-semibold bg-blue-100 text-blue-800 self-start sm:self-auto">
+                                    Tope mensual retiro: $2.700.000 COP
+                                </span>
+                            </div>
+                            <p className="text-slate-600 leading-relaxed">
+                                Si tienes entre 15 y 17 años, tu registro y compras en TEI son completamente libres. Para habilitar retiros bancarios hacia cuentas de ahorro, la ley colombiana exige la intervención y co-manejo de tu padre, madre o tutor legal.
+                            </p>
+                            <div className="bg-white/90 p-3 rounded-lg border border-blue-100 text-[11px] text-slate-700 space-y-1 mt-2">
+                                <p className="font-bold text-blue-950">📋 Documentación requerida para validación de menores:</p>
+                                <ul className="list-disc list-inside space-y-0.5 text-slate-600 pl-1">
+                                    <li><strong>Cédula de Ciudadanía del Tutor Legal:</strong> Documento del padre, madre o tutor que autoriza el co-manejo.</li>
+                                    <li><strong>Tarjeta de Identidad del menor:</strong> Documento de identidad del titular de la cuenta TEI.</li>
+                                    <li><strong>RUT activo del menor ante la DIAN:</strong> Expedido formalmente con código de actividad comercial para menores.</li>
+                                    <li><strong>Certificación Bancaria:</strong> Cuenta de ahorros a nombre del menor o cuenta en co-manejo del tutor.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <form onSubmit={handleSubmit} className="space-y-8">
 
                     {/* 1. Review Personal Info */}
@@ -498,23 +557,23 @@ const KYCValidation = () => {
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Nombre del Banco *</label>
                                 <select
                                     className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none bg-white"
-                                    value={formData.input_bank_name}
-                                    onChange={(e) => handleInputChange('input_bank_name', e.target.value)}
+                                    value={formData.input_bank_ach_code || ''}
+                                    onChange={(e) => {
+                                        const code = e.target.value;
+                                        const bank = COLOMBIA_BANKS.find(b => b.code === code);
+                                        setFormData(prev => ({
+                                            ...prev,
+                                            input_bank_ach_code: code,
+                                            input_bank_name: bank ? bank.name : code
+                                        }));
+                                    }}
                                 >
                                     <option value="">Selecciona Banco</option>
-                                    <option value="Bancolombia">Bancolombia</option>
-                                    <option value="Banco de Bogotá">Banco de Bogotá</option>
-                                    <option value="Davivienda">Davivienda</option>
-                                    <option value="BBVA Colombia">BBVA Colombia</option>
-                                    <option value="Banco Popular">Banco Popular</option>
-                                    <option value="Banco de Occidente">Banco de Occidente</option>
-                                    <option value="Banco AV Villas">Banco AV Villas</option>
-                                    <option value="Banco Caja Social">Banco Caja Social</option>
-                                    <option value="Scotiabank Colpatria">Scotiabank Colpatria</option>
-                                    <option value="Itau">Itau</option>
-                                    <option value="Nequi">Nequi</option>
-                                    <option value="Daviplata">Daviplata</option>
-                                    <option value="Otro">Otro / Banco no listado</option>
+                                    {COLOMBIA_BANKS.map((b) => (
+                                        <option key={b.code} value={b.code}>
+                                            {b.name} ({b.code})
+                                        </option>
+                                    ))}
                                 </select>
                             </div>
 
@@ -827,3 +886,7 @@ const Checkbox = ({ label, checked, onChange }) => (
 );
 
 export default KYCValidation;
+
+
+
+

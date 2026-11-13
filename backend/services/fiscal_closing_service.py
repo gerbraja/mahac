@@ -15,9 +15,8 @@ from sqlalchemy.orm import Session
 
 from backend.database.models.user import User
 from backend.database.models.transport import Trip, TripStatus, DriverCredit
-from backend.database.models.merchant import Merchant
+from backend.database.models.merchant import Merchant, MerchantCredit
 from backend.database.models.physical_transaction import PhysicalTransaction
-from backend.database.models.merchant_credit import MerchantCredit
 from backend.database.models.monthly_fiscal_closing import MonthlyFiscalClosing
 from backend.services.siigo_service import emit_consolidated_monthly_invoice
 

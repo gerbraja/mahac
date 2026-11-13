@@ -14,7 +14,7 @@ Write-Host "Starting Frontend Deployment..." -ForegroundColor Cyan
 
 # 1. Get Backend URL
 Write-Host "Fetching Backend URL..." -ForegroundColor Yellow
-$BACKEND_URL = & "C:\Users\mahac\AppData\Local\Google\Cloud SDK\google-cloud-sdk\bin\gcloud.cmd" run services describe $BACKEND_SERVICE --region=$REGION --format='value(status.url)'
+$BACKEND_URL = & "C:\Users\mahac\AppData\Local\Google\Cloud SDK\google-cloud-sdk\bin\gcloud.cmd" run services describe $BACKEND_SERVICE --region=$REGION --project=$PROJECT_ID --format='value(status.url)'
 Write-Host "Backend URL: $BACKEND_URL" -ForegroundColor Green
 
 # 2. Build Frontend (Create build locally first)

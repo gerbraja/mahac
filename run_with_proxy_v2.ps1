@@ -1,9 +1,9 @@
 # run_with_proxy_v2.ps1 - Usa Start-Job para mantener el proxy activo durante la ejecucion
 
 $PROXY_PATH = "c:\Users\mahac\multinivel\tiendavirtual\miweb\CentroComercialTEI\cloud-sql-proxy.exe"
-$CONNECTION_NAME = "tuempresainternacional:us-central1:tiendavirtual"
+$CONNECTION_NAME = "tei-mlm-prod:us-central1:mlm-db-us"
 $PYTHON_PATH = "c:\Users\mahac\multinivel\tiendavirtual\miweb\CentroComercialTEI\.venv\Scripts\python.exe"
-$SCRIPT_PATH = "c:\Users\mahac\multinivel\tiendavirtual\miweb\CentroComercialTEI\register_tejidos_fenix.py"
+$SCRIPT_PATH = "c:\Users\mahac\multinivel\tiendavirtual\miweb\CentroComercialTEI\add_approved_virtual_store.py"
 
 Write-Host "=== Iniciando Cloud SQL Proxy como Job ===" -ForegroundColor Cyan
 

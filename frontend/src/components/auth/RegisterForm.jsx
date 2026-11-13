@@ -234,9 +234,38 @@ export default function RegisterForm({ referralCode = "", onSuccess = null, onBa
         setMessage("");
 
         try {
-            // Validar que el username no tenga espacios
-            if (formData.username.includes(" ")) {
-                setMessage("El nombre de usuario no puede contener espacios");
+            if (formData.username.length > 14) {
+                setMessage("❌ El nombre de usuario no puede tener más de 14 caracteres.");
+                setLoading(false);
+                return;
+            }
+            if (!/^[a-zA-Z0-9_]+$/.test(formData.username)) {
+                setMessage("❌ El nombre de usuario solo puede contener letras, números y guiones bajos (sin espacios).");
+                setLoading(false);
+                return;
+            }
+
+            if (!/^[\w.-]+@[\w.-]+\.\w+$/.test(formData.email)) {
+                setMessage("❌ El correo electrónico ingresado no tiene un formato válido.");
+                setLoading(false);
+                return;
+            }
+
+            if (formData.first_name.length > 18 || formData.last_name.length > 18) {
+                setMessage("❌ Los nombres y apellidos no pueden exceder los 18 caracteres cada uno.");
+                setLoading(false);
+                return;
+            }
+
+            const htmlRegex = /[<>]/;
+            if (
+                htmlRegex.test(formData.first_name) || 
+                htmlRegex.test(formData.last_name) || 
+                htmlRegex.test(formData.phone) || 
+                htmlRegex.test(formData.document_id) || 
+                htmlRegex.test(formData.address)
+            ) {
+                setMessage("❌ Los datos ingresados contienen caracteres no permitidos (< o >).");
                 setLoading(false);
                 return;
             }
@@ -1159,6 +1188,13 @@ LA COMPAÑÍA se reserva el derecho de modificar estos términos, el Plan de Com
 
 ### CLÁUSULA DECIMOTERCERA: FIRMA ELECTRÓNICA Y VALIDEZ
 Conforme a la Ley 527 de 1999, la aceptación de estos términos a través de medios electrónicos (clic en "Aceptar", "Registrarme" o similares) y a través del mecanismo de doble factor de autenticación (si aplicase) u otros mecanismos de seguridad de la plataforma, tiene plena validez jurídica y fuerza probatoria equivalente a la firma autógrafa.
+
+### CLÁUSULA DECIMOCUARTA: PROGRAMA JUVENIL DE CONSUMO Y RECOMENDACIÓN (15 A 17 AÑOS)
+1. Objeto y Alcance: Regula la participación opcional de jóvenes entre los 15 y 17 años de edad en el ecosistema TEI bajo un esquema de consumo libre y recomendación orgánica, sin compras forzosas ni metas mensuales obligatorias, fomentando el emprendimiento digital y la educación financiera temprana.
+2. Libertad de Ingreso y Participación: El registro a partir de los 15 años es libre y gratuito, sin requerir inicialmente la intervención de un tutor ni documentos formales. El usuario juvenil participa y consume sin cuotas mínimas ni penalizaciones.
+3. Generación y Acumulación de Beneficios: Los bonos o comisiones generados se acumulan digitalmente en la billetera virtual de TEI y pueden usarse libremente para compras y consumos dentro del ecosistema.
+4. Requisito de Autorización y KYC para Retiros en Efectivo / Banco: Para retiros bancarios hacia el sistema financiero, el sistema exigirá el proceso de KYC con intervención del padre, madre o tutor legal, quien autorizará el co-manejo aportando copia de Cédula de Ciudadanía del tutor, Tarjeta de Identidad del menor y RUT activo del menor ante la DIAN. Los retiros estarán sujetos a topes máximos mensuales establecidos por política corporativa (hasta $2.700.000 COP mensuales o equivalente).
+5. Transición a la Mayoría de Edad: Al cumplir los 18 años, el usuario actualizará su Cédula y RUT, asumiendo la gestión plena e independiente de su cuenta.
 
 ---
 AL DAR CLIC EN EL BOTÓN DE REGISTRO, USTED DECLARA BAJO LA GRAVEDAD DE JURAMENTO QUE LA INFORMACIÓN SUMINISTRADA ES VERAZ Y QUE HA LEÍDO, ENTENDIDO Y ACEPTADO LA TOTALIDAD DE ESTOS TÉRMINOS Y CONDICIONES.

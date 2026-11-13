@@ -4,9 +4,11 @@ import ProductReviewModal from './ProductReviewModal';
 
 const UserOrders = () => {
     const [orders, setOrders] = useState([]);
+    const [storeOrders, setStoreOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filterStatus, setFilterStatus] = useState('all');
     const [reviewModalData, setReviewModalData] = useState(null);
+    const [orderType, setOrderType] = useState('tei'); // 'tei' or 'store'
 
     const statusLabels = {
         reservado: 'Reservado',
@@ -40,13 +42,30 @@ const UserOrders = () => {
     }, []);
 
     const fetchOrders = async () => {
+        setLoading(true);
         try {
-            const response = await api.get('/api/orders/my');
-            setOrders(response.data);
+            const [teiRes, storeRes] = await Promise.all([
+                api.get('/api/orders/my'),
+                api.get('/api/store/orders/my-purchases').catch(() => ({ data: [] }))
+            ]);
+            setOrders(teiRes.data);
+            setStoreOrders(storeRes.data || []);
             setLoading(false);
         } catch (error) {
             console.error('Error fetching orders:', error);
             setLoading(false);
+        }
+    };
+    
+    const handleReceiveStoreOrder = async (orderId) => {
+        if(!window.confirm('¿Confirmas que recibiste el paquete en buenas condiciones?')) return;
+        try {
+            await api.post(`/api/store/orders/${orderId}/receive`);
+            alert('¡Excelente! El pago ha sido liberado al comercio.');
+            setReviewModalData({ orderId });
+            fetchOrders();
+        } catch (e) {
+            alert('Error: ' + (e.response?.data?.detail || e.message));
         }
     };
 
@@ -106,36 +125,56 @@ const UserOrders = () => {
         <div className="space-y-6">
             <h1 className="text-3xl font-bold mb-6">Mis Pedidos (V2)</h1>
 
-            {/* Pestañas de filtro por estado - SIEMPRE VISIBLES */}
-            <div className="mb-6 flex gap-2 flex-wrap">
-                <button
-                    onClick={() => setFilterStatus('all')}
-                    className={`px-4 py-2 rounded-lg font-medium transition ${filterStatus === 'all'
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                        }`}
+            {/* Tipo de Pedidos (TEI vs Tienda Virtual) */}
+            <div className="flex gap-4 mb-6 border-b pb-4">
+                <button 
+                    onClick={() => setOrderType('tei')}
+                    className={`text-xl font-bold pb-2 ${orderType === 'tei' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500'}`}
                 >
-                    Todos ({orders.length})
+                    🏢 Pedidos Corporativos TEI
                 </button>
-                {Object.entries(statusLabels).map(([status, label]) => (
-                    <button
-                        key={status}
-                        onClick={() => setFilterStatus(status)}
-                        className={`px-4 py-2 rounded-lg font-medium transition ${filterStatus === status
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                            }`}
-                    >
-                        {label} ({orders.filter(o => o.status === status).length})
-                    </button>
-                ))}
+                <button 
+                    onClick={() => setOrderType('store')}
+                    className={`text-xl font-bold pb-2 ${orderType === 'store' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500'}`}
+                >
+                    🛍️ Tienda Virtual (Comercios Aliados)
+                </button>
             </div>
 
+            {orderType === 'tei' ? (
+                <>
+                    {/* Pestañas de filtro por estado - SIEMPRE VISIBLES */}
+                    <div className="mb-6 flex gap-2 flex-wrap">
+                        <button
+                            onClick={() => setFilterStatus('all')}
+                            className={`px-4 py-2 rounded-lg font-medium transition ${filterStatus === 'all'
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                }`}
+                        >
+                            Todos ({orders.length})
+                        </button>
+                        {Object.entries(statusLabels).map(([status, label]) => (
+                            <button
+                                key={status}
+                                onClick={() => setFilterStatus(status)}
+                                className={`px-4 py-2 rounded-lg font-medium transition ${filterStatus === status
+                                    ? 'bg-blue-600 text-white'
+                                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                    }`}
+                            >
+                                {label} ({orders.filter(o => o.status === status).length})
+                            </button>
+                        ))}
+                    </div>
+                </>
+            ) : null}
+
             {/* Mensaje cuando NO hay pedidos */}
-            {orders.length === 0 && (
+            {orderType === 'tei' && orders.length === 0 && (
                 <div className="text-center py-12 bg-white rounded-lg shadow-md">
                     <div className="text-6xl mb-4">📦</div>
-                    <h2 className="text-2xl font-bold mb-2">No tienes pedidos aún</h2>
+                    <h2 className="text-2xl font-bold mb-2">No tienes pedidos corporativos aún</h2>
                     <p className="text-gray-600 mb-6">Visita nuestra tienda para realizar tu primer pedido</p>
                     <a
                         href="/dashboard/store"
@@ -145,15 +184,29 @@ const UserOrders = () => {
                     </a>
                 </div>
             )}
+            
+            {orderType === 'store' && storeOrders.length === 0 && (
+                <div className="text-center py-12 bg-white rounded-lg shadow-md">
+                    <div className="text-6xl mb-4">🛍️</div>
+                    <h2 className="text-2xl font-bold mb-2">No has comprado en la Tienda Virtual</h2>
+                    <p className="text-gray-600 mb-6">Apoya a nuestros Comercios Aliados</p>
+                    <a
+                        href="/comercios-virtuales"
+                        className="inline-block bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition font-medium"
+                    >
+                        🏢 Ver Directorio de Comercios
+                    </a>
+                </div>
+            )}
 
             {/* Mensaje si hay pedidos pero ninguno en el filtro actual */}
-            {orders.length > 0 && filteredOrders.length === 0 && (
+            {orderType === 'tei' && orders.length > 0 && filteredOrders.length === 0 && (
                 <div className="text-center py-8 bg-gray-50 rounded-lg">
                     <p className="text-gray-600">No tienes pedidos en estado "{statusLabels[filterStatus]}"</p>
                 </div>
             )}
 
-            {filteredOrders.map((order) => (
+            {orderType === 'tei' && filteredOrders.map((order) => (
                 <div key={order.id} className="bg-white rounded-lg shadow-md overflow-hidden">
                     {/* Header del pedido */}
                     <div className="bg-gray-50 px-6 py-4 border-b">
@@ -356,8 +409,76 @@ const UserOrders = () => {
                         </button>
                     </div>
                 </div>
-            ))
-            }
+            ))}
+            
+            {orderType === 'store' && storeOrders.map((order) => (
+                <div key={`store-${order.id}`} className="bg-white rounded-lg shadow-md overflow-hidden">
+                    <div className="bg-gray-50 px-6 py-4 border-b">
+                        <div className="flex justify-between items-center flex-wrap gap-2">
+                            <div>
+                                <h3 className="text-lg font-semibold text-gray-800">Pedido #{order.id} en Tienda Virtual</h3>
+                                <p className="text-sm text-gray-600">Comercio: <span className="font-bold">{order.merchant_name}</span></p>
+                                <p className="text-sm text-gray-500">Realizado el {formatDate(order.created_at)}</p>
+                            </div>
+                            <div className="text-right">
+                                <p className="text-lg font-bold text-green-700">{formatCurrency(order.total_amount_cop + order.shipping_cost_cop)}</p>
+                                <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold mt-1 ${
+                                    order.status === 'escrow_funded' ? 'bg-yellow-100 text-yellow-800' :
+                                    order.status === 'shipped' ? 'bg-blue-100 text-blue-800' :
+                                    order.status === 'delivered' ? 'bg-green-100 text-green-800' :
+                                    'bg-gray-100 text-gray-800'
+                                }`}>
+                                    {order.status === 'escrow_funded' && 'Pagado (El comercio lo está preparando)'}
+                                    {order.status === 'shipped' && 'Enviado'}
+                                    {order.status === 'delivered' && 'Entregado (Pago Liberado)'}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div className="px-6 py-4">
+                        <h4 className="font-semibold mb-3 text-gray-700">Productos del Comercio</h4>
+                        <div className="space-y-2 mb-4">
+                            {order.items.map((item, idx) => (
+                                <div key={idx} className="flex justify-between text-sm bg-gray-50 p-2 rounded">
+                                    <span>{item.qty}x {item.name}</span>
+                                    <span className="font-medium">{formatCurrency(item.price)} c/u</span>
+                                </div>
+                            ))}
+                        </div>
+                        
+                        {order.tracking_number && (
+                            <div className="mt-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                                <p className="text-sm font-medium text-purple-900 mb-1">📦 Número de Guía (Transportadora)</p>
+                                <p className="text-lg font-bold text-purple-700">{order.tracking_number}</p>
+                            </div>
+                        )}
+                        
+                        {order.status === 'shipped' && (
+                            <div className="mt-6 border-t pt-4">
+                                <p className="text-sm text-gray-600 mb-3 text-center">Si ya tienes el paquete en tus manos y todo está perfecto, presiona el botón para liberar el dinero al comercio.</p>
+                                <button 
+                                    onClick={() => handleReceiveStoreOrder(order.id)}
+                                    className="w-full py-4 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl shadow-lg transition transform hover:scale-105"
+                                >
+                                    ✅ YA RECIBÍ MI PRODUCTO CONFORME
+                                </button>
+                            </div>
+                        )}
+                        
+                        {order.status === 'delivered' && (
+                            <div className="mt-6 border-t pt-4 text-center">
+                                <button 
+                                    onClick={() => setReviewModalData({ orderId: order.id, merchant_name: order.merchant_name, isStore: true })}
+                                    className="px-6 py-2 bg-yellow-100 text-yellow-800 hover:bg-yellow-200 rounded-full font-bold shadow-sm transition"
+                                >
+                                    ⭐ Calificar Comercio
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            ))}
             
             <ProductReviewModal
                 isOpen={!!reviewModalData}

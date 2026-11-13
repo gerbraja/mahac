@@ -1,11 +1,70 @@
 import React, { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Download, Share, PlusSquare, Smartphone } from "lucide-react";
 
+function getPwaContext(pathname) {
+  if (pathname.startsWith("/transport/driver")) {
+    return {
+      key: "driver",
+      manifestHref: "/manifest-driver.json",
+      storageKey: "tei_pwa_dismissed_driver",
+      appTitle: "TEI Conductor",
+      pageTitle: "TEI Conductor",
+      heading: "Instalar TEI Conductor",
+      subtitle: "Recibe alertas de viajes más rápido y trabaja a pantalla completa.",
+      description:
+        "Instala la app ligera de TEI Conductor en tu pantalla de inicio para recibir carreras al instante sin abrir el navegador.",
+    };
+  }
+  if (pathname.startsWith("/transport/passenger")) {
+    return {
+      key: "passenger",
+      manifestHref: "/manifest-passenger.json",
+      storageKey: "tei_pwa_dismissed_passenger",
+      appTitle: "TEI Pasajero",
+      pageTitle: "TEI Pasajero",
+      heading: "Instalar TEI Pasajero",
+      subtitle: "Pide viajes en segundos desde tu pantalla de inicio.",
+      description:
+        "Instala la app ligera de TEI Pasajero en tu celular para solicitar transporte de forma rápida y a pantalla completa.",
+    };
+  }
+  return {
+    key: "tei",
+    manifestHref: "/manifest.json",
+    storageKey: "tei_pwa_dismissed",
+    appTitle: "TEI",
+    pageTitle: "Centro Comercial TEI",
+    heading: "Instalar App de TEI",
+    subtitle: "Acceso más rápido y mejor experiencia móvil.",
+    description:
+      "Instala la app directamente en tu pantalla de inicio para navegar de forma fluida y a pantalla completa.",
+  };
+}
+
 export default function PwaInstallPrompt() {
+  const location = useLocation();
+  const pwaContext = getPwaContext(location.pathname);
+
   const [isVisible, setIsVisible] = useState(false);
   const [platform, setPlatform] = useState(""); // 'ios', 'android', or ''
   const [deferredPrompt, setDeferredPrompt] = useState(null);
+
+  // Keep manifest, apple-mobile-web-app-title and document title synced on SPA navigation
+  useEffect(() => {
+    const manifestLink = document.getElementById("pwa-manifest");
+    if (manifestLink && manifestLink.getAttribute("href") !== pwaContext.manifestHref) {
+      manifestLink.setAttribute("href", pwaContext.manifestHref);
+    }
+    const appleTitle = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+    if (appleTitle) {
+      appleTitle.setAttribute("content", pwaContext.appTitle);
+    }
+    if (pwaContext.key !== "tei") {
+      document.title = pwaContext.pageTitle;
+    }
+  }, [pwaContext.key, pwaContext.manifestHref, pwaContext.appTitle, pwaContext.pageTitle]);
 
   // 1. Detect platform and capture the browser prompt event
   useEffect(() => {
@@ -29,7 +88,7 @@ export default function PwaInstallPrompt() {
     }
   }, []);
 
-  // 2. Automated pop-up trigger on page load (if not dismissed or already installed)
+  // 2. Automated pop-up trigger on page load / route change (if not dismissed or already installed)
   useEffect(() => {
     const isStandalone =
       window.matchMedia("(display-mode: standalone)").matches ||
@@ -37,12 +96,13 @@ export default function PwaInstallPrompt() {
 
     if (isStandalone) return;
 
-    // Check if dismissed in last 7 days
+    // Check if dismissed in last 7 days for this specific app context
     try {
-      const dismissedTime = localStorage.getItem("tei_pwa_dismissed");
+      const dismissedTime = localStorage.getItem(pwaContext.storageKey);
       if (dismissedTime) {
         const sevenDays = 7 * 24 * 60 * 60 * 1000;
         if (Date.now() - parseInt(dismissedTime, 10) < sevenDays) {
+          setIsVisible(false);
           return;
         }
       }
@@ -50,16 +110,16 @@ export default function PwaInstallPrompt() {
       console.warn("[PWA] Error reading localStorage:", e);
     }
 
-    // Auto show prompt after 3 seconds
+    // Auto show prompt after 2.5 seconds
     const timer = setTimeout(() => {
       // Only auto-show if we have detected iOS or Android with install capability
       if (platform === "ios" || (platform === "android" && deferredPrompt)) {
         setIsVisible(true);
       }
-    }, 3000);
+    }, 2500);
 
     return () => clearTimeout(timer);
-  }, [platform, deferredPrompt]);
+  }, [platform, deferredPrompt, pwaContext.storageKey]);
 
   // 3. Listen to manual trigger event (e.g. from buttons on different pages)
   useEffect(() => {
@@ -69,7 +129,7 @@ export default function PwaInstallPrompt() {
         window.navigator.standalone === true;
 
       if (isStandalone) {
-        alert("¡La aplicación de TEI ya está instalada en tu dispositivo!");
+        alert(`¡La aplicación ${pwaContext.appTitle} ya está instalada en tu dispositivo!`);
         return;
       }
 
@@ -85,7 +145,7 @@ export default function PwaInstallPrompt() {
     return () => {
       window.removeEventListener("trigger-pwa-install", handleTriggerInstall);
     };
-  }, [platform, deferredPrompt]);
+  }, [platform, deferredPrompt, pwaContext.appTitle]);
 
   const handleInstallClick = async () => {
     if (!deferredPrompt) {
@@ -103,7 +163,7 @@ export default function PwaInstallPrompt() {
 
   const handleDismiss = () => {
     try {
-      localStorage.setItem("tei_pwa_dismissed", Date.now().toString());
+      localStorage.setItem(pwaContext.storageKey, Date.now().toString());
     } catch (e) {
       console.warn("[PWA] Error writing localStorage:", e);
     }
@@ -141,10 +201,10 @@ export default function PwaInstallPrompt() {
             </div>
             <div>
               <h3 className="font-bold text-[16px] text-white tracking-wide font-sans">
-                Instalar App de TEI
+                {pwaContext.heading}
               </h3>
               <p className="text-xs text-slate-400 font-sans">
-                Acceso más rápido y mejor experiencia móvil.
+                {pwaContext.subtitle}
               </p>
             </div>
           </div>
@@ -184,7 +244,7 @@ export default function PwaInstallPrompt() {
           ) : (
             <div className="text-sm text-slate-300 font-sans flex flex-col gap-3">
               <p className="leading-relaxed">
-                Instala la app directamente en tu pantalla de inicio para navegar de forma fluida y a pantalla completa.
+                {pwaContext.description}
               </p>
               <button
                 onClick={handleInstallClick}

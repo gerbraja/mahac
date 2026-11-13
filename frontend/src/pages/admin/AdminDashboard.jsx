@@ -753,21 +753,6 @@ export default function AdminDashboard() {
                         💰 Comisiones Patrocinio
                     </button>
                     <button
-                        onClick={() => navigate('/admin/pickup-points')}
-                        style={{
-                            padding: '0.4rem 0.8rem',
-                            background: '#be185d',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '0.4rem',
-                            cursor: 'pointer',
-                            fontWeight: '500',
-                            fontSize: '0.8rem'
-                        }}
-                    >
-                        📍 Puntos de Recogida
-                    </button>
-                    <button
                         onClick={() => navigate('/admin/logistics')}
                         style={{
                             padding: '0.4rem 0.8rem',
@@ -781,6 +766,141 @@ export default function AdminDashboard() {
                         }}
                     >
                         🚛 Logística (Bultos)
+                    </button>
+
+                    {/* ── Separador: Módulos Principales ── */}
+                    <div style={{ width: '100%', borderTop: '1px dashed #e5e7eb', marginTop: '0.75rem', paddingTop: '0.75rem' }}>
+                        <span style={{ fontSize: '0.75rem', color: '#6b7280', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                            Módulos Principales
+                        </span>
+                    </div>
+                    <button
+                        onClick={() => navigate('/admin/users')}
+                        style={{
+                            padding: '0.4rem 0.8rem',
+                            background: '#1d4ed8',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '0.4rem',
+                            cursor: 'pointer',
+                            fontWeight: '600',
+                            fontSize: '0.8rem',
+                            boxShadow: '0 2px 4px rgba(29,78,216,0.3)'
+                        }}
+                    >
+                        👥 Usuarios
+                    </button>
+                    <button
+                        onClick={() => navigate('/admin/orders')}
+                        style={{
+                            padding: '0.4rem 0.8rem',
+                            background: '#be185d',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '0.4rem',
+                            cursor: 'pointer',
+                            fontWeight: '600',
+                            fontSize: '0.8rem',
+                            boxShadow: '0 2px 4px rgba(190,24,93,0.3)'
+                        }}
+                    >
+                        📦 Órdenes/Envíos
+                    </button>
+                    <button
+                        onClick={() => navigate('/admin/reports')}
+                        style={{
+                            padding: '0.4rem 0.8rem',
+                            background: '#0f766e',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '0.4rem',
+                            cursor: 'pointer',
+                            fontWeight: '600',
+                            fontSize: '0.8rem',
+                            boxShadow: '0 2px 4px rgba(15,118,110,0.3)'
+                        }}
+                    >
+                        📈 Reportes
+                    </button>
+                    <button
+                        onClick={() => navigate('/admin/crm')}
+                        style={{
+                            padding: '0.4rem 0.8rem',
+                            background: '#4338ca',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '0.4rem',
+                            cursor: 'pointer',
+                            fontWeight: '600',
+                            fontSize: '0.8rem',
+                            boxShadow: '0 2px 4px rgba(67,56,202,0.3)'
+                        }}
+                    >
+                        💼 CRM Multinegocios
+                    </button>
+                    <button
+                        onClick={() => navigate('/admin/accounting')}
+                        style={{
+                            padding: '0.4rem 0.8rem',
+                            background: '#047857',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '0.4rem',
+                            cursor: 'pointer',
+                            fontWeight: '600',
+                            fontSize: '0.8rem',
+                            boxShadow: '0 2px 4px rgba(4,120,87,0.3)'
+                        }}
+                    >
+                        🏦 Contabilidad y Finanzas
+                    </button>
+                    <button
+                        onClick={() => navigate('/admin/taxes')}
+                        style={{
+                            padding: '0.4rem 0.8rem',
+                            background: '#b45309',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '0.4rem',
+                            cursor: 'pointer',
+                            fontWeight: '600',
+                            fontSize: '0.8rem',
+                            boxShadow: '0 2px 4px rgba(180,83,9,0.3)'
+                        }}
+                    >
+                        🧾 Obligaciones Fiscales: {globalCountry && globalCountry !== 'Todos' ? globalCountry : 'Global'}
+                    </button>
+                    <button
+                        onClick={() => navigate('/admin/country-stats')}
+                        style={{
+                            padding: '0.4rem 0.8rem',
+                            background: '#0369a1',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '0.4rem',
+                            cursor: 'pointer',
+                            fontWeight: '600',
+                            fontSize: '0.8rem',
+                            boxShadow: '0 2px 4px rgba(3,105,161,0.3)'
+                        }}
+                    >
+                        🗺️ Estadísticas: {globalCountry && globalCountry !== 'Todos' ? globalCountry : 'Global'}
+                    </button>
+                    <button
+                        onClick={() => navigate('/admin/pickup-points')}
+                        style={{
+                            padding: '0.4rem 0.8rem',
+                            background: '#be185d',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '0.4rem',
+                            cursor: 'pointer',
+                            fontWeight: '600',
+                            fontSize: '0.8rem',
+                            boxShadow: '0 2px 4px rgba(190,24,93,0.3)'
+                        }}
+                    >
+                        📍 Gestión de Puntos de Recogida
                     </button>
                 </div>
             </div>
@@ -955,11 +1075,19 @@ export default function AdminDashboard() {
                                         backgroundColor: 'white'
                                     }}
                                 >
-                                    {activationPackages.map(pkg => (
-                                        <option key={pkg.id} value={pkg.id}>
-                                            {pkg.name} - ${pkg.price_usd} USD / ${pkg.price_local.toLocaleString()} COP - {pkg.pv} PV
-                                        </option>
-                                    ))}
+                                    {activationPackages.map(pkg => {
+                                        let disabled = false;
+                                        if (selectedUser) {
+                                            const userLvl = selectedUser.package_level || 0;
+                                            if (pkg.is_activation && userLvl > 0) disabled = true;
+                                            if (pkg.is_upgrade && pkg.package_level <= userLvl) disabled = true;
+                                        }
+                                        return (
+                                            <option key={pkg.id} value={pkg.id} disabled={disabled}>
+                                                {disabled ? '🚫 (Ya tiene este nivel o superior) ' : ''}{pkg.name} - ${pkg.price_usd} USD / ${pkg.price_local.toLocaleString()} COP - {pkg.pv} PV
+                                            </option>
+                                        );
+                                    })}
                                 </select>
                             )}
                         </div>
@@ -1003,21 +1131,34 @@ export default function AdminDashboard() {
                             >
                                 Cerrar
                             </button>
-                            <button
-                                onClick={handleActivateUser}
-                                disabled={activating}
-                                style={{
-                                    padding: '0.75rem 1.5rem',
-                                    background: activating ? '#9ca3af' : '#10b981',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: '0.5rem',
-                                    cursor: activating ? 'not-allowed' : 'pointer',
-                                    fontWeight: '600'
-                                }}
-                            >
-                                {activating ? 'Activando...' : 'Activar Usuario'}
-                            </button>
+                            {(() => {
+                                let btnDisabled = activating || !activationData.selectedPackage || (!selectedUser && !activationData.userId);
+                                if (selectedUser && activationData.selectedPackage) {
+                                    const pkg = activationPackages.find(p => p.id == activationData.selectedPackage);
+                                    if (pkg) {
+                                        const userLvl = selectedUser.package_level || 0;
+                                        if (pkg.is_activation && userLvl > 0) btnDisabled = true;
+                                        if (pkg.is_upgrade && pkg.package_level <= userLvl) btnDisabled = true;
+                                    }
+                                }
+                                return (
+                                    <button
+                                        onClick={handleActivateUser}
+                                        disabled={btnDisabled}
+                                        style={{
+                                            padding: '0.75rem 1.5rem',
+                                            background: btnDisabled ? '#9ca3af' : '#10b981',
+                                            color: 'white',
+                                            border: 'none',
+                                            borderRadius: '0.5rem',
+                                            cursor: btnDisabled ? 'not-allowed' : 'pointer',
+                                            fontWeight: '600'
+                                        }}
+                                    >
+                                        {activating ? 'Activando...' : 'Activar Usuario'}
+                                    </button>
+                                );
+                            })()}
                         </div>
                     </div>
                 </div>

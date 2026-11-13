@@ -1,5 +1,5 @@
 import re
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, validator
 from typing import Optional
 from datetime import datetime
 
@@ -16,24 +16,20 @@ class VehicleCreate(BaseModel):
     license_url: Optional[str] = None
     property_card_url: Optional[str] = None
 
-    @field_validator('brand')
-    @classmethod
+    @validator('brand')
     def validate_brand(cls, v):
         if v is not None:
             v = v.strip()
             if len(v) > 14:
                 raise ValueError("La marca no puede superar 14 caracteres.")
-            # Permitir únicamente letras, números y espacios estándar (rechazar < > = + @ [ ] { })
             if not re.match(r"^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s\.\-]+$", v):
                 raise ValueError("La marca solo puede contener letras, números y espacios estándar.")
         return v
 
-    @field_validator('model')
-    @classmethod
+    @validator('model')
     def validate_model(cls, v):
         if v is not None:
             v = str(v).strip()
-            # En Cuadro de Modelo solo debe ir el año que son 4 números no permitir más de 4 caracteres
             if not re.match(r"^\d{4}$", v):
                 raise ValueError("El modelo debe ser exactamente el año del vehículo en 4 números (ej. 2024).")
             year_val = int(v)
@@ -42,8 +38,7 @@ class VehicleCreate(BaseModel):
                 raise ValueError(f"El año del modelo debe estar entre 1990 y {current_max_year}.")
         return v
 
-    @field_validator('color')
-    @classmethod
+    @validator('color')
     def validate_color(cls, v):
         if v is not None:
             v = v.strip()
@@ -53,26 +48,34 @@ class VehicleCreate(BaseModel):
                 raise ValueError("El color solo puede contener letras y espacios.")
         return v
 
-    @field_validator('license_plate')
-    @classmethod
+    @validator('license_plate')
     def validate_plate(cls, v):
         v = (v or "").strip().upper().replace(" ", "").replace("-", "")
         if not re.match(r"^[A-Z0-9]{5,7}$", v):
             raise ValueError("Placa inválida. Debe tener entre 5 y 7 caracteres alfanuméricos (ej. ABC123 o ABC12D).")
         return v
 
-    @field_validator('year')
-    @classmethod
-    def validate_year(cls, v, info):
+    @validator('year')
+    def validate_year(cls, v):
         if v is not None:
             current_max_year = datetime.now().year + 1
             if v < 1990 or v > current_max_year:
                 raise ValueError(f"El año debe estar entre 1990 y {current_max_year}.")
         return v
 
-class VehicleResponse(VehicleCreate):
+class VehicleResponse(BaseModel):
     id: int
     user_id: int
+    type: str
+    brand: Optional[str] = None
+    model: Optional[str] = None
+    year: Optional[int] = None
+    color: Optional[str] = None
+    license_plate: str
+    cargo_capacity_kg: Optional[float] = None
+    selfie_url: Optional[str] = None
+    license_url: Optional[str] = None
+    property_card_url: Optional[str] = None
     status: str
     is_active: bool
     created_at: datetime

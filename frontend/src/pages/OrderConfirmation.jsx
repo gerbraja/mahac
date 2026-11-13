@@ -97,7 +97,7 @@ const OrderConfirmation = () => {
     const formattedOrderNumber = `${yyyy}${mm}${dd}${hh}${min}${sequence}`;
 
     const handleConfirmPayment = () => {
-        if (paymentMethod === 'wallet') {
+        if (paymentMethod === 'wallet' || paymentMethod === 'loyalty_bag') {
             if (!hasPin) {
                 // Should not happen due to UI disabled state, but safety check
                 alert("Debes configurar tu clave de transacciones primero.");
@@ -147,11 +147,12 @@ const OrderConfirmation = () => {
             // Real API call
             const res = await api.post('/api/wallet/pay-order', {
                 orderId: order.id,
-                pin: secondPassword
+                pin: secondPassword,
+                payment_source: paymentMethod === 'loyalty_bag' ? 'loyalty_bag' : 'wallet_bank'
             });
 
             if (res.data.success) {
-                alert("✅ Pago realizado con éxito desde tu Billetera Virtual!");
+                alert(res.data.message || "✅ Pago realizado con éxito desde tu Billetera Virtual!");
                 setShowWalletModal(false);
                 // Update order status locally
                 setOrder(prev => ({ ...prev, status: 'paid' }));
@@ -253,6 +254,41 @@ const OrderConfirmation = () => {
                         <h2 className="text-xl font-bold text-gray-800 border-b pb-2 mb-4">Pagar Con</h2>
 
                         <div className="space-y-4">
+                            {/* Bolsa Fidelización TEI Option */}
+                            <label className={`flex items-start gap-4 p-4 border-2 rounded-xl cursor-pointer transition-all ${paymentMethod === 'loyalty_bag' ? 'border-indigo-600 bg-indigo-50' : 'border-gray-200 hover:border-indigo-300'}`}>
+                                <input
+                                    type="radio"
+                                    name="payment"
+                                    value="loyalty_bag"
+                                    checked={paymentMethod === 'loyalty_bag'}
+                                    onChange={(e) => setPaymentMethod(e.target.value)}
+                                    className="mt-1 w-5 h-5 text-indigo-600"
+                                />
+                                <div className="flex-1">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-2xl">🎁</span>
+                                        <span className="font-bold text-indigo-900">Bolsa Fidelización TEI (0% Retención)</span>
+                                    </div>
+                                    <p className="text-sm text-indigo-700 mt-1">Canjear con el saldo acumulado en tu Bolsa de Fidelización TEI libre de impuestos.</p>
+
+                                    {!hasPin && paymentMethod === 'loyalty_bag' && (
+                                        <div className="mt-3 bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-800">
+                                            <p className="font-bold mb-1">⚠️ Clave de Transacciones No Configurada</p>
+                                            <p className="mb-2">Para usar tu Bolsa de Fidelización TEI, primero debes configurar tu Segunda Clave.</p>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    navigate('/dashboard/security');
+                                                }}
+                                                className="bg-red-600 text-white px-3 py-1 rounded text-xs font-bold hover:bg-red-700"
+                                            >
+                                                Configurar Ahora
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            </label>
+
                             {/* Wallet Option */}
                             <label className={`flex items-start gap-4 p-4 border-2 rounded-xl cursor-pointer transition-all ${paymentMethod === 'wallet' ? 'border-blue-600 bg-blue-50' : 'border-gray-200 hover:border-blue-300'}`}>
                                 <input
@@ -266,7 +302,7 @@ const OrderConfirmation = () => {
                                 <div className="flex-1">
                                     <div className="flex items-center gap-2">
                                         <span className="text-2xl">💰</span>
-                                        <span className="font-bold text-gray-800">Billetera Virtual</span>
+                                        <span className="font-bold text-gray-800">Billetera Virtual (Saldo Banco TEI)</span>
                                     </div>
                                     <p className="text-sm text-gray-600 mt-1">Pagar usando el saldo disponible en tu oficina virtual.</p>
 

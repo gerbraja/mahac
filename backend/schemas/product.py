@@ -20,6 +20,7 @@ class ProductBase(BaseModel):
     
     # Costos de Fabricante, Impuestos y Distribución de Ganancia TEI
     cost_price: Optional[float] = 0.0
+    shipping_cost_cop: Optional[float] = 0.0
     supplier_has_iva: Optional[bool] = False
     supplier_iva_rate: Optional[float] = 0.0
     supplier_withholding_rate: Optional[float] = 0.0
@@ -68,6 +69,7 @@ class ProductUpdate(BaseModel):
     is_upgrade: Optional[bool] = None
     image_url: Optional[str] = None
     cost_price: Optional[float] = None
+    shipping_cost_cop: Optional[float] = None
     supplier_has_iva: Optional[bool] = None
     supplier_iva_rate: Optional[float] = None
     supplier_withholding_rate: Optional[float] = None

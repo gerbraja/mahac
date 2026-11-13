@@ -27,6 +27,9 @@ echo "Construyendo el bundle de producción (npm run build)..."
 npm run build
 
 # Desplegar a Cloud Run
+echo "Configurando timeout para subida pesada..."
+$GCLOUD config set core/http_timeout 3600
+
 echo "Desplegando en Google Cloud Run ($FRONTEND_SERVICE)..."
 $GCLOUD run deploy $FRONTEND_SERVICE \
     --source . \

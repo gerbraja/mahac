@@ -10,7 +10,7 @@ echo ""
 
 # Configuration
 PROJECT_ID="tei-mlm-prod"
-REGION="southamerica-east1"
+REGION="us-central1"
 DB_INSTANCE="mlm-db"
 DB_NAME="tiendavirtual"
 BACKEND_SERVICE="mlm-backend"

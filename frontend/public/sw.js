@@ -1,8 +1,10 @@
-const CACHE_NAME = "tei-cache-v2";
+const CACHE_NAME = "tei-cache-v5";
 const ASSETS_TO_CACHE = [
   "/",
   "/index.html",
   "/manifest.json",
+  "/manifest-driver.json",
+  "/manifest-passenger.json",
   "/tei-logo.png",
   "/tei-logo.svg"
 ];
@@ -11,11 +13,17 @@ const ASSETS_TO_CACHE = [
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log("[Service Worker] Caching app shell v2");
+      console.log("[Service Worker] Caching app shell v4");
       return cache.addAll(ASSETS_TO_CACHE);
     })
   );
   self.skipWaiting();
+});
+
+self.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
 });
 
 // Activation: Clean up old caches

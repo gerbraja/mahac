@@ -75,7 +75,15 @@ if os.getenv("TESTING") != "true":
                     paid_via VARCHAR(50)
                 )""",
                 "CREATE INDEX IF NOT EXISTS ix_merchant_credits_merchant_id ON merchant_credits(merchant_id)",
-                "CREATE INDEX IF NOT EXISTS ix_merchant_credits_user_id ON merchant_credits(user_id)"
+                "CREATE INDEX IF NOT EXISTS ix_merchant_credits_user_id ON merchant_credits(user_id)",
+                "ALTER TABLE products ADD COLUMN IF NOT EXISTS supplier_has_iva BOOLEAN DEFAULT FALSE",
+                "ALTER TABLE products ADD COLUMN IF NOT EXISTS supplier_iva_rate FLOAT DEFAULT 0.0",
+                "ALTER TABLE products ADD COLUMN IF NOT EXISTS supplier_withholding_rate FLOAT DEFAULT 0.0",
+                "ALTER TABLE products ADD COLUMN IF NOT EXISTS compensation_budget_cop FLOAT DEFAULT 0.0",
+                "ALTER TABLE products ADD COLUMN IF NOT EXISTS matrix_reserve_cop FLOAT DEFAULT 0.0",
+                "ALTER TABLE products ADD COLUMN IF NOT EXISTS travel_pool_cop FLOAT DEFAULT 0.0",
+                "ALTER TABLE products ADD COLUMN IF NOT EXISTS company_profit_cop FLOAT DEFAULT 0.0",
+                "ALTER TABLE products ADD COLUMN IF NOT EXISTS shipping_cost_cop FLOAT DEFAULT 0.0"
             ]:
                 try:
                     conn.execute(text(stmt))
@@ -96,6 +104,18 @@ if os.getenv("TESTING") != "true":
             print("✅ Ensured cryptographic magic_token for all merchants", flush=True)
         except Exception as _m_err:
             print(f"⚠️ Could not batch update magic_tokens: {_m_err}", flush=True)
+
+        # Limpieza definitiva de pruebas: retenciones de Octubre y pedidos #2 al #11
+        try:
+            with engine.begin() as conn:
+                conn.execute(text("DELETE FROM product_reviews WHERE order_item_id IN (SELECT id FROM order_items WHERE order_id <= 11)"))
+                conn.execute(text("DELETE FROM withholding_records WHERE created_at < '2026-11-01 00:00:00'"))
+                conn.execute(text("DELETE FROM order_items WHERE order_id <= 11"))
+                conn.execute(text("DELETE FROM payment_transactions WHERE order_id <= 11"))
+                conn.execute(text("DELETE FROM orders WHERE id <= 11"))
+            print("✅ Limpieza de pruebas ejecutada: pedidos #2 al #11 y retenciones eliminados", flush=True)
+        except Exception as _clean_err:
+            print(f"⚠️ Error en limpieza de pedidos de prueba: {_clean_err}", flush=True)
     except Exception as _ex:
         print(f"⚠️ Transport schema startup warning: {_ex}", flush=True)
 
@@ -287,6 +307,12 @@ def _log_startup():
         """))
         db.execute(text("ALTER TABLE driver_credits ADD COLUMN IF NOT EXISTS admin_fee_cop FLOAT DEFAULT 450.0;"))
         db.execute(text("ALTER TABLE driver_credits ADD COLUMN IF NOT EXISTS overdue_fee_cop FLOAT DEFAULT 0.0;"))
+        db.execute(text("ALTER TABLE driver_credits ADD COLUMN IF NOT EXISTS used_commission_cop FLOAT DEFAULT 0.0;"))
+        db.execute(text("ALTER TABLE driver_credits ADD COLUMN IF NOT EXISTS deadline_started_at TIMESTAMP NULL;"))
+        db.execute(text("ALTER TABLE merchant_credits ADD COLUMN IF NOT EXISTS admin_fee_cop FLOAT DEFAULT 450.0;"))
+        db.execute(text("ALTER TABLE merchant_credits ADD COLUMN IF NOT EXISTS overdue_fee_cop FLOAT DEFAULT 0.0;"))
+        db.execute(text("ALTER TABLE merchant_credits ADD COLUMN IF NOT EXISTS used_commission_cop FLOAT DEFAULT 0.0;"))
+        db.execute(text("ALTER TABLE merchant_credits ADD COLUMN IF NOT EXISTS deadline_started_at TIMESTAMP NULL;"))
         db.execute(text("ALTER TABLE products ADD COLUMN IF NOT EXISTS supplier_has_iva BOOLEAN DEFAULT FALSE;"))
         db.execute(text("ALTER TABLE products ADD COLUMN IF NOT EXISTS supplier_iva_rate FLOAT DEFAULT 0.0;"))
         db.execute(text("ALTER TABLE products ADD COLUMN IF NOT EXISTS supplier_withholding_rate FLOAT DEFAULT 0.0;"))
@@ -294,6 +320,23 @@ def _log_startup():
         db.execute(text("ALTER TABLE products ADD COLUMN IF NOT EXISTS matrix_reserve_cop FLOAT DEFAULT 0.0;"))
         db.execute(text("ALTER TABLE products ADD COLUMN IF NOT EXISTS travel_pool_cop FLOAT DEFAULT 0.0;"))
         db.execute(text("ALTER TABLE products ADD COLUMN IF NOT EXISTS company_profit_cop FLOAT DEFAULT 0.0;"))
+        db.execute(text("ALTER TABLE products ADD COLUMN IF NOT EXISTS shipping_cost_cop FLOAT DEFAULT 0.0;"))
+        # Limpieza de registros de retenciones de prueba de Octubre 2026 (Opción A)
+        # Mantiene intactos al 100% los saldos de monedero y banco de los usuarios
+        try:
+            db.execute(text("DELETE FROM withholding_records WHERE created_at < '2026-11-01 00:00:00';"))
+        except Exception as _w_err:
+            print(f"[MAIN] Note on withholding_records cleanup: {_w_err}")
+        # Limpieza de pedidos de prueba de E-Commerce (Pedidos #2 al #11)
+        # Se eliminan en orden: order_items -> payment_transactions -> orders
+        # Mantiene intactos al 100% los saldos de monedero de los usuarios
+        try:
+            db.execute(text("DELETE FROM order_items WHERE order_id <= 11;"))
+            db.execute(text("DELETE FROM payment_transactions WHERE order_id <= 11;"))
+            db.execute(text("DELETE FROM orders WHERE id <= 11;"))
+            print("[MAIN] Deleted test orders #2 through #11 successfully", flush=True)
+        except Exception as _ord_err:
+            print(f"[MAIN] Note on test orders cleanup: {_ord_err}", flush=True)
         db.commit()
         db.close()
         print("[MAIN] Applied DB patches successfully")

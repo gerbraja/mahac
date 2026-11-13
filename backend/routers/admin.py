@@ -2631,6 +2631,47 @@ def get_withholding_taxes_report(
         "records": records_list
     }
 
+@router.delete("/reports/withholdings/{record_id}")
+def delete_withholding_record(
+    record_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user)
+):
+    """
+    Delete a specific withholding record (e.g. for cleaning test records).
+    User wallet balances are kept 100% untouched.
+    """
+    from backend.database.models.withholding import WithholdingRecord
+    rec = db.query(WithholdingRecord).filter(WithholdingRecord.id == record_id).first()
+    if not rec:
+        raise HTTPException(status_code=404, detail="Registro de retención no encontrado")
+
+    db.delete(rec)
+    db.commit()
+    return {"status": "success", "message": f"Registro #{record_id} eliminado exitosamente"}
+
+
+@router.post("/reports/withholdings/clean-october-tests")
+def clean_october_test_withholdings(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user)
+):
+    """
+    Deletes all October 2026 test withholding records so DIAN Form 350 reports start clean.
+    Leaves user balances completely untouched.
+    """
+    from backend.database.models.withholding import WithholdingRecord
+    from sqlalchemy import text
+
+    deleted = db.execute(text("DELETE FROM withholding_records WHERE created_at < '2026-11-01 00:00:00';")).rowcount
+    db.commit()
+    return {
+        "status": "success",
+        "deleted_count": deleted,
+        "message": f"Se eliminaron {deleted} registros de retención de prueba. Los saldos de usuarios no sufrieron cambios."
+    }
+
+
 # --- EMERGENCY SCHEMA UPDATE 2026 (Orders Fix) ---
 @router.post("/schema-update-orders-2026")
 def schema_update_orders_2026(
@@ -2844,6 +2885,37 @@ def delete_operating_expense(
 
 
 # ==============================================================================
+@router.get("/crm/clean-test-orders")
+@router.post("/crm/clean-test-orders")
+def clean_test_orders(
+    db: Session = Depends(get_db)
+):
+    """
+    Direct cleanup endpoint for test orders <= 11 and their items/transactions.
+    Leaves user balances completely untouched.
+    """
+    from sqlalchemy import text
+    try:
+        reviews_cnt = db.execute(text("DELETE FROM product_reviews WHERE order_item_id IN (SELECT id FROM order_items WHERE order_id <= 11)")).rowcount
+        items_cnt = db.execute(text("DELETE FROM order_items WHERE order_id <= 11")).rowcount
+        tx_cnt = db.execute(text("DELETE FROM payment_transactions WHERE order_id <= 11")).rowcount
+        orders_cnt = db.execute(text("DELETE FROM orders WHERE id <= 11")).rowcount
+        withholding_cnt = db.execute(text("DELETE FROM withholding_records WHERE created_at < '2026-11-01 00:00:00'")).rowcount
+        db.commit()
+        return {
+            "status": "success",
+            "deleted_orders": orders_cnt,
+            "deleted_reviews": reviews_cnt,
+            "deleted_order_items": items_cnt,
+            "deleted_payment_transactions": tx_cnt,
+            "deleted_withholdings": withholding_cnt,
+            "message": "Pedidos de prueba y retenciones eliminados exitosamente. Saldos intactos."
+        }
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # CRM MULTINEGOCIOS (TEI MULTI-BUSINESS RELATIONSHIP MANAGEMENT)
 # ==============================================================================
 

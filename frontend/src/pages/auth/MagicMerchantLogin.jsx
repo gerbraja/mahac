@@ -10,11 +10,31 @@ const MagicMerchantLogin = () => {
 
     useEffect(() => {
         const authenticateMagicLink = async () => {
+            // 1. Si el token es nulo o inválido
+            if (!token || token === 'null' || token === 'undefined') {
+                const existingToken = localStorage.getItem('access_token');
+                if (existingToken) {
+                    try {
+                        const meRes = await api.get('/auth/me');
+                        if (meRes.data && (meRes.data.is_merchant || meRes.data.admin_role === 'merchant' || meRes.data.admin_role === 'comercio_aliado')) {
+                            setStatus('✅ Sesión activa de comercio detectada. Ingresando al portal...');
+                            setTimeout(() => {
+                                window.location.href = '/merchant';
+                            }, 600);
+                            return;
+                        }
+                    } catch (_) {}
+                }
+                setError('El enlace de caja no contiene un token válido.');
+                setStatus('');
+                return;
+            }
+
+            // 2. Si hay token, autenticar con el backend
             try {
                 const res = await api.post('/auth/magic-merchant', { token });
                 
                 localStorage.setItem('access_token', res.data.access_token);
-                // Also setting user info to give context
                 localStorage.setItem('user', JSON.stringify({
                     id: res.data.merchant_id,
                     name: res.data.name,
@@ -23,22 +43,31 @@ const MagicMerchantLogin = () => {
                 
                 setStatus('✅ Ingreso exitoso. Redirigiendo al portal...');
                 
-                // Redirecting directly to the portal after a short delay
                 setTimeout(() => {
                     window.location.href = '/merchant';
-                }, 1500);
+                }, 1000);
             } catch (err) {
+                // Si falla pero el usuario ya tenía sesión iniciada en TEI
+                const existingToken = localStorage.getItem('access_token');
+                if (existingToken) {
+                    try {
+                        const meRes = await api.get('/auth/me');
+                        if (meRes.data && (meRes.data.is_merchant || meRes.data.admin_role === 'merchant')) {
+                            setStatus('✅ Sesión activa detectada. Ingresando al portal...');
+                            setTimeout(() => {
+                                window.location.href = '/merchant';
+                            }, 600);
+                            return;
+                        }
+                    } catch (_) {}
+                }
                 setError(err.response?.data?.detail || 'Enlace inválido o expirado.');
                 setStatus('');
             }
         };
 
-        if (token) {
-            authenticateMagicLink();
-        } else {
-            setError('No se proporcionó token.');
-        }
-    }, [token]);
+        authenticateMagicLink();
+    }, [token, navigate]);
 
     return (
         <div style={{
@@ -55,7 +84,7 @@ const MagicMerchantLogin = () => {
                 borderRadius: '1rem',
                 boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
                 textAlign: 'center',
-                maxWidth: '400px',
+                maxWidth: '420px',
                 width: '100%'
             }}>
                 <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#1f2937', marginBottom: '1rem' }}>
@@ -65,13 +94,21 @@ const MagicMerchantLogin = () => {
                 {error ? (
                     <div>
                         <div style={{ color: '#ef4444', fontSize: '3rem', marginBottom: '1rem' }}>❌</div>
-                        <p style={{ color: '#ef4444', fontWeight: 'bold' }}>{error}</p>
-                        <button 
-                            onClick={() => navigate('/login')}
-                            style={{ marginTop: '1.5rem', padding: '0.5rem 1rem', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '0.5rem', cursor: 'pointer' }}
-                        >
-                            Ir al Login Normal
-                        </button>
+                        <p style={{ color: '#ef4444', fontWeight: 'bold', marginBottom: '1rem' }}>{error}</p>
+                        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+                            <button 
+                                onClick={() => navigate('/merchant')}
+                                style={{ padding: '0.6rem 1.2rem', background: '#059669', color: 'white', border: 'none', borderRadius: '0.5rem', cursor: 'pointer', fontWeight: 'bold' }}
+                            >
+                                Ir a Mi Portal de Comercio
+                            </button>
+                            <button 
+                                onClick={() => navigate('/dashboard')}
+                                style={{ padding: '0.6rem 1.2rem', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '0.5rem', cursor: 'pointer' }}
+                            >
+                                Ir al Dashboard
+                            </button>
+                        </div>
                     </div>
                 ) : (
                     <div>

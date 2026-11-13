@@ -6,21 +6,49 @@ import "./index.css";
 import { CartProvider } from "./context/CartContext";
 
 // Global handler for dynamic import (chunk) failures
+const handleChunkError = (err) => {
+    const msg = (err && (err.message || err.toString())) || "";
+    if (
+        msg.includes("Failed to fetch dynamically imported module") ||
+        msg.includes("Importing a module script failed") ||
+        msg.includes("error loading dynamically imported module") ||
+        msg.includes("Loading chunk") ||
+        msg.includes("Unexpected token '<'") ||
+        msg.includes("Maximum call stack")
+    ) {
+        const lastReload = sessionStorage.getItem("tei_chunk_reload");
+        const now = Date.now();
+        if (!lastReload || now - parseInt(lastReload, 10) > 10000) {
+            sessionStorage.setItem("tei_chunk_reload", now.toString());
+            console.warn("🔄 Dynamic import / chunk failure detected. Clearing cache and refreshing app...");
+            if ("caches" in window) {
+                caches.keys().then((names) => Promise.all(names.map((name) => caches.delete(name))))
+                    .catch(() => {})
+                    .finally(() => {
+                        window.location.reload();
+                    });
+            } else {
+                window.location.reload();
+            }
+        }
+    }
+};
+
 window.addEventListener("vite:preloadError", (event) => {
     console.warn("Vite chunk preload error detected. Reloading page...");
-    window.location.reload();
+    event.preventDefault();
+    handleChunkError(new Error("Failed to fetch dynamically imported module"));
 });
 
-// Fallback for Safari syntax errors caused by returning HTML instead of JS
+window.addEventListener("unhandledrejection", (event) => {
+    if (event.reason) {
+        handleChunkError(event.reason);
+    }
+});
+
 window.addEventListener("error", (e) => {
-    if (e.message && (e.message.includes("Maximum call stack") || e.message.includes("Unexpected token '<'") || e.message.includes("SyntaxError"))) {
-        const lastReload = sessionStorage.getItem("tei_error_reload");
-        if (!lastReload || (Date.now() - parseInt(lastReload)) > 10000) {
-            sessionStorage.setItem("tei_error_reload", Date.now().toString());
-            console.warn("Critical JS syntax or stack error detected. Forcing cache reload...");
-            // Force reload bypassing cache
-            window.location.reload(true);
-        }
+    if (e.message) {
+        handleChunkError(e.message);
     }
 });
 

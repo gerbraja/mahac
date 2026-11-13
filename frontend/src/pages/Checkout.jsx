@@ -449,6 +449,21 @@ export default function Checkout() {
                         <p className="text-sm text-gray-500 mb-4">Selecciona cómo deseas pagar. El pago se realizará en el siguiente paso.</p>
 
                         <div className="grid grid-cols-1 gap-3">
+                            <label className={`flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50 ${paymentMethod === "loyalty_bag" ? "border-indigo-500 bg-indigo-50 ring-1 ring-indigo-500" : "border-gray-200"}`}>
+                                <input
+                                    type="radio"
+                                    name="payment"
+                                    value="loyalty_bag"
+                                    checked={paymentMethod === "loyalty_bag"}
+                                    onChange={(e) => setPaymentMethod(e.target.value)}
+                                    className="w-5 h-5 text-indigo-600 mr-3"
+                                />
+                                <div className="flex-1">
+                                    <span className="font-bold block text-indigo-900">🎁 Bolsa Fidelización TEI (Canje 0% Retención)</span>
+                                    <span className="text-xs text-indigo-700">Redime directamente tu saldo de la Bolsa de Fidelización TEI por cualquier producto o servicio sin retención de impuestos.</span>
+                                </div>
+                            </label>
+
                             <label className={`flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50 ${paymentMethod === "wallet" ? "border-blue-500 bg-blue-50" : "border-gray-200"}`}>
                                 <input
                                     type="radio"
@@ -459,7 +474,7 @@ export default function Checkout() {
                                     className="w-5 h-5 text-blue-600 mr-3"
                                 />
                                 <div className="flex-1">
-                                    <span className="font-bold block">💰 Billetera Virtual (Saldo TEI)</span>
+                                    <span className="font-bold block">💰 Billetera Virtual (Saldo Banco TEI)</span>
                                     <span className="text-xs text-gray-500">Requiere inicio de sesión y segunda clave.</span>
                                 </div>
                             </label>

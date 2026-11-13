@@ -44,6 +44,7 @@ const SimpleAdmin = () => {
         is_upgrade: false,
         direct_bonus_pv: 0,
         cost_price: 0,
+        shipping_cost_cop: 0,
         supplier_has_iva: false,
         supplier_iva_rate: 0.19,
         supplier_withholding_rate: 0,
@@ -76,14 +77,17 @@ const SimpleAdmin = () => {
     const formatCOP = (val) =>
         new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(val || 0);
 
-    // ─── Cálculos en tiempo real de Costos, Retenciones y Ganancia Neta TEI ───
-    const isPackageProduct = Boolean(formData.is_activation || formData.is_upgrade);
+    // ─── Cálculos en tiempo real de Costos, Envío, Retenciones, PV, Matrices, Viajes y Ganancia Neta TEI ───
+    const isPackageProduct = Boolean(
+        formData.is_activation || formData.is_upgrade || Number(formData.package_level || 0) > 0
+    );
     const salePriceCOP = Number(formData.price_local || 0);
     const saleTaxRate = Number(formData.tax_rate || 0);
     const saleNetBaseCOP = saleTaxRate > 0 ? salePriceCOP / (1 + saleTaxRate) : salePriceCOP;
     const saleIvaCOP = salePriceCOP - saleNetBaseCOP;
 
     const manufacturerBaseCOP = Number(formData.cost_price || 0);
+    const shippingCostCOP = Number(formData.shipping_cost_cop || 0);
     const supplierHasIva = Boolean(formData.supplier_has_iva);
     const supplierIvaRate = supplierHasIva ? Number(formData.supplier_iva_rate || 0.19) : 0;
     const supplierWithholdingRate = !supplierHasIva ? Number(formData.supplier_withholding_rate || 0) : 0;
@@ -93,12 +97,18 @@ const SimpleAdmin = () => {
     const supplierNetPayoutCOP = manufacturerBaseCOP + supplierIvaCOP - supplierWithholdingCOP;
     const supplierTotalCostCOP = manufacturerBaseCOP + supplierIvaCOP;
 
-    const compBudgetCOP = isPackageProduct ? 0 : Number(formData.compensation_budget_cop || 0);
+    // Puntos de Volumen (PV) + Bono Directo (PV) aplican tanto a Productos como a Paquetes/Franquicias
+    const totalPvPoints = Number(formData.pv || 0) + Number(formData.direct_bonus_pv || 0);
+    const suggestedPvCompCOP = Math.round(totalPvPoints * 4500);
+    const compBudgetCOP = Number(formData.compensation_budget_cop || 0) > 0
+        ? Number(formData.compensation_budget_cop)
+        : suggestedPvCompCOP;
+
     const matrixReserveCOP = isPackageProduct ? Number(formData.matrix_reserve_cop || 0) : 0;
     const travelPoolCOP = isPackageProduct ? Number(formData.travel_pool_cop || 0) : 0;
 
     const calculatedCompanyProfitCOP = Math.round(
-        saleNetBaseCOP - supplierTotalCostCOP - compBudgetCOP - matrixReserveCOP - travelPoolCOP
+        saleNetBaseCOP - supplierTotalCostCOP - shippingCostCOP - compBudgetCOP - matrixReserveCOP - travelPoolCOP
     );
     const calculatedMarginPercent = salePriceCOP > 0
         ? ((calculatedCompanyProfitCOP / salePriceCOP) * 100).toFixed(1)
@@ -205,8 +215,19 @@ const SimpleAdmin = () => {
     };
 
     const handleChange = (e) => {
-        const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
-        setFormData({ ...formData, [e.target.name]: value });
+        const { name, type, checked, value } = e.target;
+        const nextVal = type === 'checkbox' ? checked : value;
+
+        setFormData(prev => {
+            const updated = { ...prev, [name]: nextVal };
+            // Si cambia PV o Bono Directo PV, actualizar automáticamente el presupuesto de compensación sugerido
+            if (name === 'pv' || name === 'direct_bonus_pv') {
+                const newPv = Number(name === 'pv' ? nextVal : prev.pv) || 0;
+                const newDirect = Number(name === 'direct_bonus_pv' ? nextVal : prev.direct_bonus_pv) || 0;
+                updated.compensation_budget_cop = Math.round((newPv + newDirect) * 4500);
+            }
+            return updated;
+        });
     };
 
     // --- Gestión de variantes dinámicas ---
@@ -230,24 +251,25 @@ const SimpleAdmin = () => {
         try {
             const sanitizedData = {
                 ...formData,
-                price_local: formData.price_local === '' || formData.price_local === null ? null : Number(formData.price_local),
+                price_local: formData.price_local === '' || formData.price_local === null ? 0 : Number(formData.price_local),
                 price_eur: formData.price_eur === '' || formData.price_eur === null ? null : Number(formData.price_eur),
                 weight_grams: formData.weight_grams === '' || formData.weight_grams === null ? 500 : Math.round(Number(formData.weight_grams)),
-                price_usd: Number(formData.price_usd),
-                pv: Number(formData.pv),
-                direct_bonus_pv: Number(formData.direct_bonus_pv),
-                tei_pv: Math.round(Number(formData.tei_pv)),
-                stock: Math.round(Number(formData.stock)),
+                price_usd: Number(formData.price_usd || 0),
+                pv: Number(formData.pv || 0),
+                direct_bonus_pv: Number(formData.direct_bonus_pv || 0),
+                tei_pv: Math.round(Number(formData.tei_pv || 0)),
+                stock: Math.round(Number(formData.stock || 0)),
                 cost_price: Number(formData.cost_price || 0),
+                shipping_cost_cop: Number(formData.shipping_cost_cop || 0),
                 supplier_has_iva: Boolean(formData.supplier_has_iva),
                 supplier_iva_rate: Boolean(formData.supplier_has_iva) ? Number(formData.supplier_iva_rate || 0.19) : 0,
                 supplier_withholding_rate: !formData.supplier_has_iva ? Number(formData.supplier_withholding_rate || 0) : 0,
-                compensation_budget_cop: isPackageProduct ? 0 : Number(formData.compensation_budget_cop || 0),
+                compensation_budget_cop: compBudgetCOP,
                 matrix_reserve_cop: isPackageProduct ? Number(formData.matrix_reserve_cop || 0) : 0,
                 travel_pool_cop: isPackageProduct ? Number(formData.travel_pool_cop || 0) : 0,
                 company_profit_cop: calculatedCompanyProfitCOP,
-                tax_rate: Number(formData.tax_rate),
-                public_price: Number(formData.public_price),
+                tax_rate: Number(formData.tax_rate || 0),
+                public_price: Number(formData.public_price || 0),
                 sku: formData.sku,
                 supplier_id: formData.supplier_id ? Number(formData.supplier_id) : null,
                 package_level: Number(formData.package_level || 0),
@@ -270,15 +292,15 @@ const SimpleAdmin = () => {
 
             if (editingId) {
                 await api.put(`/api/products/${editingId}`, sanitizedData);
-                setMessage('Producto actualizado exitosamente');
+                setMessage('✅ Producto actualizado exitosamente con todos sus costos y ganancias.');
             } else {
                 await api.post('/api/products/', sanitizedData);
-                setMessage('Producto creado exitosamente');
+                setMessage('✅ Producto creado exitosamente.');
             }
             setFormData(INITIAL_FORM_STATE);
             setEditingId(null);
-            fetchProducts();
-            setTimeout(() => setMessage(''), 3000);
+            await fetchProducts();
+            setTimeout(() => setMessage(''), 4000);
         } catch (error) {
             console.error("Error saving product", error);
             const errorDetail = error.response?.data?.detail || error.message || 'Error desconocido';
@@ -307,15 +329,20 @@ const SimpleAdmin = () => {
                 countriesList = JSON.parse(product.available_countries);
             } catch (e) {}
         }
+
+        const autoPvComp = Math.round((Number(product.pv || 0) + Number(product.direct_bonus_pv || 0)) * 4500);
     
         setFormData({
             ...INITIAL_FORM_STATE,
             ...product,
             cost_price: product.cost_price ?? 0,
+            shipping_cost_cop: product.shipping_cost_cop ?? 0,
             supplier_has_iva: Boolean(product.supplier_has_iva),
             supplier_iva_rate: product.supplier_iva_rate ? Number(product.supplier_iva_rate) : 0.19,
             supplier_withholding_rate: product.supplier_withholding_rate ? Number(product.supplier_withholding_rate) : 0,
-            compensation_budget_cop: product.compensation_budget_cop ?? 0,
+            compensation_budget_cop: (product.compensation_budget_cop && Number(product.compensation_budget_cop) > 0)
+                ? Number(product.compensation_budget_cop)
+                : autoPvComp,
             matrix_reserve_cop: product.matrix_reserve_cop ?? 0,
             travel_pool_cop: product.travel_pool_cop ?? 0,
             company_profit_cop: product.company_profit_cop ?? 0,
@@ -407,6 +434,7 @@ const SimpleAdmin = () => {
                         <span style={{ fontSize: '0.9rem', color: '#6b7280', marginRight: '0.25rem' }}>$1 USD =</span>
                         <input
                             type="number"
+                            step="any"
                             value={customTrm}
                             onChange={(e) => setCustomTrm(e.target.value)}
                             placeholder="Ej: 4000"
@@ -508,7 +536,7 @@ const SimpleAdmin = () => {
                         value={formData.price_usd}
                         onChange={handleChange}
                         placeholder="Precio USD"
-                        step="0.01"
+                        step="any"
                         style={{ width: '100%', padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.25rem' }}
                         required
                     />
@@ -523,7 +551,7 @@ const SimpleAdmin = () => {
                         value={formData.price_local}
                         onChange={handleChange}
                         placeholder="Precio Final COP (Pesos Colombianos)"
-                        step="100"
+                        step="any"
                         style={{ width: '100%', padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.25rem' }}
                     />
                 </div>
@@ -722,7 +750,7 @@ const SimpleAdmin = () => {
                 </div>
 
                 {/* ========================================================================= */}
-                {/* NUEVO MÓDULO: COSTOS DEL FABRICANTE, RETENCIONES Y GANANCIA NETA DE TEI   */}
+                {/* MÓDULO: COSTOS DEL FABRICANTE, ENVÍO, PV, MATRICES, VIAJES Y GANANCIA TEI */}
                 {/* ========================================================================= */}
                 <div style={{
                     gridColumn: 'span 2',
@@ -736,15 +764,15 @@ const SimpleAdmin = () => {
                 }}>
                     <div style={{ borderBottom: '1px solid #bfdbfe', paddingBottom: '0.75rem' }}>
                         <h3 style={{ margin: 0, color: '#1e3a8a', fontSize: '1.15rem', fontWeight: 'bold' }}>
-                            🏭 Costos del Fabricante, Impuestos y Distribución de Ganancia TEI
+                            🏭 Costos del Fabricante, Envío, Impuestos y Distribución de Ganancia TEI
                         </h3>
                         <p style={{ margin: '0.25rem 0 0', fontSize: '0.85rem', color: '#475569' }}>
-                            Registra el precio real del fabricante, si cobra IVA o si se le practica retención, y cuánto dinero se destina a {isPackageProduct ? 'Matrices y Premios en Viajes' : 'los Planes de Compensación'}.
+                            Registra el precio del fabricante, costo de envío, IVA/retención, los Puntos (PV + Bono Directo){isPackageProduct ? ' y la reserva de Matrices y Premios en Viajes' : ''}.
                         </p>
                     </div>
 
-                    {/* Fila 1: Costo Fabricante + IVA / Retención Fabricante */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
+                    {/* Fila 1: Costo Fabricante + Costo Envío + IVA / Retención Fabricante */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '1rem' }}>
                         <div style={{ background: 'white', padding: '0.85rem', borderRadius: '0.5rem', border: '1px solid #cbd5e1' }}>
                             <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 'bold', color: '#0f172a', marginBottom: '0.35rem' }}>
                                 🏷️ Precio Base del Fabricante (COP)
@@ -755,11 +783,29 @@ const SimpleAdmin = () => {
                                 value={formData.cost_price}
                                 onChange={handleChange}
                                 placeholder="Ej: 45000"
-                                step="100"
+                                step="any"
                                 style={{ width: '100%', padding: '0.5rem', border: '1px solid #94a3b8', borderRadius: '0.35rem', fontWeight: 'bold', fontSize: '1rem' }}
                             />
                             <span style={{ display: 'block', marginTop: '0.25rem', fontSize: '0.75rem', color: '#64748b' }}>
-                                Lo que cobra el fabricante antes de impuestos.
+                                Costo cobrado por el fabricante.
+                            </span>
+                        </div>
+
+                        <div style={{ background: 'white', padding: '0.85rem', borderRadius: '0.5rem', border: '1px solid #cbd5e1' }}>
+                            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 'bold', color: '#0f172a', marginBottom: '0.35rem' }}>
+                                🚚 Costo de Envío / Flete (COP)
+                            </label>
+                            <input
+                                type="number"
+                                name="shipping_cost_cop"
+                                value={formData.shipping_cost_cop}
+                                onChange={handleChange}
+                                placeholder="Ej: 17700"
+                                step="any"
+                                style={{ width: '100%', padding: '0.5rem', border: '1px solid #94a3b8', borderRadius: '0.35rem', fontWeight: 'bold', fontSize: '1rem' }}
+                            />
+                            <span style={{ display: 'block', marginTop: '0.25rem', fontSize: '0.75rem', color: '#64748b' }}>
+                                Gasto de envío descontable para TEI.
                             </span>
                         </div>
 
@@ -780,11 +826,11 @@ const SimpleAdmin = () => {
                                 }}
                                 style={{ width: '100%', padding: '0.5rem', border: '1px solid #94a3b8', borderRadius: '0.35rem', fontWeight: 'bold' }}
                             >
-                                <option value="no">❌ No cobra IVA (Régimen No Responsable / Cuenta de Cobro)</option>
-                                <option value="yes">✅ Sí cobra IVA (Factura Electrónica con IVA)</option>
+                                <option value="no">❌ No cobra IVA (Cuenta de Cobro)</option>
+                                <option value="yes">✅ Sí cobra IVA (Factura con IVA)</option>
                             </select>
                             <span style={{ display: 'block', marginTop: '0.25rem', fontSize: '0.75rem', color: '#64748b' }}>
-                                Define si el proveedor factura con IVA o sin IVA.
+                                Define si factura con IVA o sin IVA.
                             </span>
                         </div>
 
@@ -809,7 +855,7 @@ const SimpleAdmin = () => {
                         ) : (
                             <div style={{ background: '#fffbeb', padding: '0.85rem', borderRadius: '0.5rem', border: '1px solid #fcd34d' }}>
                                 <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 'bold', color: '#92400e', marginBottom: '0.35rem' }}>
-                                    ✂️ Retención al Fabricante (Por NO cobrar IVA)
+                                    ✂️ Retención al Fabricante (Sin IVA)
                                 </label>
                                 <select
                                     name="supplier_withholding_rate"
@@ -825,61 +871,97 @@ const SimpleAdmin = () => {
                                     <option value={0.11}>11.0% - Honorarios Declarante ({formatCOP(manufacturerBaseCOP * 0.11)})</option>
                                 </select>
                                 <span style={{ display: 'block', marginTop: '0.25rem', fontSize: '0.75rem', color: '#b45309', fontWeight: 'bold' }}>
-                                    Giro Neto al Fabricante: {formatCOP(supplierNetPayoutCOP)} (Retenido: {formatCOP(supplierWithholdingCOP)})
+                                    Giro Neto: {formatCOP(supplierNetPayoutCOP)} (Ret: {formatCOP(supplierWithholdingCOP)})
                                 </span>
                             </div>
                         )}
                     </div>
 
-                    {/* Fila 2: Dinero para Planes de Compensación (Producto) VS Matrices y Viajes (Paquete) */}
-                    {!isPackageProduct ? (
-                        <div style={{
-                            background: '#f0fdf4',
-                            border: '1px solid #86efac',
-                            borderRadius: '0.5rem',
-                            padding: '1rem',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: '0.5rem'
-                        }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
-                                <label style={{ fontSize: '0.9rem', fontWeight: 'bold', color: '#166534' }}>
-                                    🤝 Dinero del Producto destinado a pagar Planes de Compensación (COP)
-                                </label>
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        const suggested = Math.round((Number(formData.pv || 0) + Number(formData.direct_bonus_pv || 0)) * 4500);
-                                        setFormData(prev => ({ ...prev, compensation_budget_cop: suggested }));
-                                    }}
-                                    style={{
-                                        background: '#16a34a',
-                                        color: 'white',
-                                        border: 'none',
-                                        borderRadius: '0.35rem',
-                                        padding: '0.3rem 0.75rem',
-                                        fontSize: '0.78rem',
-                                        fontWeight: 'bold',
-                                        cursor: 'pointer'
-                                    }}
-                                >
-                                    ⚡ Sugerir desde PV ({formatCOP((Number(formData.pv || 0) + Number(formData.direct_bonus_pv || 0)) * 4500)})
-                                </button>
+                    {/* Fila 2: Puntos de Volumen (PV) + Bono Directo (PV) -> SIEMPRE VISIBLES (Productos y Paquetes/Franquicias) */}
+                    <div style={{
+                        background: '#f0fdf4',
+                        border: '1px solid #86efac',
+                        borderRadius: '0.5rem',
+                        padding: '1rem',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '0.75rem'
+                    }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+                            <div>
+                                <strong style={{ fontSize: '0.92rem', color: '#166534' }}>
+                                    🤝 Puntos de Volumen (PV), Bono Directo (PV) y Presupuesto de Red
+                                </strong>
+                                <span style={{ display: 'block', fontSize: '0.78rem', color: '#15803d' }}>
+                                    Suma automáticamente ⭐ PV ({formData.pv || 0}) + 🎯 Bono Directo ({formData.direct_bonus_pv || 0}) = <strong>{totalPvPoints.toFixed(2)} PV</strong> ({formatCOP(suggestedPvCompCOP)}).
+                                </span>
                             </div>
-                            <input
-                                type="number"
-                                name="compensation_budget_cop"
-                                value={formData.compensation_budget_cop}
-                                onChange={handleChange}
-                                placeholder="Monto en COP destinado a pagar la Red (Unilevel, Binario, Patrocinio)"
-                                step="100"
-                                style={{ width: '100%', padding: '0.55rem', border: '1px solid #4ade80', borderRadius: '0.35rem', fontWeight: 'bold', fontSize: '1rem' }}
-                            />
-                            <span style={{ fontSize: '0.78rem', color: '#15803d' }}>
-                                Este valor se descuenta del precio de venta para saber exactamente cuánta ganancia libre le queda a TEI.
-                            </span>
+                            <button
+                                type="button"
+                                onClick={() => setFormData(prev => ({ ...prev, compensation_budget_cop: suggestedPvCompCOP }))}
+                                style={{
+                                    background: '#16a34a',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '0.35rem',
+                                    padding: '0.35rem 0.8rem',
+                                    fontSize: '0.8rem',
+                                    fontWeight: 'bold',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                ⚡ Sugerir desde PV ({formatCOP(suggestedPvCompCOP)})
+                            </button>
                         </div>
-                    ) : (
+
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.85rem' }}>
+                            <div style={{ background: 'white', padding: '0.65rem', borderRadius: '0.4rem', border: '1px solid #bbf7d0' }}>
+                                <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 'bold', color: '#166534', marginBottom: '0.25rem' }}>
+                                    ⭐ Puntos de Volumen (PV)
+                                </label>
+                                <input
+                                    type="number"
+                                    name="pv"
+                                    value={formData.pv}
+                                    onChange={handleChange}
+                                    placeholder="Ej: 10.01"
+                                    step="any"
+                                    style={{ width: '100%', padding: '0.45rem', border: '1px solid #4ade80', borderRadius: '0.3rem', fontWeight: 'bold', fontSize: '0.95rem' }}
+                                />
+                            </div>
+                            <div style={{ background: 'white', padding: '0.65rem', borderRadius: '0.4rem', border: '1px solid #bbf7d0' }}>
+                                <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 'bold', color: '#166534', marginBottom: '0.25rem' }}>
+                                    🎯 Bono Directo (PV)
+                                </label>
+                                <input
+                                    type="number"
+                                    name="direct_bonus_pv"
+                                    value={formData.direct_bonus_pv}
+                                    onChange={handleChange}
+                                    placeholder="Ej: 46.5"
+                                    step="any"
+                                    style={{ width: '100%', padding: '0.45rem', border: '1px solid #4ade80', borderRadius: '0.3rem', fontWeight: 'bold', fontSize: '0.95rem' }}
+                                />
+                            </div>
+                            <div style={{ background: 'white', padding: '0.65rem', borderRadius: '0.4rem', border: '1px solid #bbf7d0' }}>
+                                <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 'bold', color: '#166534', marginBottom: '0.25rem' }}>
+                                    💰 Total Dinero Planes de Compensación (COP)
+                                </label>
+                                <input
+                                    type="number"
+                                    name="compensation_budget_cop"
+                                    value={compBudgetCOP}
+                                    onChange={handleChange}
+                                    placeholder="Monto en COP para Red"
+                                    step="any"
+                                    style={{ width: '100%', padding: '0.45rem', border: '1px solid #4ade80', borderRadius: '0.3rem', fontWeight: 'bold', fontSize: '0.95rem' }}
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Fila 3: Si es Paquete o Franquicia -> Mostrar ADEMÁS Matrices y Premios en Viajes */}
+                    {isPackageProduct && (
                         <div style={{
                             background: '#faf5ff',
                             border: '1px solid #d8b4fe',
@@ -889,12 +971,12 @@ const SimpleAdmin = () => {
                             flexDirection: 'column',
                             gap: '0.75rem'
                         }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                                 <span style={{ background: '#7e22ce', color: 'white', padding: '0.2rem 0.6rem', borderRadius: '1rem', fontSize: '0.75rem', fontWeight: 'bold' }}>
-                                    MODO PAQUETE / FRANQUICIA
+                                    PAQUETE / FRANQUICIA NIVEL {formData.package_level || 1}
                                 </span>
                                 <strong style={{ color: '#581c87', fontSize: '0.9rem' }}>
-                                    En Paquetes no se pagan Planes de Compensación tradicionales; se aparta el dinero de Matrices y Premios en Viajes:
+                                    Reserva adicional del Paquete para Activar Matrices y Premios en Viajes:
                                 </strong>
                             </div>
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem' }}>
@@ -908,13 +990,13 @@ const SimpleAdmin = () => {
                                         value={formData.matrix_reserve_cop}
                                         onChange={handleChange}
                                         placeholder="Ej: 120000"
-                                        step="100"
+                                        step="any"
                                         style={{ width: '100%', padding: '0.5rem', border: '1px solid #c084fc', borderRadius: '0.35rem', fontWeight: 'bold', fontSize: '1rem' }}
                                     />
                                 </div>
                                 <div style={{ background: 'white', padding: '0.75rem', borderRadius: '0.4rem', border: '1px solid #e9d5ff' }}>
                                     <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 'bold', color: '#6b21a8', marginBottom: '0.3rem' }}>
-                                        ✈️ Dinero para Premios en Viajes / Bóvedas (COP)
+                                        ✈️ Dinero para Premios en Viajes / Fondos (COP)
                                     </label>
                                     <input
                                         type="number"
@@ -922,7 +1004,7 @@ const SimpleAdmin = () => {
                                         value={formData.travel_pool_cop}
                                         onChange={handleChange}
                                         placeholder="Ej: 45000"
-                                        step="100"
+                                        step="any"
                                         style={{ width: '100%', padding: '0.5rem', border: '1px solid #c084fc', borderRadius: '0.35rem', fontWeight: 'bold', fontSize: '1rem' }}
                                     />
                                 </div>
@@ -983,12 +1065,19 @@ const SimpleAdmin = () => {
                             </div>
                         )}
 
-                        {!isPackageProduct ? (
-                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem' }}>
-                                <span style={{ color: '#cbd5e1' }}>(-) Dinero destinado a Planes de Compensación:</span>
-                                <span style={{ color: '#f472b6', fontWeight: 'bold' }}>- {formatCOP(compBudgetCOP)}</span>
-                            </div>
-                        ) : (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem' }}>
+                            <span style={{ color: '#cbd5e1' }}>(-) Costo de Envío / Flete del Producto:</span>
+                            <span style={{ color: '#fb923c', fontWeight: 'bold' }}>- {formatCOP(shippingCostCOP)}</span>
+                        </div>
+
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem' }}>
+                            <span style={{ color: '#cbd5e1' }}>
+                                (-) Planes de Compensación (⭐ PV: {formData.pv || 0} + 🎯 Bono Directo: {formData.direct_bonus_pv || 0}):
+                            </span>
+                            <span style={{ color: '#f472b6', fontWeight: 'bold' }}>- {formatCOP(compBudgetCOP)}</span>
+                        </div>
+
+                        {isPackageProduct && (
                             <>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem' }}>
                                     <span style={{ color: '#cbd5e1' }}>(-) Dinero para Activar Matrices:</span>
@@ -1024,34 +1113,6 @@ const SimpleAdmin = () => {
 
                 <div>
                     <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 'bold', color: '#475569', marginBottom: '0.25rem' }}>
-                        ⭐ Puntos de Volumen (PV)
-                    </label>
-                    <input
-                        type="number"
-                        name="pv"
-                        value={formData.pv}
-                        onChange={handleChange}
-                        placeholder="Puntos de Volumen (PV)"
-                        step="0.01"
-                        style={{ width: '100%', padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.25rem' }}
-                    />
-                </div>
-                <div>
-                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 'bold', color: '#475569', marginBottom: '0.25rem' }}>
-                        🎯 Bono Directo (PV)
-                    </label>
-                    <input
-                        type="number"
-                        name="direct_bonus_pv"
-                        value={formData.direct_bonus_pv}
-                        onChange={handleChange}
-                        placeholder="Bono Directo (PV)"
-                        step="0.01"
-                        style={{ width: '100%', padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.25rem' }}
-                    />
-                </div>
-                <div>
-                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 'bold', color: '#475569', marginBottom: '0.25rem' }}>
                         📦 Stock Disponible
                     </label>
                     <input
@@ -1060,6 +1121,7 @@ const SimpleAdmin = () => {
                         value={formData.stock}
                         onChange={handleChange}
                         placeholder="Stock disponible"
+                        step="any"
                         style={{ width: '100%', padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.25rem' }}
                     />
                 </div>
@@ -1073,6 +1135,7 @@ const SimpleAdmin = () => {
                         value={formData.weight_grams}
                         onChange={handleChange}
                         placeholder="Peso en gramos (ej: 500)"
+                        step="any"
                         style={{ width: '100%', padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.25rem' }}
                     />
                 </div>
@@ -1087,7 +1150,7 @@ const SimpleAdmin = () => {
 
                 {/* Opciones de Flete */}
                 <div style={{ gridColumn: 'span 2', padding: '1rem', background: '#eff6ff', borderRadius: '0.5rem', border: '1px solid #bfdbfe' }}>
-                    <strong style={{ display: 'block', marginBottom: '0.5rem', color: '#1e3a8a' }}>🚚 Clase de Envío (Política de Flete)</strong>
+                    <strong style={{ display: 'block', marginBottom: '0.5rem', color: '#1e3a8a' }}>🚚 Clase de Envío (Política de Flete en Tienda)</strong>
                     <select
                         name="shipping_class"
                         value={formData.shipping_class || 'normal'}
@@ -1167,29 +1230,34 @@ const SimpleAdmin = () => {
                         <tr>
                             <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Nombre</th>
                             <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Precio Público</th>
-                            <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Costo Fabricante</th>
+                            <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Costo Fab. y Envío</th>
                             <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Red / Matrices / Viajes</th>
                             <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Ganancia TEI</th>
                             <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Stock</th>
-                            <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>PV</th>
+                            <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>⭐ PV / 🎯 Bono</th>
                             <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
                         {products.map(p => {
-                            const isPkg = Boolean(p.is_activation || p.is_upgrade);
+                            const isPkg = Boolean(p.is_activation || p.is_upgrade || Number(p.package_level || 0) > 0);
                             const pSale = Number(p.price_local || 0);
                             const pSaleTax = Number(p.tax_rate || 0);
                             const pNetSale = pSaleTax > 0 ? pSale / (1 + pSaleTax) : pSale;
                             const pBaseCost = Number(p.cost_price || 0);
+                            const pShipCost = Number(p.shipping_cost_cop || 0);
                             const pSupIva = p.supplier_has_iva ? pBaseCost * Number(p.supplier_iva_rate || 0.19) : 0;
                             const pSupWh = !p.supplier_has_iva ? pBaseCost * Number(p.supplier_withholding_rate || 0) : 0;
-                            const pComp = Number(p.compensation_budget_cop || 0);
-                            const pMat = Number(p.matrix_reserve_cop || 0);
-                            const pTrav = Number(p.travel_pool_cop || 0);
-                            const pProfit = p.company_profit_cop && p.company_profit_cop !== 0
-                                ? Number(p.company_profit_cop)
-                                : Math.round(pNetSale - (pBaseCost + pSupIva) - pComp - pMat - pTrav);
+
+                            // PV + Bono Directo PV aplican tanto a Productos como a Paquetes/Franquicias
+                            const autoPvComp = Math.round((Number(p.pv || 0) + Number(p.direct_bonus_pv || 0)) * 4500);
+                            const pComp = Number(p.compensation_budget_cop || 0) > 0
+                                ? Number(p.compensation_budget_cop)
+                                : autoPvComp;
+
+                            const pMat = isPkg ? Number(p.matrix_reserve_cop || 0) : 0;
+                            const pTrav = isPkg ? Number(p.travel_pool_cop || 0) : 0;
+                            const pProfit = Math.round(pNetSale - (pBaseCost + pSupIva) - pShipCost - pComp - pMat - pTrav);
 
                             return (
                             <tr key={p.id} style={{ borderBottom: '1px solid #e5e7eb' }}>
@@ -1199,14 +1267,21 @@ const SimpleAdmin = () => {
                                         {p.is_activation && <span style={{ marginLeft: '0.4rem' }} title="Paquete de Activación">✅</span>}
                                         {p.is_upgrade && <span style={{ marginLeft: '0.4rem' }} title="Paquete de Avance (Upgrade)">⬆️</span>}
                                     </div>
-                                    <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{p.category}</div>
+                                    <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                                        {p.category} {Number(p.package_level || 0) > 0 ? `• Franquicia Nivel ${p.package_level}` : ''}
+                                    </div>
                                 </td>
                                 <td style={{ padding: '0.75rem' }}>
                                     <div style={{ fontWeight: 'bold', color: '#0f172a' }}>{formatCOP(p.price_local)}</div>
-                                    <div style={{ fontSize: '0.75rem', color: '#64748b' }}>${p.price_usd} USD</div>
+                                    <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                                        ${p.price_usd} USD {pSaleTax > 0 ? `• IVA ${(pSaleTax * 100).toFixed(0)}%` : ''}
+                                    </div>
                                 </td>
-                                <td style={{ padding: '0.75rem', fontSize: '0.85rem' }}>
-                                    <div style={{ fontWeight: 'bold', color: '#b45309' }}>{formatCOP(pBaseCost + pSupIva)}</div>
+                                <td style={{ padding: '0.75rem', fontSize: '0.82rem' }}>
+                                    <div style={{ fontWeight: 'bold', color: '#b45309' }}>Fab: {formatCOP(pBaseCost + pSupIva)}</div>
+                                    {pShipCost > 0 && (
+                                        <div style={{ fontWeight: 'bold', color: '#ea580c' }}>🚚 Envío: {formatCOP(pShipCost)}</div>
+                                    )}
                                     {p.supplier_has_iva ? (
                                         <span style={{ fontSize: '0.72rem', color: '#2563eb' }}>Con IVA ({((p.supplier_iva_rate || 0.19) * 100).toFixed(0)}%)</span>
                                     ) : pSupWh > 0 ? (
@@ -1215,16 +1290,20 @@ const SimpleAdmin = () => {
                                         <span style={{ fontSize: '0.72rem', color: '#64748b' }}>Sin IVA</span>
                                     )}
                                 </td>
-                                <td style={{ padding: '0.75rem', fontSize: '0.82rem' }}>
-                                    {!isPkg ? (
-                                        <div>
-                                            <span style={{ color: '#15803d', fontWeight: 'bold' }}>Plan Comp: {formatCOP(pComp)}</span>
+                                <td style={{ padding: '0.75rem', fontSize: '0.8rem', lineHeight: '1.4' }}>
+                                    {pComp > 0 && (
+                                        <div style={{ color: '#15803d', fontWeight: 'bold' }}>
+                                            Plan Comp (PV): {formatCOP(pComp)}
                                         </div>
-                                    ) : (
-                                        <div>
+                                    )}
+                                    {isPkg && (
+                                        <>
                                             <div style={{ color: '#6b21a8', fontWeight: 'bold' }}>Matrices: {formatCOP(pMat)}</div>
                                             <div style={{ color: '#0284c7', fontWeight: 'bold' }}>Viajes: {formatCOP(pTrav)}</div>
-                                        </div>
+                                        </>
+                                    )}
+                                    {!isPkg && pComp === 0 && (
+                                        <span style={{ color: '#94a3b8' }}>Plan Comp: $0</span>
                                     )}
                                 </td>
                                 <td style={{ padding: '0.75rem' }}>
@@ -1252,7 +1331,10 @@ const SimpleAdmin = () => {
                                         {p.stock} {p.stock === 0 ? '(Agotado)' : p.stock <= 5 ? '(Bajo)' : ''}
                                     </span>
                                 </td>
-                                <td style={{ padding: '0.75rem' }}>{p.pv}</td>
+                                <td style={{ padding: '0.75rem', fontSize: '0.8rem' }}>
+                                    <div>⭐ PV: <strong>{p.pv || 0}</strong></div>
+                                    <div style={{ color: '#475569' }}>🎯 Dir: <strong>{p.direct_bonus_pv || 0}</strong></div>
+                                </td>
                                 <td style={{ padding: '0.75rem', display: 'flex', gap: '0.5rem' }}>
                                     <button
                                         onClick={() => handleEdit(p)}

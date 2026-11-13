@@ -8,6 +8,8 @@ from backend.schemas.order import OrderCreate, OrderOut
 from backend.services.order_service import create_order
 from backend.utils.auth import get_current_user
 from backend.database.models.order import Order
+from backend.database.models.order_item import OrderItem
+from backend.database.models.payment_transaction import PaymentTransaction
 from backend.utils.email_service import send_order_invoice_email
 
 router = APIRouter(prefix="/api/orders", tags=["Orders"])
@@ -38,7 +40,7 @@ def create_order_endpoint(payload: OrderCreate, db: Session = Depends(get_db), c
         manual_methods = ["Consignación Bancaria", "Transferencia Bancaria", "Bank Transfer", "Manual", "Consignacion", "bank", "binance", "other", "breb", "pickup"]
         if payload.payment_method in manual_methods:
             try:
-                from backend.database.models.payment_transaction import PaymentTransaction
+            
                 
                 # Check if one already exists (unlikely for new order, but safe)
                 existing_tx = db.query(PaymentTransaction).filter(PaymentTransaction.order_id == order.id).first()
@@ -136,7 +138,8 @@ def delete_order(order_id: int, db: Session = Depends(get_db), current_user=Depe
     if order.user_id != current_user.id and not getattr(current_user, "is_admin", False):
         raise HTTPException(status_code=403, detail="No autorizado")
         
-    if order.status != "reservado":
+    is_admin = bool(getattr(current_user, "is_admin", False))
+    if not is_admin and order.status != "reservado":
         raise HTTPException(status_code=400, detail="Solo se pueden eliminar pedidos en estado Reservado")
 
     # Restore stock
@@ -146,7 +149,17 @@ def delete_order(order_id: int, db: Session = Depends(get_db), current_user=Depe
         if product:
             product.stock += item.quantity
             
+    # Cascade delete reviews, items and payment transactions
+    from backend.database.models.product_review import ProductReview
+    item_ids = [item.id for item in order.items]
+    if item_ids:
+        db.query(ProductReview).filter(ProductReview.order_item_id.in_(item_ids)).delete(synchronize_session=False)
+    db.query(OrderItem).filter(OrderItem.order_id == order.id).delete()
+    db.query(PaymentTransaction).filter(PaymentTransaction.order_id == order.id).delete()
     db.delete(order)
+
+
+
     db.commit()
     return {"success": True, "message": "Pedido eliminado correctamente"}
 
@@ -319,8 +332,8 @@ def cleanup_old_orders(db: Session = Depends(get_db), current_user=Depends(get_c
 
     count = 0
     from backend.database.models.product import Product
-    from backend.database.models.order_item import OrderItem
-    from backend.database.models.payment_transaction import PaymentTransaction
+
+
     
     try:
         for order in orders_to_delete:
@@ -339,6 +352,9 @@ def cleanup_old_orders(db: Session = Depends(get_db), current_user=Depends(get_c
             
             # D. Delete Order
             db.delete(order)
+
+
+
             count += 1
             
         db.commit()

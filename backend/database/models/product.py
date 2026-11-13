@@ -29,6 +29,7 @@ class Product(Base):
     
     # Costos de Fabricante, Impuestos y Distribución de Ganancia TEI
     cost_price = Column(Float, nullable=True, default=0.0) # Precio Producto / Fabricante base (COP)
+    shipping_cost_cop = Column(Float, default=0.0) # Costo de envío / flete asumido en el producto (COP)
     supplier_has_iva = Column(Boolean, default=False) # ¿El fabricante cobra IVA?
     supplier_iva_rate = Column(Float, default=0.0) # % IVA del fabricante (ej: 0.19)
     supplier_withholding_rate = Column(Float, default=0.0) # % Retención practicada al fabricante si no cobra IVA (ej: 0.025, 0.035)

@@ -23,13 +23,13 @@ const Opportunity = () => {
   return (
     <div className="min-h-screen bg-slate-900 text-white overflow-x-hidden">
       {/* HERO SECTION */}
-      <section className="relative h-[85vh] flex items-center justify-center overflow-hidden">
+      <section className="relative min-h-[85dvh] flex items-center justify-center overflow-hidden">
         <img
           src="https://storage.googleapis.com/tuempresainternacional-assets/images/hero.jpg"
           alt="Tu Libertad Financiera"
           className="absolute inset-0 w-full h-full object-cover z-0"
         />
-        <div className="absolute inset-0 bg-black/65 backdrop-blur-[2px] z-0"></div>
+        <div className="absolute inset-0 bg-black/75 z-0 transform-gpu"></div>
 
         <div className="container mx-auto px-4 z-10 text-center">
           <motion.h1
@@ -136,7 +136,7 @@ const Opportunity = () => {
             </div>
 
             <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 blur-3xl opacity-20 rounded-full"></div>
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 md:blur-3xl blur-2xl opacity-20 rounded-full transform-gpu"></div>
               <div className="relative bg-slate-800 p-8 rounded-3xl border border-slate-600 shadow-2xl">
                 <div className="text-center mb-8">
                   <span className="text-6xl">🚀</span>
@@ -242,7 +242,7 @@ const Opportunity = () => {
               viewport={{ once: true }}
               className="bg-slate-800/80 rounded-3xl p-8 md:p-12 border border-emerald-500/30 relative overflow-hidden text-center"
             >
-              <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl -mr-32 -mt-32"></div>
+              <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full md:blur-3xl blur-2xl -mr-32 -mt-32 transform-gpu"></div>
 
               <span className="text-4xl mb-4 block">🏗️</span>
               <h3 className="text-3xl md:text-4xl font-bold text-white mb-4">Matrices Forzadas</h3>
@@ -349,7 +349,7 @@ const Opportunity = () => {
       <section id="register-section" className="py-24 bg-blue-900 relative">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-4xl md:text-6xl font-bold mb-8 text-white">¿Estás listo para tu nueva vida?</h2>
-          <div className="max-w-2xl mx-auto bg-white p-8 rounded-3xl shadow-2xl text-slate-900 border border-white/20 backdrop-blur-sm">
+          <div className="max-w-2xl mx-auto bg-white p-8 rounded-3xl shadow-2xl text-slate-900 border border-white/20">
             <RegisterForm referralCode={refCode} />
           </div>
         </div>

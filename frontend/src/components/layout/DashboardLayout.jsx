@@ -5,6 +5,7 @@ import './DashboardLayout.css';
 import MobileBottomNav from './MobileBottomNav';
 import ActionSheet from './ActionSheet';
 import DesktopNavbar from './DesktopNavbar';
+import { api } from '../../api/api';
 
 const DashboardLayout = () => {
   // Version Log
@@ -23,6 +24,13 @@ const DashboardLayout = () => {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
   const location = useLocation();
+  
+  // Mandatory Rating State
+  const [pendingRatingOrder, setPendingRatingOrder] = useState(null);
+  const [ratingVal, setRatingVal] = useState(0);
+  const [ratingReason, setRatingReason] = useState('');
+  const [ratingSubmitting, setRatingSubmitting] = useState(false);
+  const [ratingError, setRatingError] = useState('');
 
   useEffect(() => {
     const handleResize = () => {
@@ -54,6 +62,23 @@ const DashboardLayout = () => {
   }, []);
 
   const token = localStorage.getItem('access_token');
+  
+  useEffect(() => {
+    const fetchPendingRating = async () => {
+      try {
+        const res = await api.get('/api/merchants/orders/pending-rating');
+        if (res.data && res.data.length > 0) {
+          setPendingRatingOrder(res.data[0]);
+        }
+      } catch (e) {
+        console.error("Error fetching pending rating", e);
+      }
+    };
+    if (token && !isAdmin && !impersonating) {
+      fetchPendingRating();
+    }
+  }, [token, isAdmin, impersonating]);
+
   if (!token) return <Navigate to="/login" replace />;
 
   const isActive = (path) => location.pathname === path;
@@ -68,6 +93,34 @@ const DashboardLayout = () => {
       localStorage.removeItem('admin_token');
       localStorage.removeItem('userId'); // Remove impersonated userId if any
       window.location.href = '/admin/users';
+    }
+  };
+
+  const submitRating = async () => {
+    if (!pendingRatingOrder) return;
+    if (ratingVal < 1 || ratingVal > 7) {
+        setRatingError("Por favor selecciona entre 1 y 7 estrellas.");
+        return;
+    }
+    if (ratingVal <= 3 && (!ratingReason || ratingReason.trim().length < 5)) {
+        setRatingError("Por favor escribe el motivo de tu calificación.");
+        return;
+    }
+    
+    setRatingSubmitting(true);
+    setRatingError('');
+    try {
+        await api.post(`/api/merchants/orders/${pendingRatingOrder.id}/rate`, {
+            rating: ratingVal,
+            reason: ratingReason
+        });
+        setPendingRatingOrder(null);
+        setRatingVal(0);
+        setRatingReason('');
+    } catch (e) {
+        setRatingError(e.response?.data?.detail || "Error al enviar la calificación");
+    } finally {
+        setRatingSubmitting(false);
     }
   };
 
@@ -225,6 +278,72 @@ const DashboardLayout = () => {
                 ...moreItems
               ], true)}
             </ActionSheet>
+          </div>
+        </div>
+      )}
+
+      {/* --- MANDATORY RATING MODAL --- */}
+      {pendingRatingOrder && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gray-900 bg-opacity-95 p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col items-center p-8 text-center animate-fade-in-up border-4 border-indigo-500">
+            <div className="text-6xl mb-4">🛍️</div>
+            <h2 className="text-2xl font-black text-gray-800 mb-2">¡Califica tu compra!</h2>
+            <p className="text-gray-600 mb-6 font-medium">
+              Antes de continuar, por favor cuéntanos cómo te fue con el pedido en <strong className="text-indigo-700">{pendingRatingOrder.merchant_name}</strong>.
+            </p>
+            
+            <div className="flex flex-col items-center space-y-2 mb-6">
+                <div className="flex gap-2 justify-center flex-wrap">
+                  {[1, 2, 3, 4, 5, 6, 7].map(star => (
+                    <button
+                      key={star}
+                      onClick={() => setRatingVal(star)}
+                      className={`text-4xl transition-transform hover:scale-110 ${ratingVal >= star ? 'text-yellow-400' : 'text-gray-200'}`}
+                    >
+                      ★
+                    </button>
+                  ))}
+                </div>
+                <div className="text-sm font-bold text-gray-500 mt-2">
+                    {ratingVal === 0 && "Selecciona de 1 a 7 estrellas"}
+                    {ratingVal > 0 && ratingVal <= 3 && <span className="text-red-500">Insatisfecho ({ratingVal}/7)</span>}
+                    {ratingVal === 4 && <span className="text-yellow-500">Regular ({ratingVal}/7)</span>}
+                    {ratingVal >= 5 && <span className="text-green-500">Excelente ({ratingVal}/7)</span>}
+                </div>
+            </div>
+
+            {ratingVal > 0 && ratingVal <= 3 && (
+                <div className="w-full mb-6 text-left animate-fade-in">
+                    <label className="block text-sm font-bold text-red-600 mb-2">
+                        Motivo de tu insatisfacción (Obligatorio)
+                    </label>
+                    <textarea 
+                        required
+                        rows="3"
+                        placeholder="Por favor explícanos qué salió mal con tu compra..."
+                        value={ratingReason}
+                        onChange={e => setRatingReason(e.target.value)}
+                        className="w-full p-4 rounded-xl border-2 border-red-200 bg-red-50 focus:border-red-500 focus:outline-none"
+                    ></textarea>
+                </div>
+            )}
+            
+            {ratingError && <p className="text-red-500 text-sm font-bold mb-4">{ratingError}</p>}
+            
+            <button 
+                onClick={submitRating}
+                disabled={ratingVal === 0 || (ratingVal <= 3 && ratingReason.trim().length < 5) || ratingSubmitting}
+                className={`w-full py-4 rounded-xl font-black text-lg transition-all ${
+                    (ratingVal === 0 || (ratingVal <= 3 && ratingReason.trim().length < 5))
+                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                    : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-xl hover:shadow-indigo-500/50'
+                }`}
+            >
+                {ratingSubmitting ? 'Enviando...' : 'ENVIAR CALIFICACIÓN'}
+            </button>
+            <p className="text-xs text-gray-400 mt-4">
+                Esta calificación nos ayuda a mejorar el Centro Comercial TEI.
+            </p>
           </div>
         </div>
       )}

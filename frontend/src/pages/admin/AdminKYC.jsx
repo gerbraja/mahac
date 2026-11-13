@@ -3,6 +3,35 @@ import { api } from '../../api/api';
 import { useAdmin } from '../../context/AdminContext';
 import { State } from 'country-state-city';
 import { COLOMBIA_DIVIPOLA_COMPLETO } from '../../data/colombiaDivipolaCompleto';
+import { COLOMBIA_RETEICA_TARIFAS, getReteicaForCity } from '../../data/colombiaReteicaTarifas';
+
+const COLOMBIA_BANKS = [
+    { code: "1001", name: "Banco de Bogotá" },
+    { code: "1002", name: "Banco Popular" },
+    { code: "1006", name: "Banco Itaú" },
+    { code: "1007", name: "Bancolombia" },
+    { code: "1009", name: "Citibank" },
+    { code: "1012", name: "Banco GNB Sudameris" },
+    { code: "1013", name: "BBVA Colombia" },
+    { code: "1019", name: "Scotiabank Colpatria" },
+    { code: "1023", name: "Banco de Occidente" },
+    { code: "1032", name: "Banco Caja Social" },
+    { code: "1040", name: "Banco Agrario" },
+    { code: "1047", name: "Banco Mundo Mujer" },
+    { code: "1051", name: "Banco Davivienda" },
+    { code: "1052", name: "Banco AV Villas" },
+    { code: "1059", name: "Bancamía" },
+    { code: "1060", name: "Banco Pichincha" },
+    { code: "1061", name: "Bancoomeva" },
+    { code: "1062", name: "Banco Falabella" },
+    { code: "1063", name: "Banco Finandina" },
+    { code: "1066", name: "Banco Coopcentral" },
+    { code: "1070", name: "Lulo Bank" },
+    { code: "1507", name: "Nequi" },
+    { code: "1551", name: "DaviPlata" },
+    { code: "1809", name: "Nu Colombia" },
+    { code: "1811", name: "RappiPay" }
+];
 
 const AdminKYC = () => {
     const { globalCountry } = useAdmin();
@@ -23,6 +52,7 @@ const AdminKYC = () => {
         department: '',
         city: '',
         bank_name: '',
+        bank_ach_code: '',
         bank_account_type: '',
         bank_account_number: '',
         apply_retefuente: true,
@@ -40,18 +70,21 @@ const AdminKYC = () => {
     // Populate form and calculate defaults when selecting a record
     useEffect(() => {
         if (selectedRecord) {
-            const cityLower = (selectedRecord.input_city || '').toLowerCase().trim();
-            let defaultIca = 0.0;
-            if (cityLower.includes('bogota') || cityLower.includes('bogotá')) defaultIca = 0.966;
-            else if (cityLower.includes('medellin') || cityLower.includes('medellín')) defaultIca = 0.69;
-            else if (cityLower.includes('cali')) defaultIca = 0.77;
-            else if (cityLower.includes('barranquilla')) defaultIca = 0.8;
-            else if (cityLower.includes('bucaramanga')) defaultIca = 0.8;
-
             const regimeText = (selectedRecord.tax_regime || '').toLowerCase();
             const isRst = regimeText.includes('simple') || regimeText.includes('rst') || regimeText.includes('47') ||
                           (selectedRecord.extracted_metadata && selectedRecord.extracted_metadata.includes('47'));
             const isDeclarante = selectedRecord.details?.is_declarante || false;
+
+            // Lookup official municipal ReteICA rate from standard table
+            const resolvedCity = selectedRecord.rut_city || selectedRecord.input_city || '';
+            const icaData = getReteicaForCity(resolvedCity);
+
+            let defaultIca = 0.0;
+            if (isRst) {
+                defaultIca = 0.0; // Régimen Simple (RST) está totalmente exento de Retención en la fuente y ReteICA
+            } else {
+                defaultIca = icaData.rate;
+            }
             
             let defaultRete = 6.0;
             let applyRete = true;
@@ -59,16 +92,16 @@ const AdminKYC = () => {
                 defaultRete = 0.0;
                 applyRete = false;
             } else if (!isDeclarante) {
-                defaultRete = 10.0;
+                defaultRete = 6.0;
                 applyRete = true;
             } else {
                 defaultRete = 6.0;
                 applyRete = true;
             }
 
-            // Auto-detect DIVIPOLA code based on user's inputted department and city
+            // Auto-detect DIVIPOLA code based on user's inputted/RUT department and city
             const deptName = selectedRecord.input_department || '';
-            const cityName = selectedRecord.input_city || '';
+            const cityName = selectedRecord.rut_city || selectedRecord.input_city || '';
             let resolvedDivipola = '';
             
             if (deptName && cityName) {
@@ -91,6 +124,28 @@ const AdminKYC = () => {
                 }
             }
 
+            if (!resolvedDivipola && icaData.divipola) {
+                resolvedDivipola = icaData.divipola;
+            }
+
+            // Robust resolution of bank name and ACH code
+            const rawBankName = selectedRecord.input_bank_name || selectedRecord.bank_name || '';
+            let resolvedBankAchCode = selectedRecord.input_bank_ach_code || selectedRecord.bank_ach_code || '';
+            let resolvedBankName = rawBankName;
+
+            if (!resolvedBankAchCode && rawBankName) {
+                const normBank = s => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
+                const cleanInputBank = normBank(rawBankName);
+                const matchedBank = COLOMBIA_BANKS.find(b => {
+                    const cleanB = normBank(b.name);
+                    return cleanInputBank.includes(cleanB) || cleanB.includes(cleanInputBank);
+                });
+                if (matchedBank) {
+                    resolvedBankAchCode = matchedBank.code;
+                    resolvedBankName = matchedBank.name;
+                }
+            }
+
             const isPending = selectedRecord.status === 'pending';
 
             setEditForm({
@@ -98,13 +153,14 @@ const AdminKYC = () => {
                 document_id_rut: selectedRecord.input_document_id_rut || selectedRecord.user_document || '',
                 address: selectedRecord.input_address || '',
                 department: selectedRecord.input_department || '',
-                city: selectedRecord.input_city || '',
-                bank_name: selectedRecord.input_bank_name || selectedRecord.bank_name || '',
+                city: selectedRecord.rut_city || selectedRecord.input_city || '',
+                bank_name: resolvedBankName,
+                bank_ach_code: resolvedBankAchCode,
                 bank_account_type: selectedRecord.input_bank_account_type || selectedRecord.bank_account_type || 'Ahorros',
                 bank_account_number: selectedRecord.input_bank_account_number || selectedRecord.bank_account_number || '',
                 apply_retefuente: isPending ? applyRete : (selectedRecord.apply_retefuente ?? applyRete),
                 retefuente_rate: isPending ? defaultRete : (selectedRecord.retefuente_rate ?? defaultRete),
-                apply_reteica: isPending ? (defaultIca > 0) : (selectedRecord.apply_reteica ?? (defaultIca > 0)),
+                apply_reteica: isPending ? (defaultIca > 0 && !isRst) : (selectedRecord.apply_reteica ?? (defaultIca > 0 && !isRst)),
                 reteica_rate: isPending ? defaultIca : (selectedRecord.reteica_rate ?? defaultIca),
                 tax_regime: selectedRecord.tax_regime || (isRst ? 'Régimen Simple (RST)' : 'Régimen Ordinario'),
                 municipio_id: selectedRecord.municipio_id || resolvedDivipola || ''
@@ -182,6 +238,7 @@ const AdminKYC = () => {
                 department: editForm.department,
                 city: editForm.city,
                 bank_name: editForm.bank_name,
+                bank_ach_code: editForm.bank_ach_code,
                 bank_account_type: editForm.bank_account_type,
                 bank_account_number: editForm.bank_account_number,
                 apply_retefuente: editForm.apply_retefuente,
@@ -461,13 +518,27 @@ const AdminKYC = () => {
                                         <div className="grid grid-cols-2 gap-2">
                                             <div>
                                                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Banco</label>
-                                                <input
-                                                    type="text"
-                                                    name="bank_name"
-                                                    value={editForm.bank_name}
-                                                    onChange={handleFormChange}
+                                                <select
+                                                    name="bank_ach_code"
+                                                    value={editForm.bank_ach_code}
+                                                    onChange={(e) => {
+                                                        const selectedCode = e.target.value;
+                                                        const selectedBank = COLOMBIA_BANKS.find(b => b.code === selectedCode);
+                                                        setEditForm(prev => ({
+                                                            ...prev,
+                                                            bank_ach_code: selectedCode,
+                                                            bank_name: selectedBank ? selectedBank.name : ''
+                                                        }));
+                                                    }}
                                                     className="w-full mt-1 px-2.5 py-1.5 border rounded-lg text-xs bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                                                />
+                                                >
+                                                    <option value="">Seleccione un Banco</option>
+                                                    {COLOMBIA_BANKS.map((b) => (
+                                                        <option key={b.code} value={b.code}>
+                                                            {b.name} ({b.code})
+                                                        </option>
+                                                    ))}
+                                                </select>
                                             </div>
                                             <div>
                                                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Tipo Cuenta</label>
@@ -484,6 +555,8 @@ const AdminKYC = () => {
                                             </div>
                                         </div>
                                         <div className="text-xs">
+                                            <span className="text-slate-400 block font-semibold">Banco Registrado por Usuario:</span>
+                                            <span className="font-semibold text-blue-700 block mb-1">"{selectedRecord.input_bank_name || editForm.bank_name || 'No declarado'}"</span>
                                             <span className="text-slate-400 block font-semibold">Banco Leído por IA:</span>
                                             <span className="font-medium text-slate-800 italic">"{selectedRecord.bank_name || 'No extraído'}"</span>
                                         </div>
@@ -565,7 +638,7 @@ const AdminKYC = () => {
                                             />
                                             <span className="text-sm font-semibold text-slate-500">%</span>
                                         </div>
-                                        <span className="text-[10px] text-slate-400 mt-1 block">Simple/RST = 0%. No Declarante = 10%. Declarante = 6%.</span>
+                                        <span className="text-[10px] text-slate-400 mt-1 block">Simple/RST = 0%. No Declarante = 6%. Declarante = 6%.</span>
                                     </div>
 
                                     {/* ReteICA config */}
@@ -592,7 +665,11 @@ const AdminKYC = () => {
                                             />
                                             <span className="text-sm font-semibold text-slate-500">%</span>
                                         </div>
-                                        <span className="text-[10px] text-slate-400 mt-1 block">Tarifa en {editForm.city || 'Ciudad'}. Bogota: 0.966%. Medellin: 0.69%</span>
+                                        <span className="text-[10px] text-slate-400 mt-1 block">
+                                            {editForm.tax_regime?.includes('Simple') || editForm.tax_regime?.includes('RST')
+                                                ? 'Régimen Simple (RST): 0% Exento por Ley'
+                                                : `${getReteicaForCity(editForm.city).label} (${editForm.city || 'Municipio'})`}
+                                        </span>
                                     </div>
                                 </div>
 
@@ -614,30 +691,38 @@ const AdminKYC = () => {
                             {/* Section: Documents links */}
                             <div>
                                 <h3 className="font-bold text-slate-800 mb-3 border-l-4 border-green-500 pl-2">Documentos Adjuntos</h3>
-                                <div className="grid grid-cols-3 gap-3 text-sm">
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+                                    <a
+                                        href={selectedRecord.profile_photo_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center justify-center gap-2 p-3 border rounded-xl hover:bg-slate-50 text-blue-600 border-slate-200 bg-white font-semibold transition text-center"
+                                    >
+                                        📸 Foto del Usuario
+                                    </a>
                                     <a
                                         href={selectedRecord.rut_url}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="flex items-center justify-center gap-2 p-3 border rounded-xl hover:bg-slate-50 text-blue-600 border-slate-200 bg-white font-semibold transition"
+                                        className="flex items-center justify-center gap-2 p-3 border rounded-xl hover:bg-slate-50 text-blue-600 border-slate-200 bg-white font-semibold transition text-center"
                                     >
-                                        📄 Abrir PDF de RUT
+                                        📄 RUT
                                     </a>
                                     <a
                                         href={selectedRecord.cedula_url}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="flex items-center justify-center gap-2 p-3 border rounded-xl hover:bg-slate-50 text-blue-600 border-slate-200 bg-white font-semibold transition"
+                                        className="flex items-center justify-center gap-2 p-3 border rounded-xl hover:bg-slate-50 text-blue-600 border-slate-200 bg-white font-semibold transition text-center"
                                     >
-                                        📄 Abrir PDF de Cédula
+                                        📄 Cédula
                                     </a>
                                     <a
                                         href={selectedRecord.bank_certificate_url}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="flex items-center justify-center gap-2 p-3 border rounded-xl hover:bg-slate-50 text-blue-600 border-slate-200 bg-white font-semibold transition"
+                                        className="flex items-center justify-center gap-2 p-3 border rounded-xl hover:bg-slate-50 text-blue-600 border-slate-200 bg-white font-semibold transition text-center"
                                     >
-                                        📄 Abrir Cert. Bancaria
+                                        📄 Cert. Bancario
                                     </a>
                                 </div>
                             </div>
@@ -707,3 +792,8 @@ const AdminKYC = () => {
 };
 
 export default AdminKYC;
+
+
+
+
+

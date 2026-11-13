@@ -65,7 +65,7 @@ const AdminMerchants = () => {
                         <thead className="bg-gray-50 text-gray-600">
                             <tr>
                                 <th className="p-4">Comercio</th>
-                                <th className="p-4">Periodo (Quincena)</th>
+                                <th className="p-4">Periodo (Mes)</th>
                                 <th className="p-4">Cant. Ventas</th>
                                 <th className="p-4">Total Vendido</th>
                                 <th className="p-4">Comisión que deben a TEI</th>
@@ -89,7 +89,7 @@ const AdminMerchants = () => {
                                                 disabled={actionLoading}
                                                 className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow hover:bg-green-700 disabled:opacity-50"
                                             >
-                                                {actionLoading ? 'Procesando...' : 'Pagar Quincena Completa'}
+                                                {actionLoading ? 'Procesando...' : 'Pagar Mes Completo'}
                                             </button>
                                         </td>
                                     </tr>
@@ -109,7 +109,7 @@ const AdminMerchants = () => {
                         <thead className="bg-gray-50 text-gray-500 sticky top-0">
                             <tr>
                                 <th className="p-3">Comercio</th>
-                                <th className="p-3">Periodo (Quincena)</th>
+                                <th className="p-3">Periodo (Mes)</th>
                                 <th className="p-3">Cant. Ventas</th>
                                 <th className="p-3">Total Vendido</th>
                                 <th className="p-3">Comisión Cobrada</th>

@@ -13,19 +13,14 @@ export default function AdminLayout() {
 
     const allMenuItems = [
         { path: '/admin', label: 'Dashboard', icon: '📊' },
-        { path: '/admin/users', label: 'Usuarios', icon: '👥' },
+        { path: '/admin/crm', label: 'CRM Multinegocios', icon: '💼' },
         { path: '/admin/merchants-directory', label: 'Directorio Comercios', icon: '🏪' },
         { path: '/admin/merchants', label: 'Pagos Comercios', icon: '💰' },
         { path: '/admin/suppliers', label: 'Proveedores', icon: '🏢' },
-        { path: '/admin/orders', label: 'Órdenes/Envíos', icon: '📦' },
         { path: '/admin/country-managers', label: 'Gerentes de País', icon: '👨‍💼' },
         { path: '/admin/promotions', label: 'Campaña Viajes', icon: '✈️' },
-        { path: '/admin/reports', label: 'Reportes', icon: '📈' },
-        { path: '/admin/logistics', label: 'Logística (Bultos)', icon: '🚛' },
-        { path: '/admin/pickup-points', label: 'Puntos de Recogida', icon: '📍' },
-        { path: '/admin/country-stats', label: 'Estad. por País', icon: '🗺️' },
-        { path: '/admin/taxes', label: 'Impuestos y Retenciones', icon: '🧯' },
-        { path: '/admin/accounting', label: 'Contabilidad', icon: '🏦' },
+        { path: '/admin/transport-kyc', label: 'Validación Conductores', icon: '🚕' },
+        { path: '/admin/transport-drivers', label: 'Conductores Habilitados', icon: '🚙' },
     ];
 
     // Hide super-admin-only routes from country admins
@@ -141,7 +136,7 @@ export default function AdminLayout() {
                             onClick={() => navigate(item.path)}
                             style={{
                                 width: '100%',
-                                padding: sidebarOpen ? '0.6rem 1.25rem' : '0.6rem 0',
+                                padding: sidebarOpen ? '0.4rem 1.25rem' : '0.4rem 0',
                                 background: isActive(item.path) ? '#eff6ff' : 'transparent',
                                 border: 'none',
                                 borderLeft: isActive(item.path) ? '4px solid #1d4ed8' : '4px solid transparent',

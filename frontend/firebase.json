@@ -1,10 +1,18 @@
 {
     "hosting": {
-        "public": "dist",
+        "site": "tei-transport-493e7",
+        "public": "firebase_empty",
         "ignore": [
             "firebase.json",
             "**/.*",
             "**/node_modules/**"
+        ],
+        "redirects": [
+            {
+                "source": "**",
+                "destination": "https://www.tuempresainternacional.com",
+                "type": 301
+            }
         ],
         "rewrites": [
             {
